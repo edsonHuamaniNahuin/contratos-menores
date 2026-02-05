@@ -1,0 +1,21 @@
+# FastAPI y servidor ASGI (2026 - Versiones actuales)
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
+
+# Procesamiento de PDF
+PyMuPDF>=1.24.0
+
+# LLM Clients - Actualizados para Gemini 2.5/3 Flash, GPT-4o, Claude 3.5
+google-generativeai>=0.8.0
+openai>=1.50.0
+anthropic>=0.40.0
+
+# Validación y configuración
+pydantic>=2.8.0
+pydantic-settings>=2.4.0
+python-dotenv>=1.0.1
+
+# Utilidades
+httpx>=0.27.0
+tenacity>=9.0.0

@@ -1,11 +1,179 @@
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   VIGILANTE SEACE - GUÍA DE LEGIBILIDAD Y CONTRASTE (WCAG AA Mínimo)
+   ═══════════════════════════════════════════════════════════════════════════════════
+
+   📋 PALETA ACTUAL:
+   ─────────────────────────────────────────────────────────────────────────────────
+   PRIMARY (Teal):
+     500: #025964 ✓ (oscuro, alta legibilidad)
+     400: #2A737D ✓ (medio-oscuro, legible)
+     300: #538D97 ⚠️ (medio, usar solo en fondos)
+     200: #7BA8AD ⚠️ (claro, solo fondos)
+     100: #A4C3C6 ⚠️ (muy claro, solo fondos)
+
+   SECONDARY (Mint Green):
+     500: #00D47E ⚠️ (brillante, bajo contraste sobre blanco)
+     400: #29DA93 ⚠️ (brillante, bajo contraste)
+     300: #52E2A6 ❌ (muy claro, NO usar como texto)
+     200: #79E9BC ❌ (muy claro, solo fondos)
+     100: #A4EFD1 ✓ (fondo suave, excelente)
+
+   NEUTRAL (Grises):
+     900: #111827 ✓ (negro, máxima legibilidad)
+     600: #4B5563 ✓ (gris oscuro, buena legibilidad)
+     400: #9CA3AF ⚠️ (gris medio, solo para texto secundario)
+     100: #F3F4F6 ✓ (fondo claro, excelente)
+     50:  #F9FAFB ✓ (fondo ultra claro, excelente)
+
+   ─────────────────────────────────────────────────────────────────────────────────
+   ✅ REGLAS DE USO OBLIGATORIAS:
+   ─────────────────────────────────────────────────────────────────────────────────
+
+   1. TEXTOS SOBRE FONDOS CLAROS (bg-white, bg-neutral-50, bg-neutral-100):
+      ✓ text-neutral-900      (Títulos principales)
+      ✓ text-neutral-600      (Texto secundario, subtítulos)
+      ✓ text-primary-500      (Enlaces, CTAs)
+      ✓ text-primary-400      (Hover de enlaces)
+      ⚠️ text-neutral-400     (Solo para placeholders/labels, NO para cuerpo de texto)
+      ❌ text-primary-100     (NUNCA - sin contraste)
+      ❌ text-primary-200     (NUNCA - sin contraste)
+      ❌ text-secondary-*     (EVITAR - bajo contraste sobre blanco)
+
+   2. TEXTOS SOBRE FONDOS OSCUROS (bg-primary-500, bg-primary-400):
+      ✓ text-white           (Máximo contraste)
+      ✓ text-neutral-50      (Alternativa blanco roto)
+      ⚠️ text-primary-100    (Solo para texto secundario)
+
+   3. BADGES Y PILLS:
+      ✓ bg-secondary-100 + text-secondary-500  (Badge success - OK)
+      ✓ bg-primary-100 + text-primary-500      (Badge primary - OK)
+      ✓ bg-neutral-100 + text-neutral-900      (Badge neutral - OK)
+      ✓ bg-neutral-200 + text-neutral-700      (Badge inactive - OK)
+
+   4. BOTONES:
+      ✓ bg-primary-500 + text-white + hover:bg-primary-400   (Botón primario)
+      ✓ bg-secondary-500 + text-white + hover:bg-secondary-400 (Botón success)
+      ✓ border-primary-500 + text-primary-500 + hover:bg-primary-100 (Botón outline)
+
+   5. BORDES E ÍCONOS:
+      ✓ border-primary-300   (Bordes activos)
+      ✓ border-secondary-300 (Bordes success)
+      ✓ border-neutral-400   (Bordes neutrales)
+      ✓ text-primary-500     (Íconos primary)
+      ✓ text-secondary-500   (Íconos success)
+
+   ═══════════════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+    body {
+        @apply bg-neutral-50 text-neutral-900 antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-semibold text-neutral-900;
+    }
+}
+
+/* Componentes Reutilizables - Solo Paleta Permitida */
+@layer components {
+
+    /* Sistema de Cards */
+    .card {
+        @apply bg-white rounded-lg shadow-soft border border-neutral-100;
+    }
+
+    .card-hover {
+        @apply transition-all duration-200 hover: shadow-lg hover:border-primary-200;
+    }
+
+    /* Sistema de Botones */
+    .btn {
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    }
+
+    .btn-primary {
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary-500 text-white hover:bg-primary-400 focus:ring-primary-500;
+    }
+
+    .btn-secondary {
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-secondary-500 text-white hover:bg-secondary-400 focus:ring-secondary-500;
+    }
+
+    .btn-outline {
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-transparent border-2 border-neutral-400 text-neutral-600 hover:bg-neutral-100 focus:ring-neutral-400;
+    }
+
+    /* Sistema de Badges */
+    .badge {
+        @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium;
+    }
+
+    .badge-success {
+        @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-secondary-100 text-secondary-500 border border-secondary-300;
+    }
+
+    .badge-warning {
+        @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-neutral-600 border border-neutral-400;
+    }
+
+    .badge-neutral {
+        @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-neutral-600 border border-neutral-400;
+    }
+
+    /* Sistema de Inputs */
+    .input {
+        @apply w-full px-3 py-2 border border-neutral-100 rounded-lg bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
+    }
+
+    /* Tarjetas de Estadísticas */
+    .stat-card {
+        @apply bg-white rounded-lg shadow-soft border border-neutral-100 p-6 hover: shadow-lg transition-all duration-200;
+    }
+
+    .stat-label {
+        @apply text-sm font-medium text-neutral-600 mb-1;
+    }
+
+    .stat-value {
+        @apply text-3xl font-bold text-neutral-900;
+    }
+
+    /* Sistema de Tablas */
+    .table-container {
+        @apply overflow-x-auto bg-white rounded-lg border border-neutral-100;
+    }
+
+    .table {
+        @apply w-full text-sm text-left text-neutral-600;
+    }
+
+    .table-header {
+        @apply text-xs text-neutral-600 uppercase bg-neutral-50 border-b border-neutral-100;
+    }
+
+    .table-row {
+        @apply border-b border-neutral-100 hover: bg-neutral-50 transition-colors;
+    }
+}
+
+/* Utilidades Personalizadas */
+@layer utilities {
+    .text-gradient {
+        @apply bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent;
+    }
+
+    .glass-effect {
+        @apply bg-white/50 backdrop-blur-sm border border-neutral-100;
+    }
 }
