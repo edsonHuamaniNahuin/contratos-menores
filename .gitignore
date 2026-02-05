@@ -22,3 +22,17 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Analizador TDR (Python microservice)
+/analizador-tdr/.env
+/analizador-tdr/.venv
+/analizador-tdr/venv/
+/analizador-tdr/env/
+/analizador-tdr/__pycache__/
+/analizador-tdr/.mypy_cache/
+/analizador-tdr/.pytest_cache/
+/analizador-tdr/.ruff_cache/
+/analizador-tdr/.coverage
+/analizador-tdr/htmlcov/
+/analizador-tdr/dist/
+/analizador-tdr/build/
