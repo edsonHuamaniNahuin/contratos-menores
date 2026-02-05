@@ -3,11 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Models\CuentaSeace;
-use App\Services\SeaceScraperService;
-use App\Services\AnalizadorTDRService;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
 use App\Services\TdrAnalysisFormatter;
+use App\Services\TdrAnalysisService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -180,10 +179,17 @@ class TelegramBotListener extends Command
                 return;
             }
 
+            $tdrService = new TdrAnalysisService();
+
+            if ($cached = $tdrService->obtenerAnalisisDesdeCache($idContratoArchivo, 'telegram')) {
+                $this->info("✅ Análisis recuperado desde caché para archivo {$idContratoArchivo}");
+                $this->enviarResultadoAnalisisTelegram($chatId, $cached, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+                return;
+            }
+
             $this->info("🤖 Analizando {$nombreArchivo} (ID: {$idContratoArchivo}) con IA...");
 
             // 3. Usar servicio compartido para análisis completo (DIRECTO - sin listar archivos)
-            $tdrService = new \App\Services\TdrAnalysisService();
             $resultado = $tdrService->analizarDesdeSeace(
                 $idContratoArchivo,
                 $nombreArchivo,
@@ -194,26 +200,7 @@ class TelegramBotListener extends Command
 
             // 4. Enviar resultado al usuario con botones
             if ($resultado['success']) {
-                // Extraer datos del análisis
-                $analisisData = $resultado['data']['analisis'] ?? [];
-                $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
-                $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
-                $mensaje = $resultado['formatted']['telegram']
-                    ?? $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato);
-
-                // Crear teclado con botón de descarga
-                $keyboard = [
-                    'inline_keyboard' => [
-                        [
-                            [
-                                'text' => '📥 Descargar TDR',
-                                'callback_data' => "descargar_{$idContrato}_{$idContratoArchivo}_{$nombreArchivo}"
-                            ]
-                        ]
-                    ]
-                ];
-
-                $this->enviarMensajeConBotones($chatId, $mensaje, $keyboard, $token);
+                $this->enviarResultadoAnalisisTelegram($chatId, $resultado, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
                 $this->info("✅ Análisis enviado a usuario {$chatId}");
             } else {
                 // Error del análisis
@@ -224,12 +211,13 @@ class TelegramBotListener extends Command
                     strpos($errorMsg, 'intenta') !== false ||
                     strpos($errorMsg, 'saturado') !== false) {
 
+                    $retryCallback = $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
                     $keyboard = [
                         'inline_keyboard' => [
                             [
                                 [
                                     'text' => '🔄 Reintentar Análisis',
-                                    'callback_data' => "analizar_{$idContrato}_{$idContratoArchivo}_{$nombreArchivo}"
+                                    'callback_data' => $retryCallback,
                                 ]
                             ]
                         ]
@@ -255,12 +243,13 @@ class TelegramBotListener extends Command
                             || strpos($errorMsg, 'saturado') !== false;
 
             if ($esErrorTemporal) {
+                $retryCallback = $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
                 $keyboard = [
                     'inline_keyboard' => [
                         [
                             [
                                 'text' => '🔄 Reintentar Análisis',
-                                'callback_data' => "analizar_{$idContrato}_{$idContratoArchivo}_{$nombreArchivo}"
+                                'callback_data' => $retryCallback,
                             ]
                         ]
                     ]
@@ -277,17 +266,29 @@ class TelegramBotListener extends Command
     protected function enviarMensajeConBotones(string $chatId, string $mensaje, array $keyboard, string $token): void
     {
         try {
-            Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            $response = Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
                 'chat_id' => $chatId,
                 'text' => $mensaje,
                 'parse_mode' => 'HTML',
                 'reply_markup' => json_encode($keyboard),
             ]);
+
+            $success = $response->successful() && ($response->json()['ok'] ?? false);
+
+            if (!$success) {
+                $error = $response->json()['description'] ?? ($response->body() ?: 'Error desconocido');
+                Log::error('Telegram: Error al enviar respuesta con botones', [
+                    'chat_id' => $chatId,
+                    'error' => $error,
+                ]);
+                $this->enviarMensaje($chatId, "❌ Telegram rechazó el mensaje: {$error}", $token);
+            }
         } catch (\Exception $e) {
             Log::error('Error al enviar mensaje con botones', [
                 'chat_id' => $chatId,
                 'error' => $e->getMessage()
             ]);
+            $this->enviarMensaje($chatId, '❌ Error al enviar la respuesta. Intenta nuevamente.', $token);
         }
     }
 
@@ -300,6 +301,36 @@ class TelegramBotListener extends Command
             'text' => $texto,
             'parse_mode' => 'HTML',
         ]);
+    }
+
+    protected function enviarResultadoAnalisisTelegram(
+        string $chatId,
+        array $resultado,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        string $token
+    ): void {
+        $analisisData = $resultado['data']['analisis'] ?? [];
+        $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
+        $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
+
+        $mensaje = $resultado['formatted']['telegram']
+            ?? $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato);
+
+        $downloadCallback = $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo);
+        $keyboard = [
+            'inline_keyboard' => [
+                [
+                    [
+                        'text' => '📥 Descargar TDR',
+                        'callback_data' => $downloadCallback,
+                    ]
+                ]
+            ]
+        ];
+
+        $this->enviarMensajeConBotones($chatId, $mensaje, $keyboard, $token);
     }
     /**
      * Descargar archivo TDR y enviarlo al usuario por Telegram
@@ -369,5 +400,23 @@ class TelegramBotListener extends Command
 
             $this->enviarMensaje($chatId, '❌ Error: ' . $e->getMessage(), $token);
         }
+    }
+
+    protected function buildCallbackData(string $action, int $idContrato, int $idArchivo, string $nombreArchivo): string
+    {
+        $nombre = $this->sanitizeCallbackFilename($nombreArchivo);
+        return sprintf('%s_%d_%d_%s', $action, $idContrato, $idArchivo, $nombre);
+    }
+
+    protected function sanitizeCallbackFilename(string $nombre): string
+    {
+        $sanitized = str_replace([' ', '/', '\\'], '_', $nombre);
+        $sanitized = preg_replace('/[^A-Za-z0-9_\-.]/', '', $sanitized) ?? '';
+
+        if ($sanitized === '') {
+            $sanitized = 'archivo.pdf';
+        }
+
+        return substr($sanitized, 0, 30);
     }
 }

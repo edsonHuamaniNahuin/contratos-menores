@@ -51,28 +51,24 @@ class TelegramNotificationService
         // Construir mensaje
         $mensaje = $this->construirMensaje($contratoData);
 
-        // Crear botón inline para análisis IA
-        // Formato: analizar_{idContrato}_{idContratoArchivo}_{nombreArchivo}
+        // Crear botones inline (limitar callback_data < 64 bytes)
         $idContrato = $contratoData['idContrato'] ?? 0;
         $idContratoArchivo = $contratoData['idContratoArchivo'] ?? 0;
         $nombreArchivo = $contratoData['nombreArchivo'] ?? 'archivo.pdf';
-
-        // Codificar nombre de archivo para URL (eliminar espacios, caracteres especiales)
-        $nombreArchivoSafe = str_replace([' ', '/', '\\'], ['_', '_', '_'], $nombreArchivo);
 
         $keyboard = [
             'inline_keyboard' => [
                 [
                     [
                         'text' => '🤖 Analizar con IA',
-                        'callback_data' => "analizar_{$idContrato}_{$idContratoArchivo}_{$nombreArchivoSafe}"
+                        'callback_data' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
                     ],
                     [
                         'text' => '📥 Descargar TDR',
-                        'callback_data' => "descargar_{$idContrato}_{$idContratoArchivo}_{$nombreArchivoSafe}"
-                    ]
-                ]
-            ]
+                        'callback_data' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                ],
+            ],
         ];
 
         // Enviar a cada suscriptor
@@ -231,18 +227,19 @@ class TelegramNotificationService
                     'reply_markup' => json_encode($keyboard),
                 ]);
 
-            if ($response->successful() && ($response->json()['ok'] ?? false)) {
-                return [
-                    'success' => true,
-                    'message' => 'Mensaje con botones enviado exitosamente',
-                ];
+            $success = $response->successful() && ($response->json()['ok'] ?? false);
+            $error = $response->json()['description'] ?? ($response->body() ?: 'Error desconocido');
+
+            if (!$success) {
+                Log::error('Telegram: Error al enviar mensaje con botones', [
+                    'chat_id' => $chatId,
+                    'error' => $error,
+                ]);
             }
 
-            $error = $response->json()['description'] ?? 'Error desconocido';
-
             return [
-                'success' => false,
-                'message' => $error,
+                'success' => $success,
+                'message' => $success ? 'Mensaje con botones enviado exitosamente' : $error,
             ];
 
         } catch (Exception $e) {
@@ -251,6 +248,24 @@ class TelegramNotificationService
                 'message' => 'Error de conexión: ' . $e->getMessage(),
             ];
         }
+    }
+
+    protected function buildCallbackData(string $action, int $idContrato, int $idContratoArchivo, string $nombreArchivo): string
+    {
+        $nombre = $this->sanitizeCallbackFilename($nombreArchivo);
+        return sprintf('%s_%d_%d_%s', $action, $idContrato, $idContratoArchivo, $nombre);
+    }
+
+    protected function sanitizeCallbackFilename(string $nombre): string
+    {
+        $sanitized = str_replace([' ', '/', '\\'], '_', $nombre);
+        $sanitized = preg_replace('/[^A-Za-z0-9_\-.]/', '', $sanitized) ?? '';
+
+        if ($sanitized === '') {
+            $sanitized = 'archivo.pdf';
+        }
+
+        return substr($sanitized, 0, 30);
     }
 
     /**

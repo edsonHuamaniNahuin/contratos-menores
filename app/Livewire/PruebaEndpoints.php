@@ -6,6 +6,7 @@ use App\Models\CuentaSeace;
 use App\Services\TelegramNotificationService;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
+use App\Services\Contratos\ContratoRepositoryService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
@@ -399,114 +400,41 @@ class PruebaEndpoints extends Component
                 ];
                 return;
             }
+            $contratosService = new ContratoRepositoryService();
+            $resultado = $contratosService->buscar($this->parametrosBuscador, $cuenta);
 
-            // Parámetros según documentación oficial
-            $params = [
-                'anio' => now()->year,
-                'ruc' => $cuenta->username,
-                'cotizaciones_enviadas' => false,
-                'invitaciones_por_cotizar' => false,
-                'orden' => 2, // Descendente
-                'page' => $this->parametrosBuscador['pagina'] ?? 1,
-                'page_size' => $this->parametrosBuscador['registros'] ?? 10,
+            $data = $resultado['data'] ?? [];
+            $pageable = $resultado['pageable'] ?? [
+                'pageNumber' => $this->parametrosBuscador['pagina'] ?? 1,
+                'pageSize' => $this->parametrosBuscador['registros'] ?? 0,
+                'totalElements' => count($data),
             ];
 
-            // Agregar palabra clave si existe
-            if (!empty($this->parametrosBuscador['texto'])) {
-                $params['palabra_clave'] = $this->parametrosBuscador['texto'];
-            }
+            $mensaje = $resultado['source'] === 'database'
+                ? 'Contratos obtenidos desde la caché local'
+                : 'Búsqueda ejecutada contra SEACE';
 
-            // Agregar filtro de estado si está seleccionado (usar IDs no nombres)
-            if (!empty($this->parametrosBuscador['estado'])) {
-                $params['lista_estado_contrato'] = (int)$this->parametrosBuscador['estado'];
-            }
+            $this->resultadoBuscador = [
+                'success' => true,
+                'message' => $mensaje,
+                'data' => [
+                    'totalElements' => $pageable['totalElements'] ?? 0,
+                    'pageNumber' => $pageable['pageNumber'] ?? 1,
+                    'pageSize' => $pageable['pageSize'] ?? 0,
+                    'registros_devueltos' => count($data),
+                    'primer_registro' => $data[0] ?? null,
+                    'origen' => $resultado['source'] ?? 'remote',
+                ],
+                'raw' => $resultado,
+            ];
 
-            // ✅ NUEVO: Agregar código de entidad si existe
-            if (!empty($this->parametrosBuscador['codigo_entidad'])) {
-                $params['codigo_entidad'] = (int)$this->parametrosBuscador['codigo_entidad'];
-            }
+            // Resetear selección y resultados dependientes para evitar datos desfasados
+            $this->contratoSeleccionadoArchivos = null;
+            $this->contratoSeleccionadoData = null;
+            $this->resultadoArchivos = null;
+            $this->resultadoAnalisis = null;
 
-            // ✅ FILTROS GEOGRÁFICOS
-            if (!empty($this->parametrosBuscador['departamento'])) {
-                $params['codigo_departamento'] = (int)$this->parametrosBuscador['departamento'];
-            }
-            if (!empty($this->parametrosBuscador['provincia'])) {
-                $params['codigo_provincia'] = (int)$this->parametrosBuscador['provincia'];
-            }
-            if (!empty($this->parametrosBuscador['distrito'])) {
-                $params['codigo_distrito'] = (int)$this->parametrosBuscador['distrito'];
-            }
-
-            Log::info('🔹 INICIO BUSCADOR', [
-                'url' => "{$this->baseUrl}/contratacion/contrataciones/buscador",
-                'params' => $params,
-                'headers' => $this->getHeaders("{$this->refererBase}/busqueda"),
-            ]);
-
-            $response = Http::timeout(30)
-                ->withToken($cuenta->access_token)
-                ->withHeaders($this->getHeaders("{$this->refererBase}/busqueda"))
-                ->get("{$this->baseUrl}/contratacion/contrataciones/buscador", $params);
-
-            Log::info('🔹 RESPUESTA BUSCADOR RECIBIDA', [
-                'status' => $response->status(),
-                'body_preview' => substr($response->body(), 0, 500),
-            ]);
-
-            $data = $response->json();
-
-            Log::info('🔹 BUSCADOR JSON PARSEADO', [
-                'status' => $response->status(),
-                'data_keys' => array_keys($data ?? []),
-                'total_elements' => $data['pageable']['totalElements'] ?? 0,
-                'success' => $response->successful(),
-            ]);
-
-            if ($response->successful()) {
-                $cuenta->registrarConsulta();
-
-                $this->resultadoBuscador = [
-                    'success' => true,
-                    'message' => 'Búsqueda exitosa',
-                    'data' => [
-                        'totalElements' => $data['pageable']['totalElements'] ?? 0,
-                        'pageNumber' => $data['pageable']['pageNumber'] ?? 1,
-                        'pageSize' => $data['pageable']['pageSize'] ?? 0,
-                        'registros_devueltos' => count($data['data'] ?? []),
-                        'primer_registro' => $data['data'][0] ?? null,
-                    ],
-                    'raw' => $data,
-                ];
-
-                $this->cargarCuentas();
-            } else {
-                // Mensaje de error descriptivo
-                $errorMsg = $data['mensaje'] ?? $data['message'] ?? 'Error en la búsqueda';
-
-                // Agregar contexto según el código de error
-                if ($response->status() === 401) {
-                    if ($data['errorCode'] === 'TOKEN_EXPIRED') {
-                        $errorMsg = '⏰ Token expirado. Por favor, realiza login nuevamente.';
-                    } else {
-                        $errorMsg = '🔐 No autorizado. ' . $errorMsg;
-                    }
-                } elseif ($response->status() === 403) {
-                    $errorMsg = '🚫 Acceso denegado. ' . $errorMsg;
-                } elseif ($response->status() >= 500) {
-                    $errorMsg = '🔧 Error del servidor SEACE. ' . $errorMsg;
-                }
-
-                $this->resultadoBuscador = [
-                    'success' => false,
-                    'error' => $errorMsg,
-                    'status' => $response->status(),
-                    'raw' => $data,
-                    'debug' => [
-                        'errorCode' => $data['errorCode'] ?? null,
-                        'backendMessage' => $data['backendMessage'] ?? null,
-                    ],
-                ];
-            }
+            $this->cargarCuentas();
         } catch (\Exception $e) {
             Log::error('Error en probarBuscador', [
                 'error' => $e->getMessage(),

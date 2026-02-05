@@ -72,13 +72,16 @@ class TdrPersistenceService
 
         $disk->put($path, $binary);
 
+        $detectedMime = $mimeType ?: $this->detectMimeFromBinary($binary);
+        $sizeInBytes = strlen($binary);
+
         $archivo->fill([
             'storage_disk' => $this->disk,
             'storage_path' => $path,
             'nombre_sistema' => $filename,
             'extension' => $archivo->extension ?? pathinfo($filename, PATHINFO_EXTENSION),
-            'mime_type' => $mimeType,
-            'tamano_bytes' => strlen($binary),
+            'mime_type' => $detectedMime,
+            'tamano_bytes' => $sizeInBytes,
             'sha256' => hash('sha256', $binary),
             'descargado_en' => Carbon::now(),
             'verificado_en' => Carbon::now(),
@@ -94,6 +97,27 @@ class TdrPersistenceService
         }
 
         return Storage::disk($archivo->storage_disk)->path($archivo->storage_path);
+    }
+
+    public function purgeStoredFile(ContratoArchivo $archivo): void
+    {
+        if ($archivo->storage_path) {
+            $disk = Storage::disk($archivo->storage_disk);
+
+            if ($disk->exists($archivo->storage_path)) {
+                $disk->delete($archivo->storage_path);
+            }
+        }
+
+        $archivo->fill([
+            'storage_path' => null,
+            'nombre_sistema' => null,
+            'mime_type' => null,
+            'tamano_bytes' => null,
+            'sha256' => null,
+            'descargado_en' => null,
+            'verificado_en' => null,
+        ])->save();
     }
 
     public function getCachedAnalysis(ContratoArchivo $archivo, bool $forceRefresh = false): ?TdrAnalisis
@@ -256,5 +280,19 @@ class TdrPersistenceService
         }
 
         return null;
+    }
+
+    protected function detectMimeFromBinary(string $binary): ?string
+    {
+        $resource = finfo_open(FILEINFO_MIME_TYPE);
+
+        if (!$resource) {
+            return null;
+        }
+
+        $mime = finfo_buffer($resource, $binary) ?: null;
+        finfo_close($resource);
+
+        return $mime;
     }
 }

@@ -423,6 +423,7 @@
                     <p class="text-sm text-neutral-600">⚠️ Primero debes buscar contratos para poder listar sus archivos</p>
                 </div>
             @else
+                <p class="text-xs text-neutral-500 mb-3">Haz clic en un proceso para traer sus archivos TDR y habilitar las acciones.</p>
                 <div class="mb-4">
                     <label class="block text-xs font-medium text-neutral-600 mb-2">Contrato seleccionado:</label>
                     <div class="space-y-2 max-h-60 overflow-y-auto">
@@ -449,22 +450,15 @@
                     </div>
                 </div>
 
-                <button
-                    wire:click="probarListarArchivos"
-                    wire:loading.attr="disabled"
-                    wire:target="probarListarArchivos"
-                    class="w-full px-5 py-3 bg-primary-500 text-white rounded-full hover:bg-primary-400 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors shadow-sm"
-                >
-                    <svg wire:loading.remove wire:target="probarListarArchivos" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <svg wire:loading wire:target="probarListarArchivos" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span wire:loading.remove wire:target="probarListarArchivos">Listar Archivos</span>
-                    <span wire:loading wire:target="probarListarArchivos">Listando...</span>
-                </button>
+                @if($loadingArchivos)
+                    <div class="flex items-center gap-2 text-xs text-neutral-600 bg-neutral-50 border border-neutral-100 rounded-2xl px-3 py-2">
+                        <svg class="w-4 h-4 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 004 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Cargando archivos del proceso seleccionado...</span>
+                    </div>
+                @endif
             @endif
 
             <!-- Mensaje de descarga exitosa -->
@@ -738,7 +732,7 @@
                                                 </svg>
                                                 <svg wire:loading wire:target="enviarAlBot" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 004 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                 </svg>
                                                 <span wire:loading.remove wire:target="enviarAlBot">📤 Enviar al Bot</span>
                                                 <span wire:loading wire:target="enviarAlBot">Enviando...</span>
@@ -756,7 +750,7 @@
                                                 </svg>
                                                 <svg wire:loading wire:target="descargarArchivo" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 004 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                 </svg>
                                                 <span wire:loading.remove wire:target="descargarArchivo">Descargar</span>
                                                 <span wire:loading wire:target="descargarArchivo">Descargando...</span>
@@ -774,7 +768,7 @@
                                                 </svg>
                                                 <svg wire:loading wire:target="analizarArchivo" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 004 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                 </svg>
                                                 <span wire:loading.remove wire:target="analizarArchivo">🤖 Analizar IA</span>
                                                 <span wire:loading wire:target="analizarArchivo">Analizando...</span>

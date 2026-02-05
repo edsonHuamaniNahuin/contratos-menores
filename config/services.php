@@ -40,6 +40,7 @@ return [
         'password' => env('SEACE_PASSWORD'),
         'token_cache_duration' => env('SEACE_TOKEN_CACHE_DURATION', 3600),
         'page_size' => env('SEACE_PAGE_SIZE', 100),
+        'process_cache_minutes' => env('SEACE_PROCESS_CACHE_MINUTES', 240),
         'min_delay_minutes' => env('SEACE_MIN_DELAY_MINUTES', 42),
         'max_delay_minutes' => env('SEACE_MAX_DELAY_MINUTES', 50),
 

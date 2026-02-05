@@ -7,6 +7,7 @@ use App\Models\CuentaSeace;
 use App\Services\SeaceScraperService;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class TdrDocumentService
 {
@@ -17,12 +18,21 @@ class TdrDocumentService
     public function ensureLocalFile(ContratoArchivo $archivo, CuentaSeace $cuenta, string $nombreArchivo): string
     {
         if ($localPath = $this->persistence->getAbsolutePath($archivo)) {
-            Log::info('TDR: Usando archivo persistido', [
+            if (is_file($localPath) && @filesize($localPath) > 0) {
+                Log::info('TDR: Usando archivo persistido', [
+                    'contrato_archivo_id' => $archivo->id,
+                    'path' => $localPath,
+                ]);
+
+                return $localPath;
+            }
+
+            Log::warning('TDR: Archivo persistido inválido, se eliminará', [
                 'contrato_archivo_id' => $archivo->id,
                 'path' => $localPath,
             ]);
 
-            return $localPath;
+            $this->persistence->purgeStoredFile($archivo);
         }
 
         Log::info('TDR: Descargando archivo desde SEACE', [
@@ -83,11 +93,24 @@ class TdrDocumentService
             throw new Exception("⚠️ SEACE: {$errorMsg}");
         }
 
+        $binary = $response->body();
+        $detectedMime = $this->resolvePdfMime($binary, $contentType) ?? 'application/octet-stream';
+
+        if ($detectedMime !== 'application/pdf') {
+            Log::warning('TDR: Descarga sin cabecera PDF, continuando por compatibilidad', [
+                'contrato_archivo_id' => $archivo->id,
+                'content_type' => $contentType,
+                'detected_mime' => $detectedMime,
+            ]);
+        }
+
+        $safeName = $this->sanitizePdfFilename($nombreArchivo);
+
         $localPath = $this->persistence->storeBinary(
             $archivo,
-            $response->body(),
-            $contentType,
-            $nombreArchivo
+            $binary,
+            $detectedMime,
+            $safeName
         );
 
         Log::info('TDR: Archivo guardado en storage', [
@@ -96,5 +119,73 @@ class TdrDocumentService
         ]);
 
         return $localPath;
+    }
+
+    protected function fileLooksPdf(string $path): bool
+    {
+        if (!is_file($path)) {
+            return false;
+        }
+
+        $resource = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $resource ? finfo_file($resource, $path) : null;
+
+        if ($resource) {
+            finfo_close($resource);
+        }
+
+        if ($mime === 'application/pdf') {
+            return true;
+        }
+
+        $handle = fopen($path, 'rb');
+
+        if (!$handle) {
+            return false;
+        }
+
+        $bytes = fread($handle, 8) ?: '';
+        fclose($handle);
+
+        return $this->binaryLooksPdf($bytes);
+    }
+
+    protected function resolvePdfMime(string $binary, ?string $contentType = null): ?string
+    {
+        if ($contentType && stripos($contentType, 'application/pdf') !== false) {
+            return 'application/pdf';
+        }
+
+        $resource = finfo_open(FILEINFO_MIME_TYPE);
+        $detected = $resource ? finfo_buffer($resource, $binary) : null;
+
+        if ($resource) {
+            finfo_close($resource);
+        }
+
+        if ($detected === 'application/pdf') {
+            return $detected;
+        }
+
+        return $this->binaryLooksPdf($binary) ? 'application/pdf' : null;
+    }
+
+    protected function sanitizePdfFilename(string $nombreOriginal): string
+    {
+        $baseName = pathinfo($nombreOriginal, PATHINFO_FILENAME);
+        $slug = Str::slug($baseName) ?: 'tdr';
+
+        return $slug . '.pdf';
+    }
+
+    protected function binaryLooksPdf(string $binary): bool
+    {
+        if (strlen($binary) < 4) {
+            return false;
+        }
+
+        $signature = substr($binary, 0, 4);
+
+        return $signature === '%PDF';
     }
 }

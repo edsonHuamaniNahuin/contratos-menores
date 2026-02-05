@@ -121,6 +121,28 @@ class TdrAnalysisService
         }
     }
 
+    /**
+     * Intentar obtener un análisis previamente cacheado sin invocar al LLM.
+     */
+    public function obtenerAnalisisDesdeCache(int $idContratoArchivo, string $target = 'dashboard'): ?array
+    {
+        $archivoPersistido = ContratoArchivo::where('id_archivo_seace', $idContratoArchivo)->first();
+
+        if (!$archivoPersistido) {
+            return null;
+        }
+
+        $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido);
+
+        if (!$cachedAnalisis) {
+            return null;
+        }
+
+        $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
+
+        return $this->buildResponseFromPayload($payload, $target);
+    }
+
     protected function buildResponseFromPayload(array $payload, string $target): array
     {
         $response = [
