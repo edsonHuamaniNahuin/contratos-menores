@@ -102,6 +102,10 @@ colors: {
   * ✅ Extracción automática: Requisitos, Reglas de Ejecución, Penalidades, Monto
   * ✅ Prompt especializado en licitaciones peruanas
 
+### ♻️ Ajustes recientes (feb-2026)
+- `PruebaEndpoints` (Livewire) ahora arma cada URL mediante `buildSeaceUrl()` y rehidrata la config SEACE dentro de `bootstrapSeaceConfig()`/`hydrate()`, evitando que las acciones fallen cuando Livewire pierde `SEACE_BASE_URL` o `SEACE_FRONTEND_ORIGIN`.
+- El bot de Telegram depende explícitamente de `TELEGRAM_API_BASE` en `.env`; si falta, el servicio se desactiva y deja una advertencia en logs para que no haya envíos silenciosos.
+
 ### 📝 Pendiente
 - Dashboard contratos (tabla Livewire)
 - Filtros avanzados (Livewire)

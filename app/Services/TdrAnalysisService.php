@@ -20,6 +20,7 @@ class TdrAnalysisService
     protected TdrAnalysisFormatter $formatter;
     protected TdrPersistenceService $persistence;
     protected TdrDocumentService $documentService;
+    protected bool $debugLogging;
 
     public function __construct(?TdrAnalysisFormatter $formatter = null)
     {
@@ -27,6 +28,7 @@ class TdrAnalysisService
         $this->formatter = $formatter ?? new TdrAnalysisFormatter();
         $this->persistence = new TdrPersistenceService();
         $this->documentService = new TdrDocumentService($this->persistence);
+        $this->debugLogging = (bool) config('tdr.debug_logs', config('services.analizador_tdr.debug_logs', false));
     }
 
     /**
@@ -48,7 +50,7 @@ class TdrAnalysisService
         bool $forceRefresh = false
     ): array {
         try {
-            Log::info('TDR: ========== INICIO ANÁLISIS TDR ==========', [
+            $this->debug('Inicio análisis TDR', [
                 'idContratoArchivo' => $idContratoArchivo,
                 'nombreArchivo' => $nombreArchivo,
                 'cuenta_id' => $cuenta->id,
@@ -71,7 +73,7 @@ class TdrAnalysisService
             );
 
             if ($cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh)) {
-                Log::info('TDR: Usando análisis en caché', [
+                $this->debug('Usando análisis en caché', [
                     'contrato_archivo_id' => $archivoPersistido->id,
                     'analisis_id' => $cachedAnalisis->id,
                 ]);
@@ -224,6 +226,15 @@ class TdrAnalysisService
         }
 
         return true;
+    }
+
+    protected function debug(string $message, array $context = []): void
+    {
+        if (!$this->debugLogging) {
+            return;
+        }
+
+        Log::debug('TDR: ' . $message, $context);
     }
 }
 

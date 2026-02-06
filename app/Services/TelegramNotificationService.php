@@ -2,43 +2,44 @@
 
 namespace App\Services;
 
-use App\Models\TelegramSubscription;
 use App\Models\Contrato;
+use App\Models\TelegramSubscription;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class TelegramNotificationService
 {
     protected string $botToken;
+    protected string $apiBase;
     protected ?string $chatId;
     protected int $timeout;
     protected bool $enabled;
+    protected bool $debugLogging;
 
     public function __construct()
     {
-        $this->botToken = config('services.telegram.bot_token', '');
+        $this->botToken = trim((string) config('services.telegram.bot_token', ''));
+        $this->apiBase = rtrim((string) config('services.telegram.api_base', ''), '/');
         $this->chatId = config('services.telegram.chat_id');
         $this->timeout = 10;
-        $this->enabled = !empty($this->botToken);
+        $this->debugLogging = (bool) config('services.telegram.debug_logs', false);
+        $this->enabled = $this->botToken !== '' && $this->apiBase !== '';
+
+        if ($this->botToken !== '' && $this->apiBase === '') {
+            Log::warning('Telegram: TELEGRAM_API_BASE no configurado; deshabilitando bot hasta definirlo.');
+        }
     }
 
-    /**
-     * Enviar alerta a TODOS los suscriptores activos CON BOTÓN DE ANÁLISIS
-     *
-     * @param array $contratoData Datos del contrato/proceso SEACE
-     * @return array Estadísticas del envío ['total', 'exitosos', 'fallidos']
-     */
     public function enviarAlerta(array $contratoData): array
     {
         $estadisticas = [
             'total' => 0,
             'exitosos' => 0,
             'fallidos' => 0,
-            'detalles' => []
+            'detalles' => [],
         ];
 
-        // Obtener todos los suscriptores activos
         $suscripciones = TelegramSubscription::activas()->get();
 
         if ($suscripciones->isEmpty()) {
@@ -48,10 +49,7 @@ class TelegramNotificationService
 
         $estadisticas['total'] = $suscripciones->count();
 
-        // Construir mensaje
         $mensaje = $this->construirMensaje($contratoData);
-
-        // Crear botones inline (limitar callback_data < 64 bytes)
         $idContrato = $contratoData['idContrato'] ?? 0;
         $idContratoArchivo = $contratoData['idContratoArchivo'] ?? 0;
         $nombreArchivo = $contratoData['nombreArchivo'] ?? 'archivo.pdf';
@@ -71,14 +69,8 @@ class TelegramNotificationService
             ],
         ];
 
-        // Enviar a cada suscriptor
         foreach ($suscripciones as $suscripcion) {
-            // Verificar si el contrato coincide con los filtros del suscriptor
             if (!$suscripcion->coincideConFiltros($contratoData)) {
-                Log::info("Telegram: Suscriptor {$suscripcion->chat_id} filtrado", [
-                    'chat_id' => $suscripcion->chat_id,
-                    'nombre' => $suscripcion->nombre
-                ]);
                 continue;
             }
 
@@ -88,48 +80,37 @@ class TelegramNotificationService
                 if ($response['success']) {
                     $estadisticas['exitosos']++;
                     $suscripcion->registrarNotificacion();
-
-                    Log::info('Telegram: Mensaje enviado exitosamente', [
-                        'chat_id' => $suscripcion->chat_id,
-                        'nombre' => $suscripcion->nombre
-                    ]);
                 } else {
                     $estadisticas['fallidos']++;
                     $estadisticas['detalles'][] = [
                         'chat_id' => $suscripcion->chat_id,
-                        'error' => $response['message'] ?? 'Error desconocido'
+                        'error' => $response['message'] ?? 'Error desconocido',
                     ];
 
                     Log::error('Telegram: Error al enviar mensaje', [
                         'chat_id' => $suscripcion->chat_id,
-                        'error' => $response['message'] ?? 'Unknown error'
+                        'error' => $response['message'] ?? 'Unknown error',
                     ]);
                 }
             } catch (Exception $e) {
                 $estadisticas['fallidos']++;
                 $estadisticas['detalles'][] = [
                     'chat_id' => $suscripcion->chat_id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ];
 
                 Log::error('Telegram: Excepción al enviar mensaje', [
                     'chat_id' => $suscripcion->chat_id,
-                    'exception' => $e->getMessage()
+                    'exception' => $e->getMessage(),
                 ]);
             }
         }
 
-        Log::info('Telegram: Broadcast completado', $estadisticas);
+        $this->debug('Broadcast completado', $estadisticas);
 
         return $estadisticas;
     }
 
-    /**
-     * Construir mensaje HTML para Telegram
-     *
-     * @param array $contratoData Datos del contrato
-     * @return string Mensaje formateado en HTML
-     */
     protected function construirMensaje(array $contratoData): string
     {
         $mensaje = "🔔 <b>NUEVO PROCESO SEACE</b>\n\n";
@@ -137,12 +118,11 @@ class TelegramNotificationService
         $mensaje .= "📝 <b>Código:</b> " . ($contratoData['desContratacion'] ?? 'N/A') . "\n";
         $mensaje .= "🎯 <b>Objeto:</b> " . ($contratoData['nomObjetoContrato'] ?? 'N/A') . "\n";
 
-        // Truncar descripción si es muy larga
         $descripcion = $contratoData['desObjetoContrato'] ?? 'N/A';
         if (strlen($descripcion) > 200) {
             $descripcion = substr($descripcion, 0, 200) . '...';
         }
-        $mensaje .= "📋 <b>Descripción:</b> " . $descripcion . "\n\n";
+        $mensaje .= "📋 <b>Descripción:</b> {$descripcion}\n\n";
 
         $mensaje .= "📅 <b>Publicado:</b> " . ($contratoData['fecPublica'] ?? 'N/A') . "\n";
         $mensaje .= "⏰ <b>Inicio Cotización:</b> " . ($contratoData['fecIniCotizacion'] ?? 'N/A') . "\n";
@@ -153,13 +133,6 @@ class TelegramNotificationService
         return $mensaje;
     }
 
-    /**
-     * Enviar mensaje a un chat_id específico
-     *
-     * @param string $chatId ID del chat de Telegram
-     * @param string $mensaje Texto del mensaje
-     * @return array ['success' => bool, 'message' => string]
-     */
     public function enviarMensaje(string $chatId, string $mensaje): array
     {
         if (!$this->enabled) {
@@ -171,7 +144,7 @@ class TelegramNotificationService
 
         try {
             $response = Http::timeout($this->timeout)
-                ->post("https://api.telegram.org/bot{$this->botToken}/sendMessage", [
+                ->post($this->buildApiUrl('sendMessage'), [
                     'chat_id' => $chatId,
                     'text' => $mensaje,
                     'parse_mode' => 'HTML',
@@ -191,7 +164,6 @@ class TelegramNotificationService
                 'success' => false,
                 'message' => $error,
             ];
-
         } catch (Exception $e) {
             return [
                 'success' => false,
@@ -200,14 +172,6 @@ class TelegramNotificationService
         }
     }
 
-    /**
-     * Enviar mensaje con botones inline (callback buttons)
-     *
-     * @param string $chatId ID del chat de Telegram
-     * @param string $mensaje Texto del mensaje
-     * @param array $keyboard Keyboard markup con botones
-     * @return array ['success' => bool, 'message' => string]
-     */
     public function enviarMensajeConBotones(string $chatId, string $mensaje, array $keyboard): array
     {
         if (!$this->enabled) {
@@ -219,7 +183,7 @@ class TelegramNotificationService
 
         try {
             $response = Http::timeout($this->timeout)
-                ->post("https://api.telegram.org/bot{$this->botToken}/sendMessage", [
+                ->post($this->buildApiUrl('sendMessage'), [
                     'chat_id' => $chatId,
                     'text' => $mensaje,
                     'parse_mode' => 'HTML',
@@ -241,7 +205,6 @@ class TelegramNotificationService
                 'success' => $success,
                 'message' => $success ? 'Mensaje con botones enviado exitosamente' : $error,
             ];
-
         } catch (Exception $e) {
             return [
                 'success' => false,
@@ -268,13 +231,6 @@ class TelegramNotificationService
         return substr($sanitized, 0, 30);
     }
 
-    /**
-     * Enviar notificación de nuevo contrato (método legacy)
-     *
-     * @param Contrato $contrato Modelo del contrato
-     * @param array|null $archivo Datos del primer archivo TDR (si existe)
-     * @return bool
-     */
     public function notifyNewContract(Contrato $contrato, ?array $archivo = null): bool
     {
         $contratoData = [
@@ -288,7 +244,6 @@ class TelegramNotificationService
             'fecFinCotizacion' => $contrato->fin_cotizacion?->format('d/m/Y H:i:s'),
             'nomEstadoContrato' => $contrato->estado,
             'nomEtapaContratacion' => $contrato->etapa_contratacion,
-            // Datos del archivo TDR para el botón de análisis
             'idContratoArchivo' => $archivo['idContratoArchivo'] ?? 0,
             'nombreArchivo' => $archivo['nomArchivo'] ?? 'archivo.pdf',
         ];
@@ -298,9 +253,6 @@ class TelegramNotificationService
         return $resultado['exitosos'] > 0;
     }
 
-    /**
-     * Método legacy para compatibilidad
-     */
     public function sendMessage(string $message, ?string $chatId = null): array
     {
         $targetChatId = $chatId ?? $this->chatId;
@@ -315,9 +267,6 @@ class TelegramNotificationService
         return $this->enviarMensaje($targetChatId, $message);
     }
 
-    /**
-     * Enviar notificación de contratos próximos a vencer
-     */
     public function notifyExpiringContracts(array $contratos): bool
     {
         if (empty($contratos) || !$this->enabled) {
@@ -339,26 +288,20 @@ class TelegramNotificationService
 
             $message .= "🤖 <i>Vigilante SEACE</i>";
 
-            // Enviar a todos los suscriptores activos
-            $suscripciones = TelegramSubscription::activas()->get();
-
-            foreach ($suscripciones as $suscripcion) {
+            TelegramSubscription::activas()->each(function ($suscripcion) use ($message) {
                 $this->enviarMensaje($suscripcion->chat_id, $message);
-            }
+            });
 
             return true;
-
         } catch (Exception $e) {
             Log::error('Telegram: Error al enviar notificación de vencimientos', [
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
 
-    /**
-     * Formatear mensaje de contrato para Telegram (método legacy)
-     */
     protected function formatContratoMessage(Contrato $contrato): string
     {
         $emoji = $this->getEmojiByObjeto($contrato->objeto);
@@ -368,7 +311,6 @@ class TelegramNotificationService
         $message .= "🏢 <b>Entidad:</b> {$contrato->entidad}\n";
         $message .= "📦 <b>Objeto:</b> {$contrato->objeto}\n";
         $message .= "📝 <b>Descripción:</b>\n" . mb_substr($contrato->descripcion, 0, 200) . "...\n\n";
-
         $message .= "📅 <b>Publicación:</b> {$contrato->fecha_publicacion->format('d/m/Y H:i')}\n";
 
         if ($contrato->inicio_cotizacion) {
@@ -378,8 +320,8 @@ class TelegramNotificationService
         if ($contrato->fin_cotizacion) {
             $diasRestantes = $contrato->dias_restantes;
             $urgencia = $diasRestantes <= 2 ? '🔴' : ($diasRestantes <= 5 ? '🟡' : '🟢');
-            $message .= "{$urgencia} <b>Fin Cotización:</b> {$contrato->fin_cotizacion->format('d/m/Y H:i')} ";
-            $message .= "({$diasRestantes} días restantes)\n";
+            $message .= "{$urgencia} <b>Fin Cotización:</b> {$contrato->fin_cotizacion->format('d/m/Y H:i')} (";
+            $message .= "{$diasRestantes} días restantes)\n";
         }
 
         $message .= "\n🔗 <b>Estado:</b> {$contrato->estado}\n";
@@ -388,17 +330,28 @@ class TelegramNotificationService
         return $message;
     }
 
-    /**
-     * Obtener emoji según tipo de objeto
-     */
     protected function getEmojiByObjeto(string $objeto): string
     {
-        return match(strtolower($objeto)) {
+        return match (strtolower($objeto)) {
             'bien' => '📦',
             'servicio' => '🛠️',
             'obra' => '🏗️',
             'consultoría de obra' => '📐',
-            default => '📋',
+            default => '📄',
         };
+    }
+
+    protected function buildApiUrl(string $method): string
+    {
+        return sprintf('%s/bot%s/%s', $this->apiBase, $this->botToken, ltrim($method, '/'));
+    }
+
+    protected function debug(string $message, array $context = []): void
+    {
+        if (!$this->debugLogging) {
+            return;
+        }
+
+        Log::debug('Telegram: ' . $message, $context);
     }
 }

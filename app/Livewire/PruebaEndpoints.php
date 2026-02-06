@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 use Exception;
+use RuntimeException;
 
 class PruebaEndpoints extends Component
 {
@@ -74,15 +75,22 @@ class PruebaEndpoints extends Component
     public string $tipoMaestra = 'objetos';
 
     // URL de la API SEACE REAL
-    protected string $baseUrl = 'https://prod6.seace.gob.pe/v1/s8uit-services';
+    protected string $baseUrl = '';
 
     // URL base para Referer (evitar hardcodeo)
-    protected string $refererBase = 'https://prod6.seace.gob.pe/auth-proveedor';
+    protected string $refererBase = '';
+
+    // Origin usado en headers
+    protected string $origin = '';
+
+    protected bool $debugLogging = false;
 
     public function mount($cuentaId = null)
     {
         $this->cuentas = collect(); // Inicializar como colección vacía
         $this->cargarCuentas();
+
+        $this->bootstrapSeaceConfig();
 
         if ($cuentaId) {
             $this->cuentaSeleccionada = $cuentaId;
@@ -93,6 +101,11 @@ class PruebaEndpoints extends Component
 
         // Cargar departamentos al inicio
         $this->cargarDepartamentos();
+    }
+
+    public function hydrate(): void
+    {
+        $this->bootstrapSeaceConfig();
     }
 
     public function cargarCuentas()
@@ -152,8 +165,12 @@ class PruebaEndpoints extends Component
                 'password' => $passwordDescifrado,
             ];
 
-            Log::info('🔹 INICIO LOGIN', [
-                'url' => "{$this->baseUrl}/seguridadproveedor/seguridad/validausuariornp",
+            $loginUrl = $this->buildSeaceUrl(
+                config('services.seace.endpoints.login', '/seguridadproveedor/seguridad/validausuariornp')
+            );
+
+            $this->debug('🔹 INICIO LOGIN', [
+                'url' => $loginUrl,
                 'username' => $cuenta->username,
                 'password_length' => strlen($passwordDescifrado),
                 'password_preview' => substr($passwordDescifrado, 0, 3) . '***',
@@ -163,9 +180,9 @@ class PruebaEndpoints extends Component
 
             $response = Http::withHeaders($this->getHeaders("{$this->refererBase}/busqueda"))
                 ->timeout(30)
-                ->post("{$this->baseUrl}/seguridadproveedor/seguridad/validausuariornp", $payload);
+                ->post($loginUrl, $payload);
 
-            Log::info('🔹 RESPUESTA HTTP RECIBIDA', [
+            $this->debug('🔹 RESPUESTA HTTP RECIBIDA', [
                 'status' => $response->status(),
                 'headers' => $response->headers(),
                 'body_preview' => substr($response->body(), 0, 500),
@@ -173,7 +190,7 @@ class PruebaEndpoints extends Component
 
             $data = $response->json();
 
-            Log::info('🔹 JSON PARSEADO', [
+            $this->debug('🔹 JSON PARSEADO', [
                 'status' => $response->status(),
                 'data' => $data,
                 'success' => $response->successful(),
@@ -286,8 +303,12 @@ class PruebaEndpoints extends Component
                 'username' => $cuenta->username,
             ];
 
-            Log::info('🔹 INICIO REFRESH TOKEN', [
-                'url' => "{$this->baseUrl}/seguridadproveedor/seguridad/tokens/refresh",
+            $refreshUrl = $this->buildSeaceUrl(
+                config('services.seace.endpoints.refresh', '/seguridadproveedor/seguridad/tokens/refresh')
+            );
+
+            $this->debug('🔹 INICIO REFRESH TOKEN', [
+                'url' => $refreshUrl,
                 'refresh_token_length' => strlen($cuenta->refresh_token),
                 'refresh_token_preview' => substr($cuenta->refresh_token, 0, 30) . '...',
                 'username' => $cuenta->username,
@@ -297,16 +318,16 @@ class PruebaEndpoints extends Component
 
             $response = Http::withHeaders($this->getHeaders("{$this->refererBase}/cotizacion/contrataciones"))
                 ->timeout(30)
-                ->post("{$this->baseUrl}/seguridadproveedor/seguridad/tokens/refresh", $payload);
+                ->post($refreshUrl, $payload);
 
-            Log::info('🔹 RESPUESTA REFRESH RECIBIDA', [
+            $this->debug('🔹 RESPUESTA REFRESH RECIBIDA', [
                 'status' => $response->status(),
                 'body_preview' => substr($response->body(), 0, 500),
             ]);
 
             $data = $response->json();
 
-            Log::info('🔹 REFRESH JSON PARSEADO', [
+            $this->debug('🔹 REFRESH JSON PARSEADO', [
                 'status' => $response->status(),
                 'data' => $data,
                 'success' => $response->successful(),
@@ -496,17 +517,21 @@ class PruebaEndpoints extends Component
 
             $idContrato = $this->contratoSeleccionadoArchivos;
 
-            Log::info('SEACE: Listando archivos', [
+            $this->debug('SEACE: Listando archivos', [
                 'idContrato' => $idContrato,
                 'cuenta_id' => $cuenta->id,
             ]);
 
             $startTime = microtime(true);
 
+            $listarArchivosUrl = $this->buildSeaceUrl(
+                "/archivo/archivos/listar-archivos-contrato/{$idContrato}/1"
+            );
+
             $response = Http::withToken($cuenta->access_token)
                 ->withHeaders($this->getHeaders("{$this->refererBase}/cotizacion/contrataciones"))
                 ->timeout(10)
-                ->get("{$this->baseUrl}/archivo/archivos/listar-archivos-contrato/{$idContrato}/1");
+                ->get($listarArchivosUrl);
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -523,7 +548,7 @@ class PruebaEndpoints extends Component
                     'timestamp' => now()->format('Y-m-d H:i:s'),
                 ];
 
-                Log::info('SEACE: Archivos listados exitosamente', [
+                $this->debug('SEACE: Archivos listados exitosamente', [
                     'count' => count($archivos),
                     'duration_ms' => $duration,
                 ]);
@@ -722,10 +747,12 @@ class PruebaEndpoints extends Component
                 return;
             }
 
+            $maestraUrl = $this->buildSeaceUrl($endpoints[$this->tipoMaestra]);
+
             $response = Http::timeout(30)
                 ->withToken($cuenta->access_token)
                 ->withHeaders($this->getHeaders("{$this->refererBase}/busqueda"))
-                ->get($this->baseUrl . $endpoints[$this->tipoMaestra]);
+                ->get($maestraUrl);
 
             $data = $response->json();
 
@@ -796,10 +823,12 @@ class PruebaEndpoints extends Component
                 return;
             }
 
+            $entidadesUrl = $this->buildSeaceUrl('/servicio/servicios/obtener-entidades-cubso');
+
             $response = Http::withToken($cuenta->access_token)
                 ->withHeaders($this->getHeaders("{$this->refererBase}/cotizacion/contrataciones"))
                 ->timeout(10)
-                ->get("{$this->baseUrl}/servicio/servicios/obtener-entidades-cubso", [
+                ->get($entidadesUrl, [
                     'descEntidad' => $this->parametrosBuscador['entidad'],
                 ]);
 
@@ -914,10 +943,12 @@ class PruebaEndpoints extends Component
                 return;
             }
 
+            $departamentosUrl = $this->buildSeaceUrl('/maestra/maestras/listar-departamento');
+
             $response = Http::withToken($cuenta->access_token)
                 ->withHeaders($this->getHeaders("{$this->refererBase}/cotizacion/contrataciones"))
                 ->timeout(10)
-                ->get("{$this->baseUrl}/maestra/maestras/listar-departamento");
+                ->get($departamentosUrl);
 
             if ($response->successful()) {
                 $this->departamentos = $response->json();
@@ -956,10 +987,12 @@ class PruebaEndpoints extends Component
                 return;
             }
 
+            $provinciasUrl = $this->buildSeaceUrl("/maestra/maestras/listar-provincia/{$idDepartamento}");
+
             $response = Http::withToken($cuenta->access_token)
                 ->withHeaders($this->getHeaders("{$this->refererBase}/cotizacion/contrataciones"))
                 ->timeout(10)
-                ->get("{$this->baseUrl}/maestra/maestras/listar-provincia/{$idDepartamento}");
+                ->get($provinciasUrl);
 
             if ($response->successful()) {
                 $this->provincias = $response->json();
@@ -995,10 +1028,12 @@ class PruebaEndpoints extends Component
                 return;
             }
 
+            $distritosUrl = $this->buildSeaceUrl("/maestra/maestras/listar-distrito/{$idProvincia}");
+
             $response = Http::withToken($cuenta->access_token)
                 ->withHeaders($this->getHeaders("{$this->refererBase}/cotizacion/contrataciones"))
                 ->timeout(10)
-                ->get("{$this->baseUrl}/maestra/maestras/listar-distrito/{$idProvincia}");
+                ->get($distritosUrl);
 
             if ($response->successful()) {
                 $this->distritos = $response->json();
@@ -1023,7 +1058,7 @@ class PruebaEndpoints extends Component
             'Accept' => 'application/json',
             'Accept-Language' => 'es-US,es-419;q=0.9,es;q=0.8,en;q=0.7',
             'Content-Type' => 'application/json',
-            'Origin' => 'https://prod6.seace.gob.pe',
+            'Origin' => $this->origin,
             'Sec-Ch-Ua' => '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
             'Sec-Ch-Ua-Mobile' => '?0',
             'Sec-Ch-Ua-Platform' => '"Windows"',
@@ -1033,10 +1068,7 @@ class PruebaEndpoints extends Component
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36',
         ];
 
-        // Agregar Referer solo si se proporciona
-        if ($referer) {
-            $headers['Referer'] = $referer;
-        }
+        $headers['Referer'] = $referer ?: $this->refererBase;
 
         return $headers;
     }
@@ -1071,7 +1103,7 @@ class PruebaEndpoints extends Component
 
             session()->flash('telegram_exitoso', $mensaje);
 
-            Log::info('Proceso enviado a Telegram (Broadcast)', [
+            $this->debug('Proceso enviado a Telegram', [
                 'contrato' => $contratoData['desContratacion'] ?? 'N/A',
                 'entidad' => $contratoData['nomEntidad'] ?? 'N/A',
                 'estadisticas' => $estadisticas,
@@ -1089,5 +1121,53 @@ class PruebaEndpoints extends Component
     public function render()
     {
         return view('livewire.prueba-endpoints');
+    }
+
+    protected function bootstrapSeaceConfig(): void
+    {
+        $baseUrl = rtrim((string) config('services.seace.base_url', ''), '/');
+        if ($baseUrl === '') {
+            throw new RuntimeException('Configura SEACE_BASE_URL para ejecutar las pruebas');
+        }
+
+        $origin = rtrim((string) config('services.seace.frontend_origin', ''), '/');
+        if ($origin === '') {
+            throw new RuntimeException('Configura SEACE_FRONTEND_ORIGIN para ejecutar las pruebas');
+        }
+
+        $authReferer = rtrim((string) config('services.seace.auth_referer', ''), '/');
+
+        $this->baseUrl = $baseUrl;
+        $this->origin = $origin;
+        $this->refererBase = $authReferer !== '' ? $authReferer : $origin . '/auth-proveedor';
+        $this->debugLogging = (bool) config('services.seace.debug_logs', false);
+    }
+
+    protected function buildSeaceUrl(string $endpoint): string
+    {
+        $endpoint = trim($endpoint);
+
+        if ($endpoint === '') {
+            throw new RuntimeException('El endpoint de SEACE no puede estar vacío');
+        }
+
+        if (str_starts_with($endpoint, 'http://') || str_starts_with($endpoint, 'https://')) {
+            return rtrim($endpoint, '/');
+        }
+
+        if ($this->baseUrl === '') {
+            throw new RuntimeException('Configura SEACE_BASE_URL para ejecutar las pruebas');
+        }
+
+        return $this->baseUrl . '/' . ltrim($endpoint, '/');
+    }
+
+    protected function debug(string $message, array $context = []): void
+    {
+        if (!$this->debugLogging) {
+            return;
+        }
+
+        Log::debug('PruebaEndpoints: ' . $message, $context);
     }
 }

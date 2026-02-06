@@ -133,6 +133,11 @@ Tu responsabilidad es:
 #### 6. Servidor
 - [x] Servidor de desarrollo corriendo en `http://127.0.0.1:8000`
 
+#### 7. Utilidades internas recientes (feb-2026)
+- Componente Livewire `PruebaEndpoints` ahora normaliza URLs vía `buildSeaceUrl()` y rehidrata la configuración (`bootstrapSeaceConfig()` + `hydrate()`), evitando errores cuando el estado Livewire pierde `SEACE_BASE_URL`/`SEACE_FRONTEND_ORIGIN`.
+- Se reforzó el panel de pruebas para mostrar mensajes claros si las cuentas carecen de credenciales o si no hay base URL configurada.
+- Telegram ahora depende de `TELEGRAM_API_BASE` definido en `.env`; al declararlo se reactivan los envíos y los logs muestran advertencias solo si falta la variable.
+
 ---
 
 ### 🔄 En Progreso

@@ -1,5 +1,35 @@
 <?php
 
+$seaceBaseUrl = rtrim((string) env('SEACE_BASE_URL', ''), '/');
+$seaceOrigin = null;
+
+if (!empty($seaceBaseUrl)) {
+    $parsed = parse_url($seaceBaseUrl);
+
+    if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
+        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+        $seaceOrigin = sprintf('%s://%s%s', $parsed['scheme'], $parsed['host'], $port);
+    }
+}
+
+$seaceFrontendOrigin = rtrim((string) env('SEACE_FRONTEND_ORIGIN', $seaceOrigin ?? ''), '/');
+
+$authReferer = rtrim(
+    (string) env('SEACE_AUTH_REFERER', $seaceFrontendOrigin ? $seaceFrontendOrigin . '/auth-proveedor' : ''),
+    '/'
+);
+
+if (!empty($authReferer) && !str_ends_with($authReferer, '/')) {
+    $authReferer .= '/';
+}
+
+$contratacionesReferer = rtrim(
+    (string) env('SEACE_CONTRATACIONES_REFERER', $seaceFrontendOrigin ? $seaceFrontendOrigin . '/cotizacion/contrataciones' : ''),
+    '/'
+);
+
+$telegramApiBase = rtrim((string) env('TELEGRAM_API_BASE', ''), '/');
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -35,14 +65,18 @@ return [
     ],
 
     'seace' => [
-        'base_url' => env('SEACE_BASE_URL', 'https://prod6.seace.gob.pe/v1/s8uit-services'),
+        'base_url' => $seaceBaseUrl ?: null,
         'ruc_proveedor' => env('SEACE_RUC_PROVEEDOR'),
         'password' => env('SEACE_PASSWORD'),
-        'token_cache_duration' => env('SEACE_TOKEN_CACHE_DURATION', 3600),
+        'token_cache_duration' => env('SEACE_TOKEN_CACHE_DURATION', 300),
         'page_size' => env('SEACE_PAGE_SIZE', 100),
         'process_cache_minutes' => env('SEACE_PROCESS_CACHE_MINUTES', 240),
         'min_delay_minutes' => env('SEACE_MIN_DELAY_MINUTES', 42),
         'max_delay_minutes' => env('SEACE_MAX_DELAY_MINUTES', 50),
+        'frontend_origin' => $seaceFrontendOrigin ?: null,
+        'auth_referer' => $authReferer ?: null,
+        'contrataciones_referer' => $contratacionesReferer ?: null,
+        'debug_logs' => env('SEACE_DEBUG_LOGS', false),
 
         'endpoints' => [
             'login' => env('SEACE_ENDPOINT_LOGIN', '/seguridadproveedor/seguridad/validausuariornp'),
@@ -55,8 +89,10 @@ return [
     ],
 
     'telegram' => [
+        'api_base' => $telegramApiBase ?: null,
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'chat_id' => env('TELEGRAM_CHAT_ID'),
+        'debug_logs' => env('TELEGRAM_DEBUG_LOGS', false),
     ],
 
     'analizador_tdr' => [
@@ -66,5 +102,6 @@ return [
         'max_file_size' => env('ANALIZADOR_TDR_MAX_FILE_SIZE', 10485760), // 10MB
         'provider' => env('ANALIZADOR_TDR_PROVIDER', 'gemini'),
         'model' => env('ANALIZADOR_TDR_MODEL', 'gemini-2.5-flash'),
+        'debug_logs' => env('ANALIZADOR_TDR_DEBUG_LOGS', false),
     ],
 ];

@@ -7,12 +7,17 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use RuntimeException;
 
 class SeaceScraperService
 {
     protected string $baseUrl;
     protected ?CuentaSeace $cuenta;
     protected int $tokenCacheDuration;
+    protected string $frontendOrigin;
+    protected string $authReferer;
+    protected string $contratacionesReferer;
+    protected bool $debugLogging;
 
     // Propiedades legacy para retrocompatibilidad
     protected ?string $rucProveedor;
@@ -26,8 +31,30 @@ class SeaceScraperService
      */
     public function __construct(?CuentaSeace $cuenta = null)
     {
-        $this->baseUrl = 'https://prod6.seace.gob.pe/v1/s8uit-services';
-        $this->tokenCacheDuration = 300; // 5 minutos según documentación
+        $this->baseUrl = rtrim((string) config('services.seace.base_url', ''), '/');
+        if (empty($this->baseUrl)) {
+            throw new RuntimeException('Configura SEACE_BASE_URL en el .env');
+        }
+
+        $this->tokenCacheDuration = (int) config('services.seace.token_cache_duration', 300);
+
+        $this->frontendOrigin = rtrim((string) config('services.seace.frontend_origin', ''), '/');
+        if (empty($this->frontendOrigin)) {
+            throw new RuntimeException('Configura SEACE_FRONTEND_ORIGIN en el .env');
+        }
+
+        $this->authReferer = rtrim((string) config('services.seace.auth_referer', ''), '/');
+        if (empty($this->authReferer)) {
+            $this->authReferer = $this->frontendOrigin . '/auth-proveedor';
+        }
+        $this->authReferer .= str_ends_with($this->authReferer, '/') ? '' : '/';
+
+        $this->contratacionesReferer = rtrim((string) config('services.seace.contrataciones_referer', ''), '/');
+        if (empty($this->contratacionesReferer)) {
+            $this->contratacionesReferer = $this->frontendOrigin . '/cotizacion/contrataciones';
+        }
+
+        $this->debugLogging = (bool) config('services.seace.debug_logs', false);
 
         // Si se proporciona una cuenta, usarla
         if ($cuenta) {
@@ -61,7 +88,7 @@ class SeaceScraperService
             'Accept' => 'application/json',
             'Accept-Language' => 'es-US,es-419;q=0.9,es;q=0.8,en;q=0.7',
             'Content-Type' => 'application/json',
-            'Origin' => 'https://prod6.seace.gob.pe',
+            'Origin' => $this->frontendOrigin,
             'Sec-Ch-Ua' => '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
             'Sec-Ch-Ua-Mobile' => '?0',
             'Sec-Ch-Ua-Platform' => '"Windows"',
@@ -71,12 +98,18 @@ class SeaceScraperService
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36',
         ];
 
-        // Agregar Referer solo si se proporciona
-        if ($referer) {
-            $headers['Referer'] = $referer;
-        }
+        $headers['Referer'] = $referer ?? $this->authReferer;
 
         return $headers;
+    }
+
+    protected function debug(string $message, array $context = []): void
+    {
+        if (!$this->debugLogging) {
+            return;
+        }
+
+        Log::debug('SEACE: ' . $message, $context);
     }
 
     /**
@@ -93,7 +126,7 @@ class SeaceScraperService
     public function fullLogin(): bool
     {
         try {
-            Log::info('SEACE: Iniciando login completo', [
+            $this->debug('Iniciando login completo', [
                 'username' => $this->rucProveedor,
                 'timestamp' => now()
             ]);
@@ -101,7 +134,7 @@ class SeaceScraperService
             $this->applyJitter();
 
             /** @var \Illuminate\Http\Client\Response $response */
-            $response = Http::withHeaders($this->ninjaHeaders('https://prod6.seace.gob.pe/auth-proveedor/'))
+            $response = Http::withHeaders($this->ninjaHeaders($this->authReferer))
                 ->timeout(30)
                 ->post("{$this->baseUrl}/seguridadproveedor/seguridad/validausuariornp", [
                     'username' => $this->rucProveedor,
@@ -151,7 +184,7 @@ class SeaceScraperService
                 }
             }
 
-            Log::info('SEACE: Login exitoso', [
+            $this->debug('Login exitoso', [
                 'token_length' => strlen($data['token']),
                 'has_refresh' => isset($data['refreshToken']),
                 'usando_bd' => $this->cuenta !== null
@@ -205,18 +238,18 @@ class SeaceScraperService
             try {
                 // 1. VALIDAR TOKEN ANTES DE CADA INTENTO
                 if (!$this->validarToken()) {
-                    Log::info("SEACE: Token inválido en intento {$attempt}, intentando recuperar...");
+                    $this->debug("Token inválido en intento {$attempt}, intentando recuperar...");
 
                     // 2. INTENTAR REFRESH PRIMERO
                     if ($this->refreshToken()) {
-                        Log::info("SEACE: Token refrescado exitosamente");
+                        $this->debug('Token refrescado exitosamente');
                         continue; // Reintentar petición con nuevo token
                     }
 
                     // 3. SI REFRESH FALLÓ, HACER LOGIN COMPLETO
                     Log::warning("SEACE: Refresh falló, haciendo login completo...");
                     if ($this->fullLogin()) {
-                        Log::info("SEACE: Login completo exitoso");
+                        $this->debug('Login completo exitoso');
                         continue; // Reintentar petición con nuevo token
                     }
 
@@ -255,7 +288,7 @@ class SeaceScraperService
                 // 8. EJECUTAR PETICIÓN SEGÚN MÉTODO
                 $this->applyJitter();
 
-                Log::info("SEACE: Ejecutando petición resiliente", [
+                $this->debug('Ejecutando petición resiliente', [
                     'method' => $method,
                     'url' => $url,
                     'attempt' => $attempt,
@@ -299,7 +332,7 @@ class SeaceScraperService
 
                 // 10. VERIFICAR SI LA RESPUESTA ES EXITOSA
                 if ($response->successful()) {
-                    Log::info("SEACE: Petición resiliente exitosa", [
+                    $this->debug('Petición resiliente exitosa', [
                         'status' => $response->status(),
                         'attempt' => $attempt
                     ]);
@@ -399,13 +432,13 @@ class SeaceScraperService
                 return false;
             }
 
-            Log::info('SEACE: Intentando refrescar token');
+            $this->debug('Intentando refrescar token');
 
             $this->applyJitter();
 
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::withToken($expiredToken)
-                ->withHeaders($this->ninjaHeaders('https://prod6.seace.gob.pe/auth-proveedor/'))
+                ->withHeaders($this->ninjaHeaders($this->authReferer))
                 ->timeout(30)
                 ->post("{$this->baseUrl}/seguridadproveedor/seguridad/tokens/refresh");
 
@@ -441,7 +474,7 @@ class SeaceScraperService
                 }
             }
 
-            Log::info('SEACE: Token refrescado exitosamente', [
+            $this->debug('Token refrescado exitosamente', [
                 'usando_bd' => $this->cuenta !== null
             ]);
 
@@ -466,7 +499,7 @@ class SeaceScraperService
                 return true;
             }
 
-            Log::info('SEACE: Token de cuenta expirado o no disponible, intentando login');
+            $this->debug('Token de cuenta expirado o no disponible, intentando login');
             return $this->fullLogin();
         }
 
@@ -477,7 +510,7 @@ class SeaceScraperService
             return true;
         }
 
-        Log::info('SEACE: No hay token en cache, intentando login');
+        $this->debug('No hay token en cache, intentando login');
         return $this->fullLogin();
     }
 
@@ -502,7 +535,7 @@ class SeaceScraperService
 
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::withToken($token)
-                ->withHeaders($this->ninjaHeaders('https://prod6.seace.gob.pe/auth-proveedor/busqueda'))
+                ->withHeaders($this->ninjaHeaders($this->contratacionesReferer))
                 ->timeout(30)
                 ->get($url, $params);
 
@@ -571,7 +604,7 @@ class SeaceScraperService
             'page_size' => $pageSize,
         ];
 
-        Log::info('SEACE: Consultando buscador', [
+        $this->debug('Consultando buscador', [
             'year' => $year,
             'page_size' => $pageSize
         ]);
@@ -595,7 +628,7 @@ class SeaceScraperService
             return [];
         }
 
-        Log::info('SEACE: Contratos obtenidos exitosamente', [
+        $this->debug('Contratos obtenidos exitosamente', [
             'count' => count($data['data'])
         ]);
 
@@ -619,7 +652,7 @@ class SeaceScraperService
 
         $endpoint = $this->baseUrl . $endpoints[$tipo];
 
-        Log::info("SEACE: Consultando maestra: {$tipo}");
+        $this->debug("Consultando maestra: {$tipo}");
 
         /** @var \Illuminate\Http\Client\Response $response */
         $response = $this->fetchWithRetry($endpoint);

@@ -8,18 +8,36 @@ use App\Services\SeaceScraperService;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class TdrDocumentService
 {
+    protected bool $debugLogging;
+    protected string $downloadReferer;
+
     public function __construct(protected TdrPersistenceService $persistence)
     {
+        $this->debugLogging = (bool) config('tdr.debug_logs', config('services.analizador_tdr.debug_logs', false));
+
+        $frontendOrigin = rtrim((string) config('services.seace.frontend_origin', ''), '/');
+
+        $referer = rtrim((string) config('services.seace.contrataciones_referer', ''), '/');
+        if (empty($referer) && !empty($frontendOrigin)) {
+            $referer = $frontendOrigin . '/cotizacion/contrataciones';
+        }
+
+        if (empty($referer)) {
+            throw new RuntimeException('Configura SEACE_CONTRATACIONES_REFERER en el .env');
+        }
+
+        $this->downloadReferer = $referer;
     }
 
     public function ensureLocalFile(ContratoArchivo $archivo, CuentaSeace $cuenta, string $nombreArchivo): string
     {
         if ($localPath = $this->persistence->getAbsolutePath($archivo)) {
             if (is_file($localPath) && @filesize($localPath) > 0) {
-                Log::info('TDR: Usando archivo persistido', [
+                $this->debug('Usando archivo persistido', [
                     'contrato_archivo_id' => $archivo->id,
                     'path' => $localPath,
                 ]);
@@ -35,19 +53,25 @@ class TdrDocumentService
             $this->persistence->purgeStoredFile($archivo);
         }
 
-        Log::info('TDR: Descargando archivo desde SEACE', [
+        $this->debug('Descargando archivo desde SEACE', [
             'contrato_archivo_id' => $archivo->id,
             'id_archivo_seace' => $archivo->id_archivo_seace,
         ]);
 
         $scraper = new SeaceScraperService($cuenta);
+        $baseUrl = rtrim((string) config('services.seace.base_url', ''), '/');
+
+        if (empty($baseUrl)) {
+            throw new RuntimeException('Configura SEACE_BASE_URL para descargar archivos');
+        }
+
         $downloadUrl = sprintf(
             '%s/archivo/archivos/descargar-archivo-contrato/%s',
-            config('services.seace.base_url'),
+            $baseUrl,
             $archivo->id_archivo_seace
         );
 
-        $referer = 'https://prod6.seace.gob.pe/cotizacion/contrataciones';
+        $referer = $this->downloadReferer;
         $downloadHeaders = [
             'Accept' => 'application/octet-stream,application/json,text/plain,*/*',
             'Content-Type' => null,
@@ -113,7 +137,7 @@ class TdrDocumentService
             $safeName
         );
 
-        Log::info('TDR: Archivo guardado en storage', [
+        $this->debug('Archivo guardado en storage', [
             'path' => $localPath,
             'tamano' => @filesize($localPath) ?: null,
         ]);
@@ -187,5 +211,14 @@ class TdrDocumentService
         $signature = substr($binary, 0, 4);
 
         return $signature === '%PDF';
+    }
+
+    protected function debug(string $message, array $context = []): void
+    {
+        if (!$this->debugLogging) {
+            return;
+        }
+
+        Log::debug('TDR: ' . $message, $context);
     }
 }

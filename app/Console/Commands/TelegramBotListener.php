@@ -11,6 +11,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class TelegramBotListener extends Command
 {
@@ -19,13 +20,21 @@ class TelegramBotListener extends Command
 
     protected int $lastUpdateId = 0;
     protected string $baseUrl;
+    protected string $telegramApiBase;
+    protected bool $debugLogging;
     protected TdrAnalysisFormatter $formatter;
 
     public function __construct()
     {
         parent::__construct();
-        $this->baseUrl = config('services.seace.base_url');
+        $this->baseUrl = (string) config('services.seace.base_url');
+        $this->telegramApiBase = rtrim((string) config('services.telegram.api_base', ''), '/');
+        $this->debugLogging = (bool) config('services.telegram.debug_logs', false);
         $this->formatter = new TdrAnalysisFormatter();
+
+        if (!empty(config('services.telegram.bot_token')) && $this->telegramApiBase === '') {
+            Log::warning('Telegram Listener: TELEGRAM_API_BASE no configurado; el comando quedará inactivo hasta definirlo.');
+        }
     }
 
     public function handle()
@@ -34,6 +43,11 @@ class TelegramBotListener extends Command
 
         if (empty($token)) {
             $this->error('Token de Telegram no configurado');
+            return Command::FAILURE;
+        }
+
+        if ($this->telegramApiBase === '') {
+            $this->error('Configura TELEGRAM_API_BASE en el .env antes de iniciar el listener');
             return Command::FAILURE;
         }
 
@@ -78,7 +92,7 @@ class TelegramBotListener extends Command
      */
     protected function getUpdates(string $token): array
     {
-        $response = Http::timeout(30)->get("https://api.telegram.org/bot{$token}/getUpdates", [
+        $response = Http::timeout(30)->get($this->buildTelegramUrl($token, 'getUpdates'), [
             'offset' => $this->lastUpdateId + 1,
             'timeout' => 25, // Long polling
             'allowed_updates' => ['callback_query'], // Solo callbacks
@@ -106,9 +120,9 @@ class TelegramBotListener extends Command
         $chatId = $callbackQuery['from']['id'] ?? $callbackQuery['message']['chat']['id'];
         $data = $callbackQuery['data'] ?? '';
 
-        Log::info('Telegram: Callback Query recibido', [
+        $this->debug('Callback recibido', [
             'chat_id' => $chatId,
-            'data' => $data
+            'data' => $data,
         ]);
 
         // Verificar si es un click en "Analizar"
@@ -147,7 +161,7 @@ class TelegramBotListener extends Command
      */
     protected function answerCallbackQuery(string $callbackQueryId, string $text, string $token): void
     {
-        Http::post("https://api.telegram.org/bot{$token}/answerCallbackQuery", [
+        Http::post($this->buildTelegramUrl($token, 'answerCallbackQuery'), [
             'callback_query_id' => $callbackQueryId,
             'text' => $text,
         ]);
@@ -266,7 +280,7 @@ class TelegramBotListener extends Command
     protected function enviarMensajeConBotones(string $chatId, string $mensaje, array $keyboard, string $token): void
     {
         try {
-            $response = Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            $response = Http::post($this->buildTelegramUrl($token, 'sendMessage'), [
                 'chat_id' => $chatId,
                 'text' => $mensaje,
                 'parse_mode' => 'HTML',
@@ -296,7 +310,7 @@ class TelegramBotListener extends Command
      */
     protected function enviarMensaje(string $chatId, string $texto, string $token): void
     {
-        Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+        Http::post($this->buildTelegramUrl($token, 'sendMessage'), [
             'chat_id' => $chatId,
             'text' => $texto,
             'parse_mode' => 'HTML',
@@ -377,7 +391,7 @@ class TelegramBotListener extends Command
                 'document',
                 $documentBinary,
                 $nombreArchivo
-            )->post("https://api.telegram.org/bot{$token}/sendDocument", [
+            )->post($this->buildTelegramUrl($token, 'sendDocument'), [
                 'chat_id' => $chatId,
                 'caption' => "📄 {$nombreArchivo}\n\n✅ Enviado desde caché local",
             ]);
@@ -418,5 +432,23 @@ class TelegramBotListener extends Command
         }
 
         return substr($sanitized, 0, 30);
+    }
+
+    protected function buildTelegramUrl(string $token, string $method): string
+    {
+        if ($this->telegramApiBase === '') {
+            throw new RuntimeException('TELEGRAM_API_BASE no está configurada');
+        }
+
+        return sprintf('%s/bot%s/%s', $this->telegramApiBase, $token, ltrim($method, '/'));
+    }
+
+    protected function debug(string $message, array $context = []): void
+    {
+        if (!$this->debugLogging) {
+            return;
+        }
+
+        Log::debug('Telegram Listener: ' . $message, $context);
     }
 }

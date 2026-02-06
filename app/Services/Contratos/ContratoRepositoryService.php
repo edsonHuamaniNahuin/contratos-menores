@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use RuntimeException;
 
 class ContratoRepositoryService
 {
@@ -19,7 +20,10 @@ class ContratoRepositoryService
 
     public function __construct(?int $cacheTtlMinutes = null)
     {
-        $this->baseUrl = rtrim(config('services.seace.base_url'), '/');
+        $this->baseUrl = rtrim((string) config('services.seace.base_url', ''), '/');
+        if ($this->baseUrl === '') {
+            throw new RuntimeException('Configura SEACE_BASE_URL para utilizar el repositorio de contratos');
+        }
         $this->maxPageSize = (int) config('services.seace.page_size', 100);
         $this->cacheTtlMinutes = $cacheTtlMinutes ?? (int) config('services.seace.process_cache_minutes', 0);
     }

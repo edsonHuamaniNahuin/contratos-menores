@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\Log;
 class Configuracion extends Component
 {
     // Configuración Telegram Bot
-    public string $telegram_bot_token = '8587965283:AAHwTFr-59rpnmAokTZuK8PchVsx-lPyVL0';
-    public string $telegram_chat_id = '5203441622';
-    public bool $telegram_enabled = true;
+    public string $telegram_bot_token = '';
+    public string $telegram_chat_id = '';
+    public bool $telegram_enabled = false;
 
     // Configuración API Analizador TDR
     public string $analizador_url = 'http://127.0.0.1:8001';
@@ -99,7 +99,13 @@ class Configuracion extends Component
                      . "📅 Fecha: " . now()->format('d/m/Y H:i:s') . "\n\n"
                      . "Este es un mensaje de prueba del sistema de notificaciones.";
 
-            $url = "https://api.telegram.org/bot{$this->telegram_bot_token}/sendMessage";
+            $apiBase = rtrim((string) config('services.telegram.api_base', ''), '/');
+
+            if (empty($apiBase)) {
+                throw new \Exception('Configura TELEGRAM_API_BASE en el .env antes de probar');
+            }
+
+            $url = sprintf('%s/bot%s/sendMessage', $apiBase, $this->telegram_bot_token);
 
             $response = Http::timeout(10)->post($url, [
                 'chat_id' => $this->telegram_chat_id,

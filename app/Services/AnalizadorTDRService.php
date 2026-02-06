@@ -12,12 +12,14 @@ class AnalizadorTDRService
     protected string $baseUrl;
     protected int $timeout;
     protected bool $enabled;
+    protected bool $debugLogging;
 
     public function __construct()
     {
         $this->baseUrl = config('services.analizador_tdr.url', 'http://127.0.0.1:8001');
         $this->timeout = config('services.analizador_tdr.timeout', 60);
         $this->enabled = config('services.analizador_tdr.enabled', false);
+        $this->debugLogging = (bool) config('tdr.debug_logs', config('services.analizador_tdr.debug_logs', false));
     }
 
     /**
@@ -85,7 +87,7 @@ class AnalizadorTDRService
             $fileName = basename($filePath);
             $fullUrl = "{$this->baseUrl}/analyze-tdr";
 
-            Log::info('AnalizadorTDR: ========== INICIO ANÁLISIS ==========', [
+            $this->debug('Inicio de análisis', [
                 'file_path' => $filePath,
                 'file_name' => $fileName,
                 'file_size_bytes' => $fileSize,
@@ -98,18 +100,18 @@ class AnalizadorTDRService
 
             // Verificar salud del servicio primero
             $healthCheck = $this->healthCheck();
-            Log::info('AnalizadorTDR: Health check antes de análisis', [
+            $this->debug('Health check antes de análisis', [
                 'healthy' => $healthCheck['healthy'] ?? false,
                 'health_data' => $healthCheck,
             ]);
 
             // Preparar el archivo
             $fileContents = file_get_contents($filePath);
-            Log::info('AnalizadorTDR: Archivo leído', [
+            $this->debug('Archivo leído', [
                 'content_length' => strlen($fileContents),
             ]);
 
-            Log::info('AnalizadorTDR: Enviando petición HTTP...');
+            $this->debug('Enviando petición HTTP');
 
             $response = Http::timeout($this->timeout)
                 ->attach(
@@ -119,13 +121,13 @@ class AnalizadorTDRService
                 )
                 ->post($fullUrl);
 
-            Log::info('AnalizadorTDR: Respuesta recibida', [
+            $this->debug('Respuesta recibida', [
                 'status_code' => $response->status(),
                 'successful' => $response->successful(),
                 'reason' => $response->reason(),
                 'headers' => $response->headers(),
                 'body_length' => strlen($response->body()),
-                'body' => $response->body(),
+                'body_preview' => substr($response->body(), 0, 300),
             ]);
 
             if (!$response->successful()) {
@@ -141,7 +143,7 @@ class AnalizadorTDRService
 
             $data = $response->json();
 
-            Log::info('AnalizadorTDR: ========== ANÁLISIS EXITOSO ==========', [
+            Log::info('AnalizadorTDR: análisis completado', [
                 'success' => $data['success'] ?? false,
                 'file' => $fileName,
                 'data_keys' => array_keys($data ?? []),
@@ -184,7 +186,7 @@ class AnalizadorTDRService
         }
 
         try {
-            Log::info('AnalizadorTDR: Enviando batch para análisis', [
+            $this->debug('Enviando batch para análisis', [
                 'count' => count($filePaths)
             ]);
 
@@ -210,7 +212,7 @@ class AnalizadorTDRService
 
             $data = $response->json();
 
-            Log::info('AnalizadorTDR: Batch completado', [
+            Log::info('AnalizadorTDR: batch completado', [
                 'success_count' => count($data['results'] ?? []),
                 'total' => count($filePaths)
             ]);
@@ -257,5 +259,14 @@ class AnalizadorTDRService
             'timeout' => $this->timeout,
             'status' => $this->enabled ? $this->healthCheck() : ['success' => false, 'error' => 'Deshabilitado']
         ];
+    }
+
+    protected function debug(string $message, array $context = []): void
+    {
+        if (!$this->debugLogging) {
+            return;
+        }
+
+        Log::debug('AnalizadorTDR: ' . $message, $context);
     }
 }
