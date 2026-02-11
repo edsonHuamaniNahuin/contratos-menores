@@ -53,56 +53,52 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
+          port: 22
           script_stop: true
           script: |
             set -e
 
-            APP_DIR="${{ secrets.VPS_APP_DIR || '/var/www/vigilante-seace' }}"
+            APP_DIR="${{ secrets.VPS_APP_DIR }}"
             PYTHON_DIR="$APP_DIR/analizador-tdr"
+            PHP_BIN="/usr/local/php82/bin/php"
+            COMPOSER_BIN="/usr/local/bin/composer"
 
-            echo "🚀 Iniciando deploy en $APP_DIR..."
+            export PATH="/usr/local/php82/bin:/usr/local/python311/bin:/usr/local/bin:$PATH"
+
+            echo ">>> Iniciando deploy en $APP_DIR..."
 
             cd "$APP_DIR"
 
-            # ── 1. Pull últimos cambios ──
+            # 1. Pull ultimos cambios
             git fetch origin main
             git reset --hard origin/main
 
-            # ── 2. Laravel: dependencias + migraciones ──
-            composer install --no-dev --optimize-autoloader --no-interaction
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-            php artisan event:cache
-            php artisan migrate --force
+            # 2. Laravel: dependencias + migraciones
+            $PHP_BIN $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction
+            $PHP_BIN artisan config:cache
+            $PHP_BIN artisan route:cache
+            $PHP_BIN artisan view:cache
+            $PHP_BIN artisan event:cache
+            $PHP_BIN artisan migrate --force
 
-            # ── 3. Frontend assets (ya compilados, solo copiar) ──
-            echo "✅ Assets ya compilados en CI"
-
-            # ── 4. Python microservicio ──
+            # 3. Python microservicio
             cd "$PYTHON_DIR"
             if [ ! -d "venv" ]; then
-                python3 -m venv venv
+                /usr/local/python311/bin/python3 -m venv venv
             fi
             source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt --quiet
             deactivate
 
-            # ── 5. Reiniciar servicios ──
+            # 4. Reiniciar servicios
             cd "$APP_DIR"
+            $PHP_BIN artisan queue:restart
+            sudo systemctl restart analizador-tdr.service || echo "WARN: No se pudo reiniciar analizador-tdr"
+            sudo systemctl restart php-fpm.service || echo "WARN: No se pudo reiniciar php-fpm"
+            sudo systemctl reload apache2 || echo "WARN: Reiniciar web server manualmente"
 
-            # Reiniciar queue worker
-            php artisan queue:restart
-
-            # Reiniciar microservicio Python (systemd)
-            sudo systemctl restart analizador-tdr.service || echo "⚠️ No se pudo reiniciar analizador-tdr (configurar systemd)"
-
-            # Reiniciar Apache/Nginx
-            sudo systemctl reload apache2 || sudo systemctl reload nginx || echo "⚠️ Reiniciar web server manualmente"
-
-            echo "✅ Deploy completado exitosamente"
+            echo ">>> Deploy completado exitosamente"
 
       - name: Upload compiled assets via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -110,9 +106,9 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
+          port: 22
           source: "public/build/"
-          target: "${{ secrets.VPS_APP_DIR || '/var/www/vigilante-seace' }}"
+          target: "${{ secrets.VPS_APP_DIR }}"
           overwrite: true
 
       - name: Health check
@@ -121,16 +117,12 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
+          port: 22
           script: |
-            APP_DIR="${{ secrets.VPS_APP_DIR || '/var/www/vigilante-seace' }}"
+            export PATH="/usr/local/php82/bin:/usr/local/python311/bin:/usr/local/bin:$PATH"
+            APP_DIR="${{ secrets.VPS_APP_DIR }}"
 
-            # Verificar Laravel
             cd "$APP_DIR"
-            php artisan --version && echo "✅ Laravel OK"
-
-            # Verificar Scheduler
+            php artisan --version && echo "Laravel OK"
             php artisan schedule:list | head -5
-
-            # Verificar microservicio Python
-            curl -sf http://127.0.0.1:8001/health | head -1 && echo "✅ Analizador TDR OK" || echo "⚠️ Analizador TDR no responde"
+            curl -sf http://127.0.0.1:8001/health | head -1 && echo "Analizador TDR OK" || echo "WARN: Analizador TDR no responde"

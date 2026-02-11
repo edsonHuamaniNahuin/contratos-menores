@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
@@ -122,4 +123,4 @@ jobs:
 
       - name: Check config loads
         working-directory: analizador-tdr
-        run: python -c "from config import settings; print(f'✅ Config OK: {settings.app_name}')"
+        run: python -c "from config import settings; print('Config OK: ' + settings.app_name)"
