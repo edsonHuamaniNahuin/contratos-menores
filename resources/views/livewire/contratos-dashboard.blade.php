@@ -6,7 +6,7 @@
 
             <div>
                 <p class="text-sm font-medium text-neutral-400">Ingesta focalizada</p>
-                <h3 class="text-xl font-bold text-neutral-900 mt-1">Cargar contratos por departamento y fecha 1</h3>
+                <h3 class="text-xl font-bold text-neutral-900 mt-1">Cargar contratos por departamento y fecha prueba</h3>
                 <p class="text-sm text-neutral-600 mt-1">Consulta el buscador público con page_size=150, filtra por fecha de publicación y almacena/actualiza solo esos contratos.</p>
             </div>
 
