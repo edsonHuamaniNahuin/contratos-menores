@@ -119,8 +119,10 @@ jobs:
 
       - name: Validate imports & syntax
         working-directory: analizador-tdr
-        run: python -c "from app.services.analyzer_service import TDRAnalyzerService; print('✅ Imports OK')"
+        run: |
+          python -c "from app.services.analyzer_service import TDRAnalyzerService; print('Imports OK')"
 
       - name: Check config loads
         working-directory: analizador-tdr
-        run: python -c "from config import settings; print('Config OK: ' + settings.app_name)"
+        run: |
+          python -c "from config import settings; print('Config OK - ' + settings.app_name)"
