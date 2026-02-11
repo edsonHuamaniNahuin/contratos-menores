@@ -59,6 +59,12 @@ jobs:
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
+      - name: Prepare storage directories
+        run: |
+          mkdir -p storage/framework/{cache/data,sessions,testing,views}
+          mkdir -p storage/logs
+          mkdir -p bootstrap/cache
+
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
