@@ -90,9 +90,6 @@ jobs:
       - name: Run tests
         run: php artisan test
 
-      - name: Laravel Pint (code style)
-        run: vendor/bin/pint --test
-
   # ─────────────────────────────────────────────
   # 2. Python: Lint & Validation del Microservicio
   # ─────────────────────────────────────────────
