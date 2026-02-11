@@ -4,6 +4,9 @@ namespace App\Services;
 
 class TdrAnalysisFormatter
 {
+    private const MAX_TELEGRAM_CHARS = 3800;
+    private const TRUNCATED_NOTICE = "\n\n⚠️ Resumen truncado por limite de Telegram.";
+
     /**
      * Formatea el resultado para mensajes de Telegram (HTML) priorizando texto legible.
      */
@@ -85,6 +88,8 @@ class TdrAnalysisFormatter
             $mensaje .= "📊 <b>Detalle completo:</b>\n";
             $mensaje .= $this->formatFallbackKeyValues($data);
         }
+
+        $mensaje = $this->applyTelegramLimit($mensaje);
 
         return trim($mensaje);
     }
@@ -259,5 +264,38 @@ class TdrAnalysisFormatter
     protected function escapeHtml(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    protected function applyTelegramLimit(string $message): string
+    {
+        $message = trim($message);
+        if ($this->stringLength($message) <= self::MAX_TELEGRAM_CHARS) {
+            return $message;
+        }
+
+        $plain = trim(strip_tags($message));
+        $suffix = self::TRUNCATED_NOTICE;
+        $limit = self::MAX_TELEGRAM_CHARS - $this->stringLength($suffix);
+        $truncated = $this->stringSlice($plain, 0, max(0, $limit));
+
+        return rtrim($truncated) . $suffix;
+    }
+
+    protected function stringLength(string $value): int
+    {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen($value, 'UTF-8');
+        }
+
+        return strlen($value);
+    }
+
+    protected function stringSlice(string $value, int $start, int $length): string
+    {
+        if (function_exists('mb_substr')) {
+            return mb_substr($value, $start, $length, 'UTF-8');
+        }
+
+        return substr($value, $start, $length);
     }
 }

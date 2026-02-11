@@ -1,8 +1,10 @@
 """
 Cliente para Google Gemini API.
 """
-import google.generativeai as genai
-from typing import Dict
+from google import genai
+from google.genai import types
+from typing import Dict, List, Optional
+import asyncio
 import logging
 from .base_client import BaseLLMClient
 
@@ -22,32 +24,68 @@ class GeminiClient(BaseLLMClient):
         self.model_name = model_name
         self.logger = logger
 
-        # Configurar Gemini
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
 
-        # Configuración de generación (JSON mode sin schema - evita error "unhashable type: 'list'")
-        self.generation_config = {
-            "temperature": 0.2,  # Más determinista para JSON estructurado
-            "top_p": 0.95,
-            "top_k": 40,
-            "max_output_tokens": 8192,  # Aumentado para análisis completos (antes: 3072)
-            "response_mime_type": "application/json",  # Forzar JSON sin schema estricto
-        }
-
-        # Configuración de seguridad (permitir todo para análisis técnico)
-        self.safety_settings = [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-        ]
-
-        self.model = genai.GenerativeModel(
-            model_name=model_name,
-            generation_config=self.generation_config,
-            safety_settings=self.safety_settings,
-            system_instruction=self.SYSTEM_PROMPT
+        # Configuración de generación (JSON mode sin schema - salida estricta JSON)
+        self.generation_config = types.GenerateContentConfig(
+            temperature=0.2,
+            top_p=0.95,
+            top_k=40,
+            max_output_tokens=8192,
+            response_mime_type="application/json",
+            system_instruction=self.SYSTEM_PROMPT,
+            safety_settings=[
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+            ],
         )
+
+    async def _generate_content(self, contents):
+        if hasattr(self.client, "aio"):
+            return await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=contents,
+                config=self.generation_config,
+            )
+
+        return await asyncio.to_thread(
+            self.client.models.generate_content,
+            model=self.model_name,
+            contents=contents,
+            config=self.generation_config,
+        )
+
+    @staticmethod
+    def _extract_text(response) -> str:
+        text = getattr(response, "text", None)
+        if isinstance(text, str) and text.strip():
+            return text
+
+        try:
+            candidates = response.candidates or []
+            for candidate in candidates:
+                parts = candidate.content.parts if candidate.content else []
+                for part in parts:
+                    if getattr(part, "text", None):
+                        return part.text
+        except Exception:
+            pass
+
+        return ""
 
     async def analyze_tdr(self, context: str) -> Dict:
         """
@@ -66,24 +104,21 @@ class GeminiClient(BaseLLMClient):
 
             # Prompt simplificado (el schema ya define la estructura)
             user_prompt = f"""
-Analiza este Término de Referencia del SEACE y extrae:
+Analiza este Término de Referencia del SEACE y responde únicamente con un JSON que contenga:
 
-1. **Resumen ejecutivo**: Qué busca la entidad y qué se necesita para ganar (2-3 párrafos)
-2. **Requisitos técnicos**: Certificaciones, experiencia, tecnologías requeridas
-3. **Reglas de negocio**: Obligaciones, entregables, condiciones
-4. **Penalidades**: Multas, garantías, sanciones
-5. **Presupuesto referencial**: Monto en soles o null
-6. **Score de compatibilidad (1-10)**: Basado en claridad, viabilidad técnica y riesgo
+1. "resumen_ejecutivo": 1-2 párrafos concretos sobre alcance, objetivos y entregables.
+2. "requisitos_tecnicos": Lista de requisitos accionables (certificaciones, experiencia, equipamiento). Usa [] si no hay.
+3. "reglas_de_negocio": Lista de condiciones operativas (plazos, lugar, modalidad de pago, garantías). Usa [] si no hay.
+4. "politicas_y_penalidades": Lista de sanciones, multas, retenciones o políticas relevantes.
+5. "presupuesto_referencial": Monto textual ("S/ 120,000.00") o null.
 
-**TDR:**
+TDR:
 {context}
 """
 
             # Generar respuesta con JSON Schema enforced
-            response = await self.model.generate_content_async(user_prompt)
-
-            # Gemini con response_schema devuelve JSON válido directamente
-            response_text = response.text.strip()
+            response = await self._generate_content(user_prompt)
+            response_text = self._extract_text(response).strip()
 
             self.logger.debug(f"Respuesta del LLM (primeros 500 chars): {response_text[:500]}")
 
@@ -103,7 +138,6 @@ Analiza este Término de Referencia del SEACE y extrae:
                 "reglas_de_negocio": [],
                 "politicas_y_penalidades": [],
                 "presupuesto_referencial": None,
-                "score_compatibilidad": 1
             }
 
     async def analyze_tdr_from_pdf(self, pdf_bytes: bytes, filename: str) -> Dict:
@@ -126,52 +160,33 @@ Analiza este Término de Referencia del SEACE y extrae:
             # ESTRATEGIA: Inline data (sin Files API)
             self.logger.info("📦 Preparando PDF inline para Gemini...")
 
-            import base64
-            pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
-
             # Crear parte inline con el PDF
-            pdf_part = {
-                "inline_data": {
-                    "mime_type": "application/pdf",
-                    "data": pdf_base64
-                }
-            }
-
-            self.logger.info(f"✅ PDF preparado ({len(pdf_base64)} chars base64)")
+            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
+            self.logger.info(f"✅ PDF preparado ({len(pdf_bytes)} bytes)")
 
             # Prompt para análisis
             prompt = """
-Analiza este TDR del SEACE (Perú) y extrae información clave en formato JSON compacto.
-
-IMPORTANTE: Responde SOLO con JSON válido, sin markdown, sin explicaciones adicionales.
-
-Estructura requerida:
+Analiza este TDR del SEACE (Perú) y devuelve ÚNICAMENTE un JSON con las siguientes claves:
 {
-    "resumen_ejecutivo": "Texto de 100-200 palabras explicando: ¿Qué busca la entidad? ¿Alcance? ¿Requisitos clave?",
-    "requisitos_tecnicos": ["Lista de certificaciones, experiencia, tecnologías, equipos requeridos"],
-    "reglas_de_negocio": ["Lista de plazos, lugar, modalidad pago, garantías, obligaciones"],
-    "politicas_penalidades": ["Lista de multas, sanciones, porcentajes, causales"],
-    "presupuesto_referencial": "S/ X,XXX.XX o null (sin comillas)",
-    "score_compatibilidad": 7
+    "resumen_ejecutivo": "100-200 palabras sobre objetivos y alcance",
+    "requisitos_tecnicos": ["certificaciones, experiencia o equipamiento requerido"],
+    "reglas_de_negocio": ["plazos, lugar de entrega, modalidad de pago, garantías"],
+    "politicas_y_penalidades": ["multas, sanciones, porcentajes"],
+    "presupuesto_referencial": "S/ X,XXX.XX" o null
 }
 
-REGLAS:
-- Resumen ejecutivo: Máximo 200 palabras, enfocado en lo esencial
-- Cada array: Máximo 10 items por lista
-- Si no hay info: usar [] o null
-- NO inventes datos
-- Presupuesto: "S/ X,XXX.XX" exacto o null
-- Score: 1-10 según viabilidad
-
-Devuelve ÚNICAMENTE el JSON, sin ```json ni explicaciones.
+Reglas:
+- Si algún bloque no aparece en el PDF, devuelve [] o null.
+- Máximo 10 items por lista.
+- No incluyas texto fuera del JSON ni bloques ```json.
 """
 
             # Analizar con el PDF inline
             self.logger.info("🤖 Enviando PDF inline a Gemini...")
-            response = await self.model.generate_content_async([prompt, pdf_part])
+            response = await self._generate_content([prompt, pdf_part])
 
             # Parsear respuesta
-            response_text = response.text.strip()
+            response_text = self._extract_text(response).strip()
             self.logger.debug(f"Respuesta (primeros 500 chars): {response_text[:500]}")
 
             result = self._parse_json_response(response_text)
@@ -182,3 +197,20 @@ Devuelve ÚNICAMENTE el JSON, sin ```json ni explicaciones.
         except Exception as e:
             self.logger.error(f"❌ Error al analizar PDF con Gemini: {str(e)}")
             raise ValueError(f"Error en análisis PDF directo: {str(e)}")
+
+    async def evaluate_compatibility(
+        self,
+        company_copy: str,
+        analisis_tdr: Dict,
+        contrato_contexto: Optional[Dict] = None,
+        keywords: Optional[List[str]] = None
+    ) -> Dict:
+        try:
+            prompt = self._build_compatibility_prompt(company_copy, analisis_tdr, contrato_contexto, keywords)
+            response = await self._generate_content(prompt)
+            response_text = self._extract_text(response).strip()
+            self.logger.debug(f"Compatibilidad Gemini (primeros 400 chars): {response_text[:400]}")
+            return self._parse_json_response(response_text)
+        except Exception as e:
+            self.logger.error(f"❌ Error en compatibilidad Gemini: {str(e)}")
+            raise ValueError(f"Error al evaluar compatibilidad: {str(e)}")

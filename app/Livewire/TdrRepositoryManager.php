@@ -44,6 +44,11 @@ class TdrRepositoryManager extends Component
         $this->resetPage();
     }
 
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
     public function descargar(int $archivoId): void
     {
         try {

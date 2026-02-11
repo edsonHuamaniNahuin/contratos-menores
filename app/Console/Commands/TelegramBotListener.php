@@ -3,11 +3,16 @@
 namespace App\Console\Commands;
 
 use App\Models\CuentaSeace;
+use App\Models\SubscriptionContractMatch;
+use App\Models\TelegramSubscription;
+use App\Services\AccountCompatibilityService;
+use App\Services\Tdr\CompatibilityScoreService;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
 use App\Services\TdrAnalysisFormatter;
 use App\Services\TdrAnalysisService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -23,6 +28,9 @@ class TelegramBotListener extends Command
     protected string $telegramApiBase;
     protected bool $debugLogging;
     protected TdrAnalysisFormatter $formatter;
+    protected CompatibilityScoreService $compatibilityService;
+    protected AccountCompatibilityService $compatibilityRepository;
+    protected string $contratoCachePrefix = 'telegram:contrato:';
 
     public function __construct()
     {
@@ -31,6 +39,8 @@ class TelegramBotListener extends Command
         $this->telegramApiBase = rtrim((string) config('services.telegram.api_base', ''), '/');
         $this->debugLogging = (bool) config('services.telegram.debug_logs', false);
         $this->formatter = new TdrAnalysisFormatter();
+        $this->compatibilityService = app(CompatibilityScoreService::class);
+        $this->compatibilityRepository = app(AccountCompatibilityService::class);
 
         if (!empty(config('services.telegram.bot_token')) && $this->telegramApiBase === '') {
             Log::warning('Telegram Listener: TELEGRAM_API_BASE no configurado; el comando quedará inactivo hasta definirlo.');
@@ -151,6 +161,29 @@ class TelegramBotListener extends Command
 
             $this->answerCallbackQuery($callbackId, '📥 Preparando descarga...', $token);
             $this->descargarArchivoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+        } elseif (str_starts_with($data, 'compatibilidad_') || str_starts_with($data, 'compatrefresh_')) {
+            $parts = explode('_', $data, 4);
+            $idContrato = (int) ($parts[1] ?? 0);
+            $idContratoArchivo = (int) ($parts[2] ?? 0);
+            $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+            $forceRefresh = str_starts_with($data, 'compatrefresh_');
+
+            $this->info("🏅 Usuario {$chatId} solicitó compatibilidad del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+
+            $this->answerCallbackQuery(
+                $callbackId,
+                $forceRefresh ? '🔄 Recalculando score...' : '⏱️ Calculando score...',
+                $token
+            );
+
+            $this->evaluarCompatibilidadParaUsuario(
+                $chatId,
+                $idContrato,
+                $idContratoArchivo,
+                $nombreArchivo,
+                $token,
+                $forceRefresh
+            );
         } else {
             $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
         }
@@ -414,6 +447,260 @@ class TelegramBotListener extends Command
 
             $this->enviarMensaje($chatId, '❌ Error: ' . $e->getMessage(), $token);
         }
+    }
+
+    protected function evaluarCompatibilidadParaUsuario(
+        string $chatId,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        string $token,
+        bool $forceRefresh = false
+    ): void {
+        if ($idContrato <= 0) {
+            $this->enviarMensaje($chatId, '❌ No se pudo identificar el proceso.', $token);
+            return;
+        }
+
+        if ($idContratoArchivo <= 0) {
+            $this->enviarMensaje($chatId, '❌ Este proceso no tiene un TDR público disponible.', $token);
+            return;
+        }
+
+        $subscription = TelegramSubscription::where('chat_id', $chatId)->first();
+
+        if (!$subscription) {
+            $this->enviarMensaje($chatId, '❌ No encontramos una suscripción activa para este chat. Usa /start en el bot para registrarte.', $token);
+            return;
+        }
+
+        if (blank($subscription->company_copy)) {
+            $this->enviarMensaje($chatId, '✍️ Configura el copy de tu empresa en el panel web antes de solicitar el score.', $token);
+            return;
+        }
+
+        $cachedContrato = $this->getCachedContratoPayload($idContrato);
+        $existingMatch = $this->compatibilityRepository->findMatch($subscription, $idContrato);
+
+        if (!$forceRefresh && $this->compatibilityRepository->canReuseMatch($existingMatch, $subscription)) {
+            $this->enviarMensajeCompatibilidad(
+                $chatId,
+                $existingMatch,
+                true,
+                $token,
+                $idContrato,
+                $idContratoArchivo,
+                $nombreArchivo
+            );
+            return;
+        }
+
+        $analisis = $this->obtenerAnalisisParaCompatibilidad(
+            $idContrato,
+            $idContratoArchivo,
+            $nombreArchivo,
+            $cachedContrato
+        );
+
+        if (!($analisis['success'] ?? false)) {
+            $mensaje = $analisis['error'] ?? 'No se pudo completar el análisis IA del TDR.';
+            $this->enviarMensaje($chatId, '❌ ' . $mensaje, $token);
+            return;
+        }
+
+        $payload = $analisis['data'] ?? [];
+        $contratoSnapshot = $this->resolveContratoSnapshotForCompatibility(
+            $idContrato,
+            $payload,
+            $existingMatch,
+            $cachedContrato
+        );
+
+        try {
+            $compatResult = $this->compatibilityService->ensureScore(
+                $subscription,
+                $contratoSnapshot,
+                $payload,
+                $forceRefresh
+            );
+        } catch (\Throwable $e) {
+            Log::error('Compatibilidad IA: excepción', [
+                'chat_id' => $chatId,
+                'contrato' => $idContrato,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->enviarMensaje($chatId, '❌ Error al evaluar compatibilidad: ' . $e->getMessage(), $token);
+            return;
+        }
+
+        if (!empty($compatResult['error'])) {
+            $this->enviarMensaje($chatId, '❌ ' . $compatResult['error'], $token);
+            return;
+        }
+
+        /** @var SubscriptionContractMatch|null $match */
+        $match = $compatResult['match'] ?? null;
+
+        if (!$match) {
+            $this->enviarMensaje($chatId, '❌ No se pudo registrar el puntaje de compatibilidad para este proceso.', $token);
+            return;
+        }
+
+        $this->enviarMensajeCompatibilidad(
+            $chatId,
+            $match,
+            $compatResult['from_cache'] ?? false,
+            $token,
+            $idContrato,
+            $idContratoArchivo,
+            $nombreArchivo
+        );
+    }
+
+    protected function obtenerAnalisisParaCompatibilidad(
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        ?array $contratoCache = null
+    ): array {
+        $tdrService = new TdrAnalysisService();
+
+        if ($cached = $tdrService->obtenerAnalisisDesdeCache($idContratoArchivo, 'dashboard')) {
+            return $cached;
+        }
+
+        $cuenta = CuentaSeace::activa()->first();
+
+        if (!$cuenta) {
+            return [
+                'success' => false,
+                'error' => 'No hay cuenta SEACE activa configurada para descargar el TDR.',
+            ];
+        }
+
+        $contextoContrato = array_merge(['idContrato' => $idContrato], $contratoCache ?? []);
+
+        return $tdrService->analizarDesdeSeace(
+            $idContratoArchivo,
+            $nombreArchivo,
+            $cuenta,
+            $contextoContrato,
+            'dashboard'
+        );
+    }
+
+    protected function resolveContratoSnapshotForCompatibility(
+        int $idContrato,
+        array $analysisPayload,
+        ?SubscriptionContractMatch $existingMatch = null,
+        ?array $contratoCache = null
+    ): array {
+        $contexto = $analysisPayload['contexto_contrato'] ?? [];
+        $cacheData = $contratoCache ?? [];
+
+        return [
+            'idContrato' => $idContrato,
+            'desContratacion' => $cacheData['desContratacion']
+                ?? $contexto['codigo_proceso']
+                ?? $existingMatch?->contrato_codigo,
+            'nomEntidad' => $cacheData['nomEntidad']
+                ?? $contexto['entidad']
+                ?? $existingMatch?->contrato_entidad,
+            'nomObjetoContrato' => $cacheData['nomObjetoContrato']
+                ?? $contexto['objeto']
+                ?? $existingMatch?->contrato_objeto,
+            'desObjetoContrato' => $cacheData['desObjetoContrato']
+                ?? $contexto['descripcion']
+                ?? null,
+            'nomEstadoContrato' => $cacheData['nomEstadoContrato']
+                ?? $contexto['estado']
+                ?? null,
+            'fecPublica' => $cacheData['fecPublica']
+                ?? $contexto['fecha_publicacion']
+                ?? null,
+            'fecFinCotizacion' => $cacheData['fecFinCotizacion']
+                ?? $contexto['fecha_cierre']
+                ?? null,
+        ];
+    }
+
+    protected function enviarMensajeCompatibilidad(
+        string $chatId,
+        SubscriptionContractMatch $match,
+        bool $fromCache,
+        string $token,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo
+    ): void {
+        $payload = $match->analisis_payload ?? [];
+        $nivel = strtoupper((string) ($payload['nivel'] ?? 'SIN CLASIFICAR'));
+        $explicacion = trim((string) ($payload['explicacion'] ?? $payload['detalle'] ?? 'Sin explicación detallada.'));
+        $score = $match->score !== null ? number_format((float) $match->score, 1) : 'N/D';
+        $timestamp = $match->analizado_en
+            ? $match->analizado_en->copy()->timezone(config('app.timezone', 'UTC'))->format('d/m/Y H:i')
+            : null;
+
+        $mensaje = "🏅 <b>Compatibilidad IA</b>\n\n";
+        $mensaje .= "📊 <b>Puntaje:</b> {$score}/100\n";
+        $mensaje .= "🎯 <b>Nivel:</b> {$nivel}\n";
+
+        if ($timestamp) {
+            $mensaje .= "🕒 <b>Evaluado:</b> {$timestamp}\n";
+        }
+
+        $mensaje .= "\n📝 <b>Código:</b> " . ($match->contrato_codigo ?? 'N/A') . "\n";
+        $mensaje .= "🏢 <b>Entidad:</b> " . ($match->contrato_entidad ?? 'N/A') . "\n";
+
+        if ($match->contrato_objeto) {
+            $mensaje .= "🎯 <b>Objeto:</b> {$match->contrato_objeto}\n";
+        }
+
+        $mensaje .= "\n🧠 <b>Explicación:</b> {$explicacion}\n";
+
+        if ($fromCache) {
+            $mensaje .= "\n♻️ Resultado recuperado desde caché para tu copy actual.";
+        }
+
+        $mensaje .= "\n🤖 <i>Vigilante SEACE</i>";
+
+        $keyboard = [
+            'inline_keyboard' => [
+                [
+                    [
+                        'text' => '📥 Descargar TDR',
+                        'callback_data' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                    [
+                        'text' => '🤖 Analizar TDR',
+                        'callback_data' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                ],
+                [
+                    [
+                        'text' => '🔄 Recalcular Score',
+                        'callback_data' => $this->buildCallbackData('compatrefresh', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                ],
+            ],
+        ];
+
+        $this->enviarMensajeConBotones($chatId, $mensaje, $keyboard, $token);
+    }
+
+    protected function getCachedContratoPayload(int $idContrato): ?array
+    {
+        if ($idContrato <= 0) {
+            return null;
+        }
+
+        return Cache::get($this->buildContratoCacheKey($idContrato));
+    }
+
+    protected function buildContratoCacheKey(int $idContrato): string
+    {
+        return $this->contratoCachePrefix . $idContrato;
     }
 
     protected function buildCallbackData(string $action, int $idContrato, int $idArchivo, string $nombreArchivo): string

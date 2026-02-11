@@ -1,0 +1,136 @@
+name: CD - Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.github/instructions/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1. CI gate (reutilizar el workflow de CI)
+  # ─────────────────────────────────────────────
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  # ─────────────────────────────────────────────
+  # 2. Deploy Laravel + Python a Elastika VPS
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to Elastika VPS
+    runs-on: ubuntu-latest
+    needs: ci
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js (build assets)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+
+            APP_DIR="${{ secrets.VPS_APP_DIR || '/var/www/vigilante-seace' }}"
+            PYTHON_DIR="$APP_DIR/analizador-tdr"
+
+            echo "🚀 Iniciando deploy en $APP_DIR..."
+
+            cd "$APP_DIR"
+
+            # ── 1. Pull últimos cambios ──
+            git fetch origin main
+            git reset --hard origin/main
+
+            # ── 2. Laravel: dependencias + migraciones ──
+            composer install --no-dev --optimize-autoloader --no-interaction
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+            php artisan migrate --force
+
+            # ── 3. Frontend assets (ya compilados, solo copiar) ──
+            echo "✅ Assets ya compilados en CI"
+
+            # ── 4. Python microservicio ──
+            cd "$PYTHON_DIR"
+            if [ ! -d "venv" ]; then
+                python3 -m venv venv
+            fi
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt --quiet
+            deactivate
+
+            # ── 5. Reiniciar servicios ──
+            cd "$APP_DIR"
+
+            # Reiniciar queue worker
+            php artisan queue:restart
+
+            # Reiniciar microservicio Python (systemd)
+            sudo systemctl restart analizador-tdr.service || echo "⚠️ No se pudo reiniciar analizador-tdr (configurar systemd)"
+
+            # Reiniciar Apache/Nginx
+            sudo systemctl reload apache2 || sudo systemctl reload nginx || echo "⚠️ Reiniciar web server manualmente"
+
+            echo "✅ Deploy completado exitosamente"
+
+      - name: Upload compiled assets via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "public/build/"
+          target: "${{ secrets.VPS_APP_DIR || '/var/www/vigilante-seace' }}"
+          overwrite: true
+
+      - name: Health check
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            APP_DIR="${{ secrets.VPS_APP_DIR || '/var/www/vigilante-seace' }}"
+
+            # Verificar Laravel
+            cd "$APP_DIR"
+            php artisan --version && echo "✅ Laravel OK"
+
+            # Verificar Scheduler
+            php artisan schedule:list | head -5
+
+            # Verificar microservicio Python
+            curl -sf http://127.0.0.1:8001/health | head -1 && echo "✅ Analizador TDR OK" || echo "⚠️ Analizador TDR no responde"

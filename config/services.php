@@ -28,6 +28,34 @@ $contratacionesReferer = rtrim(
     '/'
 );
 
+$publicBaseUrl = rtrim((string) env('SEACE_PUBLIC_BASE_URL', $seaceBaseUrl), '/');
+$publicFrontendOrigin = rtrim((string) env('SEACE_PUBLIC_FRONTEND_ORIGIN', $seaceFrontendOrigin ?: ''), '/');
+
+$defaultPublicRefererBase = $publicFrontendOrigin ?: $seaceFrontendOrigin;
+$defaultPublicReferer = $defaultPublicRefererBase
+    ? $defaultPublicRefererBase . '/busqueda/buscadorContrataciones'
+    : '';
+
+$publicReferer = rtrim(
+    (string) env('SEACE_PUBLIC_REFERER', $defaultPublicReferer),
+    '/'
+);
+
+$defaultArchivosRefererBase = $publicFrontendOrigin ?: $seaceFrontendOrigin;
+$defaultArchivosReferer = $defaultArchivosRefererBase
+    ? $defaultArchivosRefererBase . '/cotizacion/contrataciones'
+    : '';
+
+$publicArchivosBaseUrl = rtrim(
+    (string) env('SEACE_PUBLIC_ARCHIVOS_BASE_URL', $publicBaseUrl ?: $seaceBaseUrl),
+    '/'
+);
+
+$publicArchivosReferer = rtrim(
+    (string) env('SEACE_PUBLIC_ARCHIVOS_REFERER', $defaultArchivosReferer),
+    '/'
+);
+
 $telegramApiBase = rtrim((string) env('TELEGRAM_API_BASE', ''), '/');
 
 return [
@@ -77,6 +105,11 @@ return [
         'auth_referer' => $authReferer ?: null,
         'contrataciones_referer' => $contratacionesReferer ?: null,
         'debug_logs' => env('SEACE_DEBUG_LOGS', false),
+        'public_base_url' => $publicBaseUrl ?: ($seaceBaseUrl ?: null),
+        'public_frontend_origin' => $publicFrontendOrigin ?: ($seaceFrontendOrigin ?: null),
+        'public_referer' => $publicReferer ?: null,
+        'public_archivos_base_url' => $publicArchivosBaseUrl ?: ($publicBaseUrl ?: $seaceBaseUrl ?: null),
+        'public_archivos_referer' => $publicArchivosReferer ?: null,
 
         'endpoints' => [
             'login' => env('SEACE_ENDPOINT_LOGIN', '/seguridadproveedor/seguridad/validausuariornp'),

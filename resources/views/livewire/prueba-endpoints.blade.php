@@ -864,6 +864,353 @@
                 </div>
             @endif
         </div>
+
+        <!-- 6. Importador TDR + Telegram -->
+        <div class="bg-white rounded-3xl shadow-soft p-6 lg:col-span-2">
+            <h3 class="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">6</span>
+                Importador TDR + Notificación Telegram
+            </h3>
+
+            <div class="grid md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs font-semibold text-neutral-500 mb-1">Fecha objetivo</label>
+                    <input
+                        type="date"
+                        wire:model.live="fechaImportacionTdr"
+                        class="w-full px-3 py-2.5 border border-neutral-100 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                    @error('fechaImportacionTdr')
+                        <p class="text-xs text-primary-500 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <div class="bg-primary-500/5 border border-primary-500/20 rounded-2xl p-4 h-full">
+                        <p class="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Filtros automáticos</p>
+                        <p class="text-sm font-semibold text-neutral-900 mt-2">Las palabras clave se toman de cada suscriptor activo.</p>
+                        <p class="text-xs text-neutral-500 mt-2">Actualiza los filtros personalizados en Suscriptores. No necesitas ingresar keywords aquí.</p>
+                    </div>
+                </div>
+                <div class="bg-neutral-50 border border-neutral-100 rounded-2xl p-4">
+                    <p class="text-xs text-neutral-500 font-semibold uppercase tracking-wide">Estado del importador</p>
+                    <p class="text-sm font-semibold text-neutral-900 mt-1">Suscriptores activos: {{ $suscriptoresActivos }}</p>
+                    <p class="text-xs text-neutral-500 mt-1">Límite actual: {{ $limiteProcesosImportacion }} procesos</p>
+                    <p class="text-xs text-neutral-500">Fuente: Buscador público SEACE</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button
+                    wire:click="importarProcesosTdr"
+                    wire:loading.attr="disabled"
+                    wire:target="importarProcesosTdr"
+                    class="px-5 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-full font-semibold text-sm flex items-center gap-2 shadow-md hover:from-primary-400 hover:to-secondary-400 transition-all disabled:opacity-50"
+                >
+                    <svg wire:loading.remove wire:target="importarProcesosTdr" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-6V6m0 10v2m8-6a8 8 0 11-16 0 8 8 0 0116 0z"/>
+                    </svg>
+                    <svg wire:loading wire:target="importarProcesosTdr" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span wire:loading.remove wire:target="importarProcesosTdr">Escanear 150 procesos y notificar</span>
+                    <span wire:loading wire:target="importarProcesosTdr">Ejecutando...</span>
+                </button>
+                <div class="px-4 py-2 bg-neutral-50 border border-neutral-100 rounded-full text-xs text-neutral-500">
+                    El sistema trae los procesos más recientes del año y filtra por la fecha elegida.
+                </div>
+            </div>
+
+            @if($loadingImportacionTdr)
+                <div class="mt-4 flex items-center gap-2 text-xs text-neutral-600 bg-neutral-50 border border-neutral-100 rounded-2xl px-3 py-2">
+                    <svg class="w-4 h-4 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Consultando buscador público y aplicando filtros...</span>
+                </div>
+            @endif
+
+            @if($resumenImportacionTdr)
+                @if($resumenImportacionTdr['success'])
+                    <div class="mt-6 bg-secondary-500/10 border-l-4 border-secondary-500 rounded-2xl p-4">
+                        <p class="text-sm font-semibold text-neutral-900">{{ $resumenImportacionTdr['message'] ?? 'Importación completada' }}</p>
+                        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 text-xs text-neutral-500">
+                            <div>
+                                <p class="font-semibold text-neutral-900 text-base">{{ $resumenImportacionTdr['stats']['total_descargados'] ?? 0 }}</p>
+                                <p>Procesos descargados</p>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-neutral-900 text-base">{{ $resumenImportacionTdr['stats']['total_filtrados'] ?? 0 }}</p>
+                                <p>Coinciden con la fecha</p>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-neutral-900 text-base">{{ $resumenImportacionTdr['stats']['total_envios'] ?? 0 }}</p>
+                                <p>Mensajes enviados</p>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-neutral-900 text-base">{{ $resumenImportacionTdr['stats']['total_pendientes'] ?? 0 }}</p>
+                                <p>Procesos nuevos del día</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-xs text-neutral-500 flex flex-wrap gap-4">
+                            <span>Suscriptores: {{ $resumenImportacionTdr['stats']['total_suscriptores'] ?? 0 }}</span>
+                            <span>Coincidencias totales: {{ $resumenImportacionTdr['stats']['total_coincidencias'] ?? 0 }}</span>
+                            <span>Errores: {{ $resumenImportacionTdr['stats']['errores_envio'] ?? 0 }}</span>
+                            <span>Repetidos omitidos: {{ $resumenImportacionTdr['stats']['total_omitidos'] ?? 0 }}</span>
+                            <span>Fecha: {{ $resumenImportacionTdr['stats']['fecha'] ?? '-' }}</span>
+                            <span>Cache dataset: {{ !empty($resumenImportacionTdr['stats']['cache_hit']) ? 'HIT' : 'MISS' }}</span>
+                            <span>Duración: {{ number_format($resumenImportacionTdr['stats']['tiempo_ms'] ?? 0, 2) }} ms</span>
+                            @if(!empty($resumenImportacionTdr['dataset_meta']))
+                                <span>Dataset ({{ $resumenImportacionTdr['dataset_meta']['page_size'] }} registros) • Publicados entre {{ $resumenImportacionTdr['dataset_meta']['fecha_max'] ?? 'N/A' }} y {{ $resumenImportacionTdr['dataset_meta']['fecha_min'] ?? 'N/A' }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if(!empty($resumenImportacionTdr['procesos_omitidos']))
+                        <div class="mt-4 bg-neutral-50 border border-neutral-100 rounded-2xl p-4">
+                            <p class="text-xs font-semibold text-neutral-600 uppercase tracking-wide mb-2">Procesos omitidos por cache</p>
+                            <p class="text-[11px] text-neutral-500 mb-3">Estos procesos ya habían sido procesados anteriormente y se saltaron para evitar envíos duplicados.</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach(array_slice($resumenImportacionTdr['procesos_omitidos'], 0, 6) as $omitido)
+                                    <span class="px-3 py-1 rounded-full bg-white border border-neutral-100 text-[11px] text-neutral-700">
+                                        {{ $omitido['codigo'] ?? 'Proceso' }} · {{ $omitido['entidad'] ?? 'Entidad' }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if(!empty($resumenImportacionTdr['suscriptores']))
+                        <div class="mt-6 space-y-4">
+                            @foreach($resumenImportacionTdr['suscriptores'] as $suscriptor)
+                                <div class="border border-neutral-100 rounded-2xl p-4 bg-neutral-50/40">
+                                    <div class="flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                            <p class="text-sm font-semibold text-neutral-900">{{ $suscriptor['nombre'] }}</p>
+                                            <p class="text-xs text-neutral-500">Chat ID: {{ $suscriptor['chat_id'] }}</p>
+                                        </div>
+                                        <div class="flex gap-2 text-xs font-semibold">
+                                            <span class="px-3 py-1 rounded-full bg-secondary-500/15 text-secondary-600">Coincidencias: {{ $suscriptor['coincidencias'] }}</span>
+                                            <span class="px-3 py-1 rounded-full bg-primary-500/15 text-primary-600">Enviados: {{ $suscriptor['envios_exitosos'] }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 text-xs text-neutral-500">
+                                        <p class="font-semibold text-neutral-700">Keywords:</p>
+                                        <div class="flex flex-wrap gap-2 mt-1">
+                                            @forelse($suscriptor['keywords'] as $keyword)
+                                                <span class="px-2 py-1 bg-white border border-neutral-100 rounded-full text-[11px] text-neutral-700">{{ $keyword }}</span>
+                                            @empty
+                                                <span class="text-[11px] text-neutral-500">Sin filtros, recibe todos los procesos del día.</span>
+                                            @endforelse
+                                        </div>
+                                    </div>
+                                    @if(!empty($suscriptor['muestras']))
+                                        <div class="mt-3 space-y-2">
+                                            @foreach($suscriptor['muestras'] as $muestra)
+                                                <div class="bg-white rounded-xl border border-neutral-100 px-3 py-2 text-xs text-neutral-700 flex justify-between gap-4">
+                                                    <div>
+                                                        <p class="font-semibold text-neutral-900">{{ $muestra['codigo'] }}</p>
+                                                        <p class="text-[11px] text-neutral-500">{{ $muestra['entidad'] }}</p>
+                                                    </div>
+                                                    @if(!empty($muestra['match_keywords']))
+                                                        <div class="flex flex-wrap gap-1 justify-end">
+                                                            @foreach($muestra['match_keywords'] as $keyword)
+                                                                <span class="px-2 py-0.5 rounded-full bg-secondary-500/20 text-secondary-700 text-[10px]">{{ $keyword }}</span>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                    @if(!empty($suscriptor['errores']))
+                                        <div class="mt-3 text-[11px] text-primary-600">
+                                            @foreach($suscriptor['errores'] as $error)
+                                                <p>⚠️ {{ $error }}</p>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if(!empty($resumenImportacionTdr['preview']))
+                        <div class="mt-6">
+                            <p class="text-xs font-semibold text-neutral-500 mb-2 uppercase tracking-wide">Primeros procesos coincidentes</p>
+                            <div class="grid md:grid-cols-3 gap-3">
+                                @foreach($resumenImportacionTdr['preview'] as $proceso)
+                                    <div class="border border-neutral-100 rounded-2xl p-3 bg-white">
+                                        <p class="text-sm font-semibold text-neutral-900">{{ $proceso['codigo'] }}</p>
+                                        <p class="text-xs text-neutral-500">{{ $proceso['entidad'] }}</p>
+                                        <div class="flex items-center justify-between text-[11px] text-neutral-500 mt-2">
+                                            <span>{{ $proceso['objeto'] }}</span>
+                                            <span>{{ $proceso['fecha_publicacion'] }}</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if(!empty($resumenImportacionTdr['raw_dataset']))
+                        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="bg-white rounded-3xl border border-neutral-100 p-4 shadow-soft">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div>
+                                        <p class="text-sm font-semibold text-neutral-900">Dataset descargado</p>
+                                        <p class="text-xs text-neutral-500">Objetos crudos del buscador público</p>
+                                    </div>
+                                    <span class="text-xs px-3 py-1 rounded-full bg-neutral-100 text-neutral-600">{{ count($resumenImportacionTdr['raw_dataset']) }} registros</span>
+                                </div>
+                                @if(!empty($resumenImportacionTdr['dataset_meta']))
+                                    <div class="flex flex-wrap gap-3 text-[11px] text-neutral-500 mb-2">
+                                        <span class="px-3 py-1 rounded-full bg-neutral-900/5">Año {{ $resumenImportacionTdr['dataset_meta']['anio'] }}</span>
+                                        <span class="px-3 py-1 rounded-full bg-neutral-900/5">Page {{ $resumenImportacionTdr['dataset_meta']['page'] }} · {{ $resumenImportacionTdr['dataset_meta']['page_size'] }} registros</span>
+                                        <span class="px-3 py-1 rounded-full bg-neutral-900/5">Más reciente: {{ $resumenImportacionTdr['dataset_meta']['fecha_max'] ?? 'N/A' }}</span>
+                                        <span class="px-3 py-1 rounded-full bg-neutral-900/5">Más antiguo: {{ $resumenImportacionTdr['dataset_meta']['fecha_min'] ?? 'N/A' }}</span>
+                                    </div>
+                                @endif
+                                <details class="mt-2">
+                                    <summary class="text-xs text-neutral-500 cursor-pointer hover:text-neutral-900">Ver JSON completo</summary>
+                                    <pre class="mt-3 max-h-72 overflow-y-auto text-[11px] leading-relaxed bg-neutral-900 text-secondary-400 p-3 rounded-2xl">{{ json_encode($resumenImportacionTdr['raw_dataset'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
+                                </details>
+                            </div>
+
+                            @php
+                                $filtradosVisibles = array_slice($resumenImportacionTdr['raw_filtrado'] ?? [], 0, 10);
+                                $datasetVisibles = array_slice($resumenImportacionTdr['raw_dataset'] ?? [], 0, 10);
+                            @endphp
+                            <div class="bg-white rounded-3xl border border-neutral-100 p-4 shadow-soft">
+                                <p class="text-sm font-semibold text-neutral-900 mb-1">Procesos filtrados por fecha</p>
+                                <p class="text-xs text-neutral-500 mb-3">Se muestran los primeros {{ count($filtradosVisibles) }} de {{ count($resumenImportacionTdr['raw_filtrado'] ?? []) }} coincidencias.</p>
+                                <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                    @forelse($filtradosVisibles as $proceso)
+                                        <div class="border border-neutral-100 rounded-2xl px-3 py-2 bg-neutral-50/70">
+                                            <p class="text-sm font-semibold text-neutral-900">{{ $proceso['desContratacion'] ?? 'N/A' }}</p>
+                                            <p class="text-xs text-neutral-500">{{ $proceso['nomEntidad'] ?? 'Entidad no especificada' }}</p>
+                                            <div class="flex items-center justify-between text-[11px] text-neutral-500 mt-1">
+                                                <span>{{ $proceso['nomObjetoContrato'] ?? 'Sin objeto' }}</span>
+                                                <span>{{ $proceso['fecPublica'] ?? 'Sin fecha' }}</span>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="text-xs text-neutral-500">Sin coincidencias.</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+
+                        @if(!empty($datasetVisibles))
+                            <div class="mt-4 bg-white rounded-3xl border border-neutral-100 p-4 shadow-soft">
+                                <p class="text-sm font-semibold text-neutral-900 mb-1">Vista rápida del dataset (Top {{ count($datasetVisibles) }})</p>
+                                <p class="text-xs text-neutral-500 mb-3">Revisa las fechas de publicación reales que devuelve el endpoint.</p>
+                                <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                    @foreach($datasetVisibles as $proceso)
+                                        <div class="border border-neutral-100 rounded-2xl px-3 py-2 bg-neutral-50/40">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <p class="text-sm font-semibold text-neutral-900 truncate">{{ $proceso['desContratacion'] ?? 'N/A' }}</p>
+                                                <span class="text-[11px] text-neutral-500 whitespace-nowrap">{{ $proceso['fecPublica'] ?? 'Sin fecha' }}</span>
+                                            </div>
+                                            <p class="text-xs text-neutral-500">{{ $proceso['nomEntidad'] ?? 'Entidad no especificada' }}</p>
+                                            <div class="flex items-center justify-between text-[11px] text-neutral-500 mt-1">
+                                                <span>{{ $proceso['nomObjetoContrato'] ?? 'Sin objeto' }}</span>
+                                                <span>{{ $proceso['nomEstadoContrato'] ?? 'Sin estado' }}</span>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+
+                    @if(!empty($resumenImportacionTdr['procesos_notificados']))
+                        <div class="mt-6 bg-white rounded-3xl p-5 border border-neutral-100 shadow-soft">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-neutral-900">Procesos enviados a Telegram</p>
+                                    <p class="text-xs text-neutral-500">Detalle por proceso y estado de entrega</p>
+                                </div>
+                                <span class="text-xs px-3 py-1 rounded-full bg-secondary-500/15 text-secondary-700">{{ count($resumenImportacionTdr['procesos_notificados']) }} procesos</span>
+                            </div>
+                            <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                                @foreach($resumenImportacionTdr['procesos_notificados'] as $registro)
+                                    <div class="border border-neutral-100 rounded-2xl p-3 bg-neutral-50/40">
+                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                                <p class="text-sm font-semibold text-neutral-900">{{ $registro['contrato']['codigo'] ?? 'N/A' }}</p>
+                                                <p class="text-xs text-neutral-500">{{ $registro['contrato']['entidad'] ?? 'Entidad no especificada' }}</p>
+                                            </div>
+                                            <div class="text-right text-[11px] text-neutral-500">
+                                                <p>{{ $registro['contrato']['objeto'] ?? 'Sin objeto' }}</p>
+                                                <p>Publicación: {{ $registro['contrato']['fecha_publicacion'] ?? 'N/A' }}</p>
+                                            </div>
+                                        </div>
+                                        @if(!empty($registro['suscriptores']))
+                                            <div class="flex flex-wrap gap-2 mt-3">
+                                                @foreach($registro['suscriptores'] as $suscriptorNombre)
+                                                    <span class="px-3 py-1 rounded-full bg-neutral-900/5 text-[11px] text-neutral-700">{{ $suscriptorNombre }}</span>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                        @if(!empty($registro['envios']))
+                                            <div class="mt-3 space-y-2">
+                                                @foreach($registro['envios'] as $envio)
+                                                    <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-600 bg-white border border-neutral-100 rounded-xl px-3 py-2">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="font-semibold text-neutral-900">{{ $envio['suscriptor'] }}</span>
+                                                            <span class="px-2 py-0.5 rounded-full text-white text-[10px] {{ $envio['status'] === 'enviado' ? 'bg-secondary-500' : 'bg-primary-500' }}">{{ $envio['status'] === 'enviado' ? 'Enviado' : 'Error' }}</span>
+                                                        </div>
+                                                        <div class="flex flex-wrap gap-1">
+                                                            @foreach($envio['keywords'] ?? [] as $keyword)
+                                                                <span class="px-2 py-0.5 rounded-full bg-secondary-500/10 text-secondary-700">{{ $keyword }}</span>
+                                                            @endforeach
+                                                        </div>
+                                                        @if(!empty($envio['mensaje']))
+                                                            <p class="w-full text-[10px] text-primary-600">{{ $envio['mensaje'] }}</p>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if(!empty($resumenImportacionTdr['procesos_sin_envio']))
+                        <div class="mt-6 bg-neutral-50 rounded-3xl border border-neutral-100 p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <p class="text-sm font-semibold text-neutral-900">Procesos sin coincidencias</p>
+                                    <p class="text-xs text-neutral-500">Coinciden por fecha pero ningún suscriptor los reclamó</p>
+                                </div>
+                                <span class="text-xs px-3 py-1 rounded-full bg-primary-500/10 text-primary-700">{{ count($resumenImportacionTdr['procesos_sin_envio']) }}</span>
+                            </div>
+                            <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                @foreach($resumenImportacionTdr['procesos_sin_envio'] as $contrato)
+                                    <div class="bg-white border border-neutral-100 rounded-2xl px-3 py-2 text-xs text-neutral-600">
+                                        <p class="text-sm font-semibold text-neutral-900">{{ $contrato['codigo'] ?? 'N/A' }}</p>
+                                        <p>{{ $contrato['entidad'] ?? 'Entidad no especificada' }}</p>
+                                        <div class="flex items-center justify-between text-[11px] text-neutral-500 mt-1">
+                                            <span>{{ $contrato['objeto'] ?? 'Sin objeto' }}</span>
+                                            <span>{{ $contrato['fecha_publicacion'] ?? 'Sin fecha' }}</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                @else
+                    <div class="mt-6 bg-primary-500/10 border-l-4 border-primary-500 rounded-2xl p-4">
+                        <p class="text-sm font-semibold text-neutral-900">Error en el importador</p>
+                        <p class="text-xs text-neutral-600 mt-1">{{ $resumenImportacionTdr['error'] ?? 'Error desconocido' }}</p>
+                    </div>
+                @endif
+            @endif
+        </div>
     </div>
 </div>
 

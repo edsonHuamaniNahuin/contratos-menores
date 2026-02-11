@@ -7,7 +7,7 @@ python-multipart>=0.0.9
 PyMuPDF>=1.24.0
 
 # LLM Clients - Actualizados para Gemini 2.5/3 Flash, GPT-4o, Claude 3.5
-google-generativeai>=0.8.0
+google-genai>=0.3.0
 openai>=1.50.0
 anthropic>=0.40.0
 

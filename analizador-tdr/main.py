@@ -15,7 +15,8 @@ from app.models.schemas import (
     TDRAnalysisResponse,
     TDRAnalysisRequest,
     HealthCheckResponse,
-    ErrorResponse
+    ErrorResponse,
+    CompatibilityScoreRequest,
 )
 from app.services.analyzer_service import TDRAnalyzerService
 
@@ -182,6 +183,27 @@ async def analyze_tdr(
             status_code=500,
             detail=f"Error interno al procesar el TDR: {str(e)}"
         )
+
+
+@app.post(
+    "/compatibility/score",
+    tags=["Compatibility"],
+    summary="Evalúa compatibilidad del TDR con el perfil de un suscriptor"
+)
+async def compatibility_score(request: CompatibilityScoreRequest):
+    try:
+        result = await analyzer_service.evaluate_compatibility(request)
+        return {
+            "success": True,
+            "data": result.model_dump(),
+            "timestamp": datetime.now().isoformat(),
+        }
+    except ValueError as e:
+        logger.error(f"Error de compatibilidad: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error interno en compatibilidad: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.exception_handler(Exception)

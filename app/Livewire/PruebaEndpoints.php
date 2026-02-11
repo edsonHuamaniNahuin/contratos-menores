@@ -3,15 +3,19 @@
 namespace App\Livewire;
 
 use App\Models\CuentaSeace;
+use App\Models\TelegramSubscription;
+use App\Services\Contratos\ContratoRepositoryService;
 use App\Services\TelegramNotificationService;
+use App\Services\Tdr\ImportadorTdrEngine;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
-use App\Services\Contratos\ContratoRepositoryService;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Collection;
 use Livewire\Component;
-use Exception;
 use RuntimeException;
 
 class PruebaEndpoints extends Component
@@ -26,6 +30,11 @@ class PruebaEndpoints extends Component
     public ?array $resultadoRefresh = null;
     public ?array $resultadoBuscador = null;
     public ?array $resultadoMaestras = null;
+    public string $fechaImportacionTdr;
+    public bool $loadingImportacionTdr = false;
+    public ?array $resumenImportacionTdr = null;
+    public int $limiteProcesosImportacion = 150;
+    public int $suscriptoresActivos = 0;
 
     // Loading states
     public bool $loadingLogin = false;
@@ -84,6 +93,7 @@ class PruebaEndpoints extends Component
     protected string $origin = '';
 
     protected bool $debugLogging = false;
+    protected string $seaceTimezone = 'America/Lima';
 
     public function mount($cuentaId = null)
     {
@@ -101,6 +111,8 @@ class PruebaEndpoints extends Component
 
         // Cargar departamentos al inicio
         $this->cargarDepartamentos();
+        $this->fechaImportacionTdr = now()->format('Y-m-d');
+        $this->actualizarSuscriptoresActivos();
     }
 
     public function hydrate(): void
@@ -1071,6 +1083,78 @@ class PruebaEndpoints extends Component
         $headers['Referer'] = $referer ?: $this->refererBase;
 
         return $headers;
+    }
+
+    public function importarProcesosTdr(): void
+    {
+        $this->validate([
+            'fechaImportacionTdr' => ['required', 'date', 'before_or_equal:' . now()->format('Y-m-d')],
+        ], [
+            'fechaImportacionTdr.required' => 'Selecciona una fecha de publicación para filtrar los procesos.',
+            'fechaImportacionTdr.before_or_equal' => 'La fecha no puede ser mayor a hoy.',
+        ]);
+
+        $this->loadingImportacionTdr = true;
+        $this->resumenImportacionTdr = null;
+
+        try {
+            $userId = Auth::id();
+            if (!$userId) {
+                throw new RuntimeException('Debes iniciar sesión para ejecutar el importador.');
+            }
+
+            $suscripciones = TelegramSubscription::with('keywords')
+                ->where('user_id', $userId)
+                ->activas()
+                ->get();
+
+            $this->suscriptoresActivos = $suscripciones->count();
+
+            if ($suscripciones->isEmpty()) {
+                $this->resumenImportacionTdr = [
+                    'success' => false,
+                    'error' => 'No tienes suscriptores activos configurados. Agrega chat IDs en Configuración.',
+                ];
+                return;
+            }
+
+            $fechaObjetivo = Carbon::parse($this->fechaImportacionTdr, $this->seaceTimezone)
+                ->startOfDay();
+            /** @var ImportadorTdrEngine $engine */
+            $engine = app(ImportadorTdrEngine::class);
+
+            $this->resumenImportacionTdr = $engine->ejecutar(
+                $fechaObjetivo,
+                $suscripciones,
+                $this->limiteProcesosImportacion
+            );
+        } catch (Exception $e) {
+            Log::error('Importador TDR: error inesperado', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $this->resumenImportacionTdr = [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        } finally {
+            $this->loadingImportacionTdr = false;
+        }
+    }
+
+    protected function actualizarSuscriptoresActivos(): void
+    {
+        $userId = Auth::id();
+
+        if (!$userId) {
+            $this->suscriptoresActivos = 0;
+            return;
+        }
+
+        $this->suscriptoresActivos = TelegramSubscription::where('user_id', $userId)
+            ->activas()
+            ->count();
     }
 
     /**

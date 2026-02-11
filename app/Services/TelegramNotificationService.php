@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Contrato;
 use App\Models\TelegramSubscription;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -16,6 +17,8 @@ class TelegramNotificationService
     protected int $timeout;
     protected bool $enabled;
     protected bool $debugLogging;
+    protected int $contratoCacheTtl;
+    protected string $contratoCachePrefix = 'telegram:contrato:';
 
     public function __construct()
     {
@@ -25,6 +28,7 @@ class TelegramNotificationService
         $this->timeout = 10;
         $this->debugLogging = (bool) config('services.telegram.debug_logs', false);
         $this->enabled = $this->botToken !== '' && $this->apiBase !== '';
+        $this->contratoCacheTtl = (int) config('services.telegram.contrato_cache_ttl', 720);
 
         if ($this->botToken !== '' && $this->apiBase === '') {
             Log::warning('Telegram: TELEGRAM_API_BASE no configurado; deshabilitando bot hasta definirlo.');
@@ -50,32 +54,30 @@ class TelegramNotificationService
         $estadisticas['total'] = $suscripciones->count();
 
         $mensaje = $this->construirMensaje($contratoData);
-        $idContrato = $contratoData['idContrato'] ?? 0;
-        $idContratoArchivo = $contratoData['idContratoArchivo'] ?? 0;
-        $nombreArchivo = $contratoData['nombreArchivo'] ?? 'archivo.pdf';
-
-        $keyboard = [
-            'inline_keyboard' => [
-                [
-                    [
-                        'text' => '🤖 Analizar con IA',
-                        'callback_data' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                    ],
-                    [
-                        'text' => '📥 Descargar TDR',
-                        'callback_data' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                    ],
-                ],
-            ],
-        ];
+        $keyboard = $this->buildDefaultKeyboard($contratoData);
+        $this->cacheContratoContext($contratoData);
 
         foreach ($suscripciones as $suscripcion) {
-            if (!$suscripcion->coincideConFiltros($contratoData)) {
+            $resultadoFiltro = $suscripcion->resolverCoincidenciasContrato($contratoData);
+
+            if (!$resultadoFiltro['pasa']) {
                 continue;
             }
 
+            $mensajePersonalizado = $mensaje;
+
+            if (!empty($resultadoFiltro['keywords'])) {
+                $mensajePersonalizado .= "\n\n🔎 Coincidencias: " . implode(', ', $resultadoFiltro['keywords']);
+            }
+
+            if (!empty($suscripcion->company_copy)) {
+                $mensajePersonalizado .= "\n\n🏢 Perfil: " . $suscripcion->company_copy;
+            }
+
             try {
-                $response = $this->enviarMensajeConBotones($suscripcion->chat_id, $mensaje, $keyboard);
+                $response = $keyboard
+                    ? $this->enviarMensajeConBotones($suscripcion->chat_id, $mensajePersonalizado, $keyboard)
+                    : $this->enviarMensaje($suscripcion->chat_id, $mensajePersonalizado);
 
                 if ($response['success']) {
                     $estadisticas['exitosos']++;
@@ -109,6 +111,31 @@ class TelegramNotificationService
         $this->debug('Broadcast completado', $estadisticas);
 
         return $estadisticas;
+    }
+
+    public function enviarProcesoASuscriptor(TelegramSubscription $suscripcion, array $contratoData, array $matchedKeywords = []): array
+    {
+        $this->cacheContratoContext($contratoData);
+        $mensaje = $this->construirMensaje($contratoData);
+
+        if (!empty($matchedKeywords)) {
+            $mensaje .= "\n\n🔎 Coincidencias: " . implode(', ', array_unique($matchedKeywords));
+        }
+
+        if (!empty($suscripcion->company_copy)) {
+            $mensaje .= "\n\n🏢 Perfil: " . $suscripcion->company_copy;
+        }
+
+        $keyboard = $this->buildDefaultKeyboard($contratoData);
+        $resultado = $keyboard
+            ? $this->enviarMensajeConBotones($suscripcion->chat_id, $mensaje, $keyboard)
+            : $this->enviarMensaje($suscripcion->chat_id, $mensaje);
+
+        if ($resultado['success']) {
+            $suscripcion->registrarNotificacion();
+        }
+
+        return $resultado;
     }
 
     protected function construirMensaje(array $contratoData): string
@@ -217,6 +244,73 @@ class TelegramNotificationService
     {
         $nombre = $this->sanitizeCallbackFilename($nombreArchivo);
         return sprintf('%s_%d_%d_%s', $action, $idContrato, $idContratoArchivo, $nombre);
+    }
+
+    protected function buildDefaultKeyboard(array $contratoData): ?array
+    {
+        $idContrato = (int) ($contratoData['idContrato'] ?? 0);
+
+        if ($idContrato <= 0) {
+            return null;
+        }
+
+        $idContratoArchivo = (int) ($contratoData['idContratoArchivo'] ?? 0);
+        $nombreArchivo = $contratoData['nombreArchivo'] ?? 'tdr.pdf';
+
+        return [
+            'inline_keyboard' => [
+                [
+                    [
+                        'text' => '🤖 Analizar con IA',
+                        'callback_data' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                    [
+                        'text' => '📥 Descargar TDR',
+                        'callback_data' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                ],
+                [
+                    [
+                        'text' => '🏅 Ver compatibilidad',
+                        'callback_data' => $this->buildCallbackData('compatibilidad', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    protected function cacheContratoContext(array $contratoData): void
+    {
+        $idContrato = (int) ($contratoData['idContrato'] ?? 0);
+
+        if ($idContrato <= 0) {
+            return;
+        }
+
+        $payload = [
+            'idContrato' => $idContrato,
+            'desContratacion' => $contratoData['desContratacion'] ?? null,
+            'nomEntidad' => $contratoData['nomEntidad'] ?? null,
+            'nomObjetoContrato' => $contratoData['nomObjetoContrato'] ?? null,
+            'desObjetoContrato' => $contratoData['desObjetoContrato'] ?? null,
+            'nomEstadoContrato' => $contratoData['nomEstadoContrato'] ?? null,
+            'fecPublica' => $contratoData['fecPublica'] ?? null,
+            'fecIniCotizacion' => $contratoData['fecIniCotizacion'] ?? null,
+            'fecFinCotizacion' => $contratoData['fecFinCotizacion'] ?? null,
+            'idContratoArchivo' => $contratoData['idContratoArchivo'] ?? null,
+            'nombreArchivo' => $contratoData['nombreArchivo'] ?? null,
+        ];
+
+        Cache::put(
+            $this->buildContratoCacheKey($idContrato),
+            $payload,
+            now()->addMinutes(max(1, $this->contratoCacheTtl))
+        );
+    }
+
+    protected function buildContratoCacheKey(int $idContrato): string
+    {
+        return $this->contratoCachePrefix . $idContrato;
     }
 
     protected function sanitizeCallbackFilename(string $nombre): string

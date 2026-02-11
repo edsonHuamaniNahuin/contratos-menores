@@ -6,10 +6,16 @@ from typing import Dict, Optional, Literal
 from app.services.pdf_processor import PDFProcessorService
 from app.services.rag_extractor import RAGExtractionService
 from app.services.llm import LLMFactory
-from app.models.schemas import TDRAnalysisResponse
+from app.models.schemas import (
+    TDRAnalysisResponse,
+    CompatibilityScoreRequest,
+    CompatibilityScoreResponse,
+)
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
+MAX_RESUMEN_LENGTH = 1000
 
 
 class TDRAnalyzerService:
@@ -99,11 +105,13 @@ class TDRAnalyzerService:
             self.logger.info(f"Paso 4/4: Analizando con LLM (provider: {llm_provider or 'default'})...")
             analysis_dict = await llm_client.analyze_tdr(context)
 
+        # Asegurar que el payload cumpla con límites antes de validar
+        analysis_dict = self._sanitize_llm_payload(analysis_dict)
+
         # Paso 5: Validar con Pydantic
         try:
             validated_response = TDRAnalysisResponse(**analysis_dict)
             self.logger.info("✓ Análisis completado y validado exitosamente")
-            self.logger.info(f"  - Score de compatibilidad: {validated_response.score_compatibilidad}/10")
             self.logger.info(f"  - Requisitos técnicos: {len(validated_response.requisitos_tecnicos)}")
             self.logger.info(f"  - Reglas de negocio: {len(validated_response.reglas_de_negocio)}")
 
@@ -113,3 +121,71 @@ class TDRAnalyzerService:
             self.logger.error(f"Error al validar respuesta del LLM: {str(e)}")
             self.logger.error(f"Respuesta recibida: {analysis_dict}")
             raise ValueError(f"La respuesta del LLM no cumple con el esquema esperado: {str(e)}")
+
+    async def evaluate_compatibility(
+        self,
+        request: CompatibilityScoreRequest,
+        llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None
+    ) -> CompatibilityScoreResponse:
+        """Evalúa la compatibilidad usando el análisis existente y el copy del suscriptor."""
+        if not request.company_copy.strip():
+            raise ValueError("El copy del suscriptor es obligatorio para evaluar compatibilidad")
+
+        llm_client = LLMFactory.create_client(llm_provider)
+        raw_response = await llm_client.evaluate_compatibility(
+            request.company_copy,
+            request.analisis_tdr,
+            request.contrato_contexto,
+            request.keywords,
+        )
+
+        sanitized = self._sanitize_compatibility_payload(raw_response)
+        return CompatibilityScoreResponse(**sanitized)
+
+    def _sanitize_llm_payload(self, analysis: Dict) -> Dict:
+        """Ajusta el payload devuelto por el LLM para cumplir con los límites del esquema."""
+        resumen = analysis.get("resumen_ejecutivo")
+
+        if isinstance(resumen, str):
+            resumen_limpio = resumen.strip()
+
+            if len(resumen_limpio) > MAX_RESUMEN_LENGTH:
+                self.logger.warning(
+                    "Resumen excede %s caracteres; se truncará antes de validar.",
+                    MAX_RESUMEN_LENGTH
+                )
+                resumen_limpio = resumen_limpio[:MAX_RESUMEN_LENGTH].rstrip()
+
+            analysis["resumen_ejecutivo"] = resumen_limpio
+
+        return analysis
+
+    def _sanitize_compatibility_payload(self, payload: Dict) -> Dict:
+        score = payload.get("score")
+        try:
+            payload["score"] = max(0.0, min(10.0, float(score)))
+        except (TypeError, ValueError):
+            payload["score"] = 0.0
+
+        nivel = (payload.get("nivel") or "").lower()
+        if nivel not in {"apto", "revisar", "descartar"}:
+            if payload["score"] >= 8:
+                nivel = "apto"
+            elif payload["score"] >= 5:
+                nivel = "revisar"
+            else:
+                nivel = "descartar"
+        payload["nivel"] = nivel
+
+        for key in ("factores_clave", "riesgos"):
+            value = payload.get(key)
+            if not isinstance(value, list):
+                payload[key] = []
+
+        if not payload.get("explicacion"):
+            payload["explicacion"] = "Sin explicación proporcionada por el modelo."
+
+        if not payload.get("timestamp"):
+            payload["timestamp"] = datetime.utcnow()
+
+        return payload

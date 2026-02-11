@@ -3,7 +3,7 @@ Modelos Pydantic para entrada/salida del microservicio.
 Define el esquema estructurado del análisis de TDR.
 """
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Literal
+from typing import Any, Dict, List, Optional, Literal
 from datetime import datetime
 
 
@@ -42,13 +42,6 @@ class TDRAnalysisResponse(BaseModel):
         description="Presupuesto referencial o monto estimado (puede ser null si no se especifica)"
     )
 
-    score_compatibilidad: int = Field(
-        ...,
-        ge=1,
-        le=10,
-        description="Score de compatibilidad (1-10) basado en la viabilidad de cumplir el TDR"
-    )
-
     @field_validator('requisitos_tecnicos', 'reglas_de_negocio')
     @classmethod
     def validar_lista_no_vacia(cls, v):
@@ -61,6 +54,60 @@ class TDRAnalysisRequest(BaseModel):
     llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = Field(
         None,
         description="Proveedor de LLM a usar (opcional, usa el configurado por defecto)"
+    )
+
+
+class CompatibilityScoreRequest(BaseModel):
+    """Request para evaluación de compatibilidad por suscriptor"""
+    company_copy: str = Field(
+        ...,
+        min_length=20,
+        max_length=4000,
+        description="Descripción del rubro/fortalezas del suscriptor"
+    )
+    analisis_tdr: Dict[str, Any] = Field(
+        ...,
+        description="Análisis estructurado previamente generado para el TDR"
+    )
+    contrato_contexto: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Metadata del contrato (entidad, objeto, fechas)"
+    )
+    keywords: Optional[List[str]] = Field(
+        default_factory=list,
+        description="Lista de keywords suscritas para enriquecer el contexto"
+    )
+
+
+class CompatibilityScoreResponse(BaseModel):
+    """Respuesta estructurada de la evaluación de compatibilidad"""
+    score: float = Field(
+        ...,
+        ge=0,
+        le=10,
+        description="Puntaje decimal (0-10) que refleja la compatibilidad"
+    )
+    nivel: Literal['apto', 'revisar', 'descartar'] = Field(
+        ...,
+        description="Clasificación cualitativa basada en el score"
+    )
+    explicacion: str = Field(
+        ...,
+        min_length=20,
+        max_length=1000,
+        description="Motivo resumido del score asignado"
+    )
+    factores_clave: List[str] = Field(
+        default_factory=list,
+        description="Elementos del TDR que favorecen la compatibilidad"
+    )
+    riesgos: List[str] = Field(
+        default_factory=list,
+        description="Alertas o restricciones detectadas"
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Momento de generación del score"
     )
 
 

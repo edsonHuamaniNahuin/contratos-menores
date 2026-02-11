@@ -124,6 +124,79 @@ class TdrAnalysisService
     }
 
     /**
+     * Analizar un archivo ya persistido en el repositorio local (flujo público).
+     */
+    public function analizarArchivoLocal(
+        ContratoArchivo $archivoPersistido,
+        ?array $contratoData = null,
+        string $target = 'dashboard',
+        bool $forceRefresh = false
+    ): array {
+        try {
+            $this->debug('Inicio análisis TDR local', [
+                'contrato_archivo_id' => $archivoPersistido->id,
+                'force_refresh' => $forceRefresh,
+            ]);
+
+            if (!config('services.analizador_tdr.enabled', false)) {
+                return [
+                    'success' => false,
+                    'error' => 'El servicio de Análisis TDR no está habilitado. Habilítalo en Configuración.',
+                ];
+            }
+
+            if ($cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh)) {
+                $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
+                return $this->buildResponseFromPayload($payload, $target);
+            }
+
+            $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
+
+            if (!$filePath || !is_file($filePath)) {
+                return [
+                    'success' => false,
+                    'error' => 'El archivo no está disponible en el repositorio local.',
+                ];
+            }
+
+            $analizador = new AnalizadorTDRService();
+            $resultado = $analizador->analyzeSingle($filePath);
+
+            if (!($resultado['success'] ?? false)) {
+                return $resultado;
+            }
+
+            $analisisData = $this->normalizeAnalysisKeys($resultado['data'] ?? []);
+            $contextoContrato = $this->buildContextoContrato($contratoData, $archivoPersistido);
+
+            $analisisModel = $this->persistence->storeAnalysis(
+                $archivoPersistido,
+                $analisisData,
+                $resultado,
+                $contextoContrato,
+                [
+                    'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
+                    'modelo' => config('services.analizador_tdr.model'),
+                ]
+            );
+
+            $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
+
+            return $this->buildResponseFromPayload($payload, $target);
+        } catch (Exception $e) {
+            Log::error('TDR: Error en análisis local', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Intentar obtener un análisis previamente cacheado sin invocar al LLM.
      */
     public function obtenerAnalisisDesdeCache(int $idContratoArchivo, string $target = 'dashboard'): ?array

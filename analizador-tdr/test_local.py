@@ -53,8 +53,6 @@ async def test_analysis():
         print("✅ ANÁLISIS COMPLETADO")
         print("=" * 80)
 
-        print(f"\n📊 Score de Compatibilidad: {result.score_compatibilidad}/10")
-
         print(f"\n📝 Resumen Ejecutivo:")
         print(f"{result.resumen_ejecutivo}")
 

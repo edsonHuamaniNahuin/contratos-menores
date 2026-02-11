@@ -3,9 +3,6 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use App\Models\CuentaSeace;
-use App\Models\TelegramSubscription;
-use App\Services\TelegramNotificationService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -26,12 +23,6 @@ class Configuracion extends Component
     public bool $loadingTelegramTest = false;
     public bool $loadingAnalizadorTest = false;
 
-    // Gestión de Suscriptores Telegram
-    public string $nuevo_chat_id = '';
-    public string $nuevo_nombre = '';
-    public string $nuevo_username = '';
-    public bool $nuevo_activo = true;
-    public ?int $editando_suscripcion_id = null;
 
     public function mount()
     {
@@ -190,134 +181,6 @@ class Configuracion extends Component
 
     public function render()
     {
-        $suscripciones = TelegramSubscription::orderBy('created_at', 'desc')->get();
-
-        return view('livewire.configuracion', [
-            'suscripciones' => $suscripciones,
-        ]);
-    }
-
-    // ==================== GESTIÓN DE SUSCRIPTORES ====================
-
-    public function agregarSuscriptor()
-    {
-        $this->validate([
-            'nuevo_chat_id' => 'required|string|unique:telegram_subscriptions,chat_id' . ($this->editando_suscripcion_id ? ",{$this->editando_suscripcion_id}" : ''),
-            'nuevo_nombre' => 'nullable|string|max:255',
-            'nuevo_username' => 'nullable|string|max:255',
-        ], [
-            'nuevo_chat_id.required' => 'El Chat ID es obligatorio',
-            'nuevo_chat_id.unique' => 'Este Chat ID ya está registrado',
-        ]);
-
-        try {
-            if ($this->editando_suscripcion_id) {
-                // Actualizar existente
-                $suscripcion = TelegramSubscription::find($this->editando_suscripcion_id);
-                $suscripcion->update([
-                    'chat_id' => $this->nuevo_chat_id,
-                    'nombre' => $this->nuevo_nombre ?: null,
-                    'username' => $this->nuevo_username ?: null,
-                    'activo' => $this->nuevo_activo,
-                ]);
-
-                session()->flash('success', '✅ Suscriptor actualizado exitosamente');
-                Log::info('Telegram: Suscriptor actualizado', ['id' => $suscripcion->id]);
-            } else {
-                // Crear nuevo
-                $suscripcion = TelegramSubscription::create([
-                    'chat_id' => $this->nuevo_chat_id,
-                    'nombre' => $this->nuevo_nombre ?: null,
-                    'username' => $this->nuevo_username ?: null,
-                    'activo' => $this->nuevo_activo,
-                    'subscrito_at' => now(),
-                ]);
-
-                session()->flash('success', '✅ Suscriptor agregado exitosamente');
-                Log::info('Telegram: Nuevo suscriptor', ['id' => $suscripcion->id]);
-            }
-
-            $this->resetSuscriptorForm();
-
-        } catch (\Exception $e) {
-            session()->flash('error', '❌ Error: ' . $e->getMessage());
-            Log::error('Error al guardar suscriptor', ['error' => $e->getMessage()]);
-        }
-    }
-
-    public function editarSuscriptor($id)
-    {
-        $suscripcion = TelegramSubscription::findOrFail($id);
-
-        $this->editando_suscripcion_id = $id;
-        $this->nuevo_chat_id = $suscripcion->chat_id;
-        $this->nuevo_nombre = $suscripcion->nombre ?? '';
-        $this->nuevo_username = $suscripcion->username ?? '';
-        $this->nuevo_activo = $suscripcion->activo;
-    }
-
-    public function toggleActivoSuscriptor($id)
-    {
-        try {
-            $suscripcion = TelegramSubscription::findOrFail($id);
-            $suscripcion->update(['activo' => !$suscripcion->activo]);
-
-            $estado = $suscripcion->activo ? 'activado' : 'desactivado';
-            session()->flash('success', "✅ Suscriptor {$estado}");
-            Log::info('Telegram: Toggle activo', ['id' => $id, 'nuevo_estado' => $suscripcion->activo]);
-
-        } catch (\Exception $e) {
-            session()->flash('error', '❌ Error: ' . $e->getMessage());
-        }
-    }
-
-    public function eliminarSuscriptor($id)
-    {
-        try {
-            $suscripcion = TelegramSubscription::findOrFail($id);
-            $chatId = $suscripcion->chat_id;
-            $suscripcion->delete();
-
-            session()->flash('success', '✅ Suscriptor eliminado');
-            Log::info('Telegram: Suscriptor eliminado', ['id' => $id, 'chat_id' => $chatId]);
-
-        } catch (\Exception $e) {
-            session()->flash('error', '❌ Error: ' . $e->getMessage());
-        }
-    }
-
-    public function probarNotificacionSuscriptor($id)
-    {
-        try {
-            $suscripcion = TelegramSubscription::findOrFail($id);
-            $servicio = new TelegramNotificationService();
-
-            $mensajePrueba = "🧪 <b>MENSAJE DE PRUEBA</b>\n\n";
-            $mensajePrueba .= "Este es un mensaje de prueba del sistema Vigilante SEACE.\n\n";
-            $mensajePrueba .= "✅ Tu suscripción está funcionando correctamente.\n";
-            $mensajePrueba .= "📅 Fecha: " . now()->format('d/m/Y H:i:s');
-
-            $resultado = $servicio->enviarMensaje($suscripcion->chat_id, $mensajePrueba);
-
-            if ($resultado['success']) {
-                session()->flash('success', '✅ Mensaje de prueba enviado exitosamente');
-                Log::info('Telegram: Prueba exitosa', ['id' => $id, 'chat_id' => $suscripcion->chat_id]);
-            } else {
-                session()->flash('error', '❌ Error al enviar: ' . $resultado['message']);
-            }
-
-        } catch (\Exception $e) {
-            session()->flash('error', '❌ Error: ' . $e->getMessage());
-        }
-    }
-
-    public function resetSuscriptorForm()
-    {
-        $this->nuevo_chat_id = '';
-        $this->nuevo_nombre = '';
-        $this->nuevo_username = '';
-        $this->nuevo_activo = true;
-        $this->editando_suscripcion_id = null;
-        $this->resetValidation(['nuevo_chat_id', 'nuevo_nombre', 'nuevo_username']);
+        return view('livewire.configuracion');
     }
 }

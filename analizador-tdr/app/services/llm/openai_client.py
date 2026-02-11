@@ -2,9 +2,8 @@
 Cliente para OpenAI API (GPT-4o).
 """
 from openai import AsyncOpenAI
-from typing import Dict
+from typing import Dict, List, Optional
 import logging
-import json
 from .base_client import BaseLLMClient
 
 logger = logging.getLogger(__name__)
@@ -34,8 +33,9 @@ class OpenAIClient(BaseLLMClient):
 
             # Prompt del usuario
             user_prompt = f"""
-Analiza el siguiente TDR del SEACE y devuelve el análisis estructurado en formato JSON:
+Analiza el siguiente TDR del SEACE y responde solo con JSON siguiendo la estructura requerida (resumen_ejecutivo, requisitos_tecnicos, reglas_de_negocio, politicas_y_penalidades, presupuesto_referencial). Si algún bloque no tiene datos, utiliza [] o null.
 
+TDR:
 {context}
 """
 
@@ -66,3 +66,30 @@ Analiza el siguiente TDR del SEACE y devuelve el análisis estructurado en forma
         except Exception as e:
             self.logger.error(f"Error al analizar con OpenAI: {str(e)}")
             raise ValueError(f"Error en OpenAI API: {str(e)}")
+
+    async def evaluate_compatibility(
+        self,
+        company_copy: str,
+        analisis_tdr: Dict,
+        contrato_contexto: Optional[Dict] = None,
+        keywords: Optional[List[str]] = None
+    ) -> Dict:
+        try:
+            prompt = self._build_compatibility_prompt(company_copy, analisis_tdr, contrato_contexto, keywords)
+            response = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": "Asesor especializado en compatibilidad de contratos SEACE."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.2,
+                max_tokens=1024,
+                response_format={"type": "json_object"}
+            )
+
+            response_text = response.choices[0].message.content
+            self.logger.debug(f"Compatibilidad OpenAI (primeros 400 chars): {response_text[:400]}")
+            return self._parse_json_response(response_text)
+        except Exception as e:
+            self.logger.error(f"Error en compatibilidad OpenAI: {str(e)}")
+            raise ValueError(f"Error al evaluar compatibilidad: {str(e)}")

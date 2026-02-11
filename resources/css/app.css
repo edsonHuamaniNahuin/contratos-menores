@@ -94,7 +94,7 @@
     }
 
     .card-hover {
-        @apply transition-all duration-200 hover: shadow-lg hover:border-primary-200;
+        @apply transition-all duration-200 hover:shadow-lg hover:border-primary-200;
     }
 
     /* Sistema de Botones */
@@ -138,7 +138,7 @@
 
     /* Tarjetas de Estadísticas */
     .stat-card {
-        @apply bg-white rounded-lg shadow-soft border border-neutral-100 p-6 hover: shadow-lg transition-all duration-200;
+        @apply bg-white rounded-lg shadow-soft border border-neutral-100 p-6 hover:shadow-lg transition-all duration-200;
     }
 
     .stat-label {
@@ -163,7 +163,7 @@
     }
 
     .table-row {
-        @apply border-b border-neutral-100 hover: bg-neutral-50 transition-colors;
+        @apply border-b border-neutral-100 hover:bg-neutral-50 transition-colors;
     }
 }
 
@@ -175,5 +175,15 @@
 
     .glass-effect {
         @apply bg-white/50 backdrop-blur-sm border border-neutral-100;
+    }
+
+    /* Loading Indicators - Contenedor padre (positioning) */
+    .loading-indicator {
+        @apply absolute left-0 -bottom-9 px-3 py-1.5 bg-primary-500 text-white text-xs font-medium rounded-full shadow-lg z-10 whitespace-nowrap;
+    }
+
+    /* Loading Indicators - Contenido hijo (layout horizontal) */
+    .loading-indicator-content {
+        @apply flex items-center gap-1.5;
     }
 }
