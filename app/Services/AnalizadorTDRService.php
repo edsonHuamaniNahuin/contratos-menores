@@ -16,7 +16,7 @@ class AnalizadorTDRService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.analizador_tdr.url', 'http://127.0.0.1:8001');
+        $this->baseUrl = rtrim((string) config('services.analizador_tdr.url', 'http://127.0.0.1:8001'), '/');
         $this->timeout = config('services.analizador_tdr.timeout', 60);
         $this->enabled = config('services.analizador_tdr.enabled', false);
         $this->debugLogging = (bool) config('tdr.debug_logs', config('services.analizador_tdr.debug_logs', false));
