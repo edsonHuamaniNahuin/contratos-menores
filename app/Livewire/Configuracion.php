@@ -62,10 +62,16 @@ class Configuracion extends Component
                 'ANALIZADOR_TDR_ENABLED' => $this->analizador_enabled ? 'true' : 'false',
             ]);
 
-            // Limpiar cache de config
+            // Limpiar cache de config para que relea el .env
+            if (file_exists(base_path('bootstrap/cache/config.php'))) {
+                @unlink(base_path('bootstrap/cache/config.php'));
+            }
             \Artisan::call('config:clear');
 
-            session()->flash('success', '✓ Configuración guardada correctamente. Recarga la página para aplicar cambios.');
+            session()->flash('success', '✓ Configuración guardada correctamente.');
+
+            // Recargar valores desde el .env actualizado
+            $this->refreshConfigFromEnv();
 
         } catch (\Exception $e) {
             Log::error('Error al guardar configuración', [
@@ -161,18 +167,30 @@ class Configuracion extends Component
     private function updateEnvFile(array $data)
     {
         $envFile = base_path('.env');
+
+        if (!file_exists($envFile)) {
+            throw new \Exception('Archivo .env no encontrado');
+        }
+
         $envContent = file_get_contents($envFile);
 
         foreach ($data as $key => $value) {
+            // Asegurar que el valor sea string
+            $value = (string) $value;
+
+            // Escapar comillas dobles dentro del valor
             $escapedValue = str_replace('"', '\"', $value);
-            $pattern = "/^{$key}=.*/m";
+
+            // Si el valor contiene espacios o caracteres especiales, envolver en comillas
+            $needsQuotes = preg_match('/[\s#"\'\\\\]/', $value) || $value === '';
+            $replacement = $needsQuotes ? "{$key}=\"{$escapedValue}\"" : "{$key}={$escapedValue}";
+
+            $pattern = "/^" . preg_quote($key, '/') . "=.*/m";
 
             if (preg_match($pattern, $envContent)) {
-                // Actualizar existente
-                $envContent = preg_replace($pattern, "{$key}=\"{$escapedValue}\"", $envContent);
+                $envContent = preg_replace($pattern, $replacement, $envContent);
             } else {
-                // Agregar nuevo
-                $envContent .= "\n{$key}=\"{$escapedValue}\"";
+                $envContent = rtrim($envContent) . "\n{$replacement}\n";
             }
         }
 
@@ -182,5 +200,21 @@ class Configuracion extends Component
     public function render()
     {
         return view('livewire.configuracion');
+    }
+
+    /**
+     * Recarga los valores del componente desde el .env actualizado.
+     */
+    private function refreshConfigFromEnv(): void
+    {
+        // Forzar re-lectura del .env (Dotenv)
+        $dotenv = \Dotenv\Dotenv::createImmutable(base_path());
+        $dotenv->safeLoad();
+
+        $this->analizador_url = env('ANALIZADOR_TDR_URL', 'http://127.0.0.1:8001');
+        $this->analizador_enabled = filter_var(env('ANALIZADOR_TDR_ENABLED', false), FILTER_VALIDATE_BOOLEAN);
+        $this->telegram_bot_token = env('TELEGRAM_BOT_TOKEN', '');
+        $this->telegram_chat_id = env('TELEGRAM_CHAT_ID', '');
+        $this->telegram_enabled = !empty($this->telegram_bot_token) && !empty($this->telegram_chat_id);
     }
 }
