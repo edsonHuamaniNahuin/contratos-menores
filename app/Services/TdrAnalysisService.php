@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\ContratoArchivo;
 use App\Models\CuentaSeace;
+use App\Services\SeacePublicArchivoService;
+use App\Services\Tdr\PublicTdrDocumentService;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
 use Illuminate\Support\Facades\Http;
@@ -36,7 +38,7 @@ class TdrAnalysisService
      *
      * @param int $idContratoArchivo ID del archivo en SEACE
      * @param string $nombreArchivo Nombre del archivo
-     * @param CuentaSeace $cuenta Cuenta SEACE para autenticación
+     * @param CuentaSeace|null $cuenta Cuenta SEACE para autenticación (opcional, usa endpoint público como fallback)
      * @param array|null $contratoData Datos adicionales del contrato (opcional)
      * @param string $target Destino del resultado ('dashboard' por defecto, 'telegram' para texto legible)
      * @return array Resultado del análisis con estructura: ['success' => bool, 'data' => array, 'formatted' => array|null, 'error' => string]
@@ -44,7 +46,7 @@ class TdrAnalysisService
     public function analizarDesdeSeace(
         int $idContratoArchivo,
         string $nombreArchivo,
-        CuentaSeace $cuenta,
+        ?CuentaSeace $cuenta = null,
         ?array $contratoData = null,
         string $target = 'dashboard',
         bool $forceRefresh = false
@@ -53,7 +55,7 @@ class TdrAnalysisService
             $this->debug('Inicio análisis TDR', [
                 'idContratoArchivo' => $idContratoArchivo,
                 'nombreArchivo' => $nombreArchivo,
-                'cuenta_id' => $cuenta->id,
+                'cuenta_id' => $cuenta?->id,
                 'force_refresh' => $forceRefresh,
             ]);
 
@@ -83,7 +85,26 @@ class TdrAnalysisService
                 return $this->buildResponseFromPayload($payload, $target);
             }
 
-            $filePath = $this->documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
+            // Usar endpoint autenticado si hay cuenta, de lo contrario fallback a endpoint público
+            if ($cuenta) {
+                $filePath = $this->documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
+            } else {
+                $publicService = new PublicTdrDocumentService(
+                    $this->persistence,
+                    new SeacePublicArchivoService()
+                );
+                $idContrato = (int) ($contratoData['idContrato'] ?? $archivoPersistido->id_contrato_seace ?? 0);
+                $archivoPersistido = $publicService->ensureLocalArchivo(
+                    $idContrato,
+                    ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
+                    $contratoData
+                );
+                $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
+
+                if (!$filePath || !is_file($filePath)) {
+                    return ['success' => false, 'error' => 'No se pudo descargar el archivo desde el endpoint público.'];
+                }
+            }
 
             $analizador = new AnalizadorTDRService();
             $resultado = $analizador->analyzeSingle($filePath);

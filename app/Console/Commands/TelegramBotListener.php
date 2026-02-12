@@ -212,13 +212,14 @@ class TelegramBotListener extends Command
         string $token
     ): void {
         try {
-            // 1. Obtener cuenta SEACE activa
+            // 1. Obtener cuenta SEACE activa (opcional - usa endpoint público como fallback)
             $cuenta = CuentaSeace::activa()->first();
 
-            if (!$cuenta) {
-                $this->enviarMensaje($chatId, '❌ No hay cuenta SEACE activa configurada', $token);
-                return;
-            }
+            // NOTE: CuentaSeace ya no es requerida - se usa endpoint público como fallback
+            // if (!$cuenta) {
+            //     $this->enviarMensaje($chatId, '❌ No hay cuenta SEACE activa configurada', $token);
+            //     return;
+            // }
 
             // 2. Validar que tengamos el ID del archivo
             if ($idContratoArchivo === 0) {
@@ -393,10 +394,11 @@ class TelegramBotListener extends Command
         try {
             $cuenta = CuentaSeace::activa()->first();
 
-            if (!$cuenta) {
-                $this->enviarMensaje($chatId, '❌ No hay cuenta SEACE activa', $token);
-                return;
-            }
+            // NOTE: CuentaSeace ya no es requerida - se usa endpoint público como fallback
+            // if (!$cuenta) {
+            //     $this->enviarMensaje($chatId, '❌ No hay cuenta SEACE activa', $token);
+            //     return;
+            // }
 
             $this->info("📥 Descargando {$nombreArchivo} (ID: {$idContratoArchivo})...");
             $this->enviarMensaje($chatId, '📥 Preparando descarga...', $token);
@@ -409,8 +411,21 @@ class TelegramBotListener extends Command
                 ['idContrato' => $idContrato]
             );
 
-            $documentService = new TdrDocumentService($persistence);
-            $documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
+            // Usar endpoint público si no hay cuenta SEACE activa
+            if ($cuenta) {
+                $documentService = new TdrDocumentService($persistence);
+                $documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
+            } else {
+                $publicService = new \App\Services\Tdr\PublicTdrDocumentService(
+                    $persistence,
+                    new \App\Services\SeacePublicArchivoService()
+                );
+                $publicService->ensureLocalArchivo(
+                    $idContrato,
+                    ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
+                    ['idContrato' => $idContrato]
+                );
+            }
 
             if (!$archivoPersistido->hasStoredFile()) {
                 $this->enviarMensaje($chatId, '❌ No fue posible almacenar el archivo en caché', $token);
@@ -572,12 +587,13 @@ class TelegramBotListener extends Command
 
         $cuenta = CuentaSeace::activa()->first();
 
-        if (!$cuenta) {
-            return [
-                'success' => false,
-                'error' => 'No hay cuenta SEACE activa configurada para descargar el TDR.',
-            ];
-        }
+        // NOTE: CuentaSeace ya no es requerida - se usa endpoint público como fallback
+        // if (!$cuenta) {
+        //     return [
+        //         'success' => false,
+        //         'error' => 'No hay cuenta SEACE activa configurada para descargar el TDR.',
+        //     ];
+        // }
 
         $contextoContrato = array_merge(['idContrato' => $idContrato], $contratoCache ?? []);
 

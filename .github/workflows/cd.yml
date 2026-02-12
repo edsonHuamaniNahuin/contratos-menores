@@ -96,6 +96,7 @@ jobs:
             $PHP_BIN artisan queue:restart
             sudo systemctl restart analizador-tdr.service || echo "WARN: No se pudo reiniciar analizador-tdr"
             sudo systemctl restart php-fpm.service || echo "WARN: No se pudo reiniciar php-fpm"
+            sudo systemctl restart telegram-bot.service || echo "WARN: No se pudo reiniciar telegram-bot"
             sudo systemctl reload apache2 || echo "WARN: Reiniciar web server manualmente"
 
             echo ">>> Deploy completado exitosamente"
