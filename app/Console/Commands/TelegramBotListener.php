@@ -12,16 +12,22 @@ use App\Services\Tdr\TdrPersistenceService;
 use App\Services\TdrAnalysisFormatter;
 use App\Services\TdrAnalysisService;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Console\Isolatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Symfony\Component\Console\Command\SignalableCommandInterface;
 
-class TelegramBotListener extends Command
+class TelegramBotListener extends Command implements SignalableCommandInterface, Isolatable
 {
     protected $signature = 'telegram:listen {--once : Procesar solo una vez}';
     protected $description = 'Escuchar actualizaciones de Telegram (polling) y procesar clicks de botones';
+
+    // ── Offset persistente: sobrevive reinicios ──────────────────────
+    private const OFFSET_CACHE_KEY = 'telegram:listener:last_offset';
+    private const OFFSET_CACHE_TTL = 2592000; // 30 días en segundos
 
     protected int $lastUpdateId = 0;
     protected string $baseUrl;
@@ -61,7 +67,13 @@ class TelegramBotListener extends Command
             return Command::FAILURE;
         }
 
-        $this->info('🤖 Bot de Telegram iniciado (modo polling)');
+        // ── Restaurar offset persistente (sobrevive reinicios) ───────
+        $this->lastUpdateId = (int) Cache::get(self::OFFSET_CACHE_KEY, 0);
+        if ($this->lastUpdateId > 0) {
+            $this->info("📍 Offset restaurado: {$this->lastUpdateId}");
+        }
+
+        $this->info('🤖 Bot de Telegram iniciado (modo polling) — PID ' . getmypid());
         $this->info('📡 Esperando clicks en botones...');
         $this->info('🛑 Presiona Ctrl+C para detener');
 
@@ -70,16 +82,16 @@ class TelegramBotListener extends Command
                 $updates = $this->getUpdates($token);
 
                 foreach ($updates as $update) {
-                    // Actualizar ID de última actualización
                     $this->lastUpdateId = $update['update_id'];
 
-                    // Procesar callback_query (clicks en botones)
+                    // Persistir offset inmediatamente tras recibirlo
+                    Cache::put(self::OFFSET_CACHE_KEY, $this->lastUpdateId, self::OFFSET_CACHE_TTL);
+
                     if (isset($update['callback_query'])) {
                         $this->handleCallbackQuery($update['callback_query'], $token);
                     }
                 }
 
-                // Esperar 2 segundos antes de siguiente consulta
                 if (!$this->option('once')) {
                     sleep(2);
                 }
@@ -89,12 +101,35 @@ class TelegramBotListener extends Command
                 Log::error('Telegram Bot Listener Error', ['exception' => $e->getMessage()]);
 
                 if (!$this->option('once')) {
-                    sleep(5); // Esperar más tiempo si hay error
+                    sleep(5);
                 }
             }
         } while (!$this->option('once'));
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Clave de lock para Isolatable.
+     * Laravel usa Cache::lock() con esta clave para garantizar instancia única.
+     */
+    public function isolatableId(): string
+    {
+        return 'telegram-bot-listener';
+    }
+
+    /**
+     * Señales que el comando puede manejar (Ctrl+C, kill)
+     */
+    public function getSubscribedSignals(): array
+    {
+        return defined('SIGINT') ? [SIGINT, SIGTERM] : [];
+    }
+
+    public function handleSignal(int $signal, int|false $previousExitCode = 0): int|false
+    {
+        $this->info("\n🛑 Señal recibida, deteniendo listener...");
+        return false; // terminar
     }
 
     /**
@@ -122,7 +157,12 @@ class TelegramBotListener extends Command
     }
 
     /**
-     * Procesar click en botón
+     * Procesar click en botón.
+     *
+     * Diseño seguro:
+     * - answerCallbackQuery() se invoca PRIMERO → Telegram deja de reenviar el callback
+     * - Offset persistente + Isolatable → un callback NUNCA se procesa dos veces
+     * - Concurrencia IA → protegida a nivel de TdrAnalysisService (Cache::lock atómico en DB)
      */
     protected function handleCallbackQuery(array $callbackQuery, string $token): void
     {
@@ -137,21 +177,18 @@ class TelegramBotListener extends Command
 
         // Verificar si es un click en "Analizar"
         if (strpos($data, 'analizar_') === 0) {
-            // Formato: analizar_{idContrato}_{idContratoArchivo}_{nombreArchivo}
-            $parts = explode('_', $data, 4); // Limitar a 4 partes
+            $parts = explode('_', $data, 4);
             $idContrato = (int) ($parts[1] ?? 0);
             $idContratoArchivo = (int) ($parts[2] ?? 0);
             $nombreArchivo = $parts[3] ?? 'archivo.pdf';
 
             $this->info("🔍 Usuario {$chatId} solicitó análisis del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
 
-            // Responder inmediatamente al callback
+            // Responder primero → Telegram deja de reenviar
             $this->answerCallbackQuery($callbackId, '⏳ Analizando proceso...', $token);
-
-            // Procesar análisis en background
             $this->analizarProcesoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+
         } elseif (strpos($data, 'descargar_') === 0) {
-            // Formato: descargar_{idContrato}_{idContratoArchivo}_{nombreArchivo}
             $parts = explode('_', $data, 4);
             $idContrato = (int) ($parts[1] ?? 0);
             $idContratoArchivo = (int) ($parts[2] ?? 0);
@@ -161,6 +198,7 @@ class TelegramBotListener extends Command
 
             $this->answerCallbackQuery($callbackId, '📥 Preparando descarga...', $token);
             $this->descargarArchivoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+
         } elseif (str_starts_with($data, 'compatibilidad_') || str_starts_with($data, 'compatrefresh_')) {
             $parts = explode('_', $data, 4);
             $idContrato = (int) ($parts[1] ?? 0);
@@ -184,6 +222,7 @@ class TelegramBotListener extends Command
                 $token,
                 $forceRefresh
             );
+
         } else {
             $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
         }
@@ -212,16 +251,8 @@ class TelegramBotListener extends Command
         string $token
     ): void {
         try {
-            // 1. Obtener cuenta SEACE activa (opcional - usa endpoint público como fallback)
             $cuenta = CuentaSeace::activa()->first();
 
-            // NOTE: CuentaSeace ya no es requerida - se usa endpoint público como fallback
-            // if (!$cuenta) {
-            //     $this->enviarMensaje($chatId, '❌ No hay cuenta SEACE activa configurada', $token);
-            //     return;
-            // }
-
-            // 2. Validar que tengamos el ID del archivo
             if ($idContratoArchivo === 0) {
                 $this->enviarMensaje($chatId, '❌ ID de archivo inválido. Por favor, intenta de nuevo.', $token);
                 return;
@@ -229,15 +260,9 @@ class TelegramBotListener extends Command
 
             $tdrService = new TdrAnalysisService();
 
-            if ($cached = $tdrService->obtenerAnalisisDesdeCache($idContratoArchivo, 'telegram')) {
-                $this->info("✅ Análisis recuperado desde caché para archivo {$idContratoArchivo}");
-                $this->enviarResultadoAnalisisTelegram($chatId, $cached, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
-                return;
-            }
-
+            // TdrAnalysisService ya tiene Cache::lock atómico interno —
+            // si otro usuario pide el mismo análisis, espera y reutiliza.
             $this->info("🤖 Analizando {$nombreArchivo} (ID: {$idContratoArchivo}) con IA...");
-
-            // 3. Usar servicio compartido para análisis completo (DIRECTO - sin listar archivos)
             $resultado = $tdrService->analizarDesdeSeace(
                 $idContratoArchivo,
                 $nombreArchivo,
@@ -246,15 +271,13 @@ class TelegramBotListener extends Command
                 'telegram'
             );
 
-            // 4. Enviar resultado al usuario con botones
-            if ($resultado['success']) {
+            // Enviar resultado al usuario
+            if ($resultado['success'] ?? false) {
                 $this->enviarResultadoAnalisisTelegram($chatId, $resultado, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
                 $this->info("✅ Análisis enviado a usuario {$chatId}");
             } else {
-                // Error del análisis
                 $errorMsg = $resultado['error'] ?? 'Error desconocido';
 
-                // Agregar botón de reintentar si es un error temporal
                 if (strpos($errorMsg, 'temporalmente') !== false ||
                     strpos($errorMsg, 'intenta') !== false ||
                     strpos($errorMsg, 'saturado') !== false) {
@@ -394,37 +417,34 @@ class TelegramBotListener extends Command
         try {
             $cuenta = CuentaSeace::activa()->first();
 
-            // NOTE: CuentaSeace ya no es requerida - se usa endpoint público como fallback
-            // if (!$cuenta) {
-            //     $this->enviarMensaje($chatId, '❌ No hay cuenta SEACE activa', $token);
-            //     return;
-            // }
-
             $this->info("📥 Descargando {$nombreArchivo} (ID: {$idContratoArchivo})...");
             $this->enviarMensaje($chatId, '📥 Preparando descarga...', $token);
 
             $persistence = new TdrPersistenceService();
+
+            // Resolver archivo (idempotente: firstOrCreate en DB)
             $archivoPersistido = $persistence->resolveArchivo(
-                $idContratoArchivo,
-                $nombreArchivo,
-                $idContrato,
+                $idContratoArchivo, $nombreArchivo, $idContrato,
                 ['idContrato' => $idContrato]
             );
 
-            // Usar endpoint público si no hay cuenta SEACE activa
-            if ($cuenta) {
-                $documentService = new TdrDocumentService($persistence);
-                $documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
-            } else {
-                $publicService = new \App\Services\Tdr\PublicTdrDocumentService(
-                    $persistence,
-                    new \App\Services\SeacePublicArchivoService()
-                );
-                $publicService->ensureLocalArchivo(
-                    $idContrato,
-                    ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
-                    ['idContrato' => $idContrato]
-                );
+            // ensureLocalFile ya es idempotente: si existe, retorna path
+            if (!$archivoPersistido->hasStoredFile()) {
+                if ($cuenta) {
+                    $documentService = new TdrDocumentService($persistence);
+                    $documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
+                } else {
+                    $publicService = new \App\Services\Tdr\PublicTdrDocumentService(
+                        $persistence,
+                        new \App\Services\SeacePublicArchivoService()
+                    );
+                    $publicService->ensureLocalArchivo(
+                        $idContrato,
+                        ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
+                        ['idContrato' => $idContrato]
+                    );
+                }
+                $archivoPersistido->refresh();
             }
 
             if (!$archivoPersistido->hasStoredFile()) {
@@ -580,23 +600,10 @@ class TelegramBotListener extends Command
         ?array $contratoCache = null
     ): array {
         $tdrService = new TdrAnalysisService();
-
-        if ($cached = $tdrService->obtenerAnalisisDesdeCache($idContratoArchivo, 'dashboard')) {
-            return $cached;
-        }
-
         $cuenta = CuentaSeace::activa()->first();
-
-        // NOTE: CuentaSeace ya no es requerida - se usa endpoint público como fallback
-        // if (!$cuenta) {
-        //     return [
-        //         'success' => false,
-        //         'error' => 'No hay cuenta SEACE activa configurada para descargar el TDR.',
-        //     ];
-        // }
-
         $contextoContrato = array_merge(['idContrato' => $idContrato], $contratoCache ?? []);
 
+        // TdrAnalysisService tiene Cache::lock atómico interno — safe para concurrencia
         return $tdrService->analizarDesdeSeace(
             $idContratoArchivo,
             $nombreArchivo,

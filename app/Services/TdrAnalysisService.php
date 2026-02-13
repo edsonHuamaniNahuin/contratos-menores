@@ -8,6 +8,7 @@ use App\Services\SeacePublicArchivoService;
 use App\Services\Tdr\PublicTdrDocumentService;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -18,6 +19,11 @@ use Exception;
  */
 class TdrAnalysisService
 {
+    // ── Lock atómico: evita N llamadas concurrentes al LLM por el mismo archivo ──
+    private const ANALYSIS_LOCK_PREFIX = 'tdr:analyze:';
+    private const ANALYSIS_LOCK_TTL = 180; // 3 min máximo de procesamiento
+    private const ANALYSIS_LOCK_WAIT = 90;  // esperar hasta 90s si otro proceso tiene el lock
+
     protected string $baseUrl;
     protected TdrAnalysisFormatter $formatter;
     protected TdrPersistenceService $persistence;
@@ -74,6 +80,7 @@ class TdrAnalysisService
                 $contratoData
             );
 
+            // ── Fast-path: resultado ya existe en DB ─────────────────
             if ($cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh)) {
                 $this->debug('Usando análisis en caché', [
                     'contrato_archivo_id' => $archivoPersistido->id,
@@ -81,55 +88,45 @@ class TdrAnalysisService
                 ]);
 
                 $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
-
                 return $this->buildResponseFromPayload($payload, $target);
             }
 
-            // Usar endpoint autenticado si hay cuenta, de lo contrario fallback a endpoint público
-            if ($cuenta) {
-                $filePath = $this->documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
-            } else {
-                $publicService = new PublicTdrDocumentService(
-                    $this->persistence,
-                    new SeacePublicArchivoService()
-                );
-                $idContrato = (int) ($contratoData['idContrato'] ?? $archivoPersistido->id_contrato_seace ?? 0);
-                $archivoPersistido = $publicService->ensureLocalArchivo(
-                    $idContrato,
-                    ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
-                    $contratoData
-                );
-                $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
-
-                if (!$filePath || !is_file($filePath)) {
-                    return ['success' => false, 'error' => 'No se pudo descargar el archivo desde el endpoint público.'];
-                }
-            }
-
-            $analizador = new AnalizadorTDRService();
-            $resultado = $analizador->analyzeSingle($filePath);
-
-            if (!$resultado['success']) {
-                return $resultado;
-            }
-
-            $analisisData = $this->normalizeAnalysisKeys($resultado['data'] ?? []);
-            $contextoContrato = $this->buildContextoContrato($contratoData, $archivoPersistido);
-
-            $analisisModel = $this->persistence->storeAnalysis(
-                $archivoPersistido,
-                $analisisData,
-                $resultado,
-                $contextoContrato,
-                [
-                    'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
-                    'modelo' => config('services.analizador_tdr.model'),
-                ]
+            // ── Lock atómico (DB): solo 1 proceso llama al LLM por archivo ──
+            // Si otro proceso ya está analizando, bloquea hasta que
+            // termine (máx ANALYSIS_LOCK_WAIT s), luego re-chequea cache.
+            $lock = Cache::lock(
+                self::ANALYSIS_LOCK_PREFIX . $idContratoArchivo,
+                self::ANALYSIS_LOCK_TTL
             );
 
-            $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
+            $acquired = $lock->block(self::ANALYSIS_LOCK_WAIT);
 
-            return $this->buildResponseFromPayload($payload, $target);
+            if (!$acquired) {
+                // Timeout esperando — re-chequear cache por si el otro acabó
+                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh);
+                if ($cachedAnalisis) {
+                    $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
+                    return $this->buildResponseFromPayload($payload, $target);
+                }
+
+                return [
+                    'success' => false,
+                    'error' => 'El análisis está en proceso por otro usuario. Inténtalo en unos segundos.',
+                ];
+            }
+
+            try {
+                // ── Double-check: otro proceso pudo completar mientras esperábamos ──
+                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh);
+                if ($cachedAnalisis) {
+                    $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
+                    return $this->buildResponseFromPayload($payload, $target);
+                }
+
+                return $this->executeAnalysis($archivoPersistido, $idContratoArchivo, $nombreArchivo, $cuenta, $contratoData, $target);
+            } finally {
+                $lock->release();
+            }
 
         } catch (Exception $e) {
             Log::error('TDR: Error en análisis', [
@@ -142,6 +139,65 @@ class TdrAnalysisService
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Ejecuta el análisis real: descarga + LLM + persistencia.
+     * SOLO se invoca cuando el lock fue adquirido y no hay cache.
+     */
+    protected function executeAnalysis(
+        ContratoArchivo $archivoPersistido,
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        ?CuentaSeace $cuenta,
+        ?array $contratoData,
+        string $target
+    ): array {
+        // Usar endpoint autenticado si hay cuenta, de lo contrario fallback a endpoint público
+        if ($cuenta) {
+            $filePath = $this->documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
+        } else {
+            $publicService = new PublicTdrDocumentService(
+                $this->persistence,
+                new SeacePublicArchivoService()
+            );
+            $idContrato = (int) ($contratoData['idContrato'] ?? $archivoPersistido->id_contrato_seace ?? 0);
+            $archivoPersistido = $publicService->ensureLocalArchivo(
+                $idContrato,
+                ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
+                $contratoData
+            );
+            $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
+
+            if (!$filePath || !is_file($filePath)) {
+                return ['success' => false, 'error' => 'No se pudo descargar el archivo desde el endpoint público.'];
+            }
+        }
+
+        $analizador = new AnalizadorTDRService();
+        $resultado = $analizador->analyzeSingle($filePath);
+
+        if (!$resultado['success']) {
+            return $resultado;
+        }
+
+        $analisisData = $this->normalizeAnalysisKeys($resultado['data'] ?? []);
+        $contextoContrato = $this->buildContextoContrato($contratoData, $archivoPersistido);
+
+        $analisisModel = $this->persistence->storeAnalysis(
+            $archivoPersistido,
+            $analisisData,
+            $resultado,
+            $contextoContrato,
+            [
+                'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
+                'modelo' => config('services.analizador_tdr.model'),
+            ]
+        );
+
+        $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
+
+        return $this->buildResponseFromPayload($payload, $target);
     }
 
     /**
@@ -166,44 +222,79 @@ class TdrAnalysisService
                 ];
             }
 
+            // ── Fast-path ──
             if ($cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh)) {
                 $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
                 return $this->buildResponseFromPayload($payload, $target);
             }
 
-            $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
+            // ── Lock atómico (misma lógica que analizarDesdeSeace) ──
+            $archivoSeaceId = $archivoPersistido->id_archivo_seace ?? $archivoPersistido->id;
+            $lock = Cache::lock(
+                self::ANALYSIS_LOCK_PREFIX . $archivoSeaceId,
+                self::ANALYSIS_LOCK_TTL
+            );
 
-            if (!$filePath || !is_file($filePath)) {
+            $acquired = $lock->block(self::ANALYSIS_LOCK_WAIT);
+
+            if (!$acquired) {
+                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh);
+                if ($cachedAnalisis) {
+                    $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
+                    return $this->buildResponseFromPayload($payload, $target);
+                }
+
                 return [
                     'success' => false,
-                    'error' => 'El archivo no está disponible en el repositorio local.',
+                    'error' => 'El análisis está en proceso por otro usuario. Inténtalo en unos segundos.',
                 ];
             }
 
-            $analizador = new AnalizadorTDRService();
-            $resultado = $analizador->analyzeSingle($filePath);
+            try {
+                // ── Double-check ──
+                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh);
+                if ($cachedAnalisis) {
+                    $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
+                    return $this->buildResponseFromPayload($payload, $target);
+                }
 
-            if (!($resultado['success'] ?? false)) {
-                return $resultado;
+                $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
+
+                if (!$filePath || !is_file($filePath)) {
+                    return [
+                        'success' => false,
+                        'error' => 'El archivo no está disponible en el repositorio local.',
+                    ];
+                }
+
+                $analizador = new AnalizadorTDRService();
+                $resultado = $analizador->analyzeSingle($filePath);
+
+                if (!($resultado['success'] ?? false)) {
+                    return $resultado;
+                }
+
+                $analisisData = $this->normalizeAnalysisKeys($resultado['data'] ?? []);
+                $contextoContrato = $this->buildContextoContrato($contratoData, $archivoPersistido);
+
+                $analisisModel = $this->persistence->storeAnalysis(
+                    $archivoPersistido,
+                    $analisisData,
+                    $resultado,
+                    $contextoContrato,
+                    [
+                        'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
+                        'modelo' => config('services.analizador_tdr.model'),
+                    ]
+                );
+
+                $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
+
+                return $this->buildResponseFromPayload($payload, $target);
+            } finally {
+                $lock->release();
             }
 
-            $analisisData = $this->normalizeAnalysisKeys($resultado['data'] ?? []);
-            $contextoContrato = $this->buildContextoContrato($contratoData, $archivoPersistido);
-
-            $analisisModel = $this->persistence->storeAnalysis(
-                $archivoPersistido,
-                $analisisData,
-                $resultado,
-                $contextoContrato,
-                [
-                    'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
-                    'modelo' => config('services.analizador_tdr.model'),
-                ]
-            );
-
-            $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
-
-            return $this->buildResponseFromPayload($payload, $target);
         } catch (Exception $e) {
             Log::error('TDR: Error en análisis local', [
                 'error' => $e->getMessage(),
