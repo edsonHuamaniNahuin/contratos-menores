@@ -1,5 +1,4 @@
-/var/log / vigilante - seace
-/*.log {
+/var/log/vigilante-seace/*.log {
     daily
     missingok
     rotate 14
