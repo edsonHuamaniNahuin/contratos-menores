@@ -1,0 +1,16 @@
+[Unit]
+Description=Vigilante SEACE Queue Worker
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/vigilante-seace
+ExecStart=/usr/local/php82/bin/php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/vigilante-seace/queue.log
+StandardError=append:/var/log/vigilante-seace/queue-error.log
+
+[Install]
+WantedBy=multi-user.target

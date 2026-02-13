@@ -1,0 +1,15 @@
+/var/log / vigilante - seace
+/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data www-data
+    sharedscripts
+    postrotate
+        systemctl restart telegram-bot.service > /dev/null 2>&1 || true
+        systemctl restart vigilante-queue.service > /dev/null 2>&1 || true
+    endscript
+}

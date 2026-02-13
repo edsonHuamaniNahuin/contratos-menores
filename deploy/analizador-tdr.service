@@ -1,0 +1,20 @@
+[Unit]
+Description=Vigilante SEACE - Analizador TDR (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vigilante-seace/analizador-tdr
+ExecStart=/var/www/vigilante-seace/analizador-tdr/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8001
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/vigilante-seace/analizador-tdr.log
+StandardError=append:/var/log/vigilante-seace/analizador-tdr-error.log
+
+# Seguridad
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

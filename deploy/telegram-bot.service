@@ -1,0 +1,23 @@
+[Unit]
+Description=Vigilante SEACE - Telegram Bot Listener
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vigilante-seace
+ExecStart=/usr/local/php82/bin/php artisan telegram:listen --isolated
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/vigilante-seace/telegram-bot.log
+StandardError=append:/var/log/vigilante-seace/telegram-bot-error.log
+
+# Seguridad
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/www/vigilante-seace/storage /var/log/vigilante-seace
+
+[Install]
+WantedBy=multi-user.target

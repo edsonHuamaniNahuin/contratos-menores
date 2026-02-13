@@ -69,11 +69,18 @@ jobs:
 
             cd "$APP_DIR"
 
-            # 1. Pull ultimos cambios
+            # ── 1. MATAR todos los servicios del proyecto ──
+            echo ">>> Deteniendo servicios..."
+            sudo systemctl stop telegram-bot.service    || true
+            sudo systemctl stop vigilante-queue.service  || true
+            sudo systemctl stop analizador-tdr.service   || true
+            echo ">>> Servicios detenidos"
+
+            # ── 2. Pull ultimos cambios ──
             git fetch origin main
             git reset --hard origin/main
 
-            # 2. Laravel: dependencias + migraciones
+            # ── 3. Laravel: dependencias + migraciones ──
             $PHP_BIN $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction
             $PHP_BIN artisan config:cache
             $PHP_BIN artisan route:cache
@@ -81,7 +88,7 @@ jobs:
             $PHP_BIN artisan event:cache
             $PHP_BIN artisan migrate --force
 
-            # 3. Python microservicio
+            # ── 4. Python microservicio ──
             cd "$PYTHON_DIR"
             if [ ! -d "venv" ]; then
                 /usr/local/python311/bin/python3 -m venv venv
@@ -91,13 +98,31 @@ jobs:
             pip install -r requirements.txt --quiet
             deactivate
 
-            # 4. Reiniciar servicios
+            # ── 5. Sincronizar service files ──
             cd "$APP_DIR"
-            $PHP_BIN artisan queue:restart
-            sudo systemctl restart analizador-tdr.service || echo "WARN: No se pudo reiniciar analizador-tdr"
-            sudo systemctl restart php-fpm.service || echo "WARN: No se pudo reiniciar php-fpm"
-            sudo systemctl restart telegram-bot.service || echo "WARN: No se pudo reiniciar telegram-bot"
-            sudo systemctl reload apache2 || echo "WARN: Reiniciar web server manualmente"
+            LOG_DIR="/var/log/vigilante-seace"
+            sudo mkdir -p "$LOG_DIR"
+            sudo chown www-data:www-data "$LOG_DIR"
+
+            sudo cp deploy/telegram-bot.service    /etc/systemd/system/telegram-bot.service
+            sudo cp deploy/analizador-tdr.service  /etc/systemd/system/analizador-tdr.service
+            sudo cp deploy/vigilante-queue.service /etc/systemd/system/vigilante-queue.service
+            sudo cp deploy/logrotate-vigilante     /etc/logrotate.d/vigilante-seace
+            sudo chmod 644 /etc/logrotate.d/vigilante-seace
+            sudo systemctl daemon-reload
+
+            # ── 6. Habilitar servicios (por si es primera vez) ──
+            sudo systemctl enable telegram-bot.service    || true
+            sudo systemctl enable analizador-tdr.service   || true
+            sudo systemctl enable vigilante-queue.service  || true
+
+            # ── 7. LEVANTAR todos los servicios ──
+            echo ">>> Iniciando servicios..."
+            sudo systemctl restart php-fpm.service
+            sudo systemctl start analizador-tdr.service
+            sudo systemctl start vigilante-queue.service
+            sudo systemctl start telegram-bot.service
+            sudo systemctl reload apache2
 
             echo ">>> Deploy completado exitosamente"
 
@@ -124,9 +149,17 @@ jobs:
             APP_DIR="${{ secrets.VPS_APP_DIR }}"
 
             cd "$APP_DIR"
-            php artisan --version && echo "Laravel OK"
+            php artisan --version && echo "✅ Laravel OK"
             php artisan schedule:list | head -5
-            curl -sf http://127.0.0.1:8001/health | head -1 && echo "Analizador TDR OK" || echo "WARN: Analizador TDR no responde"
+
+            # Verificar servicios del proyecto
+            systemctl is-active telegram-bot.service    && echo "✅ Telegram Bot OK"    || echo "❌ Telegram Bot FAIL"
+            systemctl is-active vigilante-queue.service  && echo "✅ Queue Worker OK"    || echo "❌ Queue Worker FAIL"
+            systemctl is-active analizador-tdr.service   && echo "✅ Analizador TDR OK"  || echo "❌ Analizador TDR FAIL"
+            systemctl is-active php-fpm.service          && echo "✅ PHP-FPM OK"         || echo "❌ PHP-FPM FAIL"
+            systemctl is-active apache2.service          && echo "✅ Apache OK"          || echo "❌ Apache FAIL"
+
+            curl -sf http://127.0.0.1:8001/health | head -1 && echo "✅ Analizador TDR API OK" || echo "⚠️ Analizador TDR API no responde"
 
       - name: Health check (production URL)
         run: |
