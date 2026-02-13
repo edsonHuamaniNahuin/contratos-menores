@@ -1,5 +1,5 @@
 <div
-    class="p-6 flex flex-col gap-6 max-w-full"
+    class="p-6 flex flex-col gap-6 max-w-full w-full min-w-0 overflow-visible"
     x-data="{
         tooltip: { show: false, text: '', x: 0, y: 0 },
         showTooltip(text, event) {
@@ -547,8 +547,12 @@
 
     <!-- Resultados -->
     @if(count($resultados) > 0)
+        @php
+            $puedeAnalizar = auth()->user()?->hasPermission('analyze-tdr') ?? false;
+            $puedeSeguimiento = auth()->user()?->hasPermission('follow-contracts') ?? false;
+        @endphp
         <!-- Tabla de Resultados -->
-        <div class="bg-white rounded-3xl shadow-soft overflow-hidden border border-neutral-200">
+        <div class="bg-white rounded-3xl shadow-soft overflow-hidden border border-neutral-200 w-full min-w-0">
             <!-- Header Compacto -->
             <div class="px-4 lg:px-6 py-4 border-b border-neutral-100 flex items-center justify-end gap-3">
                 <div class="flex items-center gap-2">
@@ -567,7 +571,7 @@
 
             <!-- Tabla -->
             <div class="overflow-x-auto px-4 lg:px-6 py-4">
-                <table class="w-full">
+                <table class="w-full min-w-[980px]">
                     <thead class="bg-neutral-100 border-b border-neutral-200">
                         <tr>
                             <th class="px-4 lg:px-6 py-3.5 text-left">
@@ -631,7 +635,7 @@
                                     </svg>
                                 </button>
                             </th>
-                            <th class="px-4 lg:px-6 py-3.5 text-left text-xs font-semibold text-neutral-800 uppercase tracking-wider">TDR</th>
+                            <th class="px-4 lg:px-6 py-3.5 text-left text-xs font-semibold text-neutral-800 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-neutral-100">
@@ -686,44 +690,67 @@
                                 </td>
                                 <td class="px-4 lg:px-6 py-3.5">
                                     <div class="flex flex-wrap items-center gap-2">
+                                        {{-- Seguimiento --}}
+                                        <button
+                                            wire:click="hacerSeguimiento({{ $contrato['idContrato'] }})"
+                                            wire:loading.attr="disabled"
+                                            wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})"
+                                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
+                                            title="Hacer seguimiento"
+                                            @mouseenter="showTooltip('Hacer seguimiento', $event)"
+                                            @mouseleave="hideTooltip()"
+                                            @mousemove="moveTooltip($event)"
+                                        >
+                                            <svg wire:loading.remove wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <svg wire:loading wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                        </button>
+                                        {{-- Ver --}}
+                                        <button
+                                            wire:click="verContrato({{ $contrato['idContrato'] }})"
+                                            wire:loading.attr="disabled"
+                                            wire:target="verContrato({{ $contrato['idContrato'] }})"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-secondary-200 text-xs font-semibold text-secondary-600 bg-secondary-50 hover:bg-secondary-100 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                            title="Ver detalle del proceso"
+                                        >
+                                            <svg wire:loading.remove wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                            <svg wire:loading wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                            <span class="hidden xl:inline">Ver</span>
+                                        </button>
+                                        {{-- Descargar --}}
                                         <button
                                             wire:click="descargarTdr({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="descargarTdr({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 hover:text-primary-600 hover:border-primary-400 transition-colors"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
                                             title="Descargar TDR"
                                         >
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg wire:loading.remove wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11" />
                                             </svg>
-                                            <span class="hidden xl:inline">Descargar</span>
+                                            <svg wire:loading wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                            <span wire:loading.remove wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Descargar</span>
+                                            <span wire:loading wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Descargando...</span>
                                         </button>
+                                        {{-- Analizar --}}
                                         <button
                                             wire:click="analizarTdr({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="analizarTdr({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeAnalizar ? '' : 'opacity-70' }}"
                                             title="Analizar con IA"
                                         >
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
                                             </svg>
-                                            <span class="hidden xl:inline">Analizar</span>
+                                            <svg wire:loading wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                            <span wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Analizar</span>
+                                            <span wire:loading wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Analizando...</span>
                                         </button>
-                                    </div>
-                                    <div
-                                        wire:loading
-                                        wire:target="descargarTdr({{ $contrato['idContrato'] }})"
-                                        class="text-[11px] text-primary-600 mt-2"
-                                    >
-                                        Preparando descarga...
-                                    </div>
-                                    <div
-                                        wire:loading
-                                        wire:target="analizarTdr({{ $contrato['idContrato'] }})"
-                                        class="text-[11px] text-primary-600 mt-1"
-                                    >
-                                        Analizando documento con IA...
                                     </div>
                                     @if(isset($archivosErrores[$contrato['idContrato']]))
                                         <div class="text-[11px] text-primary-700 mt-2">
@@ -812,6 +839,164 @@
                 </div>
             @endif
         </div>
+
+        {{-- Modal: Ver detalle del contrato --}}
+        @if($contratoDetalle)
+            @php
+                $det = $contratoDetalle;
+                $estadoDet = strtolower($det['nomEstadoContrato'] ?? '');
+                $badgeDetalle = match(true) {
+                    str_contains($estadoDet, 'vigente') => 'bg-secondary-500/10 text-secondary-600 border-secondary-200',
+                    str_contains($estadoDet, 'evaluación') => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                    str_contains($estadoDet, 'culminado') => 'bg-neutral-100 text-neutral-700 border-neutral-200',
+                    default => 'bg-neutral-100 text-neutral-700 border-neutral-200',
+                };
+                $puedeCotizar = $det['cotizar'] ?? false;
+            @endphp
+            <div
+                class="fixed inset-0 z-[120] flex items-center justify-center px-4 py-8"
+                x-data
+                x-on:keydown.escape.window="$wire.call('cerrarDetalle')"
+            >
+                <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" wire:click="cerrarDetalle"></div>
+
+                <div class="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-soft border border-neutral-200 flex flex-col max-h-[85vh]">
+                    {{-- Header --}}
+                    <div class="p-6 lg:p-8 flex items-start justify-between gap-4 bg-white border-b border-neutral-100 rounded-t-[2rem]">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em] mb-1">Detalle del proceso</p>
+                            <h3 class="text-xl lg:text-2xl font-bold text-neutral-900 break-words">{{ $det['desContratacion'] ?? 'N/A' }}</h3>
+                            <p class="text-sm text-neutral-500 mt-1">N° {{ $det['nroContratacion'] ?? '-' }}</p>
+                        </div>
+                        <button
+                            type="button"
+                            wire:click="cerrarDetalle"
+                            class="flex-shrink-0 px-4 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:border-neutral-400 transition-colors"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+
+                    {{-- Body --}}
+                    <div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-5">
+                        {{-- Entidad y estado --}}
+                        <div class="bg-neutral-50 border border-neutral-200 rounded-2xl p-5">
+                            <dl class="space-y-3">
+                                <div>
+                                    <dt class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Entidad</dt>
+                                    <dd class="text-base font-semibold text-neutral-900 mt-0.5">{{ $det['nomEntidad'] ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1">
+                                        <dt class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Objeto de contratación</dt>
+                                        <dd class="text-sm font-medium text-neutral-900 mt-0.5">{{ $det['nomObjetoContrato'] ?? 'N/A' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Estado</dt>
+                                        <dd class="mt-0.5">
+                                            <span class="inline-flex px-3 py-1.5 text-xs font-semibold rounded-full border {{ $badgeDetalle }}">
+                                                {{ $det['nomEstadoContrato'] ?? 'N/A' }}
+                                            </span>
+                                        </dd>
+                                    </div>
+                                </div>
+                                <div>
+                                    <dt class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Descripción</dt>
+                                    <dd class="text-sm text-neutral-700 mt-0.5 leading-relaxed">{{ $det['desObjetoContrato'] ?? 'Sin descripción' }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        {{-- Fechas --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="border border-neutral-200 rounded-2xl p-4 text-center">
+                                <p class="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1">Publicación</p>
+                                <p class="text-sm font-bold text-neutral-900">{{ $det['fecPublica_completa'] ?? $det['fecPublica'] ?? 'N/D' }}</p>
+                                @if(!empty($det['fecPublica_amigable']))
+                                    <p class="text-xs text-neutral-500 mt-0.5">{{ $det['fecPublica_amigable'] }}</p>
+                                @endif
+                            </div>
+                            <div class="border border-neutral-200 rounded-2xl p-4 text-center">
+                                <p class="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1">Inicio cotización</p>
+                                <p class="text-sm font-bold text-neutral-900">{{ $det['fecIniCotizacion_completa'] ?? $det['fecIniCotizacion'] ?? 'N/D' }}</p>
+                                @if(!empty($det['fecIniCotizacion_amigable']))
+                                    <p class="text-xs text-neutral-500 mt-0.5">{{ $det['fecIniCotizacion_amigable'] }}</p>
+                                @endif
+                            </div>
+                            <div class="border border-neutral-200 rounded-2xl p-4 text-center">
+                                <p class="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1">Fin cotización</p>
+                                <p class="text-sm font-bold text-neutral-900">{{ $det['fecFinCotizacion_completa'] ?? $det['fecFinCotizacion'] ?? 'N/D' }}</p>
+                                @if(!empty($det['fecFinCotizacion_amigable']))
+                                    <p class="text-xs text-neutral-500 mt-0.5">{{ $det['fecFinCotizacion_amigable'] }}</p>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Cotización --}}
+                        <div class="flex items-center justify-between border border-neutral-200 rounded-2xl p-4">
+                            <div>
+                                <p class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">¿Se puede cotizar?</p>
+                            </div>
+                            @if($puedeCotizar)
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-secondary-500/10 text-secondary-600 border border-secondary-200">
+                                    <span class="w-2 h-2 rounded-full bg-secondary-500 animate-pulse"></span>
+                                    Sí, abierto
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-neutral-100 text-neutral-500 border border-neutral-200">
+                                    <span class="w-2 h-2 rounded-full bg-neutral-400"></span>
+                                    No disponible
+                                </span>
+                            @endif
+                        </div>
+
+                        {{-- Acciones rápidas --}}
+                        <div class="flex flex-wrap gap-3 pt-2">
+                            <button
+                                wire:click="cerrarDetalle(); hacerSeguimiento({{ $det['idContrato'] }})"
+                                wire:loading.attr="disabled"
+                                wire:target="hacerSeguimiento({{ $det['idContrato'] }})"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
+                            >
+                                <svg wire:loading.remove wire:target="hacerSeguimiento({{ $det['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <svg wire:loading wire:target="hacerSeguimiento({{ $det['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                <span wire:loading.remove wire:target="hacerSeguimiento({{ $det['idContrato'] }})">Hacer seguimiento</span>
+                                <span wire:loading wire:target="hacerSeguimiento({{ $det['idContrato'] }})">Guardando...</span>
+                            </button>
+                            <button
+                                wire:click="cerrarDetalle(); descargarTdr({{ $det['idContrato'] }})"
+                                wire:loading.attr="disabled"
+                                wire:target="descargarTdr({{ $det['idContrato'] }})"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                            >
+                                <svg wire:loading.remove wire:target="descargarTdr({{ $det['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+                                </svg>
+                                <svg wire:loading wire:target="descargarTdr({{ $det['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                <span wire:loading.remove wire:target="descargarTdr({{ $det['idContrato'] }})">Descargar TDR</span>
+                                <span wire:loading wire:target="descargarTdr({{ $det['idContrato'] }})">Descargando...</span>
+                            </button>
+                            <button
+                                wire:click="cerrarDetalle(); analizarTdr({{ $det['idContrato'] }})"
+                                wire:loading.attr="disabled"
+                                wire:target="analizarTdr({{ $det['idContrato'] }})"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-400 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait {{ $puedeAnalizar ? '' : 'opacity-70' }}"
+                            >
+                                <svg wire:loading.remove wire:target="analizarTdr({{ $det['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                                </svg>
+                                <svg wire:loading wire:target="analizarTdr({{ $det['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                <span wire:loading.remove wire:target="analizarTdr({{ $det['idContrato'] }})">Analizar con IA</span>
+                                <span wire:loading wire:target="analizarTdr({{ $det['idContrato'] }})">Analizando...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         @if($resultadoAnalisis)
             @php
                 $analisisData = $resultadoAnalisis['analisis'] ?? [];
@@ -849,99 +1034,149 @@
                 <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" wire:click="limpiarAnalisis"></div>
 
                 <div class="relative w-full max-w-5xl bg-white rounded-[2rem] shadow-soft border border-neutral-200 flex flex-col max-h-[92vh]">
-                    <div class="sticky top-0 z-10 p-6 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white border-b border-neutral-100">
-                        <div>
-                            <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em]">Análisis IA del TDR</p>
-                            <h3 class="text-2xl font-bold text-neutral-900">{{ $analisisContrato['codigo'] ?? 'Proceso seleccionado' }}</h3>
-                            <p class="text-sm text-neutral-600">{{ $analisisContrato['entidad'] ?? 'Entidad no disponible' }} · {{ $analisisContrato['archivo'] ?? 'Archivo' }}</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            @if($isCached)
-                                <span class="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-primary-100 text-primary-500 border border-primary-200">
-                                    <span class="w-2 h-2 rounded-full bg-primary-400 animate-pulse"></span>
-                                    Resultado en caché
-                                </span>
-                            @endif
+                    {{-- Header con acento visual --}}
+                    <div class="sticky top-0 z-10 bg-white border-b border-neutral-100 rounded-t-[2rem]">
+                        <div class="w-full border-t border-primary-200"></div>
+                        <div class="p-6 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div class="flex items-start gap-4">
+                                <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-primary-500/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <p class="text-xs font-semibold uppercase text-primary-500 tracking-[0.2em]">Análisis IA del TDR</p>
+                                        @if($isCached)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-secondary-500/10 text-secondary-600 border border-secondary-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-secondary-500 animate-pulse"></span>
+                                                Caché
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <h3 class="text-xl lg:text-2xl font-bold text-neutral-900">{{ $analisisContrato['codigo'] ?? 'Proceso seleccionado' }}</h3>
+                                    <p class="text-sm text-neutral-600 mt-0.5">{{ $analisisContrato['entidad'] ?? 'Entidad no disponible' }}</p>
+                                </div>
+                            </div>
                             <button
                                 type="button"
                                 wire:click="limpiarAnalisis"
-                                class="px-4 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:border-neutral-400 transition-colors"
+                                class="flex-shrink-0 w-10 h-10 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center"
                             >
-                                Cerrar
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
                             </button>
                         </div>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-5">
+                    {{-- Body con scroll --}}
+                    <div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
+
+                        {{-- Resumen Ejecutivo - destacado --}}
                         @if($resumenEjecutivo)
-                            <div class="bg-neutral-50 border border-neutral-200 rounded-2xl p-5">
-                                <p class="text-xs font-semibold text-primary-500 uppercase tracking-[0.2em] mb-2">Resumen ejecutivo</p>
-                                <p class="text-base text-neutral-800 leading-relaxed">{{ $resumenEjecutivo }}</p>
+                            <div class="relative bg-gradient-to-br from-primary-500/5 to-secondary-500/5 border border-primary-200/50 rounded-2xl p-5 lg:p-6">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-xl bg-primary-500/10 flex items-center justify-center mt-0.5">
+                                        <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-primary-500 uppercase tracking-[0.2em] mb-2">Resumen ejecutivo</p>
+                                        <p class="text-sm lg:text-base text-neutral-800 leading-relaxed">{{ $resumenEjecutivo }}</p>
+                                    </div>
+                                </div>
                             </div>
                         @endif
 
+                        {{-- Grid principal: Contexto + Fechas + Compatibilidad --}}
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <div class="bg-neutral-50 border border-neutral-200 rounded-2xl p-4">
-                                <h4 class="text-sm font-semibold text-neutral-900 mb-3">Contexto del proceso</h4>
-                                <dl class="space-y-2 text-xs text-neutral-600">
+
+                            {{-- Contexto del proceso --}}
+                            <div class="bg-neutral-50 border border-neutral-200 rounded-2xl p-5">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-7 h-7 rounded-lg bg-primary-500/10 flex items-center justify-center">
+                                        <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                        </svg>
+                                    </div>
+                                    <h4 class="text-sm font-bold text-neutral-900">Contexto del proceso</h4>
+                                </div>
+                                <dl class="space-y-3">
                                     <div>
-                                        <dt class="font-semibold text-neutral-500">Entidad</dt>
-                                        <dd>{{ $analisisContrato['entidad'] ?? 'No disponible' }}</dd>
+                                        <dt class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Entidad</dt>
+                                        <dd class="text-sm font-medium text-neutral-900 mt-0.5">{{ $analisisContrato['entidad'] ?? 'No disponible' }}</dd>
                                     </div>
                                     <div>
-                                        <dt class="font-semibold text-neutral-500">Objeto</dt>
-                                        <dd>{{ $analisisContrato['objeto'] ?? 'No disponible' }}</dd>
+                                        <dt class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Objeto</dt>
+                                        <dd class="text-sm text-neutral-700 mt-0.5">{{ $analisisContrato['objeto'] ?? 'No disponible' }}</dd>
                                     </div>
                                     <div>
-                                        <dt class="font-semibold text-neutral-500">Estado</dt>
-                                        <dd>{{ $analisisContrato['estado'] ?? 'No disponible' }}</dd>
+                                        <dt class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Estado</dt>
+                                        <dd class="mt-1">
+                                            <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-secondary-500/10 text-secondary-600 border border-secondary-200">
+                                                {{ $analisisContrato['estado'] ?? 'No disponible' }}
+                                            </span>
+                                        </dd>
                                     </div>
                                     <div>
-                                        <dt class="font-semibold text-neutral-500">Archivo analizado</dt>
-                                        <dd>{{ $analisisContrato['archivo'] ?? 'N/D' }}</dd>
+                                        <dt class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Archivo analizado</dt>
+                                        <dd class="text-xs text-neutral-600 mt-0.5 break-all">{{ $analisisContrato['archivo'] ?? 'N/D' }}</dd>
                                     </div>
                                 </dl>
                             </div>
 
-                            <div class="border border-neutral-200 rounded-2xl p-4 space-y-3">
-                                <h4 class="text-sm font-semibold text-neutral-900">Fechas clave</h4>
-                                <div class="flex items-center justify-between text-xs text-neutral-500">
-                                    <span>Publicación</span>
-                                    <p class="text-neutral-900 font-semibold">{{ $analisisContrato['fecha_publicacion'] ?? 'N/D' }}</p>
+                            {{-- Fechas clave --}}
+                            <div class="border border-neutral-200 rounded-2xl p-5">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-7 h-7 rounded-lg bg-secondary-500/10 flex items-center justify-center">
+                                        <svg class="w-3.5 h-3.5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                    <h4 class="text-sm font-bold text-neutral-900">Fechas clave</h4>
                                 </div>
-                                <div class="flex items-center justify-between text-xs text-neutral-500">
-                                    <span>Cierre / Fin de cotización</span>
-                                    <p class="text-neutral-900 font-semibold">{{ $analisisContrato['fecha_cierre'] ?? 'N/D' }}</p>
-                                </div>
-                                <div class="flex items-center justify-between text-xs text-neutral-500">
-                                    <span>Etapa</span>
-                                    <p class="text-neutral-900 font-semibold">{{ $analisisContrato['etapa'] ?? 'No disponible' }}</p>
-                                </div>
-                                <div class="flex items-center justify-between text-xs text-neutral-500">
-                                    <span>Monto referencial</span>
-                                    <p class="text-neutral-900 font-semibold">{{ $montoReferencial ?? 'N/D' }}</p>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between py-2 border-b border-neutral-100">
+                                        <span class="text-xs text-neutral-500">Publicación</span>
+                                        <p class="text-xs font-semibold text-neutral-900 text-right max-w-[60%]">{{ $analisisContrato['fecha_publicacion'] ?? 'N/D' }}</p>
+                                    </div>
+                                    <div class="flex items-center justify-between py-2 border-b border-neutral-100">
+                                        <span class="text-xs text-neutral-500">Cierre cotización</span>
+                                        <p class="text-xs font-semibold text-neutral-900 text-right max-w-[60%]">{{ $analisisContrato['fecha_cierre'] ?? 'N/D' }}</p>
+                                    </div>
+                                    <div class="flex items-center justify-between py-2 border-b border-neutral-100">
+                                        <span class="text-xs text-neutral-500">Etapa actual</span>
+                                        <span class="inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full bg-primary-500/10 text-primary-500">
+                                            {{ $analisisContrato['etapa'] ?? 'No disponible' }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center justify-between py-2">
+                                        <span class="text-xs text-neutral-500">Monto referencial</span>
+                                        <p class="text-sm font-bold text-neutral-900">{{ $montoReferencial ?? 'N/D' }}</p>
+                                    </div>
                                 </div>
                             </div>
 
+                            {{-- Compatibilidad (solo auth) --}}
                             @auth
-                                <div class="rounded-2xl p-4 bg-white border border-neutral-200 shadow-soft space-y-3">
-                                    <div class="flex items-center justify-between gap-4">
-                                        <div>
-                                            <p class="text-xs uppercase tracking-[0.2em] text-neutral-400">Nivel de compatibilidad</p>
-                                            <p class="text-sm font-semibold text-neutral-900">Puntajes por suscriptor</p>
+                                <div class="rounded-2xl p-5 bg-white border border-neutral-200 shadow-soft space-y-4">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <div class="w-7 h-7 rounded-lg bg-primary-500/10 flex items-center justify-center">
+                                            <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                            </svg>
                                         </div>
-                                        <div class="text-right text-xs text-neutral-500">
-                                            <p class="uppercase tracking-wide text-[0.65rem]">Proceso</p>
-                                            <p class="font-semibold text-neutral-800">{{ $analisisContrato['codigo'] ?? 'N/D' }}</p>
-                                        </div>
+                                        <h4 class="text-sm font-bold text-neutral-900">Compatibilidad</h4>
                                     </div>
 
                                     @if(empty($suscriptoresUsuario))
-                                        <div class="rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
-                                            No tienes suscriptores activos asociados a tu cuenta.
+                                        <div class="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-4 text-center">
+                                            <p class="text-xs text-neutral-500">No tienes suscriptores activos asociados a tu cuenta.</p>
                                         </div>
                                     @else
-                                        <div class="space-y-3">
+                                        <div class="space-y-2">
                                             @foreach($suscriptoresUsuario as $suscriptor)
                                                 @php
                                                     $compat = $compatibilidadPorSuscriptor[$suscriptor['id']] ?? null;
@@ -950,109 +1185,133 @@
                                                     $actualizado = $compat['actualizado'] ?? null;
                                                     $hasCopy = $suscriptor['has_copy'] ?? false;
                                                 @endphp
-                                                <div class="flex flex-col gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-                                                    <div class="flex items-start justify-between gap-4">
-                                                        <div>
-                                                            <p class="text-sm font-semibold text-neutral-900">{{ $suscriptor['label'] }}</p>
-                                                            @if(!is_null($score))
-                                                                <p class="text-xs text-neutral-600">Actualizado: <span class="font-semibold text-neutral-800">{{ $actualizado ?? 'N/D' }}</span></p>
-                                                            @elseif(!$hasCopy)
-                                                                <p class="text-xs text-neutral-500">Completa el copy del suscriptor para habilitar el puntaje.</p>
-                                                            @else
-                                                                <p class="text-xs text-neutral-500">Sin puntaje para este proceso.</p>
-                                                            @endif
-                                                        </div>
-                                                        <div class="flex items-center gap-2">
-                                                            @if(!is_null($score))
-                                                                <div class="text-right">
-                                                                    <p class="text-2xl font-black text-neutral-900 leading-none">{{ number_format($score, 1) }}<span class="text-xs font-semibold text-neutral-500 align-top">/10</span></p>
-                                                                    @if($nivel)
-                                                                        <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary-100 text-primary-600">{{ strtoupper($nivel) }}</span>
-                                                                    @endif
-                                                                </div>
-                                                            @else
-                                                                <button
-                                                                    type="button"
-                                                                    wire:click="calcularCompatibilidad({{ $suscriptor['id'] }})"
-                                                                    wire:loading.attr="disabled"
-                                                                    wire:target="calcularCompatibilidad({{ $suscriptor['id'] }})"
-                                                                    class="px-3 py-2 text-xs font-semibold rounded-full border border-primary-200 text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                    @if(!$hasCopy) disabled @endif
-                                                                >
-                                                                    @if($compatibilidadEnCurso === $suscriptor['id'])
-                                                                        Calculando...
-                                                                    @else
-                                                                        Obtener score
-                                                                    @endif
-                                                                </button>
-                                                            @endif
-                                                        </div>
+                                                <div class="flex items-center justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-semibold text-neutral-900 truncate">{{ $suscriptor['label'] }}</p>
+                                                        @if(!is_null($score))
+                                                            <p class="text-[11px] text-neutral-500">{{ $actualizado ?? '' }}</p>
+                                                        @elseif(!$hasCopy)
+                                                            <p class="text-[11px] text-neutral-400">Falta copy del suscriptor</p>
+                                                        @endif
+                                                    </div>
+                                                    <div class="flex-shrink-0">
+                                                        @if(!is_null($score))
+                                                            <div class="text-right">
+                                                                <p class="text-2xl font-black text-neutral-900 leading-none">{{ number_format($score, 1) }}<span class="text-xs font-semibold text-neutral-400 align-top">/10</span></p>
+                                                                @if($nivel)
+                                                                    <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary-100 text-primary-500">{{ strtoupper($nivel) }}</span>
+                                                                @endif
+                                                            </div>
+                                                        @else
+                                                            <button
+                                                                type="button"
+                                                                wire:click="calcularCompatibilidad({{ $suscriptor['id'] }})"
+                                                                wire:loading.attr="disabled"
+                                                                wire:target="calcularCompatibilidad({{ $suscriptor['id'] }})"
+                                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-primary-200 text-primary-500 hover:bg-primary-500/5 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                                                @if(!$hasCopy) disabled @endif
+                                                            >
+                                                                <svg wire:loading wire:target="calcularCompatibilidad({{ $suscriptor['id'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                                                <span wire:loading.remove wire:target="calcularCompatibilidad({{ $suscriptor['id'] }})">Score</span>
+                                                                <span wire:loading wire:target="calcularCompatibilidad({{ $suscriptor['id'] }})">...</span>
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             @endforeach
                                         </div>
                                     @endif
-
-                                    <p class="text-[11px] text-neutral-500">Selecciona un suscriptor para obtener un puntaje personalizado antes de decidir si postular.</p>
                                 </div>
                             @endauth
                         </div>
 
+                        {{-- Secciones de detalle: Requisitos, Reglas, Penalidades --}}
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <div class="border border-neutral-200 rounded-2xl p-4">
-                                <div class="flex items-center justify-between mb-3">
-                                    <p class="text-sm font-semibold text-neutral-900">Requisitos técnicos</p>
-                                    <span class="text-xs text-neutral-400">{{ count($requisitosList) }} items</span>
+                            {{-- Requisitos técnicos --}}
+                            <div class="border border-neutral-200 rounded-2xl p-5 flex flex-col">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-7 h-7 rounded-lg bg-primary-500/10 flex items-center justify-center">
+                                        <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 flex items-center justify-between">
+                                        <h4 class="text-sm font-bold text-neutral-900">Requisitos técnicos</h4>
+                                        <span class="inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary-500/10 text-primary-500">{{ count($requisitosList) }}</span>
+                                    </div>
                                 </div>
-                                <ul class="space-y-2 text-sm text-neutral-800">
+                                <ul class="space-y-2.5 flex-1">
                                     @forelse($requisitosList as $item)
-                                        <li class="flex gap-3">
-                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0"></span>
-                                            <span class="leading-relaxed text-neutral-800">{{ $item }}</span>
+                                        <li class="flex gap-2.5">
+                                            <span class="mt-2 w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0"></span>
+                                            <span class="text-sm leading-relaxed text-neutral-700">{{ $item }}</span>
                                         </li>
                                     @empty
-                                        <li class="text-neutral-500">No se encontraron requisitos específicos.</li>
+                                        <li class="text-sm text-neutral-400 italic">No se encontraron requisitos específicos.</li>
                                     @endforelse
                                 </ul>
                             </div>
 
-                            <div class="border border-neutral-200 rounded-2xl p-4">
-                                <div class="flex items-center justify-between mb-3">
-                                    <p class="text-sm font-semibold text-neutral-900">Reglas de negocio y ejecución</p>
-                                    <span class="text-xs text-neutral-400">{{ count($reglasList) }} items</span>
+                            {{-- Reglas de negocio --}}
+                            <div class="border border-neutral-200 rounded-2xl p-5 flex flex-col">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-7 h-7 rounded-lg bg-secondary-500/10 flex items-center justify-center">
+                                        <svg class="w-3.5 h-3.5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 flex items-center justify-between">
+                                        <h4 class="text-sm font-bold text-neutral-900">Reglas de negocio</h4>
+                                        <span class="inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full bg-secondary-500/10 text-secondary-600">{{ count($reglasList) }}</span>
+                                    </div>
                                 </div>
-                                <ul class="space-y-2 text-sm text-neutral-800">
+                                <ul class="space-y-2.5 flex-1">
                                     @forelse($reglasList as $item)
-                                        <li class="flex gap-3">
-                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0"></span>
-                                            <span class="leading-relaxed text-neutral-800">{{ $item }}</span>
+                                        <li class="flex gap-2.5">
+                                            <span class="mt-2 w-1.5 h-1.5 rounded-full bg-secondary-400 flex-shrink-0"></span>
+                                            <span class="text-sm leading-relaxed text-neutral-700">{{ $item }}</span>
                                         </li>
                                     @empty
-                                        <li class="text-neutral-500">No se detallaron reglas adicionales.</li>
+                                        <li class="text-sm text-neutral-400 italic">No se detallaron reglas adicionales.</li>
                                     @endforelse
                                 </ul>
                                 @if(($analisisData['reglas_ejecucion'] ?? null) && count($reglasList) === 0)
-                                    <p class="text-sm text-neutral-700 mt-3">{{ $analisisData['reglas_ejecucion'] }}</p>
+                                    <p class="text-sm text-neutral-600 mt-3 border-t border-neutral-100 pt-3">{{ $analisisData['reglas_ejecucion'] }}</p>
                                 @endif
                             </div>
 
-                            <div class="border border-neutral-200 rounded-2xl p-4">
-                                <div class="flex items-center justify-between mb-3">
-                                    <p class="text-sm font-semibold text-neutral-900">Políticas y penalidades</p>
-                                    <span class="text-xs text-neutral-400">{{ count($penalidadesList) }} items</span>
+                            {{-- Penalidades --}}
+                            <div class="border border-neutral-200 rounded-2xl p-5 flex flex-col">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-7 h-7 rounded-lg bg-primary-300/20 flex items-center justify-center">
+                                        <svg class="w-3.5 h-3.5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 flex items-center justify-between">
+                                        <h4 class="text-sm font-bold text-neutral-900">Penalidades</h4>
+                                        <span class="inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary-300/20 text-primary-400">{{ count($penalidadesList) }}</span>
+                                    </div>
                                 </div>
-                                <ul class="space-y-2 text-sm text-neutral-800">
+                                <ul class="space-y-2.5 flex-1">
                                     @forelse($penalidadesList as $item)
-                                        <li class="flex gap-3">
-                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0"></span>
-                                            <span class="leading-relaxed text-neutral-800">{{ $item }}</span>
+                                        <li class="flex gap-2.5">
+                                            <span class="mt-2 w-1.5 h-1.5 rounded-full bg-primary-300 flex-shrink-0"></span>
+                                            <span class="text-sm leading-relaxed text-neutral-700">{{ $item }}</span>
                                         </li>
                                     @empty
-                                        <li class="text-neutral-500">No se encontraron penalidades explícitas.</li>
+                                        <li class="text-sm text-neutral-400 italic">No se encontraron penalidades explícitas.</li>
                                     @endforelse
                                 </ul>
                             </div>
                         </div>
+
+                        {{-- Timestamp del análisis --}}
+                        @if($timestampAnalisis)
+                            <div class="text-center pt-2">
+                                <p class="text-[11px] text-neutral-400">Análisis generado: {{ $timestampAnalisis }}</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -1080,6 +1339,115 @@
         </div>
     @endif
 
+    {{-- Modal: Login requerido --}}
+    @if($mostrarLoginModal)
+        <div
+            class="fixed inset-0 z-[130] flex items-center justify-center px-4 py-8"
+            x-data
+            x-on:keydown.escape.window="$wire.call('cerrarLoginModal')"
+        >
+            <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" wire:click="cerrarLoginModal"></div>
+
+            <div class="relative w-full max-w-md bg-white rounded-[2rem] shadow-soft border border-neutral-200 p-6 lg:p-7">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em]">Acceso requerido</p>
+                        <h3 class="text-xl font-bold text-neutral-900 mt-1">Inicia sesion para continuar</h3>
+                        <p class="text-sm text-neutral-500 mt-1">{{ $loginModalMensaje }}</p>
+                    </div>
+                    <button
+                        type="button"
+                        wire:click="cerrarLoginModal"
+                        class="w-9 h-9 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-semibold text-neutral-500">Correo</label>
+                        <input
+                            type="email"
+                            wire:model.defer="loginEmail"
+                            required
+                            class="mt-1 w-full px-4 py-2.5 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none text-sm"
+                            placeholder="correo@empresa.com"
+                        />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-neutral-500">Contrasena</label>
+                        <input
+                            type="password"
+                            wire:model.defer="loginPassword"
+                            wire:keydown.enter="login"
+                            required
+                            class="mt-1 w-full px-4 py-2.5 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none text-sm"
+                            placeholder="********"
+                        />
+                    </div>
+                    <label class="flex items-center gap-2 text-xs text-neutral-500">
+                        <input type="checkbox" wire:model.defer="loginRemember" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500" />
+                        Mantener sesion
+                    </label>
+                    @if($loginError)
+                        <div class="bg-primary-500/10 border border-primary-200 text-primary-600 text-xs font-semibold rounded-2xl px-4 py-2">
+                            {{ $loginError }}
+                        </div>
+                    @endif
+                    <button
+                        type="button"
+                        wire:click="login"
+                        class="w-full py-3 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-400 transition-colors"
+                    >
+                        Iniciar sesion
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal: Acceso restringido --}}
+    @if($mostrarAccesoRestringido)
+        <div
+            class="fixed inset-0 z-[130] flex items-center justify-center px-4 py-8"
+            x-data
+            x-on:keydown.escape.window="$wire.call('cerrarAccesoRestringido')"
+        >
+            <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" wire:click="cerrarAccesoRestringido"></div>
+
+            <div class="relative w-full max-w-md bg-white rounded-[2rem] shadow-soft border border-neutral-200 p-6 lg:p-7">
+                <div class="flex items-start justify-between gap-4 mb-2">
+                    <div>
+                        <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em]">Acceso restringido</p>
+                        <h3 class="text-xl font-bold text-neutral-900 mt-1">Permiso requerido</h3>
+                    </div>
+                    <button
+                        type="button"
+                        wire:click="cerrarAccesoRestringido"
+                        class="w-9 h-9 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-sm text-neutral-500">{{ $accesoRestringidoMensaje }}</p>
+                <div class="mt-5 flex justify-end">
+                    <button
+                        type="button"
+                        wire:click="cerrarAccesoRestringido"
+                        class="px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-neutral-900 hover:border-neutral-400 transition-colors"
+                    >
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
 
 </div>
 
@@ -1098,6 +1466,14 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    });
+
+    $wire.on('login-redirect', (event) => {
+        if (!event?.url) {
+            return;
+        }
+
+        window.location.href = event.url;
     });
 </script>
 @endscript

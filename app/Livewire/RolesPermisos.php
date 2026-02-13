@@ -6,19 +6,22 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class RolesPermisos extends Component
 {
+    use WithPagination;
+
     public array $roles = [];
     public array $permissions = [];
     public array $rolePermissions = [];
-    public array $users = [];
     public array $userRoles = [];
     public ?string $errorMessage = null;
+    public int $perPage = 12;
 
     public function mount(): void
     {
-        $this->loadData();
+        $this->loadRolesAndPermissions();
     }
 
     public function guardarPermisos(int $roleId): void
@@ -29,7 +32,7 @@ class RolesPermisos extends Component
         $role->permissions()->sync($permissionIds);
 
         session()->flash('success', "✅ Permisos guardados para {$role->name}");
-        $this->loadData();
+        $this->loadRolesAndPermissions();
     }
 
     public function guardarRolUsuario(int $userId): void
@@ -48,23 +51,28 @@ class RolesPermisos extends Component
         }
 
         $user->roles()->sync([$roleId]);
+        $this->userRoles[$userId] = $roleId;
 
         session()->flash('success', '✅ Rol actualizado');
-        $this->loadData();
+        $this->loadRolesAndPermissions();
     }
 
     public function render()
     {
-        return view('livewire.roles-permisos');
+        $users = User::with('roles')->orderBy('name')->paginate($this->perPage);
+        $this->syncUserRoles($users->getCollection());
+
+        return view('livewire.roles-permisos', [
+            'users' => $users,
+        ]);
     }
 
-    protected function loadData(): void
+    protected function loadRolesAndPermissions(): void
     {
         $this->errorMessage = null;
 
         $roles = Role::with('permissions')->orderBy('name')->get();
         $permissions = Permission::orderBy('name')->get();
-        $users = User::with('roles')->orderBy('name')->get();
 
         $this->roles = $roles->map(fn ($role) => [
             'id' => $role->id,
@@ -83,17 +91,15 @@ class RolesPermisos extends Component
         $this->rolePermissions = $roles->mapWithKeys(function ($role) {
             return [$role->id => $role->permissions->pluck('id')->values()->all()];
         })->toArray();
+    }
 
-        $this->users = $users->map(fn ($user) => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-        ])->toArray();
-
-        $this->userRoles = $users->mapWithKeys(function ($user) {
-            $roleId = $user->roles->first()?->id;
-            return [$user->id => $roleId];
-        })->toArray();
+    protected function syncUserRoles($users): void
+    {
+        foreach ($users as $user) {
+            if (!array_key_exists($user->id, $this->userRoles)) {
+                $this->userRoles[$user->id] = $user->roles->first()?->id;
+            }
+        }
     }
 
     protected function isLastAdminChange(int $userId, int $newRoleId): bool

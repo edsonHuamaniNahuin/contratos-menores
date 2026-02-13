@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\ContratoSeguimiento;
 use App\Models\TelegramSubscription;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
@@ -61,6 +62,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function telegramSubscriptions(): HasMany
     {
         return $this->hasMany(TelegramSubscription::class);
+    }
+
+    public function seguimientos(): HasMany
+    {
+        return $this->hasMany(ContratoSeguimiento::class);
     }
 
     public function roles(): BelongsToMany

@@ -4,11 +4,13 @@ namespace App\Livewire;
 
 use App\Models\TelegramSubscription;
 use App\Models\SubscriptionContractMatch;
+use App\Models\ContratoSeguimiento;
 use App\Services\SeaceBuscadorPublicoService;
 use App\Services\SeacePublicArchivoService;
 use App\Services\Tdr\CompatibilityScoreService;
 use App\Services\Tdr\PublicTdrDocumentService;
 use App\Services\TdrAnalysisService;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -100,6 +102,20 @@ class BuscadorPublico extends Component
     public bool $analizandoTdr = false;
     public ?array $resultadoAnalisis = null;
     public ?array $analisisContrato = null;
+
+    public ?int $seguimientoEnCurso = null;
+    public bool $mostrarLoginModal = false;
+    public bool $mostrarAccesoRestringido = false;
+    public string $loginModalMensaje = 'Inicia sesion para continuar.';
+    public string $accesoRestringidoMensaje = 'Tu cuenta no tiene acceso a esta funcionalidad.';
+    public string $loginEmail = '';
+    public string $loginPassword = '';
+    public bool $loginRemember = false;
+    public ?string $loginError = null;
+    public ?string $loginRedirectUrl = null;
+
+    // Modal "Ver" detalle de contrato
+    public ?array $contratoDetalle = null;
     public ?int $analisisContratoId = null;
     public ?array $analisisContratoSnapshot = null;
     public array $suscriptoresUsuario = [];
@@ -124,8 +140,8 @@ class BuscadorPublico extends Component
     {
         $this->cargarCatalogos();
 
-        // NO realizar búsqueda inicial automática
-        // Solo buscar cuando el usuario aplique filtros
+        // Ejecutar búsqueda inicial incluso con filtros por defecto
+        $this->buscar();
     }
 
     /**
@@ -426,54 +442,77 @@ class BuscadorPublico extends Component
     }
 
     /**
-     * Procesa las fechas del SEACE y agrega versiones amigables
+     * Procesa las fechas del SEACE y agrega versiones amigables.
+     * Las fechas del SEACE llegan en hora Lima (America/Lima).
      */
     protected function procesarFechas(array $resultados): array
     {
+        $ahora = \Carbon\Carbon::now('America/Lima');
+
         foreach ($resultados as &$resultado) {
-            // Fecha de publicación
-            if (!empty($resultado['fecPublica'])) {
-                try {
-                    $fecha = \Carbon\Carbon::createFromFormat('d/m/Y H:i:s', $resultado['fecPublica']);
-                    $fecha->locale('es'); // Configurar locale en español
-                    $resultado['fecPublica_amigable'] = $fecha->diffForHumans();
-                    $resultado['fecPublica_completa'] = $fecha->format('d/m/Y H:i:s');
-                    $resultado['fecPublica_timestamp'] = $fecha->timestamp;
-                } catch (\Exception $e) {
-                    $resultado['fecPublica_amigable'] = $resultado['fecPublica'];
-                    $resultado['fecPublica_completa'] = $resultado['fecPublica'];
-                    $resultado['fecPublica_timestamp'] = 0;
-                }
-            }
-
-            // Fecha inicio cotización
-            if (!empty($resultado['fecIniCotizacion'])) {
-                try {
-                    $fecha = \Carbon\Carbon::createFromFormat('d/m/Y H:i:s', $resultado['fecIniCotizacion']);
-                    $fecha->locale('es'); // Configurar locale en español
-                    $resultado['fecIniCotizacion_amigable'] = $fecha->diffForHumans();
-                    $resultado['fecIniCotizacion_completa'] = $fecha->format('d/m/Y H:i:s');
-                } catch (\Exception $e) {
-                    $resultado['fecIniCotizacion_amigable'] = $resultado['fecIniCotizacion'];
-                    $resultado['fecIniCotizacion_completa'] = $resultado['fecIniCotizacion'];
-                }
-            }
-
-            // Fecha fin cotización
-            if (!empty($resultado['fecFinCotizacion'])) {
-                try {
-                    $fecha = \Carbon\Carbon::createFromFormat('d/m/Y H:i:s', $resultado['fecFinCotizacion']);
-                    $fecha->locale('es'); // Configurar locale en español
-                    $resultado['fecFinCotizacion_amigable'] = $fecha->diffForHumans();
-                    $resultado['fecFinCotizacion_completa'] = $fecha->format('d/m/Y H:i:s');
-                } catch (\Exception $e) {
-                    $resultado['fecFinCotizacion_amigable'] = $resultado['fecFinCotizacion'];
-                    $resultado['fecFinCotizacion_completa'] = $resultado['fecFinCotizacion'];
-                }
-            }
+            $resultado = $this->procesarCampoFecha($resultado, 'fecPublica', $ahora);
+            $resultado = $this->procesarCampoFecha($resultado, 'fecIniCotizacion', $ahora);
+            $resultado = $this->procesarCampoFecha($resultado, 'fecFinCotizacion', $ahora);
         }
 
         return $resultados;
+    }
+
+    /**
+     * Procesa un campo de fecha individual y genera las versiones legibles.
+     */
+    protected function procesarCampoFecha(array $resultado, string $campo, \Carbon\Carbon $ahora): array
+    {
+        if (empty($resultado[$campo])) {
+            return $resultado;
+        }
+
+        try {
+            $fecha = \Carbon\Carbon::createFromFormat('d/m/Y H:i:s', $resultado[$campo], 'America/Lima');
+            $fecha->locale('es');
+
+            // Formato legible: "13 de feb. de 2026 a las 5:00 p.m."
+            $resultado[$campo . '_completa'] = $this->formatearFechaLegible($fecha);
+
+            // Relativo inteligente: "hace 2 minutos" (pasado) / "en 3 días" (futuro)
+            $resultado[$campo . '_amigable'] = $fecha->locale('es')->diffForHumans([
+                'parts' => 1,
+            ]);
+
+            // Timestamp para ordenamiento
+            if ($campo === 'fecPublica') {
+                $resultado[$campo . '_timestamp'] = $fecha->timestamp;
+            }
+        } catch (\Exception $e) {
+            $resultado[$campo . '_completa'] = $resultado[$campo];
+            $resultado[$campo . '_amigable'] = $resultado[$campo];
+            if ($campo === 'fecPublica') {
+                $resultado[$campo . '_timestamp'] = 0;
+            }
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Formatea una fecha Carbon en formato legible en español.
+     * Ejemplo: "13 de feb. de 2026 a las 5:00 p.m."
+     */
+    protected function formatearFechaLegible(\Carbon\Carbon $fecha): string
+    {
+        $meses = [
+            1 => 'enero', 2 => 'febrero', 3 => 'marzo', 4 => 'abril',
+            5 => 'mayo', 6 => 'junio', 7 => 'julio', 8 => 'agosto',
+            9 => 'septiembre', 10 => 'octubre', 11 => 'noviembre', 12 => 'diciembre',
+        ];
+
+        $dia = $fecha->day;
+        $mes = $meses[$fecha->month];
+        $anio = $fecha->year;
+        $hora = $fecha->format('g:i');
+        $ampm = $fecha->hour >= 12 ? 'p.m.' : 'a.m.';
+
+        return "{$dia} de {$mes} de {$anio} a las {$hora} {$ampm}";
     }
 
     /**
@@ -567,6 +606,29 @@ class BuscadorPublico extends Component
         return $count;
     }
 
+    /**
+     * Abrir modal con los datos del contrato desde la API.
+     */
+    public function verContrato(int $idContrato): void
+    {
+        $contrato = $this->resolveContrato($idContrato);
+
+        if (!$contrato) {
+            $this->notify('No se encontraron datos del contrato.', 'warning');
+            return;
+        }
+
+        $this->contratoDetalle = $contrato;
+    }
+
+    /**
+     * Cerrar modal de detalle de contrato.
+     */
+    public function cerrarDetalle(): void
+    {
+        $this->contratoDetalle = null;
+    }
+
     public function descargarTdr(int $idContrato): void
     {
         $this->descargandoTdr = true;
@@ -596,6 +658,14 @@ class BuscadorPublico extends Component
 
     public function analizarTdr(int $idContrato): void
     {
+        if (!$this->ensurePermission(
+            'analyze-tdr',
+            'Inicia sesion para analizar TDR con IA.',
+            'Tu cuenta no tiene acceso al analisis IA. Solicita Proveedor Premium.'
+        )) {
+            return;
+        }
+
         $this->analizandoTdr = true;
         $this->resultadoAnalisis = null;
         $this->analisisContrato = null;
@@ -642,6 +712,51 @@ class BuscadorPublico extends Component
             $this->notify('No se pudo completar el análisis IA: ' . $e->getMessage(), 'error');
         } finally {
             $this->analizandoTdr = false;
+        }
+    }
+
+    public function hacerSeguimiento(int $idContrato): void
+    {
+        $this->seguimientoEnCurso = $idContrato;
+
+        try {
+            if (!$this->ensurePermission(
+                'follow-contracts',
+                'Inicia sesion para hacer seguimiento del proceso.',
+                'Tu cuenta no tiene acceso al seguimiento. Solicita Proveedor Premium.'
+            )) {
+                return;
+            }
+
+            $contrato = $this->resolveContrato($idContrato);
+            if (!$contrato) {
+                $this->notify('No se encontraron datos del contrato.', 'warning');
+                return;
+            }
+
+            $payload = $this->buildSeguimientoPayload($contrato);
+            if (($payload['contrato_seace_id'] ?? 0) <= 0) {
+                $this->notify('No se pudo identificar el contrato para seguimiento.', 'warning');
+                return;
+            }
+
+            ContratoSeguimiento::updateOrCreate(
+                [
+                    'user_id' => Auth::id(),
+                    'contrato_seace_id' => $payload['contrato_seace_id'],
+                ],
+                $payload
+            );
+
+            $this->notify('Seguimiento activado para el proceso.', 'success');
+        } catch (Exception $e) {
+            Log::error('BuscadorPublico:hacerSeguimiento', [
+                'id_contrato' => $idContrato,
+                'error' => $e->getMessage(),
+            ]);
+            $this->notify('No se pudo activar el seguimiento: ' . $e->getMessage(), 'error');
+        } finally {
+            $this->seguimientoEnCurso = null;
         }
     }
 
@@ -845,13 +960,136 @@ class BuscadorPublico extends Component
     {
         $contrato = $this->resolveContrato($idContrato) ?? [];
 
+        // Determinar etapa basada en estado y si se puede cotizar
+        $etapa = 'No disponible';
+        $estadoNombre = $contrato['nomEstadoContrato'] ?? '';
+        $cotizar = $contrato['cotizar'] ?? false;
+        if ($cotizar) {
+            $etapa = 'Recepción de cotizaciones';
+        } elseif (str_contains(strtolower($estadoNombre), 'vigente')) {
+            $etapa = 'Vigente';
+        } elseif (str_contains(strtolower($estadoNombre), 'evaluación')) {
+            $etapa = 'En evaluación';
+        } elseif (str_contains(strtolower($estadoNombre), 'culminado')) {
+            $etapa = 'Culminado';
+        }
+
         return [
             'codigo' => $contrato['desContratacion'] ?? 'N/D',
             'entidad' => $contrato['nomEntidad'] ?? 'N/D',
             'objeto' => $contrato['nomObjetoContrato'] ?? 'N/D',
             'estado' => $contrato['nomEstadoContrato'] ?? 'N/D',
             'archivo' => $archivoMeta['nombre'] ?? ($archivoMeta['nombreTipoArchivo'] ?? 'TDR'),
+            'fecha_publicacion' => $contrato['fecPublica_completa'] ?? $contrato['fecPublica'] ?? 'N/D',
+            'fecha_cierre' => $contrato['fecFinCotizacion_completa'] ?? $contrato['fecFinCotizacion'] ?? 'N/D',
+            'fecha_inicio_cotizacion' => $contrato['fecIniCotizacion_completa'] ?? $contrato['fecIniCotizacion'] ?? 'N/D',
+            'etapa' => $etapa,
         ];
+    }
+
+    protected function ensurePermission(string $permission, string $loginMessage, string $deniedMessage): bool
+    {
+        $user = Auth::user();
+        if (!$user) {
+            $this->solicitarLogin($loginMessage);
+            return false;
+        }
+
+        if (!$user->hasPermission($permission)) {
+            $this->mostrarAccesoRestringido = true;
+            $this->accesoRestringidoMensaje = $deniedMessage;
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function solicitarLogin(string $mensaje): void
+    {
+        $this->loginModalMensaje = $mensaje;
+        $this->mostrarLoginModal = true;
+        $this->loginError = null;
+        $referer = request()->headers->get('referer');
+        $this->loginRedirectUrl = $referer ?: url()->previous();
+        if (!$this->loginRedirectUrl || str_contains($this->loginRedirectUrl, '/livewire-')) {
+            $this->loginRedirectUrl = url('/buscador-publico');
+        }
+        session(['url.intended' => $this->loginRedirectUrl]);
+    }
+
+    public function cerrarLoginModal(): void
+    {
+        $this->mostrarLoginModal = false;
+        $this->reset(['loginEmail', 'loginPassword', 'loginRemember', 'loginError', 'loginRedirectUrl']);
+    }
+
+    public function login(): void
+    {
+        $this->loginError = null;
+
+        $credentials = $this->validate([
+            'loginEmail' => ['required', 'email'],
+            'loginPassword' => ['required', 'string'],
+        ]);
+
+        $ok = Auth::attempt([
+            'email' => $credentials['loginEmail'],
+            'password' => $credentials['loginPassword'],
+        ], $this->loginRemember);
+
+        if (!$ok) {
+            $this->loginError = 'Las credenciales proporcionadas no son validas.';
+            return;
+        }
+
+        request()->session()->regenerate();
+        $this->mostrarLoginModal = false;
+        $targetUrl = $this->loginRedirectUrl
+            ?? session('url.intended')
+            ?? url('/buscador-publico');
+        if (!$targetUrl || str_contains($targetUrl, '/livewire-')) {
+            $targetUrl = url('/buscador-publico');
+        }
+        $this->reset(['loginEmail', 'loginPassword', 'loginRemember', 'loginError', 'loginRedirectUrl']);
+        $this->dispatch('login-redirect', url: $targetUrl);
+    }
+
+    public function cerrarAccesoRestringido(): void
+    {
+        $this->mostrarAccesoRestringido = false;
+    }
+
+    protected function buildSeguimientoPayload(array $contrato): array
+    {
+        $fechaPublicacion = $this->parseSeaceDate($contrato['fecPublica'] ?? null);
+        $fechaInicio = $this->parseSeaceDate($contrato['fecIniCotizacion'] ?? null) ?? $fechaPublicacion;
+        $fechaFin = $this->parseSeaceDate($contrato['fecFinCotizacion'] ?? null) ?? $fechaInicio;
+
+        return [
+            'user_id' => Auth::id(),
+            'contrato_seace_id' => (int) ($contrato['idContrato'] ?? 0),
+            'codigo_proceso' => (string) ($contrato['desContratacion'] ?? 'N/D'),
+            'entidad' => $contrato['nomEntidad'] ?? null,
+            'objeto' => $contrato['nomObjetoContrato'] ?? null,
+            'estado' => $contrato['nomEstadoContrato'] ?? null,
+            'fecha_publicacion' => $fechaPublicacion,
+            'fecha_inicio' => $fechaInicio,
+            'fecha_fin' => $fechaFin,
+            'snapshot' => $contrato,
+        ];
+    }
+
+    protected function parseSeaceDate(?string $value): ?Carbon
+    {
+        if (!$value) {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('d/m/Y H:i:s', $value, 'America/Lima');
+        } catch (Exception $e) {
+            return null;
+        }
     }
 
     protected function notify(string $message, string $type = 'info'): void

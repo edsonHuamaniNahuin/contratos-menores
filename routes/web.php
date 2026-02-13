@@ -28,6 +28,11 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout')
     ->middleware('auth');
 
+// ─── Rutas públicas ───────────────────────────────────────────────
+Route::get('/buscador-publico', function () {
+    return view('buscador-publico');
+})->name('buscador.publico');
+
 // ─── Verificación de correo electrónico ───────────────────────────────
 Route::middleware('auth')->group(function () {
     // Pantalla "revisa tu correo"
@@ -84,6 +89,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('roles-permisos');
     })->name('roles.permisos')->middleware('can:manage-roles-permissions');
 
+    Route::get('/seguimientos', function () {
+        return view('seguimientos');
+    })->name('seguimientos')->middleware('can:follow-contracts');
+
     // Ruta para descargar archivos temporales del SEACE
     Route::get('/seace/download/{filename}', function ($filename) {
         $path = storage_path('app/temp/' . $filename);
@@ -99,9 +108,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tdr/archivos/{archivo}/descargar', [ContratoArchivoController::class, 'download'])
         ->name('tdr.archivos.download');
 
-    // Ruta para buscador público SEACE
-    Route::get('/buscador-publico', function () {
-        return view('buscador-publico');
-    })->name('buscador.publico')->middleware('can:view-buscador-publico');
 });
 

@@ -44,50 +44,60 @@
 
             <!-- Navigation -->
             <nav class="flex-1 p-4 space-y-1">
-                <a href="{{ route('home') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('home') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
+                @auth
+                    <a href="{{ route('home') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('home') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        Dashboard
+                    </a>
+                @endauth
+
+                <a href="{{ route('buscador.publico') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('buscador.publico') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
-                    Dashboard
+                    Buscador Público
                 </a>
 
-                @can('view-buscador-publico')
-                    <a href="{{ route('buscador.publico') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('buscador.publico') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        Buscador Público
-                    </a>
-                @endcan
+                @auth
+                    @can('follow-contracts')
+                        <a href="{{ route('seguimientos') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('seguimientos') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Seguimientos
+                        </a>
+                    @endcan
 
-                @can('view-suscriptores')
-                    <a href="{{ route('suscriptores') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('suscriptores') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                        Suscriptores
-                    </a>
-                @endcan
+                    @can('view-suscriptores')
+                        <a href="{{ route('suscriptores') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('suscriptores') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            Suscriptores
+                        </a>
+                    @endcan
 
-                @can('view-cuentas')
+                    @can('view-cuentas')
                     <a href="{{ route('cuentas.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('cuentas.*') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                         </svg>
                         Cuentas
                     </a>
-                @endcan
+                    @endcan
 
-                @can('view-prueba-endpoints')
+                    @can('view-prueba-endpoints')
                     <a href="{{ route('prueba-endpoints') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('prueba-endpoints') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         Endpoints
                     </a>
-                @endcan
+                    @endcan
 
-                @can('view-configuracion')
+                    @can('view-configuracion')
                     <a href="{{ route('configuracion') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('configuracion') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
@@ -95,30 +105,31 @@
                         </svg>
                         Configuración
                     </a>
-                @endcan
+                    @endcan
 
-                @can('view-tdr-repository')
+                    @can('view-tdr-repository')
                     <a href="{{ route('tdr.repository') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('tdr.repository') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                         </svg>
                         Repositorio TDR
                     </a>
-                @endcan
+                    @endcan
 
-                @can('manage-roles-permissions')
+                    @can('manage-roles-permissions')
                     <a href="{{ route('roles.permisos') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('roles.permisos') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 0l-1.5-1.5M13 12l1.5 1.5M4 7h7m-7 6h3m5 0h7"/>
                         </svg>
                         Roles y Permisos
                     </a>
-                @endcan
+                    @endcan
+                @endauth
             </nav>
         </aside>
 
         <!-- Main Content Area -->
-        <div class="flex-1 bg-neutral-100 flex flex-col min-h-screen">
+        <div class="flex-1 bg-neutral-100 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
             <!-- Navbar -->
             <header class="bg-white border-b border-neutral-200 px-4 lg:px-6 py-4 shadow-sm">
                 <div class="flex items-center justify-between">
@@ -166,7 +177,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 p-4 lg:p-6">
+            <main class="flex-1 p-4 lg:p-6 w-full min-w-0 overflow-x-hidden">
                 @yield('content')
             </main>
         </div>

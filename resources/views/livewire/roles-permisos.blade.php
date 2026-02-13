@@ -30,14 +30,14 @@
             @foreach($users as $user)
                 <div class="bg-neutral-50 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
-                        <p class="text-sm font-bold text-neutral-900">{{ $user['name'] }}</p>
-                        <p class="text-xs text-neutral-500">{{ $user['email'] }}</p>
+                        <p class="text-sm font-bold text-neutral-900">{{ $user->name }}</p>
+                        <p class="text-xs text-neutral-500">{{ $user->email }}</p>
                     </div>
                     <div class="flex items-center gap-3">
                         <select
                             class="px-4 py-2 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none text-sm"
-                            wire:model="userRoles.{{ $user['id'] }}"
-                            wire:change="guardarRolUsuario({{ $user['id'] }})"
+                            wire:model="userRoles.{{ $user->id }}"
+                            wire:change="guardarRolUsuario({{ $user->id }})"
                         >
                             <option value="">Selecciona rol</option>
                             @foreach($roles as $role)
@@ -48,6 +48,31 @@
                 </div>
             @endforeach
         </div>
+
+        @if($users->hasPages())
+            <div class="mt-6 bg-white rounded-2xl border border-neutral-200 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="text-xs text-neutral-500">
+                    Mostrando <span class="font-semibold text-neutral-900">{{ $users->firstItem() }}</span> a <span class="font-semibold text-neutral-900">{{ $users->lastItem() }}</span> de <span class="font-semibold text-neutral-900">{{ $users->total() }}</span> usuarios
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        wire:click="previousPage"
+                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50"
+                        @if($users->onFirstPage()) disabled @endif
+                    >
+                        Anterior
+                    </button>
+                    <span class="text-xs text-neutral-500">Pagina {{ $users->currentPage() }} de {{ $users->lastPage() }}</span>
+                    <button
+                        wire:click="nextPage"
+                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50"
+                        @if(! $users->hasMorePages()) disabled @endif
+                    >
+                        Siguiente
+                    </button>
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">

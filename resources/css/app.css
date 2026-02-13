@@ -186,4 +186,52 @@
     .loading-indicator-content {
         @apply flex items-center gap-1.5;
     }
+        .semaforo-red {
+            background-color: #C0392B;
+            border-color: #C0392B;
+            color: #FFFFFF;
+        }
+
+        .semaforo-orange {
+            background-color: #E67E22;
+            border-color: #E67E22;
+            color: #FFFFFF;
+        }
+
+        .semaforo-yellow {
+            background-color: #F1C40F;
+            border-color: #F1C40F;
+            color: #1F2937;
+        }
+
+        .semaforo-green {
+            background-color: #27AE60;
+            border-color: #27AE60;
+            color: #FFFFFF;
+        }
+
+        .semaforo-card-red {
+            background-color: rgba(192, 57, 43, 0.08);
+            border-color: rgba(192, 57, 43, 0.35);
+        }
+
+        .semaforo-card-orange {
+            background-color: rgba(230, 126, 34, 0.08);
+            border-color: rgba(230, 126, 34, 0.35);
+        }
+
+        .semaforo-card-yellow {
+            background-color: rgba(241, 196, 15, 0.08);
+            border-color: rgba(241, 196, 15, 0.35);
+        }
+
+        .semaforo-card-green {
+            background-color: rgba(39, 174, 96, 0.08);
+            border-color: rgba(39, 174, 96, 0.35);
+        }
+
+        .semaforo-dot-red { background-color: #C0392B; }
+        .semaforo-dot-orange { background-color: #E67E22; }
+        .semaforo-dot-yellow { background-color: #F1C40F; }
+        .semaforo-dot-green { background-color: #27AE60; }
 }
