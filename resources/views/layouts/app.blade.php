@@ -177,7 +177,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 p-4 lg:p-6 w-full min-w-0 overflow-x-hidden">
+            <main class="flex-1 p-0 lg:p-6 w-full min-w-0 overflow-x-hidden">
                 @yield('content')
             </main>
         </div>

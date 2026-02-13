@@ -58,13 +58,16 @@ class PublicTdrDocumentService
             throw new Exception('El archivo descargado está vacío.');
         }
 
-        $mime = $this->resolvePdfMime($binary, $descarga['mime'] ?? null);
+        $mime = $this->resolveAllowedMime($binary, $descarga['mime'] ?? null);
 
-        if ($mime !== 'application/pdf') {
-            throw new Exception('El portal público devolvió un archivo inválido (no es un PDF).');
+        if ($mime === null) {
+            throw new Exception('El portal público devolvió un archivo inválido (no es PDF/ZIP/RAR).');
         }
 
-        $safeName = $this->sanitizeFilename($descarga['filename'] ?? $nombreOriginal);
+        $safeName = $this->sanitizeFilename(
+            $descarga['filename'] ?? $nombreOriginal,
+            $this->extensionFromMime($mime)
+        );
 
         $this->persistence->storeBinary($archivoPersistido, $binary, $mime, $safeName);
 
@@ -127,7 +130,7 @@ class PublicTdrDocumentService
         return false;
     }
 
-    protected function sanitizeFilename(string $original): string
+    protected function sanitizeFilename(string $original, ?string $forcedExtension = null): string
     {
         $trimmed = trim($original);
 
@@ -137,32 +140,59 @@ class PublicTdrDocumentService
 
         $trimmed = str_replace(['\\', '/'], '', $trimmed);
         $extension = strtolower(pathinfo($trimmed, PATHINFO_EXTENSION) ?: '');
+        $allowed = ['pdf', 'zip', 'rar'];
+        $targetExtension = $forcedExtension ?: ($extension !== '' ? $extension : 'pdf');
 
-        if ($extension !== 'pdf') {
-            $base = pathinfo($trimmed, PATHINFO_FILENAME) ?: 'tdr';
-
-            if ($extension === '') {
-                $base = preg_replace('/pdf$/i', '', $base) ?: $base;
-            }
-
-            $base = trim($base, ' ._-');
-            $trimmed = ($base !== '' ? $base : 'tdr') . '.pdf';
+        if (!in_array($targetExtension, $allowed, true)) {
+            $targetExtension = 'pdf';
         }
 
-        if (!Str::endsWith(strtolower($trimmed), '.pdf')) {
-            $trimmed .= '.pdf';
+        if (!in_array($extension, $allowed, true) || $extension !== $targetExtension) {
+            $base = pathinfo($trimmed, PATHINFO_FILENAME) ?: 'tdr';
+            $base = trim($base, ' ._-');
+            $trimmed = ($base !== '' ? $base : 'tdr') . '.' . $targetExtension;
         }
 
         return $trimmed;
     }
 
-    protected function resolvePdfMime(string $binary, ?string $headerMime = null): ?string
+    protected function resolveAllowedMime(string $binary, ?string $headerMime = null): ?string
     {
         if ($headerMime && stripos($headerMime, 'application/pdf') !== false) {
             return 'application/pdf';
         }
 
-        return $this->binaryLooksPdf($binary) ? 'application/pdf' : null;
+        if ($headerMime && stripos($headerMime, 'application/zip') !== false) {
+            return 'application/zip';
+        }
+
+        if ($headerMime && (stripos($headerMime, 'application/x-rar-compressed') !== false
+            || stripos($headerMime, 'application/vnd.rar') !== false)) {
+            return 'application/x-rar-compressed';
+        }
+
+        if ($this->binaryLooksPdf($binary)) {
+            return 'application/pdf';
+        }
+
+        if ($this->binaryLooksZip($binary)) {
+            return 'application/zip';
+        }
+
+        if ($this->binaryLooksRar($binary)) {
+            return 'application/x-rar-compressed';
+        }
+
+        return null;
+    }
+
+    protected function extensionFromMime(string $mime): string
+    {
+        return match ($mime) {
+            'application/zip' => 'zip',
+            'application/x-rar-compressed', 'application/vnd.rar' => 'rar',
+            default => 'pdf',
+        };
     }
 
     protected function binaryLooksPdf(string $binary): bool
@@ -174,5 +204,27 @@ class PublicTdrDocumentService
         }
 
         return str_contains($signature, '%PDF');
+    }
+
+    protected function binaryLooksZip(string $binary): bool
+    {
+        $signature = substr($binary, 0, 4);
+
+        if ($signature === false) {
+            return false;
+        }
+
+        return in_array($signature, ["PK\x03\x04", "PK\x05\x06", "PK\x07\x08"], true);
+    }
+
+    protected function binaryLooksRar(string $binary): bool
+    {
+        $signature = substr($binary, 0, 7);
+
+        if ($signature === false) {
+            return false;
+        }
+
+        return $signature === "Rar!\x1A\x07\x00" || $signature === "Rar!\x1A\x07\x01";
     }
 }
