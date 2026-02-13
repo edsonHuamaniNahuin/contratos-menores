@@ -77,6 +77,37 @@ class PublicTdrDocumentService
         return $archivoPersistido;
     }
 
+    /**
+     * Fuerza la re-descarga del archivo, ignorando cache local.
+     */
+    public function refreshLocalArchivo(int $idContrato, array $archivoMeta, ?array $contratoSnapshot = null): ContratoArchivo
+    {
+        $idContratoArchivo = (int) ($archivoMeta['idContratoArchivo'] ?? 0);
+
+        if ($idContratoArchivo <= 0) {
+            throw new Exception('El identificador del archivo publico no es valido.');
+        }
+
+        $nombreOriginal = $archivoMeta['nombre']
+            ?? $archivoMeta['nombreTipoArchivo']
+            ?? 'tdr.pdf';
+
+        $contratoSeaceId = $contratoSnapshot['idContrato']
+            ?? $contratoSnapshot['id_contrato_seace']
+            ?? $idContrato;
+
+        $archivoPersistido = $this->persistence->resolveArchivo(
+            $idContratoArchivo,
+            $nombreOriginal,
+            $contratoSeaceId,
+            $contratoSnapshot
+        );
+
+        $this->persistence->purgeStoredFile($archivoPersistido);
+
+        return $this->ensureLocalArchivo($idContrato, $archivoMeta, $contratoSnapshot);
+    }
+
     protected function hasUsableLocalFile(ContratoArchivo $archivo): bool
     {
         $localPath = $this->persistence->getAbsolutePath($archivo);

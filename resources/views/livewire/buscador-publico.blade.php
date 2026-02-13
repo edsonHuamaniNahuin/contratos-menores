@@ -535,6 +535,44 @@
             <div>
                 <p class="text-sm font-semibold">{{ $tdrNotificacion['message'] ?? '' }}</p>
                 <p class="text-xs opacity-70">Actualizado {{ $tdrNotificacion['time'] ?? '' }}</p>
+                @php
+                    $reporteContratoId = $tdrNotificacion['contrato_id'] ?? null;
+                    $reporteArchivoId = $tdrNotificacion['archivo_id'] ?? null;
+                @endphp
+                @if($reporteContratoId && $reporteArchivoId)
+                    <div class="mt-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                        <div class="flex items-start gap-2">
+                            <div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9.75c.549-1.31 2.131-2.25 3.772-2.25 2.18 0 3.75 1.342 3.75 3 0 1.03-.668 1.958-1.726 2.493-.69.35-1.274.996-1.274 1.757v.5" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-neutral-900">¿El archivo descargado NO ES EL TDR?, REPORTALO</p>
+                                <p class="text-[11px] text-neutral-500">Ayudanos a corregir el repositorio local.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                wire:click="reportarArchivoNoTdr({{ $reporteContratoId }}, {{ $reporteArchivoId }})"
+                                class="px-4 py-2 text-xs font-semibold rounded-full border border-primary-200 text-primary-500 hover:bg-primary-500/10 transition-colors"
+                            >
+                                Reportar
+                            </button>
+                            @if(auth()->user()?->hasRole('admin'))
+                                <button
+                                    type="button"
+                                    wire:click="redescargarTdr({{ $reporteContratoId }})"
+                                    class="px-4 py-2 text-xs font-semibold rounded-full bg-neutral-900 text-white hover:bg-neutral-600 transition-colors"
+                                >
+                                    Re-descargar TDR
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @endif
             </div>
             <button
                 wire:click="$set('tdrNotificacion', null)"

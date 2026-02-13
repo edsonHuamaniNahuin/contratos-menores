@@ -33,6 +33,21 @@ Route::get('/buscador-publico', function () {
     return view('buscador-publico');
 })->name('buscador.publico');
 
+// Ruta para descargar archivos temporales del SEACE
+Route::get('/seace/download/{filename}', function ($filename) {
+    $path = storage_path('app/temp/' . $filename);
+
+    if (!file_exists($path)) {
+        abort(404, 'Archivo no encontrado o ya fue descargado');
+    }
+
+    // Descargar y eliminar archivo temporal
+    return response()->download($path, $filename)->deleteFileAfterSend(true);
+})->name('seace.download.temp');
+
+Route::get('/tdr/archivos/{archivo}/descargar', [ContratoArchivoController::class, 'download'])
+    ->name('tdr.archivos.download');
+
 // ─── Verificación de correo electrónico ───────────────────────────────
 Route::middleware('auth')->group(function () {
     // Pantalla "revisa tu correo"
@@ -92,21 +107,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/seguimientos', function () {
         return view('seguimientos');
     })->name('seguimientos')->middleware('can:follow-contracts');
-
-    // Ruta para descargar archivos temporales del SEACE
-    Route::get('/seace/download/{filename}', function ($filename) {
-        $path = storage_path('app/temp/' . $filename);
-
-        if (!file_exists($path)) {
-            abort(404, 'Archivo no encontrado o ya fue descargado');
-        }
-
-        // Descargar y eliminar archivo temporal
-        return response()->download($path, $filename)->deleteFileAfterSend(true);
-    })->name('seace.download.temp');
-
-    Route::get('/tdr/archivos/{archivo}/descargar', [ContratoArchivoController::class, 'download'])
-        ->name('tdr.archivos.download');
 
 });
 

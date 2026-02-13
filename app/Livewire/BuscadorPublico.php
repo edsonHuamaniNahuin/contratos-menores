@@ -644,13 +644,64 @@ class BuscadorPublico extends Component
             $archivoPersistido = $this->publicTdrService->ensureLocalArchivo($idContrato, $archivoMeta, $contratoSnapshot);
 
             $this->dispatch('descargar-archivo', url: route('tdr.archivos.download', $archivoPersistido));
-            $this->notify('Descarga preparada desde el repositorio local.', 'success');
+            $this->notify('Descarga preparada desde el repositorio local.', 'success', [
+                'contrato_id' => $idContrato,
+                'archivo_id' => $archivoPersistido->id,
+            ]);
         } catch (Exception $e) {
             Log::error('BuscadorPublico:descargarTdr', [
                 'id_contrato' => $idContrato,
                 'error' => $e->getMessage(),
             ]);
             $this->notify('No se pudo preparar la descarga: ' . $e->getMessage(), 'error');
+        } finally {
+            $this->descargandoTdr = false;
+        }
+    }
+
+    public function reportarArchivoNoTdr(int $idContrato, int $archivoId): void
+    {
+        Log::warning('BuscadorPublico: reporte de TDR incorrecto', [
+            'contrato_id' => $idContrato,
+            'archivo_id' => $archivoId,
+            'user_id' => Auth::id(),
+            'ip' => request()->ip(),
+        ]);
+
+        $this->notify('Reporte recibido. Gracias por ayudarnos a corregir el repositorio.', 'info');
+    }
+
+    public function redescargarTdr(int $idContrato): void
+    {
+        if (!(auth()->user()?->hasRole('admin') ?? false)) {
+            $this->notify('Solo administradores pueden forzar la re-descarga.', 'warning');
+            return;
+        }
+
+        $this->descargandoTdr = true;
+
+        try {
+            $archivoMeta = $this->resolveArchivoMeta($idContrato);
+
+            if (!$archivoMeta) {
+                $this->notify('No se encontraron anexos publicos para este proceso.', 'warning');
+                return;
+            }
+
+            $contratoSnapshot = $this->resolveContrato($idContrato);
+            $archivoPersistido = $this->publicTdrService->refreshLocalArchivo($idContrato, $archivoMeta, $contratoSnapshot);
+
+            $this->dispatch('descargar-archivo', url: route('tdr.archivos.download', $archivoPersistido));
+            $this->notify('Descarga actualizada desde el portal publico.', 'success', [
+                'contrato_id' => $idContrato,
+                'archivo_id' => $archivoPersistido->id,
+            ]);
+        } catch (Exception $e) {
+            Log::error('BuscadorPublico:redescargarTdr', [
+                'id_contrato' => $idContrato,
+                'error' => $e->getMessage(),
+            ]);
+            $this->notify('No se pudo re-descargar el archivo: ' . $e->getMessage(), 'error');
         } finally {
             $this->descargandoTdr = false;
         }
@@ -1092,13 +1143,13 @@ class BuscadorPublico extends Component
         }
     }
 
-    protected function notify(string $message, string $type = 'info'): void
+    protected function notify(string $message, string $type = 'info', array $context = []): void
     {
         $this->tdrNotificacion = [
             'message' => $message,
             'type' => $type,
             'time' => now()->format('H:i:s'),
-        ];
+        ] + $context;
     }
 
     public function render()
