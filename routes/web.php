@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CuentaSeaceController;
 use App\Http\Controllers\ContratoArchivoController;
@@ -26,7 +28,28 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout')
     ->middleware('auth');
 
+// ─── Verificación de correo electrónico ───────────────────────────────
 Route::middleware('auth')->group(function () {
+    // Pantalla "revisa tu correo"
+    Route::get('/email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    // Enlace firmado que llega al correo
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect()->route('home')->with('status', '¡Correo verificado exitosamente!');
+    })->middleware('signed')->name('verification.verify');
+
+    // Reenviar enlace de verificación
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('status', 'verification-link-sent');
+    })->middleware('throttle:6,1')->name('verification.send');
+});
+
+// ─── Rutas protegidas (requieren auth + email verificado) ─────────────
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', function () {
         return view('home');
     })->name('home');
