@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-4xl mx-auto px-6 py-8">
-    <div class="bg-white rounded-3xl shadow-soft p-8">
+<div class="p-4 sm:p-6 flex flex-col gap-6 w-full max-w-full min-w-0">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-8">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-neutral-900">Detalle de Cuenta SEACE</h1>
             <div class="flex gap-3">

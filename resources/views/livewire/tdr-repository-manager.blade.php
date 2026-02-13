@@ -1,8 +1,8 @@
-<div class="space-y-6 w-full max-w-none">
-    <div class="bg-white rounded-3xl shadow-soft p-6 border border-neutral-100 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+<div class="p-4 sm:p-6 flex flex-col gap-6 w-full max-w-full min-w-0">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-6 border border-neutral-100 flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
             <p class="text-sm font-semibold text-primary-500 uppercase tracking-wider">Repositorio Inteligente</p>
-            <h1 class="text-3xl font-bold text-neutral-900 mt-1">TDR Cache Manager</h1>
+            <h1 class="text-xl sm:text-3xl font-bold text-neutral-900 mt-1">TDR Cache Manager</h1>
             <p class="text-sm text-neutral-500 mt-2">Controla los TDR descargados, evita gastos innecesarios en el LLM y vuelve a analizarlos cuando lo necesites.</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-auto">
@@ -17,8 +17,8 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-3xl shadow-soft p-6 border border-neutral-100">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-6 border border-neutral-100">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4">
             <div class="lg:col-span-5">
                 <label class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Buscar</label>
                 <div class="mt-2 relative">
@@ -44,7 +44,7 @@
                     <option value="50">50 por pagina</option>
                 </select>
             </div>
-            <div class="lg:col-span-2 bg-neutral-50 rounded-2xl px-4 py-3 flex items-center justify-between gap-4">
+            <div class="sm:col-span-2 lg:col-span-2 bg-neutral-50 rounded-2xl px-4 py-3 flex items-center justify-between gap-4">
                 <div>
                     <p class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Solo con IA</p>
                     <p class="text-xs text-neutral-600">Mostrar archivos con analisis guardado</p>
@@ -76,11 +76,11 @@
                 $analisis = $archivo->ultimoAnalisisExitoso;
                 $tamano = $archivo->tamano_bytes ? number_format($archivo->tamano_bytes / 1024, 2) . ' KB' : '—';
             @endphp
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6 space-y-4">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-4 sm:p-6 space-y-4">
                 <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                         <p class="text-xs text-neutral-400 uppercase tracking-wider">{{ $archivo->codigo_proceso ?? 'Proceso no registrado' }}</p>
-                        <h2 class="text-xl font-bold text-neutral-900">{{ $archivo->nombre_original }}</h2>
+                        <h2 class="text-base sm:text-xl font-bold text-neutral-900 break-words">{{ $archivo->nombre_original }}</h2>
                         <p class="text-sm text-neutral-500 mt-1">{{ $archivo->entidad ?? 'Entidad no registrada' }}</p>
                     </div>
                     <div class="flex gap-2">
@@ -149,7 +149,7 @@
             $startPage = max($currentPage - 1, 1);
             $endPage = min($currentPage + 1, $lastPage);
         @endphp
-        <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-3 sm:p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
             <p class="text-xs text-neutral-500">
                 Mostrando {{ $archivos->firstItem() ?? 0 }} - {{ $archivos->lastItem() ?? 0 }} de {{ $archivos->total() }} archivos
             </p>

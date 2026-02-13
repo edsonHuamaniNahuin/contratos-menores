@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-6 py-8">
+<div class="p-4 sm:p-6 flex flex-col gap-6 w-full max-w-full min-w-0">
     {{-- Header con acciones --}}
-    <div class="bg-white rounded-3xl shadow-soft p-6 mb-6">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-6">
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-neutral-900 flex items-center gap-3">

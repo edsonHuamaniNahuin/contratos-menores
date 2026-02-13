@@ -1,6 +1,6 @@
-<div class="space-y-6">
+<div class="p-4 sm:p-6 flex flex-col gap-6 w-full max-w-full min-w-0">
     {{-- Header --}}
-    <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-8 border border-neutral-100">
         <h1 class="text-3xl font-bold text-neutral-900">⚙️ Configuración del Sistema</h1>
         <p class="text-sm text-neutral-400 mt-2">
             Configura las integraciones del sistema Vigilante SEACE

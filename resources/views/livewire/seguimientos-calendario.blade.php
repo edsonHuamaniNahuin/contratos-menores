@@ -1,5 +1,5 @@
-<div class="p-6 flex flex-col gap-6">
-    <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+<div class="p-3 sm:p-6 flex flex-col gap-4 sm:gap-6">
+    <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
             <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em]">Seguimiento de procesos</p>
             <h1 class="text-2xl lg:text-3xl font-bold text-neutral-900 mt-1">Calendario de vencimientos</h1>
@@ -36,8 +36,9 @@
 
     <div class="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
         <div class="space-y-6">
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-6">
-                <div class="grid grid-cols-7 gap-2 text-xs font-semibold text-primary-500 mb-3">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-3 sm:p-6">
+                <div class="overflow-x-auto -mx-1 px-1 pb-2">
+                <div class="grid grid-cols-7 gap-1 sm:gap-2 text-xs font-semibold text-primary-500 mb-3 min-w-[600px]">
                     <div class="text-center">Lun</div>
                     <div class="text-center">Mar</div>
                     <div class="text-center">Mie</div>
@@ -47,7 +48,7 @@
                     <div class="text-center">Dom</div>
                 </div>
 
-                <div class="grid grid-cols-7 gap-2">
+                <div class="grid grid-cols-7 gap-1 sm:gap-2 min-w-[600px]">
                     @foreach($dias as $dia)
                         @php
                             $dayClasses = $dia['mesActual']
@@ -55,7 +56,7 @@
                                 : 'bg-neutral-50 border-neutral-100 text-neutral-400';
                             $dayText = $dia['mesActual'] ? 'text-primary-500' : 'text-neutral-400';
                         @endphp
-                        <div class="min-h-[128px] rounded-2xl border {{ $dayClasses }} p-2.5 flex flex-col">
+                        <div class="min-h-[90px] sm:min-h-[128px] rounded-2xl border {{ $dayClasses }} p-1.5 sm:p-2.5 flex flex-col">
                             <div class="text-xs font-semibold {{ $dayText }} mb-2">
                                 {{ $dia['numero'] }}
                             </div>
@@ -85,6 +86,7 @@
                         </div>
                     @endforeach
                 </div>
+                </div>
 
                 <div class="flex flex-wrap items-center gap-3 mt-5 text-xs text-neutral-600">
                     <div class="flex items-center gap-2">
@@ -108,10 +110,10 @@
         </div>
 
         <aside class="space-y-6">
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-6">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-4 sm:p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h2 class="text-lg font-bold text-neutral-900">Procesos en seguimiento</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-neutral-900">Procesos en seguimiento</h2>
                         <p class="text-xs text-neutral-400 mt-1">Mantiene la lista activa sin saturar el calendario.</p>
                     </div>
                 </div>
@@ -148,10 +150,10 @@
                 @endif
             </div>
 
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-6">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-4 sm:p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h2 class="text-lg font-bold text-neutral-900">Detalle rapido</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-neutral-900">Detalle rapido</h2>
                         <p class="text-xs text-neutral-400 mt-1">Selecciona un item del calendario para ver mas.</p>
                     </div>
                     @if($detalleSeguimiento)

@@ -1,6 +1,6 @@
-<div class="space-y-6">
-    <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
-        <h1 class="text-3xl font-bold text-neutral-900">👥 Suscriptores Telegram</h1>
+<div class="p-4 sm:p-6 flex flex-col gap-6 w-full max-w-full min-w-0">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-8 border border-neutral-100">
+        <h1 class="text-xl sm:text-3xl font-bold text-neutral-900">👥 Suscriptores Telegram</h1>
         <p class="text-sm text-neutral-400 mt-2">
             Administra los Chat IDs que reciben notificaciones y compatibilidad.
         </p>
@@ -26,9 +26,9 @@
         </div>
     @endif
 
-    <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-8 border border-neutral-100">
         <div class="mb-6">
-            <h2 class="text-xl font-bold text-neutral-900 flex items-center gap-2">
+            <h2 class="text-lg sm:text-xl font-bold text-neutral-900 flex items-center gap-2">
                 <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
@@ -39,7 +39,7 @@
             </p>
         </div>
 
-        <div class="bg-neutral-50 rounded-2xl p-6 mb-6">
+        <div class="bg-neutral-50 rounded-2xl p-4 sm:p-6 mb-6">
             <h3 class="text-base font-bold text-neutral-900 mb-4">
                 {{ $editando_suscripcion_id ? '✏️ Editar Suscriptor' : '➕ Agregar Nuevo Suscriptor' }}
             </h3>
@@ -271,8 +271,8 @@
         @else
             <div class="space-y-3">
                 @foreach($suscripciones as $suscripcion)
-                    <div class="bg-neutral-50 rounded-2xl p-4 flex items-center justify-between hover:bg-neutral-100 transition-colors">
-                        <div class="flex items-center gap-4">
+                    <div class="bg-neutral-50 rounded-2xl p-3 sm:p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between hover:bg-neutral-100 transition-colors">
+                        <div class="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
                             <div class="flex-shrink-0">
                                 @if($suscripcion->activo)
                                     <div class="w-10 h-10 bg-secondary-500/20 rounded-full flex items-center justify-center">
@@ -288,8 +288,8 @@
                                     </div>
                                 @endif
                             </div>
-                            <div class="flex-grow">
-                                <div class="flex items-center gap-3 mb-1">
+                            <div class="flex-grow min-w-0">
+                                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
                                     <p class="text-sm font-bold text-neutral-900 font-mono">{{ $suscripcion->chat_id }}</p>
                                     @if($suscripcion->activo)
                                         <span class="px-2 py-0.5 bg-secondary-500/20 text-primary-500 border border-secondary-500/30 rounded-full text-xs font-semibold">✓ Activo</span>
@@ -302,7 +302,7 @@
                                         </span>
                                     @endif
                                 </div>
-                                <div class="flex items-center gap-4 text-xs text-neutral-600">
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-4 text-xs text-neutral-600">
                                     @if($suscripcion->nombre)
                                         <span>👤 {{ $suscripcion->nombre }}</span>
                                     @endif
@@ -330,7 +330,7 @@
                                 @endif
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 self-end md:self-auto">
                             <button wire:click="toggleActivoSuscriptor({{ $suscripcion->id }})"
                                     title="{{ $suscripcion->activo ? 'Desactivar' : 'Activar' }}"
                                     class="p-2 hover:bg-white rounded-full transition-colors">
@@ -376,7 +376,7 @@
             </div>
         @endif
 
-        <div class="mt-6 bg-primary-500/5 border-l-4 border-primary-500 rounded-r-2xl p-4">
+        <div class="mt-6 bg-primary-500/5 border-l-4 border-primary-500 rounded-r-2xl p-3 sm:p-4">
             <h3 class="text-xs font-bold text-neutral-900 mb-2">📌 Como obtener tu Chat ID de Telegram</h3>
             <ol class="space-y-1 text-xs text-neutral-600">
                 <li class="flex items-start gap-2">

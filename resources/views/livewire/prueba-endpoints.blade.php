@@ -1,6 +1,6 @@
-<div class="space-y-6">
+<div class="p-4 sm:p-6 flex flex-col gap-6 w-full max-w-full min-w-0">
     <!-- Selector de Cuenta -->
-    <div class="bg-white rounded-3xl shadow-soft p-6">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-6">
         <h2 class="text-xl font-bold text-neutral-900 mb-4">Seleccionar Cuenta SEACE</h2>
 
         @if($cuentas->isEmpty())

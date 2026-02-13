@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-4xl mx-auto">
-    <div class="bg-white rounded-lg shadow-soft p-6">
+<div class="p-4 sm:p-6 flex flex-col gap-6 w-full max-w-full min-w-0">
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-6">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-neutral-900">Editar Cuenta SEACE</h1>
             <a href="{{ route('cuentas.index') }}" class="text-primary-500 hover:text-primary-400 flex items-center gap-2">
