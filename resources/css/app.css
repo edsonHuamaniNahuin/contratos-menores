@@ -94,24 +94,24 @@
     }
 
     .card-hover {
-        @apply transition-all duration-200 hover: shadow-lg hover:border-primary-200;
+        @apply transition-all duration-200 hover:shadow-lg hover:border-primary-200;
     }
 
     /* Sistema de Botones */
     .btn {
-        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus: outline-none focus:ring-2 focus:ring-offset-2;
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
     }
 
     .btn-primary {
-        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus: outline-none focus:ring-2 focus:ring-offset-2 bg-primary-500 text-white hover:bg-primary-400 focus:ring-primary-500;
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary-500 text-white hover:bg-primary-400 focus:ring-primary-500;
     }
 
     .btn-secondary {
-        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus: outline-none focus:ring-2 focus:ring-offset-2 bg-secondary-500 text-white hover:bg-secondary-400 focus:ring-secondary-500;
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-secondary-500 text-white hover:bg-secondary-400 focus:ring-secondary-500;
     }
 
     .btn-outline {
-        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus: outline-none focus:ring-2 focus:ring-offset-2 bg-transparent border-2 border-neutral-400 text-neutral-600 hover:bg-neutral-100 focus:ring-neutral-400;
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-transparent border-2 border-neutral-400 text-neutral-600 hover:bg-neutral-100 focus:ring-neutral-400;
     }
 
     /* Sistema de Badges */
@@ -133,12 +133,12 @@
 
     /* Sistema de Inputs */
     .input {
-        @apply w-full px-3 py-2 border border-neutral-100 rounded-lg bg-white text-neutral-900 placeholder-neutral-400 focus: outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
+        @apply w-full px-3 py-2 border border-neutral-100 rounded-lg bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
     }
 
     /* Tarjetas de Estadísticas */
     .stat-card {
-        @apply bg-white rounded-lg shadow-soft border border-neutral-100 p-6 hover: shadow-lg transition-all duration-200;
+        @apply bg-white rounded-lg shadow-soft border border-neutral-100 p-6 hover:shadow-lg transition-all duration-200;
     }
 
     .stat-label {
@@ -163,7 +163,7 @@
     }
 
     .table-row {
-        @apply border-b border-neutral-100 hover: bg-neutral-50 transition-colors;
+        @apply border-b border-neutral-100 hover:bg-neutral-50 transition-colors;
     }
 }
 
@@ -186,64 +186,52 @@
     .loading-indicator-content {
         @apply flex items-center gap-1.5;
     }
+        .semaforo-red {
+            background-color: #C0392B;
+            border-color: #C0392B;
+            color: #FFFFFF;
+        }
 
-    .semaforo-red {
-        background-color: #C0392B;
-        border-color: #C0392B;
-        color: #FFFFFF;
-    }
+        .semaforo-orange {
+            background-color: #E67E22;
+            border-color: #E67E22;
+            color: #FFFFFF;
+        }
 
-    .semaforo-orange {
-        background-color: #E67E22;
-        border-color: #E67E22;
-        color: #FFFFFF;
-    }
+        .semaforo-yellow {
+            background-color: #F1C40F;
+            border-color: #F1C40F;
+            color: #1F2937;
+        }
 
-    .semaforo-yellow {
-        background-color: #F1C40F;
-        border-color: #F1C40F;
-        color: #1F2937;
-    }
+        .semaforo-green {
+            background-color: #27AE60;
+            border-color: #27AE60;
+            color: #FFFFFF;
+        }
 
-    .semaforo-green {
-        background-color: #27AE60;
-        border-color: #27AE60;
-        color: #FFFFFF;
-    }
+        .semaforo-card-red {
+            background-color: rgba(192, 57, 43, 0.08);
+            border-color: rgba(192, 57, 43, 0.35);
+        }
 
-    .semaforo-card-red {
-        background-color: rgba(192, 57, 43, 0.08);
-        border-color: rgba(192, 57, 43, 0.35);
-    }
+        .semaforo-card-orange {
+            background-color: rgba(230, 126, 34, 0.08);
+            border-color: rgba(230, 126, 34, 0.35);
+        }
 
-    .semaforo-card-orange {
-        background-color: rgba(230, 126, 34, 0.08);
-        border-color: rgba(230, 126, 34, 0.35);
-    }
+        .semaforo-card-yellow {
+            background-color: rgba(241, 196, 15, 0.08);
+            border-color: rgba(241, 196, 15, 0.35);
+        }
 
-    .semaforo-card-yellow {
-        background-color: rgba(241, 196, 15, 0.08);
-        border-color: rgba(241, 196, 15, 0.35);
-    }
+        .semaforo-card-green {
+            background-color: rgba(39, 174, 96, 0.08);
+            border-color: rgba(39, 174, 96, 0.35);
+        }
 
-    .semaforo-card-green {
-        background-color: rgba(39, 174, 96, 0.08);
-        border-color: rgba(39, 174, 96, 0.35);
-    }
-
-    .semaforo-dot-red {
-        background-color: #C0392B;
-    }
-
-    .semaforo-dot-orange {
-        background-color: #E67E22;
-    }
-
-    .semaforo-dot-yellow {
-        background-color: #F1C40F;
-    }
-
-    .semaforo-dot-green {
-        background-color: #27AE60;
-    }
+        .semaforo-dot-red { background-color: #C0392B; }
+        .semaforo-dot-orange { background-color: #E67E22; }
+        .semaforo-dot-yellow { background-color: #F1C40F; }
+        .semaforo-dot-green { background-color: #27AE60; }
 }
