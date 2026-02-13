@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\TelegramSubscription;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -80,5 +81,13 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->roles
             ->flatMap(fn (Role $role) => $role->permissions)
             ->contains(fn (Permission $permission) => $permission->slug === $slug);
+    }
+
+    /**
+     * Envía la notificación de verificación de correo personalizada.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailNotification());
     }
 }
