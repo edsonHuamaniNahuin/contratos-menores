@@ -30,6 +30,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
     private const OFFSET_CACHE_TTL = 2592000; // 30 días en segundos
 
     protected int $lastUpdateId = 0;
+    protected bool $shouldStop = false;
     protected string $baseUrl;
     protected string $telegramApiBase;
     protected bool $debugLogging;
@@ -104,7 +105,9 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                     sleep(5);
                 }
             }
-        } while (!$this->option('once'));
+        } while (!$this->shouldStop && !$this->option('once'));
+
+        $this->info('👋 Listener detenido correctamente (PID ' . getmypid() . ')');
 
         return Command::SUCCESS;
     }
@@ -128,8 +131,13 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
     public function handleSignal(int $signal, int|false $previousExitCode = 0): int|false
     {
-        $this->info("\n🛑 Señal recibida, deteniendo listener...");
-        return false; // terminar
+        $this->shouldStop = true;
+        $this->info("\n🛑 Señal {$signal} recibida, deteniendo listener...");
+
+        // Retornar 0 = "salir con código 0" (shutdown limpio).
+        // NOTA: `false` significa "no salir" en Symfony → el loop seguiría
+        // y systemd tendría que matar con SIGKILL.
+        return 0;
     }
 
     /**
