@@ -9,17 +9,13 @@ User=www-data
 Group=www-data
 WorkingDirectory=/var/www/vigilante-seace
 
-# Antes de iniciar: matar zombies + esperar que Telegram libere la sesión de long-polling
-ExecStartPre=/bin/bash -c '/usr/bin/pkill -9 -f "artisan telegram:listen" || true'
-ExecStartPre=/bin/sleep 5
-
 ExecStart=/usr/local/php82/bin/php artisan telegram:listen --isolated
 
-# Al detener: forzar kill (el long-polling de 30s no responde a SIGTERM rápido)
-ExecStop=/bin/bash -c '/usr/bin/pkill -9 -f "artisan telegram:listen" || true'
-KillMode=mixed
+# Parada limpia: SIGTERM al proceso principal, SIGKILL al cgroup tras timeout
+# El long-polling HTTP bloquea hasta 30s — dejamos 35s antes del SIGKILL
 KillSignal=SIGTERM
-TimeoutStopSec=10
+KillMode=mixed
+TimeoutStopSec=35
 
 Restart=on-failure
 RestartSec=30

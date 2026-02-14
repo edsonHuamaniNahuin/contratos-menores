@@ -10,7 +10,7 @@
 #   stop       Detiene todos los servicios del proyecto (con kill de zombies)
 #   start      Inicia todos los servicios en orden correcto
 #   restart    Stop + Start
-#   deploy     Ciclo completo: stop → pull → deps → migrate → cache → start
+#   deploy     Build-first: pull → deps → migrate → cache → smart-restart (sin downtime global)
 #   status     Muestra el estado de todos los servicios
 #   health     Verifica que los servicios estén sanos
 #   sync       Solo sincroniza los .service files y recarga daemon
@@ -134,6 +134,30 @@ wait_for_service() {
     return 1
 }
 
+# Limpia zombies de un servicio específico y espera si es Telegram
+ensure_clean() {
+    local svc="$1"
+    local pattern=""
+    local had_zombies=false
+
+    case "$svc" in
+        telegram-bot)     pattern="artisan telegram:listen" ;;
+        vigilante-queue)  pattern="artisan queue:work" ;;
+        analizador-tdr)   pattern="uvicorn main:app" ;;
+    esac
+
+    if [ -n "$pattern" ] && pgrep -f "$pattern" &>/dev/null; then
+        had_zombies=true
+        kill_zombies "$pattern"
+    fi
+
+    # Telegram API requiere ~5s entre desconexión y reconexión de long-polling
+    if [ "$svc" = "telegram-bot" ] && [ "$had_zombies" = true ]; then
+        log_info "Esperando 5s para que Telegram libere sesión de polling..."
+        sleep 5
+    fi
+}
+
 # ──────────────────────────────────────────────────────────────
 # Acciones principales
 # ──────────────────────────────────────────────────────────────
@@ -141,10 +165,13 @@ wait_for_service() {
 do_stop() {
     log_step "DETENIENDO SERVICIOS"
 
+    local had_telegram=false
+
     # 1. Detener servicios via systemctl (orden inverso)
     for ((i=${#SERVICES[@]}-1; i>=0; i--)); do
         local svc="${SERVICES[$i]}"
         if service_is_active "$svc"; then
+            [ "$svc" = "telegram-bot" ] && had_telegram=true
             log_info "Deteniendo ${svc}.service..."
             sudo systemctl stop "${svc}.service" 2>/dev/null || true
             log_ok "${svc}.service detenido"
@@ -159,9 +186,11 @@ do_stop() {
         kill_zombies "$pattern"
     done
 
-    # 3. Espera especial para Telegram Bot (liberar sesión de long-polling)
-    log_info "Esperando 5s para que Telegram libere la sesión..."
-    sleep 5
+    # 3. Espera para Telegram solo si estaba activo (liberar sesión de long-polling)
+    if [ "$had_telegram" = true ]; then
+        log_info "Esperando 5s para que Telegram libere la sesión..."
+        sleep 5
+    fi
 
     log_ok "Todos los servicios detenidos y limpios"
     log_deploy "STOP: Servicios detenidos"
@@ -174,20 +203,30 @@ do_start() {
     sudo mkdir -p "$LOG_DIR"
     sudo chown www-data:www-data "$LOG_DIR"
 
-    # Iniciar en orden (analizador → queue → telegram)
     for svc in "${SERVICES[@]}"; do
-        if service_exists "$svc"; then
-            log_info "Iniciando ${svc}.service..."
-            sudo systemctl start "${svc}.service"
+        if ! service_exists "$svc"; then
+            log_warn "${svc}.service no existe en systemd (ejecuta 'sync' primero)"
+            continue
+        fi
 
+        # Si ya está activo, no hacer nada
+        if service_is_active "$svc"; then
+            log_ok "${svc}.service ya activo — skip"
+            continue
+        fi
+
+        # Limpiar zombies antes de iniciar
+        ensure_clean "$svc"
+
+        log_info "Iniciando ${svc}.service..."
+        if sudo systemctl start "${svc}.service" 2>/dev/null; then
             if wait_for_service "$svc" 15; then
                 log_ok "${svc}.service ✅ activo"
             else
                 log_error "${svc}.service ❌ no arrancó en 15s"
-                log_warn "Revisando journal: $(sudo journalctl -u ${svc}.service --no-pager -n 3 2>/dev/null || echo 'sin datos')"
             fi
         else
-            log_warn "${svc}.service no encontrado en systemd (¿primera vez? ejecuta 'sync' primero)"
+            log_error "${svc}.service ❌ fallo al ejecutar start"
         fi
     done
 
@@ -198,6 +237,54 @@ do_start() {
 do_restart() {
     do_stop
     do_start
+}
+
+# Reinicio inteligente para deploy: por servicio, sin downtime global
+do_smart_restart() {
+    log_step "REINICIO INTELIGENTE DE SERVICIOS"
+
+    sudo mkdir -p "$LOG_DIR"
+    sudo chown www-data:www-data "$LOG_DIR"
+
+    local failed=()
+
+    for svc in "${SERVICES[@]}"; do
+        if ! service_exists "$svc"; then
+            log_warn "${svc}.service no existe en systemd (ejecuta 'sync' primero)"
+            continue
+        fi
+
+        log_info "Reiniciando ${svc}.service..."
+
+        # 1. Detener si está activo
+        if service_is_active "$svc"; then
+            sudo systemctl stop "${svc}.service" 2>/dev/null || true
+        fi
+
+        # 2. Limpiar zombies + espera si aplica (ej: Telegram API)
+        ensure_clean "$svc"
+
+        # 3. Iniciar
+        if sudo systemctl start "${svc}.service" 2>/dev/null; then
+            if wait_for_service "$svc" 15; then
+                log_ok "${svc}.service ✅ activo"
+            else
+                log_error "${svc}.service ❌ no arrancó en 15s"
+                failed+=("$svc")
+            fi
+        else
+            log_error "${svc}.service ❌ fallo en start"
+            failed+=("$svc")
+        fi
+    done
+
+    if [ ${#failed[@]} -gt 0 ]; then
+        log_warn "Servicios con problemas: ${failed[*]}"
+        log_deploy "SMART-RESTART: Fallos en ${failed[*]}"
+    else
+        log_ok "Todos los servicios reiniciados"
+        log_deploy "SMART-RESTART: Todos OK"
+    fi
 }
 
 do_sync() {
@@ -257,10 +344,9 @@ do_deploy() {
     log_step "DEPLOY COMPLETO - $(date '+%Y-%m-%d %H:%M:%S')"
     log_deploy "========== DEPLOY INICIADO =========="
 
-    # ── 1. Detener todo ──
-    do_stop
+    # ═══ BUILD PHASE (servicios siguen corriendo — sin downtime) ═══
 
-    # ── 2. Pull cambios ──
+    # ── 1. Pull cambios ──
     if [ "$SKIP_PULL" = false ]; then
         log_step "GIT PULL"
         cd "$APP_DIR"
@@ -272,7 +358,7 @@ do_deploy() {
         cd "$APP_DIR"
     fi
 
-    # ── 3. Dependencias Laravel ──
+    # ── 2. Dependencias Laravel ──
     if [ "$SKIP_DEPS" = false ]; then
         log_step "DEPENDENCIAS PHP"
         $PHP_BIN $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction 2>&1 | tail -3
@@ -281,15 +367,7 @@ do_deploy() {
         log_info "Saltando dependencias PHP (--skip-deps)"
     fi
 
-    # ── 4. Cachés Laravel ──
-    log_step "CACHÉS LARAVEL"
-    $PHP_BIN artisan config:cache
-    $PHP_BIN artisan route:cache
-    $PHP_BIN artisan view:cache
-    $PHP_BIN artisan event:cache
-    log_ok "Cachés generados"
-
-    # ── 5. Migraciones ──
+    # ── 3. Migraciones ──
     if [ "$SKIP_MIGRATE" = false ]; then
         log_step "MIGRACIONES"
         $PHP_BIN artisan migrate --force 2>&1
@@ -298,7 +376,7 @@ do_deploy() {
         log_info "Saltando migraciones (--skip-migrate)"
     fi
 
-    # ── 6. Dependencias Python ──
+    # ── 4. Dependencias Python ──
     if [ "$SKIP_DEPS" = false ]; then
         log_step "DEPENDENCIAS PYTHON"
         cd "$PYTHON_DIR"
@@ -315,27 +393,37 @@ do_deploy() {
         log_info "Saltando dependencias Python (--skip-deps)"
     fi
 
-    # ── 7. Sincronizar service files ──
+    # ── 5. Sincronizar service files ──
     cd "$APP_DIR"
     do_sync
 
-    # ── 8. Permisos (por si acaso) ──
+    # ── 6. Cachés Laravel ──
+    log_step "CACHÉS LARAVEL"
+    $PHP_BIN artisan config:cache
+    $PHP_BIN artisan route:cache
+    $PHP_BIN artisan view:cache
+    $PHP_BIN artisan event:cache
+    log_ok "Cachés generados"
+
+    # ── 7. Permisos ──
     log_step "PERMISOS"
     sudo chown -R www-data:www-data "$APP_DIR/storage" 2>/dev/null || true
     sudo chmod -R 775 "$APP_DIR/storage" 2>/dev/null || true
     sudo chmod 1777 /tmp 2>/dev/null || true
     log_ok "Permisos configurados"
 
-    # ── 9. Reiniciar PHP-FPM + Apache ──
+    # ═══ RESTART PHASE (downtime mínimo, por servicio) ═══
+
+    # ── 8. Reiniciar PHP-FPM + Apache ──
     log_step "WEB SERVER"
     sudo systemctl restart php-fpm.service 2>/dev/null || true
     sudo systemctl reload apache2 2>/dev/null || true
     log_ok "PHP-FPM y Apache reiniciados"
 
-    # ── 10. Levantar servicios ──
-    do_start
+    # ── 9. Reinicio inteligente de servicios (uno por uno) ──
+    do_smart_restart
 
-    # ── 11. Verificación de salud ──
+    # ── 10. Verificación de salud ──
     do_health
 
     # ── Resumen ──
