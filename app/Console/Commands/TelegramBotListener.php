@@ -160,8 +160,8 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
      * Procesar click en botón.
      *
      * Diseño seguro:
+     * - Dedup atómico por callback_id → Cache::add() garantiza procesamiento único
      * - answerCallbackQuery() se invoca PRIMERO → Telegram deja de reenviar el callback
-     * - Offset persistente + Isolatable → un callback NUNCA se procesa dos veces
      * - Concurrencia IA → protegida a nivel de TdrAnalysisService (Cache::lock atómico en DB)
      */
     protected function handleCallbackQuery(array $callbackQuery, string $token): void
@@ -169,6 +169,19 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $callbackId = $callbackQuery['id'];
         $chatId = $callbackQuery['from']['id'] ?? $callbackQuery['message']['chat']['id'];
         $data = $callbackQuery['data'] ?? '';
+
+        // ── Deduplicación atómica: si ya se procesó este callback, ignorar ──
+        // Cache::add() retorna false si la key ya existe (atómico en DB/Redis)
+        $dedupKey = "telegram:cb:{$callbackId}";
+        if (!Cache::add($dedupKey, true, 300)) {
+            $this->debug("Callback {$callbackId} ya procesado, ignorando (dedup)", [
+                'chat_id' => $chatId,
+                'data' => $data,
+            ]);
+            // Responder igualmente para quitar el spinner del botón
+            $this->answerCallbackQuery($callbackId, '', $token);
+            return;
+        }
 
         $this->debug('Callback recibido', [
             'chat_id' => $chatId,
@@ -418,7 +431,6 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             $cuenta = CuentaSeace::activa()->first();
 
             $this->info("📥 Descargando {$nombreArchivo} (ID: {$idContratoArchivo})...");
-            $this->enviarMensaje($chatId, '📥 Preparando descarga...', $token);
 
             $persistence = new TdrPersistenceService();
 
