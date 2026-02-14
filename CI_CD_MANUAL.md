@@ -388,69 +388,76 @@ php artisan queue:work --tries=2 --timeout=300
 
 ## 🔧 Servicios Systemd
 
-### 1. Queue Worker (Laravel)
+### Arquitectura de servicios
 
-```ini
-# /etc/systemd/system/vigilante-queue.service
+| Servicio | Archivo | Descripción |
+|----------|---------|-------------|
+| `telegram-bot.service` | `deploy/telegram-bot.service` | Long-polling Telegram Bot |
+| `vigilante-queue.service` | `deploy/vigilante-queue.service` | Laravel Queue Worker |
+| `analizador-tdr.service` | `deploy/analizador-tdr.service` | FastAPI (Uvicorn :8001) |
 
-[Unit]
-Description=Vigilante SEACE Queue Worker
-After=network.target mysql.service
+Los archivos `.service` viven en `deploy/` y se sincronizan al VPS automáticamente en cada deploy.
 
-[Service]
-User=www-data
-Group=www-data
-Restart=always
-RestartSec=5
-WorkingDirectory=/var/www/vigilante-seace
-ExecStart=/usr/bin/php artisan queue:work --sleep=3 --tries=2 --timeout=300 --max-jobs=100
-StandardOutput=append:/var/www/vigilante-seace/storage/logs/queue-worker.log
-StandardError=append:/var/www/vigilante-seace/storage/logs/queue-worker-error.log
+### Orquestador de Servicios
 
-[Install]
-WantedBy=multi-user.target
-```
-
-### 2. Microservicio Python (Analizador TDR)
-
-```ini
-# /etc/systemd/system/analizador-tdr.service
-
-[Unit]
-Description=Analizador TDR SEACE - FastAPI Microservice
-After=network.target
-
-[Service]
-User=www-data
-Group=www-data
-Restart=always
-RestartSec=5
-WorkingDirectory=/var/www/vigilante-seace/analizador-tdr
-Environment="PATH=/var/www/vigilante-seace/analizador-tdr/venv/bin"
-ExecStart=/var/www/vigilante-seace/analizador-tdr/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8001 --workers 2
-StandardOutput=append:/var/www/vigilante-seace/storage/logs/analizador-tdr.log
-StandardError=append:/var/www/vigilante-seace/storage/logs/analizador-tdr-error.log
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 3. Activar servicios
+El script `deploy/orchestrate.sh` centraliza **toda** la gestión de servicios. El CD lo invoca automáticamente, pero también puedes usarlo manualmente en el VPS:
 
 ```bash
-# Recargar systemd
-sudo systemctl daemon-reload
+cd /var/www/vigilante-seace
 
-# Activar al boot + iniciar
-sudo systemctl enable vigilante-queue.service
-sudo systemctl start vigilante-queue.service
+# ─── Operaciones de servicios ───
+sudo bash deploy/orchestrate.sh stop       # Detiene todo (+ mata zombies + espera 5s)
+sudo bash deploy/orchestrate.sh start      # Inicia en orden: analizador → queue → telegram
+sudo bash deploy/orchestrate.sh restart    # Stop + Start
 
-sudo systemctl enable analizador-tdr.service
-sudo systemctl start analizador-tdr.service
+# ─── Diagnóstico ───
+sudo bash deploy/orchestrate.sh status     # Tabla con estado/PID/uptime de cada servicio
+sudo bash deploy/orchestrate.sh health     # Verifica salud (API, duplicados, Laravel)
+sudo bash deploy/orchestrate.sh logs       # Últimas líneas de todos los logs
 
-# Verificar estado
-sudo systemctl status vigilante-queue.service
-sudo systemctl status analizador-tdr.service
+# ─── Deploy manual (raro, el CD lo hace) ───
+sudo bash deploy/orchestrate.sh deploy              # Ciclo completo
+sudo bash deploy/orchestrate.sh deploy --skip-deps  # Sin composer/pip
+sudo bash deploy/orchestrate.sh sync                # Solo sincronizar .service files
+```
+
+### Flujo del deploy automático (CD)
+
+```
+CI pasa ✅ → SSH al VPS → bash deploy/orchestrate.sh deploy
+                                │
+                                ├── STOP: systemctl stop (orden inverso) + pkill zombies + sleep 5s
+                                ├── GIT PULL: fetch + reset --hard origin/main
+                                ├── COMPOSER: install --no-dev --optimize-autoloader
+                                ├── CACHE: config/route/view/event cache
+                                ├── MIGRATE: --force
+                                ├── PYTHON: pip install -r requirements.txt
+                                ├── SYNC: copia .service files → daemon-reload (solo si cambiaron)
+                                ├── PERMISOS: storage + /tmp
+                                ├── WEB: restart php-fpm + reload apache
+                                ├── START: analizador → queue → telegram (con verificación)
+                                └── HEALTH: verifica servicios activos + sin duplicados
+```
+
+### Notas sobre el Telegram Bot
+
+El `telegram-bot.service` tiene lógica especial porque usa long-polling de 30s que no responde a SIGTERM:
+
+- `ExecStartPre`: mata zombies + espera 5s para que Telegram libere la sesión
+- `ExecStop`: `pkill -9` en vez de SIGTERM
+- `RestartSec=30`: evita que reinicie demasiado rápido
+- `StartLimitBurst=5`: máximo 5 reinicios en 5 minutos
+
+### Gestión manual (solo si es necesario)
+
+```bash
+# Reiniciar un servicio individual
+sudo systemctl restart telegram-bot.service
+sudo systemctl restart vigilante-queue.service
+sudo systemctl restart analizador-tdr.service
+
+# Ver journal de un servicio
+sudo journalctl -u telegram-bot.service -f --no-pager -n 50
 ```
 
 ---
@@ -460,40 +467,26 @@ sudo systemctl status analizador-tdr.service
 ### Rollback rápido (último commit)
 
 ```bash
-ssh usuario@tu-vps-elastika.com
-
 cd /var/www/vigilante-seace
 
 # Ver últimos commits
 git log --oneline -5
 
-# Volver al commit anterior
+# Volver al commit anterior y redesplegar
 git reset --hard HEAD~1
-
-# Reinstalar y recachear
-composer install --no-dev --optimize-autoloader
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan migrate --force
-php artisan queue:restart
-
-# Reiniciar Python
-cd analizador-tdr && source venv/bin/activate && pip install -r requirements.txt && deactivate
-sudo systemctl restart analizador-tdr.service
+sudo bash deploy/orchestrate.sh deploy --skip-deps
 ```
 
 ### Rollback a commit específico
 
 ```bash
 git reset --hard COMMIT_HASH
-# Luego repetir los pasos de reinstalación
+sudo bash deploy/orchestrate.sh deploy --skip-deps
 ```
 
 ### Rollback de migraciones
 
 ```bash
-# Revertir última migración
 php artisan migrate:rollback --step=1
 ```
 
@@ -501,33 +494,40 @@ php artisan migrate:rollback --step=1
 
 ## 📊 Monitoreo y Logs
 
-### Logs Laravel
+### Vía orquestador (recomendado)
 
 ```bash
-# Log principal
+sudo bash deploy/orchestrate.sh logs      # Todas las últimas líneas
+sudo bash deploy/orchestrate.sh status    # Estado/PID/uptime
+sudo bash deploy/orchestrate.sh health    # Verificación completa
+```
+
+### Logs individuales
+
+```bash
+# Logs del proyecto (directorio: /var/log/vigilante-seace/)
+tail -f /var/log/vigilante-seace/telegram-bot.log
+tail -f /var/log/vigilante-seace/queue.log
+tail -f /var/log/vigilante-seace/analizador-tdr.log
+
+# Logs de errores
+tail -f /var/log/vigilante-seace/telegram-bot-error.log
+tail -f /var/log/vigilante-seace/queue-error.log
+tail -f /var/log/vigilante-seace/analizador-tdr-error.log
+
+# Log de deploy
+tail -f /var/log/vigilante-seace/deploy.log
+
+# Log Laravel
 tail -f /var/www/vigilante-seace/storage/logs/laravel.log
-
-# Log del scheduler
-tail -f /var/www/vigilante-seace/storage/logs/importador-tdr-schedule.log
-
-# Log del queue worker
-tail -f /var/www/vigilante-seace/storage/logs/queue-worker.log
 ```
 
-### Logs Python
+### Logs Systemd (journal)
 
 ```bash
-tail -f /var/www/vigilante-seace/storage/logs/analizador-tdr.log
-```
-
-### Logs Systemd
-
-```bash
-# Queue worker
-journalctl -u vigilante-queue.service -f
-
-# Microservicio Python
-journalctl -u analizador-tdr.service -f
+sudo journalctl -u telegram-bot.service -f --no-pager -n 50
+sudo journalctl -u vigilante-queue.service -f --no-pager -n 50
+sudo journalctl -u analizador-tdr.service -f --no-pager -n 50
 ```
 
 ### Health Checks
@@ -536,11 +536,8 @@ journalctl -u analizador-tdr.service -f
 # Laravel
 php artisan --version
 
-# Scheduler registrado
+# Scheduler
 php artisan schedule:list
-
-# Queue funcionando
-php artisan queue:monitor default
 
 # Microservicio Python
 curl http://127.0.0.1:8001/health
@@ -562,26 +559,23 @@ curl http://127.0.0.1:8001/health
 - [ ] MySQL: base de datos y usuario creados
 - [ ] `php artisan migrate --force` ejecutado
 - [ ] `php artisan db:seed --force` ejecutado
-- [ ] Virtual host Apache/Nginx configurado
+- [ ] Virtual host Apache configurado
 - [ ] SSL (Let's Encrypt) configurado
 - [ ] Cron del scheduler configurado (`* * * * *`)
-- [ ] Systemd: `vigilante-queue.service` activo
-- [ ] Systemd: `analizador-tdr.service` activo
-- [ ] `php artisan schedule:list` muestra el ImportarTdrNotificarJob
-- [ ] Health check: Laravel responde en el dominio
+- [ ] `sudo bash deploy/orchestrate.sh sync` ejecutado (instala .service files)
+- [ ] `sudo bash deploy/orchestrate.sh start` ejecutado
+- [ ] `sudo bash deploy/orchestrate.sh health` pasa
+- [ ] Health check: Laravel responde en `https://licitacionesmype.pe`
 - [ ] Health check: `curl http://127.0.0.1:8001/health` responde
 - [ ] Primer push a `main` ejecuta CI/CD correctamente
 
-### Cada deploy (automático)
+### Cada deploy (automático vía CD)
 
 - [ ] CI pasa (tests PHP + validación Python)
-- [ ] Assets compilados
-- [ ] Código actualizado en VPS
-- [ ] Migraciones aplicadas
-- [ ] Cache regenerada
-- [ ] Python venv actualizado
-- [ ] Servicios reiniciados
-- [ ] Health check pasa
+- [ ] Assets compilados y subidos vía SCP
+- [ ] `deploy/orchestrate.sh deploy` ejecutado sin errores
+- [ ] Health check de servicios pasa
+- [ ] Health check de producción (HTTPS) pasa
 
 ---
 
@@ -594,10 +588,12 @@ php artisan schedule:list                 # Ver jobs programados
 php artisan schedule:test                 # Ejecutar scheduler manualmente
 php artisan queue:work --once             # Procesar un solo job
 
-# ─── Producción ───
-php artisan config:cache                  # Cachear configuración
-php artisan config:clear                  # Limpiar cache config
-php artisan queue:restart                 # Reiniciar workers
+# ─── Producción (VPS) ───
+sudo bash deploy/orchestrate.sh status    # Estado de todos los servicios
+sudo bash deploy/orchestrate.sh health    # Verificación de salud
+sudo bash deploy/orchestrate.sh restart   # Reiniciar servicios
+sudo bash deploy/orchestrate.sh logs      # Ver últimas líneas de logs
+sudo bash deploy/orchestrate.sh deploy    # Deploy manual completo
 php artisan down                          # Modo mantenimiento
 php artisan up                            # Salir de mantenimiento
 
@@ -605,5 +601,4 @@ php artisan up                            # Salir de mantenimiento
 cd analizador-tdr
 source venv/bin/activate
 uvicorn main:app --host 127.0.0.1 --port 8001 --reload   # Dev
-uvicorn main:app --host 127.0.0.1 --port 8001 --workers 2 # Prod
 ```
