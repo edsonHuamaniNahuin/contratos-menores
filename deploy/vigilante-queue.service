@@ -1,16 +1,32 @@
 [Unit]
 Description=Vigilante SEACE Queue Worker
 After=network.target mysql.service
+Wants=mysql.service
 
 [Service]
 Type=simple
 User=www-data
+Group=www-data
 WorkingDirectory=/var/www/vigilante-seace
+
 ExecStart=/usr/local/php82/bin/php artisan queue:work --sleep=3 --tries=3 --max-time=3600
-Restart=always
-RestartSec=5
+
+# Señal para que Laravel termine el job actual y salga limpiamente
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+Restart=on-failure
+RestartSec=10
 StandardOutput=append:/var/log/vigilante-seace/queue.log
 StandardError=append:/var/log/vigilante-seace/queue-error.log
+
+# Límites de reinicio
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# Seguridad
+NoNewPrivileges=true
+ReadWritePaths=/var/www/vigilante-seace/storage /var/log/vigilante-seace /tmp
 
 [Install]
 WantedBy=multi-user.target

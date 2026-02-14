@@ -7,14 +7,25 @@ Type=simple
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/vigilante-seace/analizador-tdr
+
 ExecStart=/var/www/vigilante-seace/analizador-tdr/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8001
-Restart=always
+
+# Uvicorn responde bien a SIGTERM — graceful shutdown
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+Restart=on-failure
 RestartSec=10
 StandardOutput=append:/var/log/vigilante-seace/analizador-tdr.log
 StandardError=append:/var/log/vigilante-seace/analizador-tdr-error.log
 
+# Límites de reinicio
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
 # Seguridad
 NoNewPrivileges=true
+ReadWritePaths=/var/www/vigilante-seace/analizador-tdr /var/log/vigilante-seace /tmp
 
 [Install]
 WantedBy=multi-user.target

@@ -47,84 +47,29 @@ jobs:
           npm ci
           npm run build
 
-      - name: Deploy via SSH
+      - name: Deploy via SSH (Orquestador)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
+          command_timeout: 10m
           script_stop: true
           script: |
             set -e
 
             APP_DIR="${{ secrets.VPS_APP_DIR }}"
-            PYTHON_DIR="$APP_DIR/analizador-tdr"
-            PHP_BIN="/usr/local/php82/bin/php"
-            COMPOSER_BIN="/usr/local/bin/composer"
-
+            export VPS_APP_DIR="$APP_DIR"
             export PATH="/usr/local/php82/bin:/usr/local/python311/bin:/usr/local/bin:$PATH"
 
-            echo ">>> Iniciando deploy en $APP_DIR..."
-
             cd "$APP_DIR"
 
-            # ── 1. MATAR todos los servicios del proyecto ──
-            echo ">>> Deteniendo servicios..."
-            sudo systemctl stop telegram-bot.service    || true
-            sudo systemctl stop vigilante-queue.service  || true
-            sudo systemctl stop analizador-tdr.service   || true
-            echo ">>> Servicios detenidos"
+            # Hacer el script ejecutable (por si acaso)
+            chmod +x deploy/orchestrate.sh
 
-            # ── 2. Pull ultimos cambios ──
-            git fetch origin main
-            git reset --hard origin/main
-
-            # ── 3. Laravel: dependencias + migraciones ──
-            $PHP_BIN $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction
-            $PHP_BIN artisan config:cache
-            $PHP_BIN artisan route:cache
-            $PHP_BIN artisan view:cache
-            $PHP_BIN artisan event:cache
-            $PHP_BIN artisan migrate --force
-
-            # ── 4. Python microservicio ──
-            cd "$PYTHON_DIR"
-            if [ ! -d "venv" ]; then
-                /usr/local/python311/bin/python3 -m venv venv
-            fi
-            source venv/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt --quiet
-            deactivate
-
-            # ── 5. Sincronizar service files ──
-            cd "$APP_DIR"
-            LOG_DIR="/var/log/vigilante-seace"
-            sudo mkdir -p "$LOG_DIR"
-            sudo chown www-data:www-data "$LOG_DIR"
-
-            sudo cp deploy/telegram-bot.service    /etc/systemd/system/telegram-bot.service
-            sudo cp deploy/analizador-tdr.service  /etc/systemd/system/analizador-tdr.service
-            sudo cp deploy/vigilante-queue.service /etc/systemd/system/vigilante-queue.service
-            sudo cp deploy/logrotate-vigilante     /etc/logrotate.d/vigilante-seace
-            sudo chmod 644 /etc/logrotate.d/vigilante-seace
-            sudo systemctl daemon-reload
-
-            # ── 6. Habilitar servicios (por si es primera vez) ──
-            sudo systemctl enable telegram-bot.service    || true
-            sudo systemctl enable analizador-tdr.service   || true
-            sudo systemctl enable vigilante-queue.service  || true
-
-            # ── 7. LEVANTAR todos los servicios ──
-            echo ">>> Iniciando servicios..."
-            sudo systemctl restart php-fpm.service
-            sudo systemctl start analizador-tdr.service
-            sudo systemctl start vigilante-queue.service
-            sudo systemctl start telegram-bot.service
-            sudo systemctl reload apache2
-
-            echo ">>> Deploy completado exitosamente"
+            # Ejecutar orquestador: deploy completo
+            bash deploy/orchestrate.sh deploy
 
       - name: Upload compiled assets via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -137,7 +82,7 @@ jobs:
           target: "${{ secrets.VPS_APP_DIR }}"
           overwrite: true
 
-      - name: Health check (internal)
+      - name: Health check (services + API)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -145,21 +90,14 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
+            export VPS_APP_DIR="${{ secrets.VPS_APP_DIR }}"
             export PATH="/usr/local/php82/bin:/usr/local/python311/bin:/usr/local/bin:$PATH"
-            APP_DIR="${{ secrets.VPS_APP_DIR }}"
 
-            cd "$APP_DIR"
-            php artisan --version && echo "✅ Laravel OK"
-            php artisan schedule:list | head -5
+            cd "$VPS_APP_DIR"
 
-            # Verificar servicios del proyecto
-            systemctl is-active telegram-bot.service    && echo "✅ Telegram Bot OK"    || echo "❌ Telegram Bot FAIL"
-            systemctl is-active vigilante-queue.service  && echo "✅ Queue Worker OK"    || echo "❌ Queue Worker FAIL"
-            systemctl is-active analizador-tdr.service   && echo "✅ Analizador TDR OK"  || echo "❌ Analizador TDR FAIL"
-            systemctl is-active php-fpm.service          && echo "✅ PHP-FPM OK"         || echo "❌ PHP-FPM FAIL"
-            systemctl is-active apache2.service          && echo "✅ Apache OK"          || echo "❌ Apache FAIL"
-
-            curl -sf http://127.0.0.1:8001/health | head -1 && echo "✅ Analizador TDR API OK" || echo "⚠️ Analizador TDR API no responde"
+            # Mostrar estado + salud vía orquestador
+            bash deploy/orchestrate.sh status
+            bash deploy/orchestrate.sh health
 
       - name: Health check (production URL)
         run: |

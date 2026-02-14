@@ -8,16 +8,32 @@ Type=simple
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/vigilante-seace
+
+# Antes de iniciar: matar zombies + esperar que Telegram libere la sesión de long-polling
+ExecStartPre=/bin/bash -c '/usr/bin/pkill -9 -f "artisan telegram:listen" || true'
+ExecStartPre=/bin/sleep 5
+
 ExecStart=/usr/local/php82/bin/php artisan telegram:listen --isolated
-Restart=always
-RestartSec=10
+
+# Al detener: forzar kill (el long-polling de 30s no responde a SIGTERM rápido)
+ExecStop=/bin/bash -c '/usr/bin/pkill -9 -f "artisan telegram:listen" || true'
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+Restart=on-failure
+RestartSec=30
 StandardOutput=append:/var/log/vigilante-seace/telegram-bot.log
 StandardError=append:/var/log/vigilante-seace/telegram-bot-error.log
+
+# Límites de reinicio (máx 5 reinicios en 5 min, evitar crash-loop)
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 # Seguridad
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/var/www/vigilante-seace/storage /var/log/vigilante-seace
+ReadWritePaths=/var/www/vigilante-seace/storage /var/log/vigilante-seace /tmp
 
 [Install]
 WantedBy=multi-user.target

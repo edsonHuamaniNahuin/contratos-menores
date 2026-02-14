@@ -50,7 +50,7 @@
 
             <div class="flex items-center justify-between text-sm">
                 <label class="flex items-center gap-2 text-neutral-600">
-                    <input type="checkbox" name="remember" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500">
+                    <input type="checkbox" name="remember" value="1" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500">
                     <span>Recordarme</span>
                 </label>
                 <a href="{{ route('password.request') }}" class="text-primary-500 font-semibold hover:underline">¿Olvidaste tu contraseña?</a>
