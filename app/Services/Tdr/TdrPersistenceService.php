@@ -53,7 +53,7 @@ class TdrPersistenceService
             'id_contrato_seace' => $contratoSeaceId,
             'id_archivo_seace' => $archivoSeaceId,
             'nombre_original' => $nombreOriginal,
-            'extension' => pathinfo($nombreOriginal, PATHINFO_EXTENSION) ?: null,
+            'extension' => $this->extractAllowedExtension($nombreOriginal),
             'datos_contrato' => $contratoSnapshot,
         ]);
 
@@ -79,7 +79,7 @@ class TdrPersistenceService
             'storage_disk' => $this->disk,
             'storage_path' => $path,
             'nombre_sistema' => $filename,
-            'extension' => $archivo->extension ?? pathinfo($filename, PATHINFO_EXTENSION),
+            'extension' => $archivo->extension ?: $this->extractAllowedExtension($filename, 'pdf'),
             'mime_type' => $detectedMime,
             'tamano_bytes' => $sizeInBytes,
             'sha256' => hash('sha256', $binary),
@@ -260,7 +260,7 @@ class TdrPersistenceService
 
     protected function buildFilename(ContratoArchivo $archivo, ?string $nombreOriginal = null): string
     {
-        $extension = pathinfo($nombreOriginal ?? $archivo->nombre_original, PATHINFO_EXTENSION) ?: 'pdf';
+        $extension = $this->extractAllowedExtension($nombreOriginal ?? $archivo->nombre_original, 'pdf') ?: 'pdf';
         $slug = Str::slug(pathinfo($nombreOriginal ?? $archivo->nombre_original, PATHINFO_FILENAME));
 
         return sprintf('%s_%s_%s.%s',
@@ -269,6 +269,27 @@ class TdrPersistenceService
             $slug ?: 'tdr',
             strtolower($extension)
         );
+    }
+
+    protected function extractAllowedExtension(?string $filename, ?string $fallback = null): ?string
+    {
+        if (!is_string($filename) || trim($filename) === '') {
+            return $fallback;
+        }
+
+        $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+
+        // Solo extensiones esperadas del dominio de TDR
+        $allowed = ['pdf', 'zip', 'rar'];
+
+        if (in_array($extension, $allowed, true)) {
+            return $extension;
+        }
+
+        // Nombres truncados/sanitizados del callback suelen perder el .pdf
+        // y dejan pseudo-extensiones largas (ej: _PAT_SUBSANACION_O).
+        // Nunca persistir esos valores en DB.
+        return $fallback;
     }
 
     protected function extractMonto(array $normalizado): ?string
