@@ -209,61 +209,78 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             return;
         }
 
-        $this->debug('Callback recibido', [
-            'chat_id' => $chatId,
-            'data' => $data,
-        ]);
+        // ── Lock anti doble-click: evita ejecutar la MISMA acción en paralelo ──
+        // callback_id cambia por click, así que además bloqueamos por chat+payload.
+        $actionLockKey = 'telegram:action:' . md5($chatId . '|' . $data);
+        $actionLock = Cache::lock($actionLockKey, 25);
 
-        // Verificar si es un click en "Analizar"
-        if (strpos($data, 'analizar_') === 0) {
-            $parts = explode('_', $data, 4);
-            $idContrato = (int) ($parts[1] ?? 0);
-            $idContratoArchivo = (int) ($parts[2] ?? 0);
-            $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+        if (!$actionLock->get()) {
+            $this->debug('Acción ya en progreso, ignorando callback duplicado por doble click', [
+                'chat_id' => $chatId,
+                'data' => $data,
+            ]);
+            $this->answerCallbackQuery($callbackId, '⏳ Ya estamos procesando esta solicitud...', $token);
+            return;
+        }
 
-            $this->info("🔍 Usuario {$chatId} solicitó análisis del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+        try {
+            $this->debug('Callback recibido', [
+                'chat_id' => $chatId,
+                'data' => $data,
+            ]);
 
-            // Responder primero → Telegram deja de reenviar
-            $this->answerCallbackQuery($callbackId, '⏳ Analizando proceso...', $token);
-            $this->analizarProcesoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+            // Verificar si es un click en "Analizar"
+            if (strpos($data, 'analizar_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
 
-        } elseif (strpos($data, 'descargar_') === 0) {
-            $parts = explode('_', $data, 4);
-            $idContrato = (int) ($parts[1] ?? 0);
-            $idContratoArchivo = (int) ($parts[2] ?? 0);
-            $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+                $this->info("🔍 Usuario {$chatId} solicitó análisis del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
 
-            $this->info("📥 Usuario {$chatId} solicitó descarga del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+                $this->answerCallbackQuery($callbackId, '⏳ Analizando proceso...', $token);
+                $this->analizarProcesoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
 
-            $this->answerCallbackQuery($callbackId, '📥 Preparando descarga...', $token);
-            $this->descargarArchivoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+            } elseif (strpos($data, 'descargar_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
 
-        } elseif (str_starts_with($data, 'compatibilidad_') || str_starts_with($data, 'compatrefresh_')) {
-            $parts = explode('_', $data, 4);
-            $idContrato = (int) ($parts[1] ?? 0);
-            $idContratoArchivo = (int) ($parts[2] ?? 0);
-            $nombreArchivo = $parts[3] ?? 'archivo.pdf';
-            $forceRefresh = str_starts_with($data, 'compatrefresh_');
+                $this->info("📥 Usuario {$chatId} solicitó descarga del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
 
-            $this->info("🏅 Usuario {$chatId} solicitó compatibilidad del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+                $this->answerCallbackQuery($callbackId, '📥 Preparando descarga...', $token);
+                $this->descargarArchivoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
 
-            $this->answerCallbackQuery(
-                $callbackId,
-                $forceRefresh ? '🔄 Recalculando score...' : '⏱️ Calculando score...',
-                $token
-            );
+            } elseif (str_starts_with($data, 'compatibilidad_') || str_starts_with($data, 'compatrefresh_')) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+                $forceRefresh = str_starts_with($data, 'compatrefresh_');
 
-            $this->evaluarCompatibilidadParaUsuario(
-                $chatId,
-                $idContrato,
-                $idContratoArchivo,
-                $nombreArchivo,
-                $token,
-                $forceRefresh
-            );
+                $this->info("🏅 Usuario {$chatId} solicitó compatibilidad del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
 
-        } else {
-            $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
+                $this->answerCallbackQuery(
+                    $callbackId,
+                    $forceRefresh ? '🔄 Recalculando score...' : '⏱️ Calculando score...',
+                    $token
+                );
+
+                $this->evaluarCompatibilidadParaUsuario(
+                    $chatId,
+                    $idContrato,
+                    $idContratoArchivo,
+                    $nombreArchivo,
+                    $token,
+                    $forceRefresh
+                );
+
+            } else {
+                $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
+            }
+        } finally {
+            $actionLock->release();
         }
     }
 
@@ -354,6 +371,79 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
             if ($esErrorTemporal) {
                 $retryCallback = $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
+        try {
+            $this->debug('Callback recibido', [
+                'chat_id' => $chatId,
+                'data' => $data,
+            ]);
+
+            // Verificar si es un click en "Analizar"
+            if (strpos($data, 'analizar_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                $this->info("🔍 Usuario {$chatId} solicitó análisis del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+
+                // Responder primero → Telegram deja de reenviar
+                $this->answerCallbackQuery($callbackId, '⏳ Analizando proceso...', $token);
+                $this->analizarProcesoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+
+            } elseif (strpos($data, 'descargar_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                $this->info("📥 Usuario {$chatId} solicitó descarga del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+
+                // Responder primero → Telegram deja de reenviar
+                $this->answerCallbackQuery($callbackId, '📥 Preparando descarga...', $token);
+                $this->descargarArchivoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+
+            } elseif (strpos($data, 'compatibilidad_refresh_') === 0) {
+                $parts = explode('_', $data, 5);
+                $idContrato = (int) ($parts[2] ?? 0);
+                $idContratoArchivo = (int) ($parts[3] ?? 0);
+                $nombreArchivo = $parts[4] ?? 'archivo.pdf';
+
+                $this->info("📊 Usuario {$chatId} solicitó RE-CÁLCULO de compatibilidad del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+
+                $this->answerCallbackQuery($callbackId, '🔄 Recalculando score...', $token);
+                $this->evaluarCompatibilidadParaUsuario(
+                    $chatId,
+                    $idContrato,
+                    $idContratoArchivo,
+                    $nombreArchivo,
+                    $token,
+                    true
+                );
+
+            } elseif (strpos($data, 'compatibilidad_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                $this->info("📊 Usuario {$chatId} solicitó compatibilidad del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+
+                $this->answerCallbackQuery($callbackId, '🧠 Calculando compatibilidad...', $token);
+                $this->evaluarCompatibilidadParaUsuario(
+                    $chatId,
+                    $idContrato,
+                    $idContratoArchivo,
+                    $nombreArchivo,
+                    $token
+                );
+
+            } else {
+                // Callback no reconocido
+                $this->answerCallbackQuery($callbackId, '⚠️ Acción no reconocida', $token);
+            }
+        } finally {
+            optional($actionLock)->release();
+        }
                 $keyboard = [
                     'inline_keyboard' => [
                         [
@@ -469,8 +559,26 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             // ensureLocalFile ya es idempotente: si existe, retorna path
             if (!$archivoPersistido->hasStoredFile()) {
                 if ($cuenta) {
-                    $documentService = new TdrDocumentService($persistence);
-                    $documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
+                    try {
+                        $documentService = new TdrDocumentService($persistence);
+                        $documentService->ensureLocalFile($archivoPersistido, $cuenta, $nombreArchivo);
+                    } catch (\Throwable $authDownloadException) {
+                        Log::warning('Descarga autenticada falló, intentando endpoint público', [
+                            'chat_id' => $chatId,
+                            'id_archivo' => $idContratoArchivo,
+                            'error' => $authDownloadException->getMessage(),
+                        ]);
+
+                        $publicService = new \App\Services\Tdr\PublicTdrDocumentService(
+                            $persistence,
+                            new \App\Services\SeacePublicArchivoService()
+                        );
+                        $publicService->ensureLocalArchivo(
+                            $idContrato,
+                            ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
+                            ['idContrato' => $idContrato]
+                        );
+                    }
                 } else {
                     $publicService = new \App\Services\Tdr\PublicTdrDocumentService(
                         $persistence,
@@ -518,7 +626,44 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 'error' => $e->getMessage()
             ]);
 
-            $this->enviarMensaje($chatId, '❌ Error: ' . $e->getMessage(), $token);
+            // Fallback resiliente: si otro intento concurrente ya lo dejó en caché,
+            // enviar desde storage en vez de reportar error al usuario.
+            try {
+                $persistence = new TdrPersistenceService();
+                $archivoPersistido = $persistence->resolveArchivo(
+                    $idContratoArchivo,
+                    $nombreArchivo,
+                    $idContrato,
+                    ['idContrato' => $idContrato]
+                );
+
+                if ($archivoPersistido->hasStoredFile()) {
+                    $disk = Storage::disk($archivoPersistido->storage_disk ?? config('filesystems.default'));
+                    $documentBinary = $disk->get($archivoPersistido->storage_path);
+
+                    $telegramResponse = Http::attach(
+                        'document',
+                        $documentBinary,
+                        $nombreArchivo
+                    )->post($this->buildTelegramUrl($token, 'sendDocument'), [
+                        'chat_id' => $chatId,
+                        'caption' => "📄 {$nombreArchivo}\n\n✅ Enviado desde caché local",
+                    ]);
+
+                    if ($telegramResponse->successful()) {
+                        $this->info("✅ Fallback desde caché enviado a usuario {$chatId}");
+                        return;
+                    }
+                }
+            } catch (\Throwable $fallbackException) {
+                Log::warning('Fallback caché descarga falló', [
+                    'chat_id' => $chatId,
+                    'id_archivo' => $idContratoArchivo,
+                    'error' => $fallbackException->getMessage(),
+                ]);
+            }
+
+            $this->enviarMensaje($chatId, '❌ No se pudo descargar el archivo en este momento. Intenta nuevamente en unos minutos.', $token);
         }
     }
 
