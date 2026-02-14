@@ -15,12 +15,12 @@ WorkingDirectory=/var/www/vigilante-seace
 ExecStart=/usr/local/php82/bin/php artisan telegram:listen
 
 # Parada limpia: SIGTERM al proceso principal, SIGKILL al cgroup tras timeout
-# El long-polling HTTP bloquea hasta 30s — dejamos 45s antes del SIGKILL
-# NOTA: NO usar --isolated aquí; systemd ya garantiza instancia única
-#       y --isolated deja locks stale si el proceso muere con SIGKILL
+# Long-poll Telegram = 10s, HTTP timeout = 15s
+# Worst case tras SIGTERM: 10s poll + dispatch + exit ≈ 12s
+# Dejamos 20s de margen
 KillSignal=SIGTERM
 KillMode=mixed
-TimeoutStopSec=45
+TimeoutStopSec=20
 
 Restart=on-failure
 RestartSec=30

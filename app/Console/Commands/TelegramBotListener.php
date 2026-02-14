@@ -79,10 +79,25 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $this->info('🛑 Presiona Ctrl+C para detener');
 
         do {
+            // Despachar señales pendientes (SIGTERM/SIGINT) explícitamente.
+            // pcntl_async_signals no siempre interrumpe curl_exec,
+            // así que despachamos aquí por seguridad.
+            if (function_exists('pcntl_signal_dispatch')) {
+                pcntl_signal_dispatch();
+            }
+
+            if ($this->shouldStop) {
+                break;
+            }
+
             try {
                 $updates = $this->getUpdates($token);
 
                 foreach ($updates as $update) {
+                    if ($this->shouldStop) {
+                        break;
+                    }
+
                     $this->lastUpdateId = $update['update_id'];
 
                     // Persistir offset inmediatamente tras recibirlo
@@ -93,16 +108,16 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                     }
                 }
 
-                if (!$this->option('once')) {
-                    sleep(2);
+                if (!$this->option('once') && !$this->shouldStop) {
+                    usleep(500_000); // 0.5s — más responsivo que sleep(2)
                 }
 
             } catch (\Exception $e) {
                 $this->error('Error: ' . $e->getMessage());
                 Log::error('Telegram Bot Listener Error', ['exception' => $e->getMessage()]);
 
-                if (!$this->option('once')) {
-                    sleep(5);
+                if (!$this->option('once') && !$this->shouldStop) {
+                    sleep(3);
                 }
             }
         } while (!$this->shouldStop && !$this->option('once'));
@@ -145,10 +160,13 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
      */
     protected function getUpdates(string $token): array
     {
-        $response = Http::timeout(30)->get($this->buildTelegramUrl($token, 'getUpdates'), [
+        // timeout HTTP = 15s, long-poll Telegram = 10s
+        // Mantener corto para que SIGTERM se despache entre iteraciones.
+        // Telegram devuelve [] al expirar el long-poll (sin updates).
+        $response = Http::timeout(15)->get($this->buildTelegramUrl($token, 'getUpdates'), [
             'offset' => $this->lastUpdateId + 1,
-            'timeout' => 25, // Long polling
-            'allowed_updates' => ['callback_query'], // Solo callbacks
+            'timeout' => 10,
+            'allowed_updates' => ['callback_query'],
         ]);
 
         if (!$response->successful()) {
