@@ -2,6 +2,9 @@
 Description=Vigilante SEACE Queue Worker
 After=network.target mysql.service
 Wants=mysql.service
+# Límites de reinicio — DEBE estar en [Unit] para systemd <248
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -19,10 +22,6 @@ Restart=on-failure
 RestartSec=10
 StandardOutput=append:/var/log/vigilante-seace/queue.log
 StandardError=append:/var/log/vigilante-seace/queue-error.log
-
-# Límites de reinicio
-StartLimitIntervalSec=300
-StartLimitBurst=5
 
 # Seguridad
 NoNewPrivileges=true

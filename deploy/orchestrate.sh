@@ -140,6 +140,9 @@ ensure_clean() {
     local pattern=""
     local had_zombies=false
 
+    # Resetear estado failed de systemd (desbloquea StartLimitBurst)
+    sudo systemctl reset-failed "${svc}.service" 2>/dev/null || true
+
     case "$svc" in
         telegram-bot)     pattern="artisan telegram:listen" ;;
         vigilante-queue)  pattern="artisan queue:work" ;;
@@ -151,10 +154,22 @@ ensure_clean() {
         kill_zombies "$pattern"
     fi
 
-    # Telegram API requiere ~5s entre desconexión y reconexión de long-polling
-    if [ "$svc" = "telegram-bot" ] && [ "$had_zombies" = true ]; then
-        log_info "Esperando 5s para que Telegram libere sesión de polling..."
-        sleep 5
+    # Telegram: limpiar lock stale de --isolated (por si se usó manualmente)
+    # y esperar 5s para que la API libere la sesión de long-polling
+    if [ "$svc" = "telegram-bot" ]; then
+        cd "$APP_DIR"
+        # Liberar lock de Isolatable sin tinker (evita problema de psysh/www-data)
+        $PHP_BIN -r "
+            require '$APP_DIR/vendor/autoload.php';
+            \$app = require '$APP_DIR/bootstrap/app.php';
+            \$app->make('Illuminate\\Contracts\\Console\\Kernel')->bootstrap();
+            \Illuminate\\Support\\Facades\\Cache::lock('framework/command-telegram-bot-listener')->forceRelease();
+        " 2>/dev/null || true
+        log_info "Lock de --isolated liberado (si existía)"
+        if [ "$had_zombies" = true ]; then
+            log_info "Esperando 5s para que Telegram libere sesión de polling..."
+            sleep 5
+        fi
     fi
 }
 

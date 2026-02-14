@@ -1,6 +1,9 @@
 [Unit]
 Description=Vigilante SEACE - Analizador TDR (FastAPI)
 After=network.target
+# Límites de reinicio — DEBE estar en [Unit] para systemd <248
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -18,10 +21,6 @@ Restart=on-failure
 RestartSec=10
 StandardOutput=append:/var/log/vigilante-seace/analizador-tdr.log
 StandardError=append:/var/log/vigilante-seace/analizador-tdr-error.log
-
-# Límites de reinicio
-StartLimitIntervalSec=300
-StartLimitBurst=5
 
 # Seguridad
 NoNewPrivileges=true
