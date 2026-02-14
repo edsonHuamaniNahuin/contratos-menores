@@ -55,7 +55,6 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           command_timeout: 10m
-          script_stop: true
           script: |
             set -e
 
@@ -65,11 +64,13 @@ jobs:
 
             cd "$APP_DIR"
 
-            # Hacer el script ejecutable (por si acaso)
-            chmod +x deploy/orchestrate.sh
+            # 1. Pull PRIMERO (el orquestador aún no existe en el VPS en primer deploy)
+            git fetch origin main
+            git reset --hard origin/main
 
-            # Ejecutar orquestador: deploy completo
-            bash deploy/orchestrate.sh deploy
+            # 2. Ahora el orquestador existe — ejecutar deploy sin pull redundante
+            chmod +x deploy/orchestrate.sh
+            bash deploy/orchestrate.sh deploy --skip-pull
 
       - name: Upload compiled assets via SCP
         uses: appleboy/scp-action@v0.1.7

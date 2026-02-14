@@ -19,6 +19,7 @@
 # Opciones:
 #   --skip-deps    Omitir instalación de dependencias (composer/pip)
 #   --skip-migrate Omitir migraciones
+#   --skip-pull    Omitir git pull (usado por CD que ya hizo pull antes)
 #   --verbose      Salida detallada
 #
 # Ejemplos:
@@ -58,6 +59,7 @@ ZOMBIE_PATTERNS=(
 # Opciones
 SKIP_DEPS=false
 SKIP_MIGRATE=false
+SKIP_PULL=false
 VERBOSE=false
 
 # Colores para output
@@ -259,11 +261,16 @@ do_deploy() {
     do_stop
 
     # ── 2. Pull cambios ──
-    log_step "GIT PULL"
-    cd "$APP_DIR"
-    git fetch origin main
-    git reset --hard origin/main
-    log_ok "Código actualizado"
+    if [ "$SKIP_PULL" = false ]; then
+        log_step "GIT PULL"
+        cd "$APP_DIR"
+        git fetch origin main
+        git reset --hard origin/main
+        log_ok "Código actualizado"
+    else
+        log_info "Saltando git pull (--skip-pull)"
+        cd "$APP_DIR"
+    fi
 
     # ── 3. Dependencias Laravel ──
     if [ "$SKIP_DEPS" = false ]; then
@@ -461,6 +468,7 @@ for arg in "$@"; do
     case "$arg" in
         --skip-deps)    SKIP_DEPS=true ;;
         --skip-migrate) SKIP_MIGRATE=true ;;
+        --skip-pull)    SKIP_PULL=true ;;
         --verbose)      VERBOSE=true ;;
         *)              log_warn "Argumento desconocido: $arg" ;;
     esac
@@ -496,6 +504,7 @@ case "$ACTION" in
         echo "Opciones:"
         echo "  --skip-deps     Omitir dependencias"
         echo "  --skip-migrate  Omitir migraciones"
+        echo "  --skip-pull     Omitir git pull"
         echo "  --verbose       Salida detallada"
         exit 1
         ;;
