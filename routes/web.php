@@ -33,6 +33,10 @@ Route::get('/buscador-publico', function () {
     return view('buscador-publico');
 })->name('buscador.publico');
 
+Route::get('/planes', function () {
+    return view('planes');
+})->name('planes');
+
 // Ruta para descargar archivos temporales del SEACE
 Route::get('/seace/download/{filename}', function ($filename) {
     $path = storage_path('app/temp/' . $filename);
@@ -107,6 +111,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/seguimientos', function () {
         return view('seguimientos');
     })->name('seguimientos')->middleware('can:follow-contracts');
+
+    Route::get('/perfil', function () {
+        return view('perfil');
+    })->name('perfil');
 
 });
 
