@@ -1,4 +1,5 @@
 {{-- Banner de Consentimiento de Cookies — GA Consent Mode v2 --}}
+<style>[x-cloak]{display:none!important}</style>
 <div
     x-data="cookieConsent()"
     x-show="showBanner"
