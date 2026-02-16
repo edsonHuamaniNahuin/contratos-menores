@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>503 - En mantenimiento | Vigilante SEACE</title>
     @vite(['resources/css/app.css'])
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4PRW1QCW48"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-4PRW1QCW48');
+    </script>
 </head>
 <body class="bg-neutral-50 min-h-screen font-sans antialiased">
     <div class="min-h-screen flex items-center justify-center px-6 py-12">
@@ -48,7 +56,7 @@
 
             {{-- Footer --}}
             <p class="text-xs text-neutral-400 pt-4">
-                Vigilante SEACE &middot; Monitoreo Inteligente de Contrataciones
+                © {{ date('Y') }} Sunqupacha S.A.C. &middot; Vigilante SEACE
             </p>
         </div>
     </div>

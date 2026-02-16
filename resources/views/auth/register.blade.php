@@ -26,7 +26,7 @@
                     <button type="button"
                             @click="accountType = 'personal'"
                             :class="accountType === 'personal'
-                                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
+                                ? 'bg-gradient-to-r from-primary-500 to-primary-400 text-white'
                                 : 'bg-white text-neutral-600 hover:bg-neutral-50'"
                             class="flex-1 py-2.5 text-sm font-semibold transition-all duration-200">
                         <span class="flex items-center justify-center gap-1.5">
@@ -40,7 +40,7 @@
                     <button type="button"
                             @click="accountType = 'empresa'"
                             :class="accountType === 'empresa'
-                                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
+                                ? 'bg-gradient-to-l from-primary-500 to-primary-400 text-white'
                                 : 'bg-white text-neutral-600 hover:bg-neutral-50'"
                             class="flex-1 py-2.5 text-sm font-semibold transition-all duration-200">
                         <span class="flex items-center justify-center gap-1.5">

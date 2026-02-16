@@ -6,13 +6,21 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Vigilante SEACE') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4PRW1QCW48"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-4PRW1QCW48');
+    </script>
 </head>
 <body class="bg-neutral-50 min-h-screen font-sans">
     <div class="min-h-screen flex flex-col lg:flex-row">
         <div class="hidden lg:flex lg:w-1/2 bg-primary-500 text-white items-center justify-center p-12">
             <div class="max-w-md space-y-6">
                 <p class="text-sm uppercase tracking-[0.4em] text-secondary-200">Sequence Dashboard</p>
-                <h1 class="text-4xl font-bold leading-tight">Vigilante SEACE</h1>
+                <h1 class="text-4xl font-bold leading-tight text-white">Vigilante SEACE</h1>
                 <p class="text-base text-primary-100 leading-relaxed">
                     Plataforma segura para monitorear contratos, ejecutar scraping resiliente y coordinar alertas
                     automáticas mediante Telegram. Ingresa tus credenciales para continuar.

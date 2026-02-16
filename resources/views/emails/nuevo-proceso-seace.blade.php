@@ -140,7 +140,10 @@
                                             Vigilante SEACE
                                         </p>
                                         <p style="margin:0; font-size:11px; color:#9CA3AF;">
-                                            Sistema de monitoreo automatizado de licitaciones.
+                                            Un producto de Sunqupacha S.A.C.
+                                        </p>
+                                        <p style="margin:4px 0 0; font-size:11px; color:#9CA3AF;">
+                                            <a href="mailto:services@sunqupacha.com" style="color:#025964; text-decoration:none;">services@sunqupacha.com</a> · +51 918 874 873
                                         </p>
                                     </td>
                                     <td align="right" style="vertical-align:top;">
