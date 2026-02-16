@@ -19,16 +19,21 @@
             </style>
         @endif
         <!-- Google Analytics — Consent Mode v2 -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-4PRW1QCW48"></script>
         <script>
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('consent', 'default', {
-                analytics_storage: 'denied',
-                ad_storage: 'denied',
-                ad_user_data: 'denied',
-                ad_personalization: 'denied'
+                'ad_storage': 'denied',
+                'ad_user_data': 'denied',
+                'ad_personalization': 'denied',
+                'analytics_storage': 'denied'
             });
+            if (localStorage.getItem('cookie_consent') === 'granted') {
+                gtag('consent', 'update', { 'analytics_storage': 'granted' });
+            }
+        </script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-4PRW1QCW48"></script>
+        <script>
             gtag('js', new Date());
             gtag('config', 'G-4PRW1QCW48');
         </script>
