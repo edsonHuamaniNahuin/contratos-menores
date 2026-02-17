@@ -43,11 +43,20 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
     public function handle(SeaceBuscadorPublicoService $buscadorService): void
     {
         $timezone       = 'America/Lima';
-        $fechaObjetivo  = Carbon::now($timezone)->startOfDay();
+        $ahora          = Carbon::now($timezone);
+        $fechaHoy       = $ahora->copy()->startOfDay();
+
+        // ── Primera ejecución del día (06:00-07:59): buscar también AYER ──
+        // Cubre la brecha nocturna (procesos publicados 20:00-23:59 de ayer).
+        // Carbon::subDay() maneja automáticamente fin de mes (31→1, 28/29→1, etc.)
+        $esPrimeraEjecucion = $ahora->hour < 8;
+        $fechaAyer          = $esPrimeraEjecucion ? $fechaHoy->copy()->subDay() : null;
 
         Log::info('NotificarEmailSuscriptoresJob: iniciando', [
-            'fecha'      => $fechaObjetivo->format('d/m/Y'),
-            'hora_local' => Carbon::now($timezone)->format('H:i'),
+            'fecha_hoy'          => $fechaHoy->format('d/m/Y'),
+            'fecha_ayer'         => $fechaAyer?->format('d/m/Y'),
+            'hora_local'         => $ahora->format('H:i'),
+            'primera_ejecucion'  => $esPrimeraEjecucion,
         ]);
 
         // ── 1. Obtener suscriptores activos de email ──────────────
@@ -61,24 +70,50 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
         }
 
         // ── 2. Obtener dataset del SEACE (reutiliza caché del Engine) ─
-        $dataset = $this->obtenerDataset($buscadorService, $fechaObjetivo);
+        $dataset = $this->obtenerDataset($buscadorService, $fechaHoy);
 
         if (empty($dataset)) {
             Log::warning('NotificarEmailSuscriptoresJob: dataset vacío del SEACE.');
             return;
         }
 
-        // ── 3. Filtrar solo los publicados HOY ────────────────────
-        $procesosHoy = $this->filtrarPorFecha($dataset, $fechaObjetivo);
+        // ── 3. Filtrar procesos de HOY ────────────────────────────
+        $procesosHoy = $this->filtrarPorFecha($dataset, $fechaHoy);
+
+        // ── 3b. Si es primera ejecución, agregar procesos de AYER ─
+        if ($esPrimeraEjecucion && $fechaAyer) {
+            $procesosAyer = $this->filtrarPorFecha($dataset, $fechaAyer);
+
+            if (!empty($procesosAyer)) {
+                Log::info('NotificarEmailSuscriptoresJob: procesos rezagados de ayer encontrados', [
+                    'fecha_ayer'     => $fechaAyer->format('d/m/Y'),
+                    'procesos_ayer'  => count($procesosAyer),
+                ]);
+
+                // Merge sin duplicados (por idContrato)
+                $idsProcesados = collect($procesosHoy)
+                    ->pluck('idContrato')
+                    ->filter()
+                    ->all();
+
+                foreach ($procesosAyer as $procesoAyer) {
+                    $idContrato = $procesoAyer['idContrato'] ?? null;
+                    if ($idContrato && !in_array($idContrato, $idsProcesados, true)) {
+                        $procesosHoy[] = $procesoAyer;
+                        $idsProcesados[] = $idContrato;
+                    }
+                }
+            }
+        }
 
         if (empty($procesosHoy)) {
-            Log::info('NotificarEmailSuscriptoresJob: no hay procesos nuevos para hoy.');
+            Log::info('NotificarEmailSuscriptoresJob: no hay procesos nuevos.');
             return;
         }
 
-        Log::info('NotificarEmailSuscriptoresJob: procesos del día', [
+        Log::info('NotificarEmailSuscriptoresJob: procesos a notificar', [
             'total_dataset'  => count($dataset),
-            'procesos_hoy'   => count($procesosHoy),
+            'procesos_total' => count($procesosHoy),
             'suscriptores'   => $suscripciones->count(),
         ]);
 
@@ -101,8 +136,8 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
         }
 
         Log::info('NotificarEmailSuscriptoresJob: completado', [
-            'fecha'         => $fechaObjetivo->format('d/m/Y'),
-            'procesos_hoy'  => count($procesosHoy),
+            'fecha'         => $fechaHoy->format('d/m/Y'),
+            'procesos'      => count($procesosHoy),
             'suscriptores'  => $suscripciones->count(),
             'total_envios'  => $totalEnvios,
             'total_errores' => $totalErrores,
