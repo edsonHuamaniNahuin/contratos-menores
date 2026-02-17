@@ -1,0 +1,34 @@
+[Unit]
+Description=Vigilante SEACE - WhatsApp Bot Listener
+After=network.target mysql.service
+Wants=mysql.service
+# Límites de reinicio (máx 5 en 5 min) — DEBE estar en [Unit] para systemd <248
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vigilante-seace
+
+ExecStart=/usr/local/php82/bin/php artisan whatsapp:listen
+
+# WhatsApp usa webhook (no long-poll) pero el listener procesa mensajes de la cola
+# El ciclo de polling del cache es cada 0.5s, así que SIGTERM se procesa rápido
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec=15
+
+Restart=on-failure
+RestartSec=30
+StandardOutput=append:/var/log/vigilante-seace/whatsapp-bot.log
+StandardError=append:/var/log/vigilante-seace/whatsapp-bot-error.log
+
+# Seguridad
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/www/vigilante-seace/storage /var/log/vigilante-seace /tmp
+
+[Install]
+WantedBy=multi-user.target

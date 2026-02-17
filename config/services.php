@@ -128,6 +128,16 @@ return [
         'debug_logs' => env('TELEGRAM_DEBUG_LOGS', false),
     ],
 
+    'whatsapp' => [
+        'token' => env('WHATSAPP_TOKEN', ''),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID', ''),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v22.0'),
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN', ''),
+        'timeout' => (int) env('WHATSAPP_TIMEOUT', 15),
+        'debug_logs' => env('WHATSAPP_DEBUG_LOGS', false),
+        'contrato_cache_ttl' => (int) env('WHATSAPP_CONTRATO_CACHE_TTL', 720),
+    ],
+
     'analizador_tdr' => [
         'url' => env('ANALIZADOR_TDR_URL', 'http://127.0.0.1:8001'), // SIN slash final
         'enabled' => env('ANALIZADOR_TDR_ENABLED', false),

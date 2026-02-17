@@ -3,7 +3,6 @@
 namespace App\Services\Tdr;
 
 use App\Models\SubscriptionContractMatch;
-use App\Models\TelegramSubscription;
 use App\Services\AccountCompatibilityService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -24,8 +23,11 @@ class CompatibilityScoreService
         $this->enabled = (bool) config('services.analizador_tdr.enabled', false);
     }
 
+    /**
+     * @param  \App\Contracts\ChannelSubscriptionContract&\Illuminate\Database\Eloquent\Model  $subscription
+     */
     public function ensureScore(
-        TelegramSubscription $subscription,
+        object $subscription,
         array $contratoSnapshot,
         array $analysisPayload,
         bool $forceRefresh = false

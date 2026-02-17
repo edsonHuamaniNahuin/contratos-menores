@@ -478,6 +478,421 @@
     </div>
 
     {{-- ═══════════════════════════════════════════════════════════════
+         SECCIÓN: NOTIFICACIONES POR WHATSAPP
+    ═══════════════════════════════════════════════════════════════ --}}
+
+    @if(session()->has('wa_success'))
+        <div class="bg-secondary-500/10 border-l-4 border-secondary-500 rounded-2xl p-4">
+            <p class="text-sm text-neutral-900 font-medium">{{ session('wa_success') }}</p>
+        </div>
+    @endif
+
+    @if(session()->has('wa_error'))
+        <div class="bg-primary-500/10 border-l-4 border-primary-500 rounded-2xl p-4">
+            <p class="text-sm text-neutral-900 font-medium">{{ session('wa_error') }}</p>
+        </div>
+    @endif
+
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-8 border border-neutral-100">
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="text-lg sm:text-xl font-bold text-neutral-900 flex items-center gap-2">
+                    {{-- WhatsApp icon --}}
+                    <svg class="w-6 h-6 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    Notificaciones por WhatsApp
+                </h2>
+                <p class="text-xs text-neutral-400 mt-1">
+                    Recibe alertas de nuevos procesos SEACE en tu WhatsApp con botones interactivos.
+                    Solo se permite 1 numero por usuario.
+                </p>
+            </div>
+
+            @if(!$whatsappSubscription && !$showWhatsAppForm)
+                <button wire:click="toggleWhatsAppForm"
+                        class="flex-shrink-0 px-5 py-2.5 bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white rounded-full font-medium text-sm hover:opacity-90 transition-all shadow-md flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Activar WhatsApp
+                </button>
+            @endif
+        </div>
+
+        @if(!$whatsappEnabled)
+            <div class="bg-primary-500/10 border-l-4 border-primary-500 rounded-2xl p-4 mb-6">
+                <p class="text-sm text-neutral-900 font-medium">
+                    El administrador debe configurar WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID en el servidor para habilitar este canal.
+                </p>
+            </div>
+        @endif
+
+        {{-- Formulario WhatsApp --}}
+        @if($showWhatsAppForm)
+            <div class="bg-neutral-50 rounded-2xl p-4 sm:p-6 mb-6"
+                 x-data
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 -translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-neutral-900">
+                        {{ $editando_wa_id ? '✏️ Editar suscripcion WhatsApp' : '📱 Configurar WhatsApp' }}
+                    </h3>
+                    <button wire:click="toggleWhatsAppForm"
+                            class="p-1.5 hover:bg-neutral-200 rounded-full transition-colors text-neutral-400 hover:text-neutral-600"
+                            title="Cerrar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Numero de telefono --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                    <div x-data="{ showHelp: false }">
+                        <label class="flex items-center gap-1.5 text-xs font-medium text-neutral-600 mb-2">
+                            Numero de WhatsApp <span class="text-red-500">*</span>
+                            <button type="button" @click="showHelp = !showHelp" class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#128C7E] transition-colors ring-1 ring-[#25D366]/30" title="Formato del numero">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01"/></svg>
+                            </button>
+                        </label>
+                        <input type="text" wire:model="wa_phone_number"
+                               class="w-full px-4 py-2 rounded-full border border-neutral-200 focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 outline-none transition-all text-sm"
+                               placeholder="Ej: 51987654321">
+                        @error('wa_phone_number')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+
+                        {{-- Tooltip formato --}}
+                        <div x-show="showHelp" x-cloak @click.outside="showHelp = false"
+                             x-transition class="mt-2 bg-white border border-neutral-200 rounded-2xl p-4 shadow-soft text-xs text-neutral-700 space-y-2">
+                            <p class="font-bold text-neutral-900">Formato del numero</p>
+                            <p>Ingresa el numero con codigo de pais, sin <code class="bg-neutral-100 px-1 rounded">+</code>, sin espacios ni guiones.</p>
+                            <div class="space-y-1">
+                                <p>🇵🇪 Peru: <code class="bg-neutral-100 px-1.5 py-0.5 rounded font-mono">51987654321</code></p>
+                                <p>🇲🇽 Mexico: <code class="bg-neutral-100 px-1.5 py-0.5 rounded font-mono">521234567890</code></p>
+                                <p>🇺🇸 USA: <code class="bg-neutral-100 px-1.5 py-0.5 rounded font-mono">11234567890</code></p>
+                            </div>
+                            <button @click="showHelp = false" class="mt-2 w-full py-1.5 bg-neutral-100 hover:bg-neutral-200 rounded-full text-xs font-medium transition-colors">Entendido</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-600 mb-2">
+                            Nombre (opcional)
+                        </label>
+                        <input type="text" wire:model="wa_nombre"
+                               class="w-full px-4 py-2 rounded-full border border-neutral-200 focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 outline-none transition-all text-sm"
+                               placeholder="Ej: Juan Perez">
+                    </div>
+                </div>
+
+                {{-- Company copy --}}
+                <div class="mb-5">
+                    <label class="block text-xs font-medium text-neutral-600 mb-2">
+                        Perfil de tu empresa / rubro <span class="text-red-500">*</span>
+                    </label>
+                    <textarea wire:model="wa_company_copy"
+                              class="w-full px-4 py-3 rounded-2xl border border-neutral-200 focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 outline-none transition-all text-sm min-h-[110px]"
+                              placeholder="Ej: Somos una empresa de tecnologia especializada en cableado estructurado, redes LAN y desarrollo de software web. Atendemos entidades publicas en Lima y Callao."></textarea>
+                    <p class="text-[11px] text-neutral-500 mt-1">La IA usa esta descripcion para calcular que tan compatible es cada licitacion con tu empresa.</p>
+                    @error('wa_company_copy')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Keywords --}}
+                <div class="mb-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2 text-xs font-medium text-neutral-600">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#25D366]/10 text-[#128C7E]">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                </span>
+                                <span>Palabras clave de interes</span>
+                            </div>
+                            <p class="text-[11px] text-neutral-400 ml-7">Solo recibiras mensajes de WhatsApp de procesos que contengan alguna de estas palabras.</p>
+                        </div>
+                        <span class="text-[11px] text-neutral-500 font-semibold">{{ count($wa_keywords ?? []) }}/{{ $maxKeywords }} seleccionadas</span>
+                    </div>
+
+                    <div
+                        class="relative space-y-4"
+                        x-data="{
+                            limit: {{ $maxKeywords }},
+                            selected: @entangle('wa_keywords').live,
+                            showLimitToast: false,
+                            toastTimeout: null,
+                            triggerLimitToast() {
+                                this.showLimitToast = true;
+                                clearTimeout(this.toastTimeout);
+                                this.toastTimeout = setTimeout(() => this.showLimitToast = false, 4500);
+                            }
+                        }"
+                    >
+                        <div
+                            x-cloak
+                            x-show="showLimitToast"
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="translate-y-2 opacity-0"
+                            x-transition:enter-end="translate-y-0 opacity-100"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0"
+                            class="absolute -top-5 right-0 z-10 flex items-start gap-3 rounded-2xl bg-white border border-[#25D366]/30 shadow-soft px-4 py-3 max-w-sm"
+                        >
+                            <div class="w-8 h-8 rounded-full bg-[#25D366]/10 flex items-center justify-center text-[#128C7E]">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M12 5.5a7 7 0 100 14 7 7 0 000-14z" />
+                                </svg>
+                            </div>
+                            <div class="text-xs text-neutral-700">
+                                <p class="font-semibold text-neutral-900">Maximo {{ $maxKeywords }} palabras clave</p>
+                                <p>Limitamos la seleccion para mantener los avisos enfocados.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            {{-- Catálogo general --}}
+                            <div class="bg-white border border-neutral-200 rounded-2xl p-4 shadow-soft">
+                                <div class="flex items-center justify-between gap-3 mb-3">
+                                    <p class="text-xs font-semibold text-neutral-600 uppercase tracking-wide">Catalogo general</p>
+                                    <div class="relative flex-1">
+                                        <input type="text"
+                                               wire:model.live.debounce.300ms="wa_keyword_search"
+                                               class="w-full pl-9 pr-3 py-2 text-xs rounded-full border border-neutral-200 focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 outline-none"
+                                               placeholder="Buscar palabra clave">
+                                        <svg class="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <div class="max-h-60 overflow-y-auto pr-1 flex flex-wrap gap-2">
+                                    @forelse($filteredWaKeywords as $keyword)
+                                        <label wire:key="wa-keyword-pill-{{ $keyword['id'] }}" class="cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                class="sr-only"
+                                                value="{{ $keyword['id'] }}"
+                                                wire:model.live="wa_keywords"
+                                                x-on:click="if(selected.length >= limit && !selected.includes({{ $keyword['id'] }})) { $event.preventDefault(); $event.stopImmediatePropagation(); triggerLimitToast(); }"
+                                                :disabled="selected.length >= limit && !selected.includes({{ $keyword['id'] }})"
+                                            >
+                                            <span class="px-3 py-1 rounded-full border text-xs font-semibold transition-all {{ in_array($keyword['id'], $wa_keywords ?? [], true) ? 'bg-[#25D366] text-white border-[#25D366] shadow' : 'bg-white text-neutral-600 border-neutral-200 hover:border-[#25D366]' }}">
+                                                {{ $keyword['nombre'] }}
+                                            </span>
+                                        </label>
+                                    @empty
+                                        <p class="text-xs text-neutral-500">No encontramos coincidencias con "{{ $wa_keyword_search }}".</p>
+                                    @endforelse
+                                </div>
+                            </div>
+
+                            {{-- Seleccionadas --}}
+                            <div class="bg-white border border-neutral-200 rounded-2xl p-4 shadow-soft">
+                                <div class="flex items-center justify-between mb-3">
+                                    <p class="text-xs font-semibold text-neutral-600 uppercase tracking-wide">Seleccionadas</p>
+                                    @if(count($wa_keywords ?? []))
+                                        <span class="text-[11px] text-neutral-500">Haz clic para quitar</span>
+                                    @endif
+                                </div>
+
+                                <div class="min-h-[120px] max-h-60 overflow-y-auto pr-1 space-y-2">
+                                    @forelse($wa_keywords as $keywordId)
+                                        @php($tag = $keywordDictionary->get($keywordId))
+                                        <div wire:key="wa-selected-keyword-{{ $keywordId }}"
+                                             class="w-full rounded-2xl border border-[#25D366]/50 bg-[#25D366]/5 px-3 py-2 flex items-center justify-between gap-3">
+                                            <div class="flex flex-col text-left">
+                                                <p class="text-xs font-semibold text-neutral-800 leading-none">{{ $tag['nombre'] ?? 'Keyword #' . $keywordId }}</p>
+                                                <span class="text-[10px] text-neutral-500">ID #{{ $keywordId }}</span>
+                                            </div>
+                                            <button type="button"
+                                                wire:click="quitarWaKeyword({{ $keywordId }})"
+                                                class="w-7 h-7 flex items-center justify-center rounded-full border border-[#128C7E]/60 text-[#128C7E] hover:bg-[#25D366]/10 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    @empty
+                                        <p class="text-xs text-neutral-500">Selecciona al menos una palabra clave relevante.</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+
+                        @error('wa_keywords.*')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+
+                        <div class="flex flex-col md:flex-row gap-2">
+                            <input type="text" wire:model.live="wa_keyword_manual"
+                                   wire:keydown.enter.prevent="agregarWaKeywordManual"
+                                   class="flex-1 px-4 py-2 rounded-full border border-neutral-200 focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 outline-none text-sm"
+                                   placeholder="No existe en el catalogo? Agregala aqui">
+                            <button type="button"
+                                    wire:click="agregarWaKeywordManual"
+                                    wire:loading.attr="disabled"
+                                    wire:target="agregarWaKeywordManual"
+                                    x-on:click="if(selected.length >= limit){ $event.preventDefault(); $event.stopImmediatePropagation(); triggerLimitToast(); }"
+                                    class="px-4 py-2 bg-white border border-[#25D366] text-[#128C7E] rounded-full text-xs font-semibold hover:bg-[#25D366]/5 transition-all disabled:opacity-60">
+                                <span wire:loading.remove wire:target="agregarWaKeywordManual">Guardar en catalogo y seleccionar</span>
+                                <span wire:loading wire:target="agregarWaKeywordManual">Guardando...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Toggle activo + Botones --}}
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-center gap-3">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" wire:model="wa_activo" class="sr-only peer">
+                            <div class="w-11 h-6 bg-neutral-200 rounded-full peer-focus:ring-4 peer-focus:ring-[#25D366]/20 peer-checked:bg-[#25D366] after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                        </label>
+                        <div>
+                            <p class="text-xs font-semibold text-neutral-900">{{ $wa_activo ? 'Suscripcion activa' : 'Suscripcion inactiva' }}</p>
+                            <p class="text-[11px] text-neutral-500">Puedes pausar notificaciones sin eliminar la configuracion.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button wire:click="guardarWhatsAppSubscription"
+                                class="px-5 py-2 bg-[#25D366] text-white rounded-full text-sm font-medium hover:bg-[#128C7E] transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Guardar
+                        </button>
+                        <button wire:click="toggleWhatsAppForm"
+                                class="px-4 py-2 bg-neutral-200 text-neutral-600 rounded-full text-sm font-medium hover:bg-neutral-300 transition-colors">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- WhatsApp existente --}}
+        @if($whatsappSubscription)
+            <div class="bg-neutral-50 rounded-2xl p-3 sm:p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between hover:bg-neutral-100 transition-colors">
+                <div class="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                    <div class="flex-shrink-0">
+                        @if($whatsappSubscription->activo)
+                            <div class="w-10 h-10 bg-[#25D366]/20 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                </svg>
+                            </div>
+                        @else
+                            <div class="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-neutral-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                </svg>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                            <p class="text-sm font-bold text-neutral-900 font-mono">+{{ $whatsappSubscription->phone_number }}</p>
+                            @if($whatsappSubscription->activo)
+                                <span class="px-2 py-0.5 bg-[#25D366]/20 text-[#128C7E] border border-[#25D366]/30 rounded-full text-xs font-semibold">✓ Activo</span>
+                            @else
+                                <span class="px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded-full text-xs font-semibold">✗ Inactivo</span>
+                            @endif
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-4 text-xs text-neutral-600">
+                            @if($whatsappSubscription->nombre)
+                                <span>👤 {{ $whatsappSubscription->nombre }}</span>
+                            @endif
+                            <span>📊 {{ number_format($whatsappSubscription->notificaciones_recibidas) }} notificaciones</span>
+                            @if($whatsappSubscription->ultima_notificacion_at)
+                                <span>🕐 Ultima: {{ $whatsappSubscription->ultima_notificacion_at->diffForHumans() }}</span>
+                            @endif
+                            <span>📅 Desde: {{ $whatsappSubscription->created_at->format('d/m/Y') }}</span>
+                        </div>
+                        @if($whatsappSubscription->keywords->isNotEmpty())
+                            <div class="flex flex-wrap gap-1.5 mt-3">
+                                @foreach($whatsappSubscription->keywords as $keyword)
+                                    <span class="text-[11px] px-2 py-0.5 rounded-full border border-[#25D366]/40 text-[#128C7E] bg-[#25D366]/10">
+                                        {{ $keyword->nombre }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+                        @if($whatsappSubscription->company_copy)
+                            <p class="text-xs text-neutral-600 leading-relaxed mt-3 border-l-2 border-[#25D366]/40 pl-3">
+                                "{{ $whatsappSubscription->company_copy }}"
+                            </p>
+                        @endif
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 self-end md:self-auto">
+                    {{-- Toggle activo --}}
+                    <button wire:click="toggleWhatsAppActivo"
+                            title="{{ $whatsappSubscription->activo ? 'Desactivar' : 'Activar' }}"
+                            class="p-2 hover:bg-white rounded-full transition-colors">
+                        @if($whatsappSubscription->activo)
+                            <svg class="w-4 h-4 text-[#25D366]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        @else
+                            <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                            </svg>
+                        @endif
+                    </button>
+
+                    {{-- Enviar prueba --}}
+                    <button wire:click="probarWhatsAppNotificacion"
+                            wire:loading.attr="disabled"
+                            wire:target="probarWhatsAppNotificacion"
+                            title="Enviar mensaje de prueba"
+                            class="p-2 hover:bg-white rounded-full transition-colors">
+                        <svg class="w-4 h-4 text-[#25D366]" wire:loading.class="animate-pulse" wire:target="probarWhatsAppNotificacion" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
+
+                    {{-- Editar --}}
+                    <button wire:click="toggleWhatsAppForm"
+                            title="Editar"
+                            class="p-2 hover:bg-white rounded-full transition-colors">
+                        <svg class="w-4 h-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </button>
+
+                    {{-- Eliminar --}}
+                    <button wire:click="eliminarWhatsAppSubscription"
+                            onclick="return confirm('¿Eliminar la suscripcion de WhatsApp?')"
+                            title="Eliminar"
+                            class="p-2 hover:bg-primary-50 rounded-full transition-colors">
+                        <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        @elseif(!$showWhatsAppForm)
+            <div class="text-center py-8">
+                <div class="w-14 h-14 mx-auto bg-[#25D366]/10 rounded-full flex items-center justify-center mb-3">
+                    <svg class="w-7 h-7 text-[#25D366]/40" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                </div>
+                <h3 class="text-sm font-semibold text-neutral-900 mb-1">Sin notificaciones de WhatsApp</h3>
+                <p class="text-xs text-neutral-500">Activa las notificaciones para recibir alertas de nuevos procesos en tu WhatsApp.</p>
+            </div>
+        @endif
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════
          SECCIÓN: NOTIFICACIONES POR CORREO
     ═══════════════════════════════════════════════════════════════ --}}
 

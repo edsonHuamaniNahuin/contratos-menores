@@ -2,36 +2,74 @@
 
 namespace App\Services;
 
+use App\Contracts\ChannelSubscriptionContract;
 use App\Models\SubscriptionContractMatch;
-use App\Models\TelegramSubscription;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class AccountCompatibilityService
 {
-    public function findMatch(TelegramSubscription $subscription, int $contratoId): ?SubscriptionContractMatch
+    /**
+     * Mapeo canal → columna FK en subscription_contract_matches.
+     * OCP: agregar un canal nuevo solo requiere un nuevo entry aquí.
+     */
+    protected const FK_MAP = [
+        'telegram' => 'telegram_subscription_id',
+        'whatsapp' => 'whatsapp_subscription_id',
+    ];
+
+    /**
+     * Buscar match existente para cualquier canal de suscripción.
+     *
+     * @param  ChannelSubscriptionContract&\Illuminate\Database\Eloquent\Model  $subscription
+     */
+    public function findMatch(object $subscription, int $contratoId): ?SubscriptionContractMatch
     {
-        return $subscription->matches()
+        // Polimórfico: usa la relación matches() del modelo (Telegram o WhatsApp)
+        if (method_exists($subscription, 'matches')) {
+            return $subscription->matches()
+                ->where('contrato_seace_id', $contratoId)
+                ->first();
+        }
+
+        // Fallback por FK explícito
+        $fk = $this->resolveForeignKey($subscription);
+
+        return SubscriptionContractMatch::where($fk, $subscription->id)
             ->where('contrato_seace_id', $contratoId)
             ->first();
     }
 
-    public function canReuseMatch(?SubscriptionContractMatch $match, TelegramSubscription $subscription): bool
+    /**
+     * Determinar si un match existente puede reutilizarse (sin re-calcular).
+     *
+     * @param  ChannelSubscriptionContract&\Illuminate\Database\Eloquent\Model  $subscription
+     */
+    public function canReuseMatch(?SubscriptionContractMatch $match, object $subscription): bool
     {
         if (!$match) {
             return false;
         }
 
-        if (($match->copy_snapshot ?? null) !== ($subscription->company_copy ?? null)) {
+        $companyCopy = method_exists($subscription, 'getCompanyCopy')
+            ? $subscription->getCompanyCopy()
+            : ($subscription->company_copy ?? null);
+
+        if (($match->copy_snapshot ?? null) !== $companyCopy) {
             return false;
         }
 
         return $match->score !== null;
     }
 
+    /**
+     * Persistir resultado de compatibilidad para cualquier canal.
+     *
+     * @param  ChannelSubscriptionContract&\Illuminate\Database\Eloquent\Model  $subscription
+     */
     public function storeCompatibilityResult(
-        TelegramSubscription $subscription,
+        object $subscription,
         array $contratoSnapshot,
         array $compatibilityPayload
     ): SubscriptionContractMatch {
@@ -41,10 +79,11 @@ class AccountCompatibilityService
             ?? Arr::get($contratoSnapshot, 'id_contrato_seace');
 
         $timestamp = $this->resolveTimestamp(Arr::get($compatibilityPayload, 'timestamp'));
+        $fk = $this->resolveForeignKey($subscription);
 
         return SubscriptionContractMatch::updateOrCreate(
             [
-                'telegram_subscription_id' => $subscription->id,
+                $fk => $subscription->id,
                 'contrato_seace_id' => $contratoId,
             ],
             [
@@ -56,12 +95,27 @@ class AccountCompatibilityService
                     ?? Arr::get($contratoSnapshot, 'objeto'),
                 'score' => $this->resolveScore($compatibilityPayload),
                 'keywords_snapshot' => $subscription->keywords->pluck('nombre')->filter()->values()->all(),
-                'copy_snapshot' => $subscription->company_copy,
+                'copy_snapshot' => method_exists($subscription, 'getCompanyCopy')
+                    ? $subscription->getCompanyCopy()
+                    : ($subscription->company_copy ?? null),
                 'analisis_payload' => $compatibilityPayload,
                 'source' => Arr::get($compatibilityPayload, 'source', 'compatibility-service'),
                 'analizado_en' => $timestamp,
             ]
         );
+    }
+
+    /**
+     * Resolver la columna FK según el canal de la suscripción.
+     */
+    protected function resolveForeignKey(object $subscription): string
+    {
+        $channel = method_exists($subscription, 'channelName')
+            ? $subscription->channelName()
+            : 'telegram';
+
+        return self::FK_MAP[$channel]
+            ?? throw new \RuntimeException("Canal de suscripción no soportado: {$channel}");
     }
 
     protected function resolveTimestamp($value): Carbon

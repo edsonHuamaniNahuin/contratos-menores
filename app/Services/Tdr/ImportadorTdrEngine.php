@@ -2,6 +2,7 @@
 
 namespace App\Services\Tdr;
 
+use App\Contracts\NotificationChannelContract;
 use App\Models\TelegramSubscription;
 use App\Services\SeaceBuscadorPublicoService;
 use App\Services\SeacePublicArchivoService;
@@ -16,11 +17,53 @@ use RuntimeException;
 class ImportadorTdrEngine
 {
     private const MAX_DATASET_PAGE_SIZE = 150;
+
+    /**
+     * Canales de notificación registrados.
+     *
+     * @var array<string, NotificationChannelContract>
+     */
+    protected array $channels = [];
+
     public function __construct(
         protected SeaceBuscadorPublicoService $buscadorService,
         protected SeacePublicArchivoService $archivoService,
         protected TelegramNotificationService $telegramService
     ) {
+        // Registrar Telegram como canal por defecto (backwards-compatible)
+        $this->registerChannel($telegramService);
+    }
+
+    /**
+     * Registrar un canal de notificación adicional.
+     */
+    public function registerChannel(NotificationChannelContract $channel): static
+    {
+        if ($channel->isEnabled()) {
+            $this->channels[$channel->channelName()] = $channel;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Resolver qué canal usar para una suscripción dada.
+     */
+    protected function resolveChannelForSubscription(object $suscripcion): ?NotificationChannelContract
+    {
+        // Si la suscripción tiene un método channelName(), usarlo
+        if (method_exists($suscripcion, 'channelName')) {
+            return $this->channels[$suscripcion->channelName()] ?? null;
+        }
+
+        // Fallback por tipo de modelo
+        $class = get_class($suscripcion);
+
+        return match (true) {
+            str_contains($class, 'WhatsApp') => $this->channels['whatsapp'] ?? null,
+            str_contains($class, 'Telegram') => $this->channels['telegram'] ?? null,
+            default => $this->channels['telegram'] ?? reset($this->channels) ?: null,
+        };
     }
 
     public function ejecutar(Carbon $fechaObjetivo, Collection $suscripciones, int $limite = self::MAX_DATASET_PAGE_SIZE): array
@@ -53,9 +96,8 @@ class ImportadorTdrEngine
         $erroresEnvio = 0;
 
         foreach ($suscripciones->chunk(20) as $grupo) {
-            /** @var TelegramSubscription $suscripcion */
             foreach ($grupo as $suscripcion) {
-                $nombreSuscriptor = $suscripcion->nombre ?: 'Chat ' . $suscripcion->chat_id;
+                $nombreSuscriptor = $suscripcion->nombre ?: ('ID ' . ($suscripcion->getRecipientId ?? $suscripcion->id));
                 $coincidencias = [];
                 $enviosExitosos = 0;
                 $enviosFallidos = 0;
@@ -80,7 +122,17 @@ class ImportadorTdrEngine
                     );
                     $payloadContrato['_match_keywords'] = $resultado['keywords'];
 
-                    $respuesta = $this->telegramService->enviarProcesoASuscriptor(
+                    $channel = $this->resolveChannelForSubscription($suscripcion);
+
+                    if (!$channel) {
+                        Log::warning('ImportadorTdrEngine: no se encontró canal para suscriptor', [
+                            'suscriptor' => $suscripcion->id ?? 'unknown',
+                            'tipo' => get_class($suscripcion),
+                        ]);
+                        continue;
+                    }
+
+                    $respuesta = $channel->enviarProcesoASuscriptor(
                         $suscripcion,
                         $payloadContrato,
                         $resultado['keywords']
@@ -115,7 +167,8 @@ class ImportadorTdrEngine
                 $suscriptoresResumen[] = [
                     'id' => $suscripcion->id,
                     'nombre' => $nombreSuscriptor,
-                    'chat_id' => $suscripcion->chat_id,
+                    'canal' => method_exists($suscripcion, 'channelName') ? $suscripcion->channelName() : 'telegram',
+                    'recipient' => method_exists($suscripcion, 'getRecipientId') ? $suscripcion->getRecipientId() : ($suscripcion->chat_id ?? ''),
                     'keywords' => $suscripcion->keywords->pluck('nombre')->all(),
                     'coincidencias' => count($coincidencias),
                     'envios_exitosos' => $enviosExitosos,
@@ -131,7 +184,7 @@ class ImportadorTdrEngine
 
         $mensaje = match (true) {
             empty($pendientes) => 'No hay procesos nuevos para la fecha seleccionada. Todos los registros fueron procesados anteriormente.',
-            $totalEnvios > 0 => "Se enviaron {$totalEnvios} proceso(s) nuevos filtrados a Telegram.",
+            $totalEnvios > 0 => "Se enviaron {$totalEnvios} proceso(s) nuevos filtrados a " . implode(', ', array_keys($this->channels)) . '.',
             default => 'Los procesos filtrados no coincidieron con los filtros de los suscriptores activos.',
         };
 
@@ -319,7 +372,7 @@ class ImportadorTdrEngine
         return $payload;
     }
 
-    protected function acumularProcesoNotificado(array &$registro, array $contrato, TelegramSubscription $suscripcion, array $keywords, array $respuesta): void
+    protected function acumularProcesoNotificado(array &$registro, array $contrato, object $suscripcion, array $keywords, array $respuesta): void
     {
         $contratoId = $this->obtenerIdentificadorContrato($contrato) ?? spl_object_hash((object) $contrato);
 
@@ -331,7 +384,7 @@ class ImportadorTdrEngine
             ];
         }
 
-        $nombreSuscriptor = $suscripcion->nombre ?: 'Chat ' . $suscripcion->chat_id;
+        $nombreSuscriptor = $suscripcion->nombre ?: ('ID ' . ($suscripcion->id ?? 'unknown'));
 
         if (!in_array($nombreSuscriptor, $registro[$contratoId]['suscriptores'], true)) {
             $registro[$contratoId]['suscriptores'][] = $nombreSuscriptor;

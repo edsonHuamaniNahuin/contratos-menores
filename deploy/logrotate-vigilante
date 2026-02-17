@@ -1,4 +1,5 @@
-/var/log/vigilante-seace/*.log {
+/var/log / vigilante - seace
+/*.log {
     daily
     missingok
     rotate 14
@@ -9,6 +10,7 @@
     sharedscripts
     postrotate
         systemctl restart telegram-bot.service > /dev/null 2>&1 || true
+        systemctl restart whatsapp-bot.service > /dev/null 2>&1 || true
         systemctl restart vigilante-queue.service > /dev/null 2>&1 || true
     endscript
 }

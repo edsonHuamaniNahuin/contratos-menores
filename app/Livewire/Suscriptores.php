@@ -6,7 +6,9 @@ use App\Mail\NuevoProcesoSeace;
 use App\Models\EmailSubscription;
 use App\Models\NotificationKeyword;
 use App\Models\TelegramSubscription;
+use App\Models\WhatsAppSubscription;
 use App\Services\TelegramNotificationService;
+use App\Services\WhatsAppNotificationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -42,14 +44,29 @@ class Suscriptores extends Component
     public bool $showEmailForm = false;
     public ?int $editando_email_id = null;
 
+    // ── WhatsApp Subscription ─────────────────────────────
+    public bool $whatsappEnabled = false;
+    public string $wa_phone_number = '';
+    public string $wa_nombre = '';
+    public string $wa_company_copy = '';
+    public bool $wa_activo = true;
+    public array $wa_keywords = [];
+    public string $wa_keyword_search = '';
+    public string $wa_keyword_manual = '';
+    public bool $showWhatsAppForm = false;
+    public ?int $editando_wa_id = null;
+
     public function mount(): void
     {
         $this->telegramEnabled = !empty(config('services.telegram.bot_token'))
             && !empty(config('services.telegram.chat_id'));
+        $this->whatsappEnabled = !empty(config('services.whatsapp.token'))
+            && !empty(config('services.whatsapp.phone_number_id'));
         $this->isAdmin = auth()->user()?->hasRole('admin') ?? false;
 
         $this->loadKeywords();
         $this->loadEmailSubscription();
+        $this->loadWhatsAppSubscription();
     }
 
     public function loadEmailSubscription(): void
@@ -81,6 +98,11 @@ class Suscriptores extends Component
     public function updatedNuevoKeywords($value): void
     {
         $this->nuevo_keywords = $this->sanitizeKeywordSelection();
+    }
+
+    public function updatedWaKeywords($value): void
+    {
+        $this->wa_keywords = $this->sanitizeWaKeywordSelection();
     }
 
     public function loadKeywords(): void
@@ -520,6 +542,213 @@ class Suscriptores extends Component
         session()->flash('email_success', '✓ Palabra clave agregada');
     }
 
+    // ── WhatsApp Subscription Methods ───────────────────────
+
+    public function loadWhatsAppSubscription(): void
+    {
+        $waSub = WhatsAppSubscription::with('keywords')->where('user_id', auth()->id())->first();
+        if ($waSub) {
+            $this->wa_phone_number = $waSub->phone_number;
+            $this->wa_nombre = $waSub->nombre ?? '';
+            $this->wa_company_copy = $waSub->company_copy ?? '';
+            $this->wa_activo = $waSub->activo;
+            $this->wa_keywords = $waSub->keywords
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->toArray();
+            $this->editando_wa_id = $waSub->id;
+        } else {
+            $this->wa_phone_number = '';
+            $this->wa_nombre = '';
+            $this->wa_company_copy = '';
+            $this->wa_activo = true;
+            $this->wa_keywords = [];
+            $this->editando_wa_id = null;
+        }
+    }
+
+    public function toggleWhatsAppForm(): void
+    {
+        $this->showWhatsAppForm = !$this->showWhatsAppForm;
+        if (!$this->showWhatsAppForm) {
+            $this->loadWhatsAppSubscription();
+            $this->wa_keyword_search = '';
+            $this->wa_keyword_manual = '';
+            $this->resetValidation(['wa_phone_number', 'wa_nombre', 'wa_company_copy', 'wa_keyword_manual']);
+        }
+    }
+
+    public function guardarWhatsAppSubscription(): void
+    {
+        $this->wa_keywords = $this->sanitizeWaKeywordSelection();
+
+        $this->validate([
+            'wa_phone_number' => 'required|string|min:10|max:15|regex:/^\d+$/',
+            'wa_nombre' => 'nullable|string|max:255',
+            'wa_company_copy' => 'required|string|min:30',
+            'wa_keywords' => 'array|max:' . self::MAX_KEYWORDS,
+            'wa_keywords.*' => 'integer|exists:notification_keywords,id',
+        ], [
+            'wa_phone_number.required' => 'El numero de WhatsApp es obligatorio.',
+            'wa_phone_number.min' => 'El numero debe tener al menos 10 digitos.',
+            'wa_phone_number.regex' => 'Solo digitos, sin espacios ni simbolos. Ej: 51987654321',
+            'wa_company_copy.required' => 'Describe brevemente el rubro de tu empresa.',
+            'wa_company_copy.min' => 'La descripcion debe tener al menos 30 caracteres.',
+            'wa_keywords.max' => 'Maximo ' . self::MAX_KEYWORDS . ' palabras clave.',
+        ]);
+
+        try {
+            $waSub = WhatsAppSubscription::updateOrCreate(
+                ['user_id' => auth()->id()],
+                [
+                    'phone_number' => $this->wa_phone_number,
+                    'nombre' => $this->wa_nombre ?: null,
+                    'activo' => $this->wa_activo,
+                    'company_copy' => $this->wa_company_copy,
+                    'subscrito_at' => now(),
+                ]
+            );
+
+            $waSub->keywords()->sync($this->wa_keywords);
+
+            $this->editando_wa_id = $waSub->id;
+            $this->showWhatsAppForm = false;
+            $this->wa_keyword_search = '';
+            $this->wa_keyword_manual = '';
+
+            session()->flash('wa_success', '✅ Suscripcion de WhatsApp guardada exitosamente.');
+            Log::info('WhatsApp: Suscripcion guardada', [
+                'id' => $waSub->id,
+                'phone' => $waSub->phone_number,
+                'keywords' => count($this->wa_keywords),
+            ]);
+        } catch (\Exception $e) {
+            session()->flash('wa_error', '❌ Error: ' . $e->getMessage());
+            Log::error('Error al guardar WhatsApp subscription', ['error' => $e->getMessage()]);
+        }
+    }
+
+    public function toggleWhatsAppActivo(): void
+    {
+        try {
+            $waSub = WhatsAppSubscription::where('user_id', auth()->id())->firstOrFail();
+            $waSub->update(['activo' => !$waSub->activo]);
+            $this->wa_activo = $waSub->activo;
+
+            $estado = $waSub->activo ? 'activadas' : 'desactivadas';
+            session()->flash('wa_success', "✅ Notificaciones WhatsApp {$estado}.");
+            Log::info('WhatsApp: Toggle activo', ['id' => $waSub->id, 'activo' => $waSub->activo]);
+        } catch (\Exception $e) {
+            session()->flash('wa_error', '❌ Error: ' . $e->getMessage());
+        }
+    }
+
+    public function eliminarWhatsAppSubscription(): void
+    {
+        try {
+            $waSub = WhatsAppSubscription::where('user_id', auth()->id())->firstOrFail();
+            $waSub->keywords()->detach();
+            $waSub->delete();
+
+            $this->editando_wa_id = null;
+            $this->wa_phone_number = '';
+            $this->wa_nombre = '';
+            $this->wa_company_copy = '';
+            $this->wa_activo = true;
+            $this->wa_keywords = [];
+            $this->showWhatsAppForm = false;
+
+            session()->flash('wa_success', '✅ Suscripcion de WhatsApp eliminada.');
+            Log::info('WhatsApp: Suscripcion eliminada', ['user_id' => auth()->id()]);
+        } catch (\Exception $e) {
+            session()->flash('wa_error', '❌ Error: ' . $e->getMessage());
+        }
+    }
+
+    public function probarWhatsAppNotificacion(): void
+    {
+        try {
+            $waSub = WhatsAppSubscription::where('user_id', auth()->id())->firstOrFail();
+            $servicio = new WhatsAppNotificationService();
+
+            if (!$servicio->isEnabled()) {
+                session()->flash('wa_error', '❌ WhatsApp no esta configurado. Verifica WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID en .env');
+                return;
+            }
+
+            $mensajePrueba = "🧪 *MENSAJE DE PRUEBA*\n\n";
+            $mensajePrueba .= "Este es un mensaje de prueba del sistema Vigilante SEACE.\n\n";
+            $mensajePrueba .= "✅ Tu suscripcion de WhatsApp esta funcionando correctamente.\n";
+            $mensajePrueba .= "📅 Fecha: " . now()->format('d/m/Y H:i:s');
+
+            $resultado = $servicio->enviarMensaje($waSub->phone_number, $mensajePrueba);
+
+            if ($resultado['success']) {
+                session()->flash('wa_success', '✅ Mensaje de prueba enviado a +' . $waSub->phone_number);
+                Log::info('WhatsApp: Prueba exitosa', ['phone' => $waSub->phone_number]);
+            } else {
+                session()->flash('wa_error', '❌ Error al enviar: ' . ($resultado['message'] ?? 'Error desconocido'));
+            }
+        } catch (\Exception $e) {
+            session()->flash('wa_error', '❌ Error: ' . $e->getMessage());
+        }
+    }
+
+    public function agregarWaKeywordManual(): void
+    {
+        $this->validate([
+            'wa_keyword_manual' => 'required|string|min:3|max:80',
+        ], [
+            'wa_keyword_manual.required' => 'Ingresa una palabra clave.',
+            'wa_keyword_manual.min' => 'La palabra clave debe tener al menos 3 caracteres.',
+            'wa_keyword_manual.max' => 'La palabra clave no puede superar 80 caracteres.',
+        ]);
+
+        $nombre = trim($this->wa_keyword_manual);
+
+        $keyword = NotificationKeyword::firstOrCreate(
+            ['slug' => Str::slug($nombre)],
+            [
+                'nombre' => $nombre,
+                'descripcion' => 'Creado desde suscriptores (WhatsApp)',
+                'es_publico' => true,
+            ]
+        );
+
+        $this->loadKeywords();
+
+        if (!in_array($keyword->id, $this->wa_keywords, true)) {
+            $this->wa_keywords[] = $keyword->id;
+            $this->wa_keywords = $this->sanitizeWaKeywordSelection();
+        }
+
+        $this->wa_keyword_manual = '';
+        $this->wa_keyword_search = '';
+
+        session()->flash('wa_success', '✓ Palabra clave agregada');
+    }
+
+    public function quitarWaKeyword(int $keywordId): void
+    {
+        $this->wa_keywords = array_values(array_filter(
+            $this->wa_keywords,
+            fn ($id) => (int) $id !== $keywordId
+        ));
+    }
+
+    public function getFilteredWaKeywordsProperty(): array
+    {
+        $term = trim(Str::lower($this->wa_keyword_search));
+
+        if ($term === '') {
+            return $this->availableKeywords;
+        }
+
+        return array_values(array_filter($this->availableKeywords, function ($keyword) use ($term) {
+            return Str::contains(Str::lower($keyword['nombre']), $term);
+        }));
+    }
+
     public function render()
     {
         $query = TelegramSubscription::with(['keywords', 'user'])
@@ -535,6 +764,7 @@ class Suscriptores extends Component
             || $suscripciones->where('user_id', auth()->id())->count() < self::MAX_SUSCRIPTORES_POR_USUARIO;
 
         $emailSubscription = EmailSubscription::with('keywords')->where('user_id', auth()->id())->first();
+        $whatsappSubscription = WhatsAppSubscription::with('keywords')->where('user_id', auth()->id())->first();
 
         return view('livewire.suscriptores', [
             'suscripciones' => $suscripciones,
@@ -543,8 +773,10 @@ class Suscriptores extends Component
             'maxKeywords' => self::MAX_KEYWORDS,
             'filteredKeywords' => $this->filteredKeywords,
             'filteredEmailKeywords' => $this->filteredEmailKeywords,
+            'filteredWaKeywords' => $this->filteredWaKeywords,
             'keywordDictionary' => collect($this->availableKeywords)->keyBy('id'),
             'emailSubscription' => $emailSubscription,
+            'whatsappSubscription' => $whatsappSubscription,
         ]);
     }
 
@@ -563,6 +795,18 @@ class Suscriptores extends Component
     protected function sanitizeEmailKeywordSelection(): array
     {
         return collect($this->email_keywords ?? [])
+            ->map(function ($id) {
+                return is_numeric($id) ? (int) $id : null;
+            })
+            ->filter(fn ($id) => !is_null($id) && $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected function sanitizeWaKeywordSelection(): array
+    {
+        return collect($this->wa_keywords ?? [])
             ->map(function ($id) {
                 return is_numeric($id) ? (int) $id : null;
             })

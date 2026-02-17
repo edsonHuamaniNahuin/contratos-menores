@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\TelegramSubscription;
+use App\Models\WhatsAppSubscription;
 use App\Services\Tdr\ImportadorTdrEngine;
+use App\Services\WhatsAppNotificationService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -56,15 +58,35 @@ class ImportarTdrNotificarJob implements ShouldQueue
             'limite' => $this->limite,
         ]);
 
-        // Obtener TODOS los suscriptores activos (de todos los usuarios)
-        $suscripciones = TelegramSubscription::with('keywords')
+        // Registrar canal WhatsApp si está habilitado (DIP – canales se registran dinámicamente)
+        $whatsapp = app(WhatsAppNotificationService::class);
+        if ($whatsapp->isEnabled()) {
+            $engine->registerChannel($whatsapp);
+            Log::info('ImportarTdrNotificarJob: canal WhatsApp registrado.');
+        }
+
+        // Obtener TODOS los suscriptores activos de TODOS los canales
+        $telegramSubs = TelegramSubscription::with('keywords')
             ->activas()
             ->get();
 
+        $whatsappSubs = WhatsAppSubscription::with('keywords')
+            ->activas()
+            ->get();
+
+        // Merge en una sola colección polimórfica
+        $suscripciones = $telegramSubs->merge($whatsappSubs);
+
         if ($suscripciones->isEmpty()) {
-            Log::warning('ImportarTdrNotificarJob: no hay suscriptores activos, abortando.');
+            Log::warning('ImportarTdrNotificarJob: no hay suscriptores activos (Telegram ni WhatsApp), abortando.');
             return;
         }
+
+        Log::info('ImportarTdrNotificarJob: suscriptores encontrados', [
+            'telegram' => $telegramSubs->count(),
+            'whatsapp' => $whatsappSubs->count(),
+            'total' => $suscripciones->count(),
+        ]);
 
         try {
             $resumen = $engine->ejecutar($fechaObjetivo, $suscripciones, $this->limite);

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Contracts\InteractiveChannelContract;
+use App\Contracts\NotificationChannelContract;
 use App\Models\Contrato;
 use App\Models\TelegramSubscription;
 use Exception;
@@ -9,7 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class TelegramNotificationService
+class TelegramNotificationService implements NotificationChannelContract, InteractiveChannelContract
 {
     protected string $botToken;
     protected string $apiBase;
@@ -33,6 +35,18 @@ class TelegramNotificationService
         if ($this->botToken !== '' && $this->apiBase === '') {
             Log::warning('Telegram: TELEGRAM_API_BASE no configurado; deshabilitando bot hasta definirlo.');
         }
+    }
+
+    // ─── NotificationChannelContract ────────────────────────────────
+
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
+    }
+
+    public function channelName(): string
+    {
+        return 'telegram';
     }
 
     public function enviarAlerta(array $contratoData): array
@@ -113,7 +127,7 @@ class TelegramNotificationService
         return $estadisticas;
     }
 
-    public function enviarProcesoASuscriptor(TelegramSubscription $suscripcion, array $contratoData, array $matchedKeywords = []): array
+    public function enviarProcesoASuscriptor(object $suscripcion, array $contratoData, array $matchedKeywords = []): array
     {
         $this->cacheContratoContext($contratoData);
         $mensaje = $this->construirMensaje($contratoData);
@@ -122,14 +136,22 @@ class TelegramNotificationService
             $mensaje .= "\n\n🔎 Coincidencias: " . implode(', ', array_unique($matchedKeywords));
         }
 
-        if (!empty($suscripcion->company_copy)) {
-            $mensaje .= "\n\n🏢 Perfil: " . $suscripcion->company_copy;
+        $companyCopy = method_exists($suscripcion, 'getCompanyCopy')
+            ? $suscripcion->getCompanyCopy()
+            : ($suscripcion->company_copy ?? null);
+
+        if (!empty($companyCopy)) {
+            $mensaje .= "\n\n🏢 Perfil: " . $companyCopy;
         }
+
+        $recipientId = method_exists($suscripcion, 'getRecipientId')
+            ? $suscripcion->getRecipientId()
+            : $suscripcion->chat_id;
 
         $keyboard = $this->buildDefaultKeyboard($contratoData);
         $resultado = $keyboard
-            ? $this->enviarMensajeConBotones($suscripcion->chat_id, $mensaje, $keyboard)
-            : $this->enviarMensaje($suscripcion->chat_id, $mensaje);
+            ? $this->enviarMensajeConBotones($recipientId, $mensaje, $keyboard)
+            : $this->enviarMensaje($recipientId, $mensaje);
 
         if ($resultado['success']) {
             $suscripcion->registrarNotificacion();
@@ -246,7 +268,7 @@ class TelegramNotificationService
         return sprintf('%s_%d_%d_%s', $action, $idContrato, $idContratoArchivo, $nombre);
     }
 
-    protected function buildDefaultKeyboard(array $contratoData): ?array
+    public function buildDefaultKeyboard(array $contratoData): ?array
     {
         $idContrato = (int) ($contratoData['idContrato'] ?? 0);
 
@@ -279,7 +301,7 @@ class TelegramNotificationService
         ];
     }
 
-    protected function cacheContratoContext(array $contratoData): void
+    public function cacheContratoContext(array $contratoData): void
     {
         $idContrato = (int) ($contratoData['idContrato'] ?? 0);
 
@@ -438,6 +460,37 @@ class TelegramNotificationService
     protected function buildApiUrl(string $method): string
     {
         return sprintf('%s/bot%s/%s', $this->apiBase, $this->botToken, ltrim($method, '/'));
+    }
+
+    // ─── InteractiveChannelContract ─────────────────────────────────
+
+    /**
+     * Enviar documento binario al chat de Telegram (sendDocument).
+     */
+    public function enviarDocumento(string $recipientId, string $documentBinary, string $filename, string $caption = ''): array
+    {
+        if (!$this->enabled) {
+            return ['success' => false, 'message' => 'Telegram Bot está deshabilitado'];
+        }
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->attach('document', $documentBinary, $filename)
+                ->post($this->buildApiUrl('sendDocument'), [
+                    'chat_id' => $recipientId,
+                    'caption' => $caption,
+                    'parse_mode' => 'HTML',
+                ]);
+
+            $success = $response->successful() && ($response->json()['ok'] ?? false);
+
+            return [
+                'success' => $success,
+                'message' => $success ? 'Documento enviado' : ($response->json()['description'] ?? 'Error desconocido'),
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error de conexión: ' . $e->getMessage()];
+        }
     }
 
     protected function debug(string $message, array $context = []): void

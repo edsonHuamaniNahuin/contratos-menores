@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\ChannelSubscriptionContract;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,15 +12,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-class TelegramSubscription extends Model
+/**
+ * Modelo de suscripción WhatsApp.
+ *
+ * Estructura espejo de TelegramSubscription para garantizar
+ * paridad funcional. Reutiliza notification_keywords vía tabla
+ * pivot propia (whatsapp_subscription_keyword).
+ */
+class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
 {
     use HasFactory;
 
     protected $fillable = [
         'user_id',
-        'chat_id',
+        'phone_number',
         'nombre',
-        'username',
         'activo',
         'filtros',
         'company_copy',
@@ -35,6 +42,8 @@ class TelegramSubscription extends Model
         'ultima_notificacion_at' => 'datetime',
     ];
 
+    // ─── Relationships ──────────────────────────────────────────────
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -44,21 +53,20 @@ class TelegramSubscription extends Model
     {
         return $this->belongsToMany(
             NotificationKeyword::class,
-            'notification_keyword_subscription'
+            'whatsapp_subscription_keyword'
         )->withTimestamps();
     }
 
     public function matches(): HasMany
     {
-        return $this->hasMany(SubscriptionContractMatch::class);
+        return $this->hasMany(SubscriptionContractMatch::class, 'whatsapp_subscription_id');
     }
 
-    /**
-     * Scope para obtener solo suscripciones activas
-     */
-    public function scopeActivas($query)
+    // ─── ChannelSubscriptionContract ────────────────────────────────
+
+    public function getRecipientId(): string
     {
-        return $query->where('activo', true);
+        return $this->phone_number;
     }
 
     /**
@@ -67,24 +75,12 @@ class TelegramSubscription extends Model
      */
     public function channelName(): string
     {
-        return 'telegram';
+        return 'whatsapp';
     }
 
-    /**
-     * Registrar que se envió una notificación a este suscriptor
-     */
-    public function registrarNotificacion(): void
+    public function getCompanyCopy(): ?string
     {
-        $this->increment('notificaciones_recibidas');
-        $this->update(['ultima_notificacion_at' => now()]);
-    }
-
-    /**
-     * Verificar si un filtro coincide con el contrato
-     */
-    public function coincideConFiltros(array $contratoData): bool
-    {
-        return $this->resolverCoincidenciasContrato($contratoData)['pasa'];
+        return $this->company_copy;
     }
 
     public function resolverCoincidenciasContrato(array $contratoData): array
@@ -121,6 +117,26 @@ class TelegramSubscription extends Model
         $resultado['keywords'] = array_values(array_unique($resultado['keywords']));
 
         return $resultado;
+    }
+
+    public function registrarNotificacion(): void
+    {
+        $this->increment('notificaciones_recibidas');
+        $this->update(['ultima_notificacion_at' => now()]);
+    }
+
+    // ─── Scopes ─────────────────────────────────────────────────────
+
+    public function scopeActivas($query)
+    {
+        return $query->where('activo', true);
+    }
+
+    // ─── Helpers (reutilizados de TelegramSubscription) ─────────────
+
+    public function coincideConFiltros(array $contratoData): bool
+    {
+        return $this->resolverCoincidenciasContrato($contratoData)['pasa'];
     }
 
     protected function obtenerKeywordsNormalizados(): Collection
@@ -167,22 +183,16 @@ class TelegramSubscription extends Model
 
     protected function pasaFiltrosBasicos(array $contratoData): bool
     {
-        // A futuro se pueden honrar filtros por departamento, objeto, etc.
-        // Por ahora, mientras no existan reglas explícitas, siempre pasa.
         return true;
     }
 
-    /**
-     * Accessor para mostrar el estado
-     */
+    // ─── Accessors ──────────────────────────────────────────────────
+
     public function getEstadoTextAttribute(): string
     {
         return $this->activo ? 'Activo' : 'Inactivo';
     }
 
-    /**
-     * Accessor para mostrar días desde última notificación
-     */
     public function getDiasDesdeUltimaNotificacionAttribute(): ?int
     {
         if (!$this->ultima_notificacion_at) {
@@ -190,5 +200,19 @@ class TelegramSubscription extends Model
         }
 
         return now()->diffInDays($this->ultima_notificacion_at);
+    }
+
+    /**
+     * Formato legible del número: +51 987 654 321
+     */
+    public function getPhoneFormattedAttribute(): string
+    {
+        $phone = $this->phone_number;
+
+        if (strlen($phone) === 11 && str_starts_with($phone, '51')) {
+            return '+' . substr($phone, 0, 2) . ' ' . substr($phone, 2, 3) . ' ' . substr($phone, 5, 3) . ' ' . substr($phone, 8);
+        }
+
+        return '+' . $phone;
     }
 }

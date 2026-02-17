@@ -47,11 +47,13 @@ SERVICES=(
     "analizador-tdr"      # 1ro: FastAPI (sin dependencias)
     "vigilante-queue"     # 2do: Queue worker (procesa jobs)
     "telegram-bot"        # 3ro: Telegram (depende de queue + analizador)
+    "whatsapp-bot"        # 4to: WhatsApp (depende de queue + analizador)
 )
 
 # Procesos que necesitan force-kill (long-polling, bloqueos)
 ZOMBIE_PATTERNS=(
     "artisan telegram:listen"
+    "artisan whatsapp:listen"
     "artisan queue:work"
     "uvicorn main:app"
 )
@@ -145,6 +147,7 @@ ensure_clean() {
 
     case "$svc" in
         telegram-bot)     pattern="artisan telegram:listen" ;;
+        whatsapp-bot)     pattern="artisan whatsapp:listen" ;;
         vigilante-queue)  pattern="artisan queue:work" ;;
         analizador-tdr)   pattern="uvicorn main:app" ;;
     esac
@@ -170,6 +173,18 @@ ensure_clean() {
             log_info "Esperando 5s para que Telegram libere sesión de polling..."
             sleep 5
         fi
+    fi
+
+    # WhatsApp: limpiar lock de --isolated
+    if [ "$svc" = "whatsapp-bot" ]; then
+        cd "$APP_DIR"
+        $PHP_BIN -r "
+            require '$APP_DIR/vendor/autoload.php';
+            \$app = require '$APP_DIR/bootstrap/app.php';
+            \$app->make('Illuminate\\Contracts\\Console\\Kernel')->bootstrap();
+            \Illuminate\\Support\\Facades\\Cache::lock('framework/command-whatsapp-bot-listener')->forceRelease();
+        " 2>/dev/null || true
+        log_info "Lock WhatsApp --isolated liberado (si existía)"
     fi
 }
 
@@ -524,6 +539,15 @@ do_health() {
         log_ok "Telegram bot: $telegram_count instancia(s) (correcto)"
     else
         log_error "Telegram bot: $telegram_count instancias (¡DUPLICADOS!)"
+        healthy=false
+    fi
+
+    # 5. Sin procesos duplicados (whatsapp bot)
+    local whatsapp_count=$(pgrep -f "artisan whatsapp:listen" 2>/dev/null | wc -l)
+    if [ "$whatsapp_count" -le 1 ]; then
+        log_ok "WhatsApp bot: $whatsapp_count instancia(s) (correcto)"
+    else
+        log_error "WhatsApp bot: $whatsapp_count instancias (¡DUPLICADOS!)"
         healthy=false
     fi
 
