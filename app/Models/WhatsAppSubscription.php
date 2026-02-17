@@ -55,7 +55,9 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
     {
         return $this->belongsToMany(
             NotificationKeyword::class,
-            'whatsapp_subscription_keyword'
+            'whatsapp_subscription_keyword',
+            'whatsapp_subscription_id',    // FK de este modelo en la pivot
+            'notification_keyword_id'       // FK del modelo relacionado en la pivot
         )->withTimestamps();
     }
 
