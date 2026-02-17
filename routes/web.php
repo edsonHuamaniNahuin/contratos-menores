@@ -118,11 +118,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('perfil');
 
     // ─── Suscripciones / Premium ──────────────────────────────────────
-    Route::get('/planes/checkout/{plan}', [SubscriptionController::class, 'checkout'])
-        ->name('planes.checkout');
 
-    Route::post('/planes/charge', [SubscriptionController::class, 'charge'])
-        ->name('planes.charge');
+    // ⚠️ PASARELA DE PAGO DESACTIVADA TEMPORALMENTE (mantenimiento Openpay)
+    // Descomentar las rutas originales cuando se resuelva el problema de tokens:
+    //
+    // Route::get('/planes/checkout/{plan}', [SubscriptionController::class, 'checkout'])
+    //     ->name('planes.checkout');
+    //
+    // Route::post('/planes/charge', [SubscriptionController::class, 'charge'])
+    //     ->name('planes.charge');
+
+    Route::get('/planes/checkout/{plan}', function () {
+        return view('pagos-mantenimiento');
+    })->name('planes.checkout');
+
+    Route::post('/planes/charge', function () {
+        return redirect()->route('planes.checkout', ['plan' => 'monthly']);
+    })->name('planes.charge');
 
     Route::get('/suscripciones-premium', function () {
         return view('suscripciones-premium');
