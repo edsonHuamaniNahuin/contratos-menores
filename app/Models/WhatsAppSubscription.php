@@ -23,6 +23,8 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
 {
     use HasFactory;
 
+    protected $table = 'whatsapp_subscriptions';
+
     protected $fillable = [
         'user_id',
         'phone_number',
