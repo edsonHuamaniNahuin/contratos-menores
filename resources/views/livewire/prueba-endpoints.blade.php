@@ -988,7 +988,16 @@
                                     <div class="flex flex-wrap items-center justify-between gap-3">
                                         <div>
                                             <p class="text-sm font-semibold text-neutral-900">{{ $suscriptor['nombre'] }}</p>
-                                            <p class="text-xs text-neutral-500">Chat ID: {{ $suscriptor['chat_id'] }}</p>
+                                            <p class="text-xs text-neutral-500">
+                                                <span class="inline-flex items-center gap-1">
+                                                    @if(($suscriptor['canal'] ?? 'telegram') === 'whatsapp')
+                                                        📱 WhatsApp:
+                                                    @else
+                                                        ✈️ Telegram:
+                                                    @endif
+                                                    {{ $suscriptor['recipient'] ?? $suscriptor['chat_id'] ?? 'N/A' }}
+                                                </span>
+                                            </p>
                                         </div>
                                         <div class="flex gap-2 text-xs font-semibold">
                                             <span class="px-3 py-1 rounded-full bg-secondary-500/15 text-secondary-600">Coincidencias: {{ $suscriptor['coincidencias'] }}</span>
