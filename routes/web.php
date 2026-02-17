@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\SubscriptionController;
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -115,6 +116,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/perfil', function () {
         return view('perfil');
     })->name('perfil');
+
+    // ─── Suscripciones / Premium ──────────────────────────────────────
+    Route::get('/planes/checkout/{plan}', [SubscriptionController::class, 'checkout'])
+        ->name('planes.checkout');
+
+    Route::post('/planes/charge', [SubscriptionController::class, 'charge'])
+        ->name('planes.charge');
+
+    Route::get('/suscripciones-premium', function () {
+        return view('suscripciones-premium');
+    })->name('suscripciones.premium')->middleware('can:manage-subscriptions');
 
 });
 

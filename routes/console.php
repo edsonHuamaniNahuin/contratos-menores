@@ -2,6 +2,7 @@
 
 use App\Jobs\ImportarContratosDiarioJob;
 use App\Jobs\ImportarTdrNotificarJob;
+use App\Jobs\NotificarEmailSuscriptoresJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -41,3 +42,50 @@ Schedule::job(new ImportarContratosDiarioJob())
     ->withoutOverlapping(30)
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/importar-contratos-diario.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Expirar Suscripciones Vencidas
+|--------------------------------------------------------------------------
+| Cada hora revisa si hay suscripciones/trials expirados y revoca el rol
+| premium automáticamente.
+*/
+Schedule::command('subscriptions:expire')
+    ->hourly()
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/subscriptions-expire.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Renovar Suscripciones (Cobro Recurrente)
+|--------------------------------------------------------------------------
+| Cada 6 horas intenta renovar suscripciones que vencen en las próximas 24h.
+| Cobra la tarjeta almacenada en Openpay automáticamente.
+| Trial vencido → cobra S/49 → convierte a mensual.
+| Mensual vencido → cobra S/49 → renueva 30 días.
+| Anual vencido → cobra S/470 → renueva 365 días.
+*/
+Schedule::command('subscriptions:renew')
+    ->everySixHours()
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/subscriptions-renew.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Notificaciones por Email (Procesos nuevos del SEACE)
+|--------------------------------------------------------------------------
+| Se ejecuta junto con el importador Telegram (L-V, cada 2h, 10:00-18:00).
+| Envía un email por cada proceso nuevo que coincida con los filtros del
+| suscriptor. Usa dedup para no enviar el mismo proceso dos veces.
+| Dos modos: "recibir todo" o "solo keywords que coincidan".
+*/
+Schedule::job(new NotificarEmailSuscriptoresJob())
+    ->weekdays()
+    ->everyTwoHours()
+    ->between('10:00', '18:00')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/notificar-email-schedule.log'));

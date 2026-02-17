@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Subscription;
 use App\Models\ContratoSeguimiento;
 use App\Models\TelegramSubscription;
 use App\Notifications\ResetPasswordNotification;
@@ -12,6 +13,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -69,6 +71,62 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ContratoSeguimiento::class);
     }
 
+    /* ────────────────────────────────
+     |  Subscriptions
+     |──────────────────────────────── */
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class)->latest('starts_at');
+    }
+
+    /**
+     * Retorna la suscripción activa (o null).
+     */
+    public function activeSubscription(): ?Subscription
+    {
+        return $this->subscriptions()
+            ->where('status', Subscription::STATUS_ACTIVE)
+            ->where('ends_at', '>', now())
+            ->first();
+    }
+
+    public function isPremium(): bool
+    {
+        return $this->activeSubscription() !== null;
+    }
+
+    public function isOnTrial(): bool
+    {
+        $sub = $this->activeSubscription();
+        return $sub?->isOnTrial() ?? false;
+    }
+
+    public function canStartTrial(): bool
+    {
+        return !$this->subscriptions()
+            ->where('plan', Subscription::PLAN_TRIAL)
+            ->exists();
+    }
+
+    public function trialDaysLeft(): int
+    {
+        $sub = $this->activeSubscription();
+        if (!$sub || !$sub->isOnTrial()) {
+            return 0;
+        }
+        return $sub->daysRemaining();
+    }
+
+    public function subscriptionDaysLeft(): int
+    {
+        return $this->activeSubscription()?->daysRemaining() ?? 0;
+    }
+
+    /* ────────────────────────────────
+     |  Roles & Permissions
+     |──────────────────────────────── */
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class)->withTimestamps();
@@ -79,6 +137,15 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->loadMissing('roles');
 
         return $this->roles->contains(fn (Role $role) => $role->slug === $slug);
+    }
+
+    /**
+     * Indica si el usuario tiene rol de administrador.
+     * Los admins están excluidos del sistema de suscripciones.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
     }
 
     public function hasPermission(string $slug): bool

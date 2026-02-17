@@ -137,4 +137,14 @@ return [
         'model' => env('ANALIZADOR_TDR_MODEL', 'gemini-2.5-flash'),
         'debug_logs' => env('ANALIZADOR_TDR_DEBUG_LOGS', false),
     ],
+
+    'openpay' => [
+        'merchant_id'  => env('OPENPAY_MERCHANT_ID'),
+        'private_key'  => env('OPENPAY_PRIVATE_KEY'),
+        'public_key'   => env('OPENPAY_PUBLIC_KEY'),
+        'production'   => env('OPENPAY_PRODUCTION', false),
+        'country'      => env('OPENPAY_COUNTRY', 'PE'), // PE = Perú
+        'currency'     => env('OPENPAY_CURRENCY', 'PEN'),
+        'webhook_secret' => env('OPENPAY_WEBHOOK_SECRET'),
+    ],
 ];
