@@ -916,10 +916,29 @@
                     <span wire:loading.remove wire:target="importarProcesosTdr">Escanear 150 procesos y notificar</span>
                     <span wire:loading wire:target="importarProcesosTdr">Ejecutando...</span>
                 </button>
+                <button
+                    wire:click="limpiarCacheTdr"
+                    wire:loading.attr="disabled"
+                    wire:target="limpiarCacheTdr"
+                    class="px-5 py-3 bg-white border border-neutral-200 text-neutral-700 rounded-full font-semibold text-sm flex items-center gap-2 hover:bg-neutral-50 transition-all disabled:opacity-50"
+                    title="Limpiar caché de procesos ya enviados para esta fecha, permite re-testear"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    <span wire:loading.remove wire:target="limpiarCacheTdr">Limpiar caché</span>
+                    <span wire:loading wire:target="limpiarCacheTdr">Limpiando...</span>
+                </button>
                 <div class="px-4 py-2 bg-neutral-50 border border-neutral-100 rounded-full text-xs text-neutral-500">
                     El sistema trae los procesos más recientes del año y filtra por la fecha elegida.
                 </div>
             </div>
+
+            @if(session()->has('cache_limpiado'))
+                <div class="mt-3 px-4 py-2 bg-secondary-500/10 border border-secondary-500/20 rounded-2xl text-xs text-secondary-700 font-medium">
+                    ✅ {{ session('cache_limpiado') }}
+                </div>
+            @endif
 
             @if($loadingImportacionTdr)
                 <div class="mt-4 flex items-center gap-2 text-xs text-neutral-600 bg-neutral-50 border border-neutral-100 rounded-2xl px-3 py-2">
@@ -957,7 +976,7 @@
                             <span>Suscriptores: {{ $resumenImportacionTdr['stats']['total_suscriptores'] ?? 0 }}</span>
                             <span>Coincidencias totales: {{ $resumenImportacionTdr['stats']['total_coincidencias'] ?? 0 }}</span>
                             <span>Errores: {{ $resumenImportacionTdr['stats']['errores_envio'] ?? 0 }}</span>
-                            <span>Repetidos omitidos: {{ $resumenImportacionTdr['stats']['total_omitidos'] ?? 0 }}</span>
+                            <span>Dedup omitidos: {{ $resumenImportacionTdr['stats']['total_dedup_omitidos'] ?? 0 }}</span>
                             <span>Fecha: {{ $resumenImportacionTdr['stats']['fecha'] ?? '-' }}</span>
                             <span>Cache dataset: {{ !empty($resumenImportacionTdr['stats']['cache_hit']) ? 'HIT' : 'MISS' }}</span>
                             <span>Duración: {{ number_format($resumenImportacionTdr['stats']['tiempo_ms'] ?? 0, 2) }} ms</span>
@@ -967,17 +986,13 @@
                         </div>
                     </div>
 
-                    @if(!empty($resumenImportacionTdr['procesos_omitidos']))
+                    @if(($resumenImportacionTdr['stats']['total_dedup_omitidos'] ?? 0) > 0)
                         <div class="mt-4 bg-neutral-50 border border-neutral-100 rounded-2xl p-4">
-                            <p class="text-xs font-semibold text-neutral-600 uppercase tracking-wide mb-2">Procesos omitidos por cache</p>
-                            <p class="text-[11px] text-neutral-500 mb-3">Estos procesos ya habían sido procesados anteriormente y se saltaron para evitar envíos duplicados.</p>
-                            <div class="flex flex-wrap gap-2">
-                                @foreach(array_slice($resumenImportacionTdr['procesos_omitidos'], 0, 6) as $omitido)
-                                    <span class="px-3 py-1 rounded-full bg-white border border-neutral-100 text-[11px] text-neutral-700">
-                                        {{ $omitido['codigo'] ?? 'Proceso' }} · {{ $omitido['entidad'] ?? 'Entidad' }}
-                                    </span>
-                                @endforeach
-                            </div>
+                            <p class="text-xs font-semibold text-neutral-600 uppercase tracking-wide mb-2">Procesos omitidos por dedup (BD)</p>
+                            <p class="text-[11px] text-neutral-500 mb-3">
+                                {{ $resumenImportacionTdr['stats']['total_dedup_omitidos'] }} envío(s) omitido(s) porque ya fueron notificados a esos suscriptores.
+                                Usa "Limpiar caché" para re-probar.
+                            </p>
                         </div>
                     @endif
 
@@ -999,9 +1014,12 @@
                                                 </span>
                                             </p>
                                         </div>
-                                        <div class="flex gap-2 text-xs font-semibold">
+                                        <div class="flex gap-2 text-xs font-semibold flex-wrap">
                                             <span class="px-3 py-1 rounded-full bg-secondary-500/15 text-secondary-600">Coincidencias: {{ $suscriptor['coincidencias'] }}</span>
                                             <span class="px-3 py-1 rounded-full bg-primary-500/15 text-primary-600">Enviados: {{ $suscriptor['envios_exitosos'] }}</span>
+                                            @if(($suscriptor['dedup_omitidos'] ?? 0) > 0)
+                                                <span class="px-3 py-1 rounded-full bg-neutral-100 text-neutral-500">Dedup: {{ $suscriptor['dedup_omitidos'] }}</span>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="mt-3 text-xs text-neutral-500">

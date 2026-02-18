@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\NotificationTrackerContract;
+use App\Services\ProcessNotificationTracker;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +14,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Binding: NotificationTrackerContract → ProcessNotificationTracker (DIP)
+        $this->app->bind(NotificationTrackerContract::class, ProcessNotificationTracker::class);
     }
 
     /**
@@ -31,5 +34,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('analyze-tdr', fn ($user) => $user->hasPermission('analyze-tdr'));
         Gate::define('follow-contracts', fn ($user) => $user->hasPermission('follow-contracts'));
         Gate::define('manage-subscriptions', fn ($user) => $user->hasPermission('manage-subscriptions'));
+        Gate::define('view-mis-procesos', fn ($user) => $user->hasPermission('view-mis-procesos'));
     }
 }

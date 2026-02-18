@@ -117,6 +117,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('perfil');
     })->name('perfil');
 
+    Route::get('/mis-procesos', function () {
+        return view('mis-procesos');
+    })->name('mis.procesos')->middleware('can:view-mis-procesos');
+
     // ─── Suscripciones / Premium ──────────────────────────────────────
 
     // ⚠️ PASARELA DE PAGO DESACTIVADA TEMPORALMENTE (mantenimiento Openpay)

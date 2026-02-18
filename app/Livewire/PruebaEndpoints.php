@@ -1087,6 +1087,48 @@ class PruebaEndpoints extends Component
         return $headers;
     }
 
+    /**
+     * Limpiar caché de dataset SEACE y registros de notificación
+     * para la fecha seleccionada. Permite re-ejecutar el importador.
+     *
+     * Nota: El dedup ahora es per-usuario vía BD (notification_sends).
+     * Esta acción limpia solo el caché del dataset API + opcionalmente
+     * los envíos del usuario actual para pruebas.
+     */
+    public function limpiarCacheTdr(): void
+    {
+        try {
+            $this->validate([
+                'fechaImportacionTdr' => ['required', 'date'],
+            ]);
+
+            $fecha = Carbon::parse($this->fechaImportacionTdr);
+
+            // Limpiar caché del dataset API (tdr:dataset:YYYY:PageSize)
+            $anio = (int) $fecha->format('Y');
+            $datasetKey = sprintf('tdr:dataset:%d:%d', $anio, $this->limiteProcesosImportacion);
+            \Illuminate\Support\Facades\Cache::forget($datasetKey);
+
+            // Limpiar dedup antiguo (por si queda en caché)
+            $legacyKey = 'tdr:procesados:' . $fecha->format('Y-m-d');
+            \Illuminate\Support\Facades\Cache::forget($legacyKey);
+
+            // Limpiar registros de envío del usuario actual para re-probar
+            $userId = Auth::id();
+            $deletedCount = \App\Models\NotificationSend::where('user_id', $userId)
+                ->whereHas('notifiedProcess', function ($q) use ($fecha) {
+                    $q->where('fecha_publicacion', 'like', $fecha->format('d/m/Y') . '%');
+                })
+                ->delete();
+
+            $this->resumenImportacionTdr = null;
+
+            session()->flash('cache_limpiado', "Caché limpiado para {$fecha->format('Y-m-d')}. {$deletedCount} envío(s) de prueba eliminados. Puedes re-ejecutar el importador.");
+        } catch (Exception $e) {
+            $this->addError('fechaImportacionTdr', 'Selecciona una fecha primero.');
+        }
+    }
+
     public function importarProcesosTdr(): void
     {
         $this->validate([

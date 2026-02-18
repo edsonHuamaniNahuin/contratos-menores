@@ -3,6 +3,7 @@
 namespace App\Services\Tdr;
 
 use App\Contracts\NotificationChannelContract;
+use App\Contracts\NotificationTrackerContract;
 use App\Models\TelegramSubscription;
 use App\Services\SeaceBuscadorPublicoService;
 use App\Services\SeacePublicArchivoService;
@@ -28,7 +29,8 @@ class ImportadorTdrEngine
     public function __construct(
         protected SeaceBuscadorPublicoService $buscadorService,
         protected SeacePublicArchivoService $archivoService,
-        protected TelegramNotificationService $telegramService
+        protected TelegramNotificationService $telegramService,
+        protected NotificationTrackerContract $tracker
     ) {
         // Registrar Telegram como canal por defecto (backwards-compatible)
         $this->registerChannel($telegramService);
@@ -84,15 +86,19 @@ class ImportadorTdrEngine
         }
 
         $filtrados = $this->filtrarPorFecha($dataset, $fechaObjetivo);
-        $procesadosKey = $this->buildProcesadosKey($fechaObjetivo);
-        [$pendientes, $omitidos] = $this->separarNuevosYRepetidos($filtrados, $procesadosKey);
-        $indicePendientes = $this->indexarPorContrato($pendientes);
+
+        // ── Dedup per-subscriber (BD) en lugar de global (caché) ──────
+        // Cada suscriptor tiene su propio historial de envíos. Así, cuando
+        // un usuario cambia keywords, los procesos que ahora coinciden
+        // pero no fueron enviados antes SÍ se procesan.
+        $indiceFiltrados = $this->indexarPorContrato($filtrados);
         $archivoMetaCache = [];
 
         $suscriptoresResumen = [];
         $procesosNotificados = [];
         $totalCoincidencias = 0;
         $totalEnvios = 0;
+        $totalDedupOmitidos = 0;
         $erroresEnvio = 0;
 
         foreach ($suscripciones->chunk(20) as $grupo) {
@@ -101,9 +107,25 @@ class ImportadorTdrEngine
                 $coincidencias = [];
                 $enviosExitosos = 0;
                 $enviosFallidos = 0;
+                $dedupOmitidos = 0;
                 $detalleErrores = [];
 
-                foreach ($indicePendientes as $contratoId => $contrato) {
+                // Obtener procesos ya notificados a ESTE suscriptor específico
+                $canal = method_exists($suscripcion, 'channelName') ? $suscripcion->channelName() : 'telegram';
+                $recipientId = method_exists($suscripcion, 'getRecipientId') ? $suscripcion->getRecipientId() : ($suscripcion->chat_id ?? '');
+                $yaNotificados = $this->tracker->getNotifiedProcessIds(
+                    $suscripcion->user_id,
+                    $canal,
+                    $recipientId
+                );
+
+                foreach ($indiceFiltrados as $contratoId => $contrato) {
+                    // Dedup per-subscriber: omitir si ya fue notificado a este usuario+canal+recipient
+                    if (in_array((string) $contratoId, $yaNotificados, true)) {
+                        $dedupOmitidos++;
+                        continue;
+                    }
+
                     $resultado = $suscripcion->resolverCoincidenciasContrato($contrato);
 
                     if (!$resultado['pasa']) {
@@ -149,6 +171,17 @@ class ImportadorTdrEngine
                     if ($respuesta['success']) {
                         $enviosExitosos++;
                         $totalEnvios++;
+
+                        // Registrar envío exitoso en BD (dedup persistente)
+                        $this->tracker->recordNotification(
+                            $contrato,
+                            (string) $contratoId,
+                            $suscripcion->user_id,
+                            $canal,
+                            $recipientId,
+                            $nombreSuscriptor,
+                            $resultado['keywords']
+                        );
                     } else {
                         $enviosFallidos++;
                         $erroresEnvio++;
@@ -163,28 +196,31 @@ class ImportadorTdrEngine
                 }
 
                 $totalCoincidencias += count($coincidencias);
+                $totalDedupOmitidos += $dedupOmitidos;
 
                 $suscriptoresResumen[] = [
                     'id' => $suscripcion->id,
                     'nombre' => $nombreSuscriptor,
-                    'canal' => method_exists($suscripcion, 'channelName') ? $suscripcion->channelName() : 'telegram',
-                    'recipient' => method_exists($suscripcion, 'getRecipientId') ? $suscripcion->getRecipientId() : ($suscripcion->chat_id ?? ''),
+                    'canal' => $canal,
+                    'recipient' => $recipientId,
                     'keywords' => $suscripcion->keywords->pluck('nombre')->all(),
                     'coincidencias' => count($coincidencias),
                     'envios_exitosos' => $enviosExitosos,
                     'envios_fallidos' => $enviosFallidos,
+                    'dedup_omitidos' => $dedupOmitidos,
                     'errores' => array_slice($detalleErrores, 0, 3),
                     'muestras' => array_slice($coincidencias, 0, 3),
                 ];
             }
         }
 
-        $procesosSinEnvio = $this->detectarProcesosSinEnvio($indicePendientes, $procesosNotificados);
+        $procesosSinEnvio = $this->detectarProcesosSinEnvio($indiceFiltrados, $procesosNotificados);
         $duracionMs = round((microtime(true) - $inicio) * 1000, 2);
 
         $mensaje = match (true) {
-            empty($pendientes) => 'No hay procesos nuevos para la fecha seleccionada. Todos los registros fueron procesados anteriormente.',
-            $totalEnvios > 0 => "Se enviaron {$totalEnvios} proceso(s) nuevos filtrados a " . implode(', ', array_keys($this->channels)) . '.',
+            empty($filtrados) => 'No hay procesos para la fecha seleccionada.',
+            $totalEnvios > 0 => "Se enviaron {$totalEnvios} notificación(es) a " . implode(', ', array_keys($this->channels)) . ". ({$totalDedupOmitidos} omitidos por dedup)",
+            $totalDedupOmitidos > 0 => "Todos los procesos ya fueron notificados anteriormente a los suscriptores activos. ({$totalDedupOmitidos} omitidos por dedup)",
             default => 'Los procesos filtrados no coincidieron con los filtros de los suscriptores activos.',
         };
 
@@ -195,8 +231,8 @@ class ImportadorTdrEngine
                 'fecha' => $fechaObjetivo->format('d/m/Y'),
                 'total_descargados' => count($dataset),
                 'total_filtrados' => count($filtrados),
-                'total_pendientes' => count($pendientes),
-                'total_omitidos' => count($omitidos),
+                'total_pendientes' => count($filtrados),
+                'total_dedup_omitidos' => $totalDedupOmitidos,
                 'total_suscriptores' => $suscripciones->count(),
                 'total_coincidencias' => $totalCoincidencias,
                 'total_envios' => $totalEnvios,
@@ -210,12 +246,12 @@ class ImportadorTdrEngine
                 'entidad' => $contrato['nomEntidad'] ?? 'N/A',
                 'objeto' => $contrato['nomObjetoContrato'] ?? null,
                 'fecha_publicacion' => $contrato['fecPublica'] ?? null,
-            ], $pendientes), 0, 5),
+            ], $filtrados), 0, 5),
             'raw_dataset' => $dataset,
-            'raw_filtrado' => $pendientes,
+            'raw_filtrado' => $filtrados,
             'procesos_notificados' => array_values($procesosNotificados),
             'procesos_sin_envio' => $procesosSinEnvio,
-            'procesos_omitidos' => array_slice(array_map(fn ($contrato) => $this->resumirContrato($contrato), $omitidos), 0, 10),
+            'procesos_dedup_omitidos' => $totalDedupOmitidos,
             'dataset_meta' => array_merge($datasetMeta, ['cache_hit' => $cacheHit]),
         ];
     }
@@ -276,6 +312,10 @@ class ImportadorTdrEngine
         }));
     }
 
+    /**
+     * @deprecated Reemplazado por dedup per-subscriber vía ProcessNotificationTracker (BD).
+     *             Mantenido temporalmente para compatibilidad inversa.
+     */
     protected function separarNuevosYRepetidos(array $contratos, string $cacheKey): array
     {
         $procesados = Cache::get($cacheKey, []);
@@ -478,6 +518,9 @@ class ImportadorTdrEngine
         return $stringNormalizado !== '' && $stringNormalizado === $fechaObjetivo->format('d/m/Y');
     }
 
+    /**
+     * @deprecated Ya no se usa dedup por caché. Ver ProcessNotificationTracker.
+     */
     protected function buildProcesadosKey(Carbon $fecha): string
     {
         return 'tdr:procesados:' . $fecha->format('Y-m-d');
