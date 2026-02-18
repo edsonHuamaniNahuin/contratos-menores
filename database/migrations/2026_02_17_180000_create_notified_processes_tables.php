@@ -109,9 +109,9 @@ return new class extends Migration
         $exists = DB::table('permissions')->where('slug', 'view-mis-procesos')->exists();
         if (!$exists) {
             DB::table('permissions')->insert([
-                'nombre' => 'Ver Mis Procesos Notificados',
+                'name' => 'Ver Mis Procesos Notificados',
                 'slug' => 'view-mis-procesos',
-                'descripcion' => 'Permite ver el historial de procesos que le fueron notificados al usuario',
+                'description' => 'Permite ver el historial de procesos que le fueron notificados al usuario',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
