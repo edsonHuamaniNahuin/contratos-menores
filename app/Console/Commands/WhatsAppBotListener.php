@@ -67,6 +67,30 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $this->whatsapp = app(WhatsAppNotificationService::class);
     }
 
+    /**
+     * Override info() para ser null-safe cuando se instancia fuera de Artisan.
+     */
+    public function info($string, $verbosity = null)
+    {
+        if ($this->output) {
+            parent::info($string, $verbosity);
+        } else {
+            Log::info('WhatsApp Listener: ' . $string);
+        }
+    }
+
+    /**
+     * Override error() para ser null-safe cuando se instancia fuera de Artisan.
+     */
+    public function error($string, $verbosity = null)
+    {
+        if ($this->output) {
+            parent::error($string, $verbosity);
+        } else {
+            Log::error('WhatsApp Listener: ' . $string);
+        }
+    }
+
     public function handle(): int
     {
         $token = config('services.whatsapp.token');
