@@ -4,8 +4,10 @@ namespace App\Livewire;
 
 use App\Models\CuentaSeace;
 use App\Models\TelegramSubscription;
+use App\Models\WhatsAppSubscription;
 use App\Services\Contratos\ContratoRepositoryService;
 use App\Services\TelegramNotificationService;
+use App\Services\WhatsAppNotificationService;
 use App\Services\Tdr\ImportadorTdrEngine;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
@@ -1103,17 +1105,26 @@ class PruebaEndpoints extends Component
                 throw new RuntimeException('Debes iniciar sesión para ejecutar el importador.');
             }
 
-            $suscripciones = TelegramSubscription::with('keywords')
+            // Obtener suscriptores de TODOS los canales del usuario
+            $telegramSubs = TelegramSubscription::with('keywords')
                 ->where('user_id', $userId)
                 ->activas()
                 ->get();
+
+            $whatsappSubs = WhatsAppSubscription::with('keywords')
+                ->where('user_id', $userId)
+                ->activas()
+                ->get();
+
+            // Merge polimórfico (Telegram + WhatsApp)
+            $suscripciones = $telegramSubs->merge($whatsappSubs);
 
             $this->suscriptoresActivos = $suscripciones->count();
 
             if ($suscripciones->isEmpty()) {
                 $this->resumenImportacionTdr = [
                     'success' => false,
-                    'error' => 'No tienes suscriptores activos configurados. Agrega chat IDs en Configuración.',
+                    'error' => 'No tienes suscriptores activos configurados. Agrega Chat IDs (Telegram) o números (WhatsApp) en Suscriptores.',
                 ];
                 return;
             }
@@ -1122,6 +1133,12 @@ class PruebaEndpoints extends Component
                 ->startOfDay();
             /** @var ImportadorTdrEngine $engine */
             $engine = app(ImportadorTdrEngine::class);
+
+            // Registrar canal WhatsApp si está habilitado
+            $whatsapp = app(WhatsAppNotificationService::class);
+            if ($whatsapp->isEnabled()) {
+                $engine->registerChannel($whatsapp);
+            }
 
             $this->resumenImportacionTdr = $engine->ejecutar(
                 $fechaObjetivo,
@@ -1153,6 +1170,9 @@ class PruebaEndpoints extends Component
         }
 
         $this->suscriptoresActivos = TelegramSubscription::where('user_id', $userId)
+            ->activas()
+            ->count()
+            + WhatsAppSubscription::where('user_id', $userId)
             ->activas()
             ->count();
     }

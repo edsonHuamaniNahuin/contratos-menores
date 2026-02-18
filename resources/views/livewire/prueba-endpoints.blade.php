@@ -865,11 +865,11 @@
             @endif
         </div>
 
-        <!-- 6. Importador TDR + Telegram -->
+        <!-- 6. Importador TDR + Telegram/WhatsApp -->
         <div class="bg-white rounded-3xl shadow-soft p-6 lg:col-span-2">
             <h3 class="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
                 <span class="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">6</span>
-                Importador TDR + Notificación Telegram
+                Importador TDR + Notificación Telegram/WhatsApp
             </h3>
 
             <div class="grid md:grid-cols-3 gap-4 mb-4">
