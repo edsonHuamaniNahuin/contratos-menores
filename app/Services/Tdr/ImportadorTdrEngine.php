@@ -369,37 +369,52 @@ class ImportadorTdrEngine
     {
         $cacheKey = sprintf('tdr:archivo-meta:%d', $idContrato);
 
-        return Cache::remember($cacheKey, now()->addMinutes(60), function () use ($idContrato) {
-            try {
-                $respuesta = $this->archivoService->listarArchivos($idContrato);
+        // Verificar si hay un resultado válido en caché
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached) && ($cached['idContratoArchivo'] ?? 0) > 0) {
+            return $cached;
+        }
 
-                if (!($respuesta['success'] ?? false) || empty($respuesta['data'])) {
-                    return [
-                        'idContratoArchivo' => 0,
-                        'nombreArchivo' => 'tdr.pdf',
-                    ];
-                }
+        // Consultar SEACE (no cachear si falla o devuelve id=0)
+        try {
+            $respuesta = $this->archivoService->listarArchivos($idContrato);
 
-                $archivo = collect($respuesta['data'])
-                    ->first(fn ($item) => str_contains(strtolower($item['descripcionExtension'] ?? ''), 'pdf'))
-                    ?? $respuesta['data'][0];
-
-                return [
-                    'idContratoArchivo' => (int) ($archivo['idContratoArchivo'] ?? 0),
-                    'nombreArchivo' => $archivo['nombre'] ?? ($archivo['descripcionArchivo'] ?? 'tdr.pdf'),
-                ];
-            } catch (Exception $e) {
-                Log::warning('ImportadorTdrEngine: no se pudo resolver archivo principal', [
+            if (!($respuesta['success'] ?? false) || empty($respuesta['data'])) {
+                Log::debug('ImportadorTdrEngine: SEACE no devolvió archivos', [
                     'contrato' => $idContrato,
-                    'error' => $e->getMessage(),
                 ]);
-
                 return [
                     'idContratoArchivo' => 0,
                     'nombreArchivo' => 'tdr.pdf',
                 ];
             }
-        });
+
+            $archivo = collect($respuesta['data'])
+                ->first(fn ($item) => str_contains(strtolower($item['descripcionExtension'] ?? ''), 'pdf'))
+                ?? $respuesta['data'][0];
+
+            $result = [
+                'idContratoArchivo' => (int) ($archivo['idContratoArchivo'] ?? 0),
+                'nombreArchivo' => $archivo['nombre'] ?? ($archivo['descripcionArchivo'] ?? 'tdr.pdf'),
+            ];
+
+            // Solo cachear si obtuvimos un ID válido
+            if ($result['idContratoArchivo'] > 0) {
+                Cache::put($cacheKey, $result, now()->addMinutes(60));
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            Log::warning('ImportadorTdrEngine: no se pudo resolver archivo principal', [
+                'contrato' => $idContrato,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'idContratoArchivo' => 0,
+                'nombreArchivo' => 'tdr.pdf',
+            ];
+        }
     }
 
     protected function prepararContratoParaEnvio(array $contrato, array $archivoMeta): array

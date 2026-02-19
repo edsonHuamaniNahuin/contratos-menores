@@ -31,7 +31,7 @@ class GeminiClient(BaseLLMClient):
             temperature=0.2,
             top_p=0.95,
             top_k=40,
-            max_output_tokens=8192,
+            max_output_tokens=16384,
             response_mime_type="application/json",
             system_instruction=self.SYSTEM_PROMPT,
             safety_settings=[

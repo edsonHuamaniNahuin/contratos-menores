@@ -58,10 +58,55 @@ INSTRUCCIONES CLAVE:
         """Evalúa compatibilidad entre el perfil del suscriptor y el análisis del TDR."""
         pass
 
+    def _repair_truncated_json(self, text: str) -> str:
+        """
+        Intenta reparar un JSON truncado cerrando strings, arrays y objetos abiertos.
+        Útil cuando el LLM alcanza max_output_tokens y corta la respuesta.
+        """
+        import re
+
+        repaired = text.rstrip()
+
+        # Si termina a mitad de un string (comilla abierta sin cerrar),
+        # cerrar la comilla y truncar el valor.
+        in_string = False
+        escape_next = False
+        for ch in repaired:
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == '\\':
+                escape_next = True
+                continue
+            if ch == '"':
+                in_string = not in_string
+
+        if in_string:
+            # Cortar hasta la última comilla válida + cerrar string
+            repaired = repaired.rstrip()
+            # Remover caracteres parciales al final del string truncado
+            repaired += '"'
+
+        # Remover trailing commas antes de cerrar
+        repaired = re.sub(r',\s*$', '', repaired)
+
+        # Contar llaves y corchetes abiertos y cerrarlos
+        open_braces = repaired.count('{') - repaired.count('}')
+        open_brackets = repaired.count('[') - repaired.count(']')
+
+        # Cerrar corchetes primero (están dentro de objetos normalmente)
+        for _ in range(max(0, open_brackets)):
+            repaired += ']'
+        for _ in range(max(0, open_braces)):
+            repaired += '}'
+
+        return repaired
+
     def _parse_json_response(self, response_text: str) -> Dict:
         """
         Parsea la respuesta del LLM asegurando que sea JSON válido.
         Intenta limpiar la respuesta si viene con markdown o texto adicional.
+        Si el JSON está truncado (Unterminated string), intenta repararlo.
 
         Args:
             response_text: Texto de respuesta del LLM
@@ -73,6 +118,8 @@ INSTRUCCIONES CLAVE:
             ValueError: Si no se puede parsear como JSON válido
         """
         import re
+        import logging
+        logger = logging.getLogger(__name__)
 
         # Limpiar espacios y saltos de línea problemáticos
         cleaned = response_text.strip()
@@ -86,8 +133,18 @@ INSTRUCCIONES CLAVE:
         # Intentar parsear directamente primero
         try:
             return json.loads(cleaned)
-        except json.JSONDecodeError as e:
-            # Estrategia 2: Buscar objeto JSON usando regex
+        except json.JSONDecodeError as first_error:
+            # Estrategia 2: Reparar JSON truncado (Unterminated string, etc.)
+            if 'Unterminated' in str(first_error) or 'Expecting' in str(first_error):
+                try:
+                    repaired = self._repair_truncated_json(cleaned)
+                    result = json.loads(repaired)
+                    logger.warning(f"JSON reparado exitosamente (truncado por max_output_tokens). Original: {len(cleaned)} chars, reparado: {len(repaired)} chars")
+                    return result
+                except json.JSONDecodeError:
+                    pass  # Continuar con otras estrategias
+
+            # Estrategia 3: Buscar objeto JSON completo usando regex
             json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
             matches = re.finditer(json_pattern, cleaned, re.DOTALL)
 
@@ -98,8 +155,15 @@ INSTRUCCIONES CLAVE:
                 except json.JSONDecodeError:
                     continue
 
+            # Estrategia 4: Reparar + regex (para JSONs grandes truncados)
+            try:
+                repaired = self._repair_truncated_json(cleaned)
+                return json.loads(repaired)
+            except json.JSONDecodeError:
+                pass
+
             # Si todo falla, lanzar error con contexto
-            raise ValueError(f"La respuesta del LLM no es un JSON válido: {str(e)}\n\nRespuesta recibida (primeros 500 chars): {cleaned[:500]}")
+            raise ValueError(f"La respuesta del LLM no es un JSON válido: {str(first_error)}\n\nRespuesta recibida (primeros 500 chars): {cleaned[:500]}")
 
     def _build_compatibility_prompt(
         self,

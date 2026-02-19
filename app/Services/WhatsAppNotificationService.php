@@ -215,6 +215,14 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         $idContratoArchivo = (int) ($contratoData['idContratoArchivo'] ?? 0);
         $nombreArchivo = $contratoData['nombreArchivo'] ?? 'tdr.pdf';
 
+        // Si no hay archivo válido, no incluir botones que dependen del archivo
+        if ($idContratoArchivo <= 0) {
+            Log::debug('WhatsApp: omitiendo botones de archivo (idContratoArchivo=0)', [
+                'idContrato' => $idContrato,
+            ]);
+            return null;
+        }
+
         return [
             'type' => 'button',
             'header' => [

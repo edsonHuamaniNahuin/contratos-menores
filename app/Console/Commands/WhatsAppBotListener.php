@@ -287,6 +287,13 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $idContratoArchivo = (int) ($parts[2] ?? 0);
                 $nombreArchivo = $parts[3] ?? 'archivo.pdf';
 
+                // Resolver archivo dinámicamente si el callback tiene id=0
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
                 $this->info("🔍 Usuario {$phoneNumber} solicitó análisis del contrato {$idContrato}");
                 $this->whatsapp->enviarMensaje($phoneNumber, '⏳ Analizando proceso con IA...');
                 $this->analizarProcesoParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo);
@@ -296,6 +303,13 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $idContrato = (int) ($parts[1] ?? 0);
                 $idContratoArchivo = (int) ($parts[2] ?? 0);
                 $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                // Resolver archivo dinámicamente si el callback tiene id=0
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
 
                 $this->info("📥 Usuario {$phoneNumber} solicitó descarga del contrato {$idContrato}");
                 $this->whatsapp->enviarMensaje($phoneNumber, '📥 Preparando descarga...');
@@ -307,6 +321,13 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $idContratoArchivo = (int) ($parts[2] ?? 0);
                 $nombreArchivo = $parts[3] ?? 'archivo.pdf';
                 $forceRefresh = str_starts_with($data, 'compatrefresh_');
+
+                // Resolver archivo dinámicamente si el callback tiene id=0
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
 
                 $this->info("🏅 Usuario {$phoneNumber} solicitó compatibilidad del contrato {$idContrato}");
                 $this->whatsapp->enviarMensaje($phoneNumber, $forceRefresh ? '🔄 Recalculando score...' : '⏱️ Calculando score...');
@@ -716,6 +737,61 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
     {
         $nombre = $this->sanitizeCallbackFilename($nombreArchivo);
         return sprintf('%s_%d_%d_%s', $action, $idContrato, $idArchivo, $nombre);
+    }
+
+    /**
+     * Resolver archivo dinámicamente cuando el callback tiene idContratoArchivo=0.
+     * Consulta el endpoint público de archivos del SEACE para obtener el ID real.
+     *
+     * @return array{idContratoArchivo: int, nombreArchivo: string}
+     */
+    protected function resolveArchivoFromCallback(int $idContrato, int $idContratoArchivo, string $nombreArchivo): array
+    {
+        if ($idContratoArchivo > 0) {
+            return ['idContratoArchivo' => $idContratoArchivo, 'nombreArchivo' => $nombreArchivo];
+        }
+
+        if ($idContrato <= 0) {
+            return ['idContratoArchivo' => 0, 'nombreArchivo' => $nombreArchivo];
+        }
+
+        try {
+            $archivoService = new SeacePublicArchivoService();
+            $respuesta = $archivoService->listarArchivos($idContrato);
+
+            if (!($respuesta['success'] ?? false) || empty($respuesta['data'])) {
+                Log::warning('WhatsApp: no se pudo resolver archivo para contrato', [
+                    'idContrato' => $idContrato,
+                ]);
+                return ['idContratoArchivo' => 0, 'nombreArchivo' => $nombreArchivo];
+            }
+
+            $archivo = collect($respuesta['data'])
+                ->first(fn ($item) => str_contains(strtolower($item['descripcionExtension'] ?? ''), 'pdf'))
+                ?? $respuesta['data'][0];
+
+            $resolvedId = (int) ($archivo['idContratoArchivo'] ?? 0);
+            $resolvedName = $archivo['nombre'] ?? ($archivo['descripcionArchivo'] ?? $nombreArchivo);
+
+            if ($resolvedId > 0) {
+                $this->info("🔧 Archivo resuelto dinámicamente: ID {$resolvedId} ({$resolvedName})");
+
+                // Cachear para futuros callbacks
+                $cacheKey = sprintf('tdr:archivo-meta:%d', $idContrato);
+                Cache::put($cacheKey, [
+                    'idContratoArchivo' => $resolvedId,
+                    'nombreArchivo' => $resolvedName,
+                ], now()->addMinutes(60));
+            }
+
+            return ['idContratoArchivo' => $resolvedId, 'nombreArchivo' => $resolvedName];
+        } catch (\Exception $e) {
+            Log::warning('WhatsApp: excepción al resolver archivo dinámicamente', [
+                'idContrato' => $idContrato,
+                'error' => $e->getMessage(),
+            ]);
+            return ['idContratoArchivo' => 0, 'nombreArchivo' => $nombreArchivo];
+        }
     }
 
     protected function sanitizeCallbackFilename(string $nombre): string

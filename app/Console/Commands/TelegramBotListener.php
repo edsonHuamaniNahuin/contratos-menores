@@ -7,10 +7,12 @@ use App\Models\SubscriptionContractMatch;
 use App\Models\TelegramSubscription;
 use App\Services\AccountCompatibilityService;
 use App\Services\Tdr\CompatibilityScoreService;
+use App\Services\Tdr\PublicTdrDocumentService;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
 use App\Services\TdrAnalysisFormatter;
 use App\Services\TdrAnalysisService;
+use App\Services\SeacePublicArchivoService;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Isolatable;
 use Illuminate\Support\Facades\Cache;
@@ -236,6 +238,13 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $idContratoArchivo = (int) ($parts[2] ?? 0);
                 $nombreArchivo = $parts[3] ?? 'archivo.pdf';
 
+                // Resolver archivo dinámicamente si el callback tiene id=0
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
                 $this->info("🔍 Usuario {$chatId} solicitó análisis del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
 
                 $this->answerCallbackQuery($callbackId, '⏳ Analizando proceso...', $token);
@@ -246,6 +255,13 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $idContrato = (int) ($parts[1] ?? 0);
                 $idContratoArchivo = (int) ($parts[2] ?? 0);
                 $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                // Resolver archivo dinámicamente si el callback tiene id=0
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
 
                 $this->info("📥 Usuario {$chatId} solicitó descarga del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
 
@@ -258,6 +274,13 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $idContratoArchivo = (int) ($parts[2] ?? 0);
                 $nombreArchivo = $parts[3] ?? 'archivo.pdf';
                 $forceRefresh = str_starts_with($data, 'compatrefresh_');
+
+                // Resolver archivo dinámicamente si el callback tiene id=0
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
 
                 $this->info("🏅 Usuario {$chatId} solicitó compatibilidad del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
 
@@ -834,6 +857,61 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
     protected function buildContratoCacheKey(int $idContrato): string
     {
         return $this->contratoCachePrefix . $idContrato;
+    }
+
+    /**
+     * Resolver archivo dinámicamente cuando el callback tiene idContratoArchivo=0.
+     * Consulta el endpoint público de archivos del SEACE para obtener el ID real.
+     *
+     * @return array{idContratoArchivo: int, nombreArchivo: string}
+     */
+    protected function resolveArchivoFromCallback(int $idContrato, int $idContratoArchivo, string $nombreArchivo): array
+    {
+        if ($idContratoArchivo > 0) {
+            return ['idContratoArchivo' => $idContratoArchivo, 'nombreArchivo' => $nombreArchivo];
+        }
+
+        if ($idContrato <= 0) {
+            return ['idContratoArchivo' => 0, 'nombreArchivo' => $nombreArchivo];
+        }
+
+        try {
+            $archivoService = new SeacePublicArchivoService();
+            $respuesta = $archivoService->listarArchivos($idContrato);
+
+            if (!($respuesta['success'] ?? false) || empty($respuesta['data'])) {
+                Log::warning('Telegram: no se pudo resolver archivo para contrato', [
+                    'idContrato' => $idContrato,
+                ]);
+                return ['idContratoArchivo' => 0, 'nombreArchivo' => $nombreArchivo];
+            }
+
+            $archivo = collect($respuesta['data'])
+                ->first(fn ($item) => str_contains(strtolower($item['descripcionExtension'] ?? ''), 'pdf'))
+                ?? $respuesta['data'][0];
+
+            $resolvedId = (int) ($archivo['idContratoArchivo'] ?? 0);
+            $resolvedName = $archivo['nombre'] ?? ($archivo['descripcionArchivo'] ?? $nombreArchivo);
+
+            if ($resolvedId > 0) {
+                $this->info("🔧 Archivo resuelto dinámicamente: ID {$resolvedId} ({$resolvedName})");
+
+                // Cachear para futuros callbacks
+                $cacheKey = sprintf('tdr:archivo-meta:%d', $idContrato);
+                Cache::put($cacheKey, [
+                    'idContratoArchivo' => $resolvedId,
+                    'nombreArchivo' => $resolvedName,
+                ], now()->addMinutes(60));
+            }
+
+            return ['idContratoArchivo' => $resolvedId, 'nombreArchivo' => $resolvedName];
+        } catch (\Exception $e) {
+            Log::warning('Telegram: excepción al resolver archivo dinámicamente', [
+                'idContrato' => $idContrato,
+                'error' => $e->getMessage(),
+            ]);
+            return ['idContratoArchivo' => 0, 'nombreArchivo' => $nombreArchivo];
+        }
     }
 
     protected function buildCallbackData(string $action, int $idContrato, int $idArchivo, string $nombreArchivo): string
