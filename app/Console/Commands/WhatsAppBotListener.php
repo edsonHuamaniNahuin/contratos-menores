@@ -359,13 +359,20 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
 
             $tdrService = new TdrAnalysisService();
 
+            // Recuperar contexto completo del contrato (cacheado al enviar la notificación)
+            $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            // ── Feedback visible al usuario ──
+            $this->whatsapp->enviarMensaje($phoneNumber, "⏳ Analizando TDR con IA...\n📄 {$nombreArchivo}\n\nEsto puede tomar unos segundos, por favor espera.");
+
             // TdrAnalysisService ya tiene Cache::lock atómico interno —
             // si otro usuario pide el mismo análisis, espera y reutiliza.
             $resultado = $tdrService->analizarDesdeSeace(
                 $idContratoArchivo,
                 $nombreArchivo,
                 $cuenta,
-                ['idContrato' => $idContrato],
+                $contratoData,
                 'whatsapp'
             );
 
@@ -432,6 +439,10 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
     ): void {
         try {
             $cuenta = CuentaSeace::activa()->first();
+
+            // ── Feedback visible al usuario ──
+            $this->whatsapp->enviarMensaje($phoneNumber, "📥 Preparando descarga...\n📄 {$nombreArchivo}\n\nEspera un momento.");
+
             $persistence = new TdrPersistenceService();
 
             $archivoPersistido = $persistence->resolveArchivo(
@@ -576,6 +587,14 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             $this->enviarMensajeCompatibilidad($phoneNumber, $existingMatch, true, $idContrato, $idContratoArchivo, $nombreArchivo);
             return;
         }
+
+        // ── Feedback visible al usuario (solo cuando se calcula de cero) ──
+        $this->whatsapp->enviarMensaje(
+            $phoneNumber,
+            $forceRefresh
+                ? "🔄 Recalculando score de compatibilidad...\n\nEsto puede tomar unos segundos."
+                : "🏅 Calculando score de compatibilidad...\n\nAnalizando TDR y evaluando tu perfil. Espera un momento."
+        );
 
         // Obtener análisis IA
         $tdrService = new TdrAnalysisService();

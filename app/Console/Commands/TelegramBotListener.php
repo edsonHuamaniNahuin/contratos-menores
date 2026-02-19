@@ -339,6 +339,18 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
             $tdrService = new TdrAnalysisService();
 
+            // Recuperar contexto completo del contrato (cacheado al enviar la notificación)
+            $cachedContrato = $this->getCachedContratoPayload($idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            // ── Feedback visible al usuario ──
+            $this->sendChatAction($chatId, 'typing', $token);
+            $loadingMsgId = $this->enviarMensajeProcesando(
+                $chatId,
+                "⏳ <b>Analizando TDR con IA...</b>\n📄 {$nombreArchivo}\n\nEsto puede tomar unos segundos, por favor espera.",
+                $token
+            );
+
             // TdrAnalysisService ya tiene Cache::lock atómico interno —
             // si otro usuario pide el mismo análisis, espera y reutiliza.
             $this->info("🤖 Analizando {$nombreArchivo} (ID: {$idContratoArchivo}) con IA...");
@@ -346,15 +358,24 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $idContratoArchivo,
                 $nombreArchivo,
                 $cuenta,
-                ['idContrato' => $idContrato],
+                $contratoData,
                 'telegram'
             );
+
+            // Eliminar mensaje de loading
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
 
             // Enviar resultado al usuario
             if ($resultado['success'] ?? false) {
                 $this->enviarResultadoAnalisisTelegram($chatId, $resultado, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
                 $this->info("✅ Análisis enviado a usuario {$chatId}");
             } else {
+                if ($loadingMsgId) {
+                    $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+                }
+
                 $errorMsg = $resultado['error'] ?? 'Error desconocido';
 
                 if (strpos($errorMsg, 'temporalmente') !== false ||
@@ -379,6 +400,10 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             }
 
         } catch (\Exception $e) {
+            if ($loadingMsgId ?? null) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
+
             Log::error('Error al analizar proceso para usuario', [
                 'chat_id' => $chatId,
                 'id_contrato' => $idContrato,
@@ -498,6 +523,14 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
             $this->info("📥 Descargando {$nombreArchivo} (ID: {$idContratoArchivo})...");
 
+            // ── Feedback visible al usuario ──
+            $this->sendChatAction($chatId, 'upload_document', $token);
+            $loadingMsgId = $this->enviarMensajeProcesando(
+                $chatId,
+                "📥 <b>Preparando descarga...</b>\n📄 {$nombreArchivo}\n\nEspera un momento.",
+                $token
+            );
+
             $persistence = new TdrPersistenceService();
 
             // Resolver archivo (idempotente: firstOrCreate en DB)
@@ -544,12 +577,22 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             }
 
             if (!$archivoPersistido->hasStoredFile()) {
+                if ($loadingMsgId) {
+                    $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+                }
                 $this->enviarMensaje($chatId, '❌ No fue posible almacenar el archivo en caché', $token);
                 return;
             }
 
             $disk = Storage::disk($archivoPersistido->storage_disk ?? config('filesystems.default'));
             $documentBinary = $disk->get($archivoPersistido->storage_path);
+
+            // Eliminar mensaje de loading antes de enviar el documento
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
+
+            $this->sendChatAction($chatId, 'upload_document', $token);
 
             $telegramResponse = Http::attach(
                 'document',
@@ -570,6 +613,10 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             }
 
         } catch (\Exception $e) {
+            if ($loadingMsgId ?? null) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
+
             Log::error('Error al descargar archivo para usuario', [
                 'chat_id' => $chatId,
                 'id_archivo' => $idContratoArchivo,
@@ -651,6 +698,8 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $existingMatch = $this->compatibilityRepository->findMatch($subscription, $idContrato);
 
         if (!$forceRefresh && $this->compatibilityRepository->canReuseMatch($existingMatch, $subscription)) {
+            // Score en caché — enviar directo sin loading
+            $this->sendChatAction($chatId, 'typing', $token);
             $this->enviarMensajeCompatibilidad(
                 $chatId,
                 $existingMatch,
@@ -663,6 +712,16 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             return;
         }
 
+        // ── Feedback visible al usuario (solo cuando se calcula de cero) ──
+        $this->sendChatAction($chatId, 'typing', $token);
+        $loadingMsgId = $this->enviarMensajeProcesando(
+            $chatId,
+            $forceRefresh
+                ? "🔄 <b>Recalculando score de compatibilidad...</b>\n\nEsto puede tomar unos segundos."
+                : "🏅 <b>Calculando score de compatibilidad...</b>\n\nAnalizando TDR y evaluando tu perfil. Espera un momento.",
+            $token
+        );
+
         $analisis = $this->obtenerAnalisisParaCompatibilidad(
             $idContrato,
             $idContratoArchivo,
@@ -671,6 +730,9 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         );
 
         if (!($analisis['success'] ?? false)) {
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
             $mensaje = $analisis['error'] ?? 'No se pudo completar el análisis IA del TDR.';
             $this->enviarMensaje($chatId, '❌ ' . $mensaje, $token);
             return;
@@ -692,6 +754,9 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $forceRefresh
             );
         } catch (\Throwable $e) {
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
             Log::error('Compatibilidad IA: excepción', [
                 'chat_id' => $chatId,
                 'contrato' => $idContrato,
@@ -700,6 +765,11 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
             $this->enviarMensaje($chatId, '❌ Error al evaluar compatibilidad: ' . $e->getMessage(), $token);
             return;
+        }
+
+        // Eliminar mensaje de loading antes de enviar el resultado
+        if ($loadingMsgId) {
+            $this->eliminarMensaje($chatId, $loadingMsgId, $token);
         }
 
         if (!empty($compatResult['error'])) {
@@ -939,6 +1009,60 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         }
 
         return sprintf('%s/bot%s/%s', $this->telegramApiBase, $token, ltrim($method, '/'));
+    }
+
+    /**
+     * Enviar acción de chat (typing, upload_document, etc.)
+     * Muestra el indicador nativo de "escribiendo..." o "enviando documento..." en Telegram.
+     */
+    protected function sendChatAction(string $chatId, string $action, string $token): void
+    {
+        try {
+            Http::post($this->buildTelegramUrl($token, 'sendChatAction'), [
+                'chat_id' => $chatId,
+                'action' => $action,
+            ]);
+        } catch (\Throwable $e) {
+            // No fallar si el chat action no se envía
+        }
+    }
+
+    /**
+     * Enviar mensaje de procesamiento visible y devolver su message_id
+     * para poder eliminarlo después si se desea.
+     */
+    protected function enviarMensajeProcesando(string $chatId, string $texto, string $token): ?int
+    {
+        try {
+            $response = Http::post($this->buildTelegramUrl($token, 'sendMessage'), [
+                'chat_id' => $chatId,
+                'text' => $texto,
+                'parse_mode' => 'HTML',
+            ]);
+
+            if ($response->successful() && ($response->json()['ok'] ?? false)) {
+                return $response->json()['result']['message_id'] ?? null;
+            }
+        } catch (\Throwable $e) {
+            // No fallar si no se puede enviar el loading
+        }
+
+        return null;
+    }
+
+    /**
+     * Eliminar un mensaje de procesamiento temporal.
+     */
+    protected function eliminarMensaje(string $chatId, int $messageId, string $token): void
+    {
+        try {
+            Http::post($this->buildTelegramUrl($token, 'deleteMessage'), [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+            ]);
+        } catch (\Throwable $e) {
+            // No fallar si no se puede eliminar
+        }
     }
 
     protected function debug(string $message, array $context = []): void

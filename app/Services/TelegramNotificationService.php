@@ -324,6 +324,7 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
             'nomObjetoContrato' => $contratoData['nomObjetoContrato'] ?? null,
             'desObjetoContrato' => $contratoData['desObjetoContrato'] ?? null,
             'nomEstadoContrato' => $contratoData['nomEstadoContrato'] ?? null,
+            'nomEtapaContratacion' => $contratoData['nomEtapaContratacion'] ?? null,
             'fecPublica' => $contratoData['fecPublica'] ?? null,
             'fecIniCotizacion' => $contratoData['fecIniCotizacion'] ?? null,
             'fecFinCotizacion' => $contratoData['fecFinCotizacion'] ?? null,
