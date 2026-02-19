@@ -454,7 +454,7 @@ class Suscriptores extends Component
 
             Mail::to($emailSub->email)->send(new NuevoProcesoSeace(
                 contrato: $contratoPrueba,
-                seguimientoUrl: url('/buscador-publico'),
+                seguimientoUrl: route('buscador.publico'),
                 matchedKeywords: ['prueba']
             ));
 

@@ -147,7 +147,7 @@
                                         </p>
                                     </td>
                                     <td align="right" style="vertical-align:top;">
-                                        <a href="{{ url('/buscador-publico') }}"
+                                        <a href="{{ route('buscador.publico') }}"
                                            style="font-size:12px; color:#025964; text-decoration:none; font-weight:600;">
                                             Ver buscador →
                                         </a>

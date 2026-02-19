@@ -168,7 +168,7 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
 
             // ── Enviar email ───────────────────────────────
             try {
-                $seguimientoUrl = url('/buscador-publico');
+                $seguimientoUrl = route('buscador.publico');
 
                 Mail::to($emailSub->email)->send(new NuevoProcesoSeace(
                     contrato: $contrato,
