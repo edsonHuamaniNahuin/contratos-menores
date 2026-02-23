@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Vigilante SEACE') }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Google Analytics — Consent Mode v2 -->
     <script>
@@ -241,6 +243,16 @@
                                         </a>
                                     </div>
 
+                                    <!-- Contacto -->
+                                    <div class="px-2 pt-2">
+                                        <a href="{{ route('contacto') }}" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-neutral-600 hover:bg-neutral-50 rounded-xl transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            </svg>
+                                            Contacto
+                                        </a>
+                                    </div>
+
                                     <!-- Logout -->
                                     <div class="px-2 pt-2">
                                         <form method="POST" action="{{ route('logout') }}">
@@ -256,6 +268,13 @@
                                 </div>
                             </div>
                         @else
+                            <!-- Contacto para visitantes -->
+                            <a href="{{ route('contacto') }}" class="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors shadow-sm border border-neutral-200 text-neutral-700 bg-white hover:bg-neutral-50">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                                Contacto
+                            </a>
                             <!-- Login para visitantes -->
                             <a href="{{ route('login') }}" class="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors shadow-sm border border-neutral-200 text-neutral-700 bg-white hover:bg-neutral-50">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,6 +291,62 @@
             <main class="flex-1 p-0 lg:p-6 w-full min-w-0 overflow-x-hidden">
                 @yield('content')
             </main>
+
+            <!-- Footer -->
+            <footer class="bg-white border-t border-neutral-200 mt-auto">
+                <div class="max-w-7xl mx-auto px-6 py-10">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {{-- Marca --}}
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-400 rounded-xl flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                </div>
+                                <span class="text-sm font-bold text-neutral-900">Vigilante SEACE</span>
+                            </div>
+                            <p class="text-xs text-neutral-500 leading-relaxed">Sistema de monitoreo automatizado de licitaciones del SEACE.</p>
+                        </div>
+
+                        {{-- Contacto --}}
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-semibold text-neutral-900 uppercase tracking-wider">Contacto</h4>
+                            <ul class="space-y-2 text-xs text-neutral-600">
+                                <li class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    <a href="mailto:services@sunqupacha.com" class="hover:text-primary-500 transition-colors">services@sunqupacha.com</a>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                                    <a href="tel:+51918874873" class="hover:text-primary-500 transition-colors">+51 918 874 873</a>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-neutral-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 17.394c-.248.694-.916 1.363-1.884 1.541-.552.1-1.273.18-3.701-.795-3.108-1.248-5.107-4.415-5.261-4.62-.149-.198-1.213-1.614-1.213-3.076 0-1.463.768-2.182 1.04-2.479.272-.298.595-.372.792-.372.198 0 .397.002.57.01.182.01.427-.069.669.51.247.595.841 2.058.916 2.207.075.149.124.322.025.52-.1.199-.149.323-.298.497-.148.173-.312.387-.446.52-.148.148-.303.309-.13.606.173.298.77 1.271 1.653 2.059 1.135 1.012 2.093 1.325 2.39 1.475.297.148.471.124.644-.075.173-.198.743-.867.94-1.164.199-.298.397-.249.67-.15.272.1 1.733.818 2.03.967.298.149.496.223.57.347.075.124.075.719-.173 1.413z"/></svg>
+                                    <a href="https://wa.me/51918874873" target="_blank" class="hover:text-primary-500 transition-colors">WhatsApp</a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {{-- Enlaces --}}
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-semibold text-neutral-900 uppercase tracking-wider">Enlaces</h4>
+                            <ul class="space-y-2 text-xs text-neutral-600">
+                                <li><a href="{{ route('buscador.publico') }}" class="hover:text-primary-500 transition-colors">Buscador público</a></li>
+                                <li><a href="{{ route('contacto') }}" class="hover:text-primary-500 transition-colors">Contacto</a></li>
+                                @guest
+                                    <li><a href="{{ route('login') }}" class="hover:text-primary-500 transition-colors">Iniciar sesión</a></li>
+                                    <li><a href="{{ route('register') }}" class="hover:text-primary-500 transition-colors">Registrarse</a></li>
+                                @endguest
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-neutral-100 mt-8 pt-6">
+                        <p class="text-xs text-neutral-400 text-center">&copy; {{ date('Y') }} Sunqupacha S.A.C. Todos los derechos reservados.</p>
+                    </div>
+                </div>
+            </footer>
         </div>
     </div>
 

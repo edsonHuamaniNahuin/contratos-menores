@@ -38,6 +38,10 @@ Route::get('/planes', function () {
     return view('planes');
 })->name('planes');
 
+Route::get('/contacto', function () {
+    return view('contacto');
+})->name('contacto');
+
 // Ruta para descargar archivos temporales del SEACE
 Route::get('/seace/download/{filename}', function ($filename) {
     $path = storage_path('app/temp/' . $filename);

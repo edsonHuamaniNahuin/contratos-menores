@@ -46,11 +46,26 @@
                 </select>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2 text-sm text-neutral-600">
+            <div class="flex flex-wrap items-center gap-2 text-sm text-neutral-600" x-data="{
+                hoy: new Date().toISOString().split('T')[0],
+                get desde() { return $wire.chartFechaDesde },
+                get hasta() { return $wire.chartFechaHasta },
+            }">
                 <span class="text-xs font-semibold text-neutral-600">Rango de fechas (publicación)</span>
-                <input type="date" wire:model.live="chartFechaDesde" class="border border-neutral-200 rounded-full px-3 py-2 text-sm text-neutral-900 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-400" />
-                <span class="text-neutral-400 text-xs">→</span>
-                <input type="date" wire:model.live="chartFechaHasta" class="border border-neutral-200 rounded-full px-3 py-2 text-sm text-neutral-900 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-400" />
+                <input
+                    type="date"
+                    wire:model.live="chartFechaDesde"
+                    :max="hasta || hoy"
+                    class="border border-neutral-200 rounded-full px-3 py-2 text-sm text-neutral-900 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                />
+                <span class="text-neutral-400 text-xs">&rarr;</span>
+                <input
+                    type="date"
+                    wire:model.live="chartFechaHasta"
+                    :min="desde || ''"
+                    :max="hoy"
+                    class="border border-neutral-200 rounded-full px-3 py-2 text-sm text-neutral-900 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                />
                 <span class="text-xs text-neutral-500">Aplica a todos los gráficos y mapa</span>
             </div>
 

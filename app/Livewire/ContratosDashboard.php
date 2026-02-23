@@ -84,6 +84,32 @@ class ContratosDashboard extends Component
         $this->resetPage();
     }
 
+    /**
+     * Valida que chartFechaHasta no sea > hoy ni < chartFechaDesde.
+     */
+    public function updatedChartFechaHasta($value): void
+    {
+        $hoy = now()->toDateString();
+
+        if ($value && $value > $hoy) {
+            $this->chartFechaHasta = $hoy;
+        }
+
+        if ($value && $this->chartFechaDesde && $value < $this->chartFechaDesde) {
+            $this->chartFechaHasta = $this->chartFechaDesde;
+        }
+    }
+
+    /**
+     * Valida que chartFechaDesde no supere chartFechaHasta.
+     */
+    public function updatedChartFechaDesde($value): void
+    {
+        if ($value && $this->chartFechaHasta && $value > $this->chartFechaHasta) {
+            $this->chartFechaDesde = $this->chartFechaHasta;
+        }
+    }
+
     public function updatingFiltroEstado()
     {
         $this->resetPage();

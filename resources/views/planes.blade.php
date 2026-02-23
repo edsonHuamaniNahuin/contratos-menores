@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Planes - Vigilante SEACE</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Google Analytics — Consent Mode v2 -->
     <script>
@@ -451,6 +453,7 @@
                     <h4 class="text-xs font-bold text-neutral-900 uppercase tracking-wider mb-3">Enlaces</h4>
                     <ul class="space-y-2">
                         <li><a href="{{ route('buscador.publico') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Buscador público</a></li>
+                        <li><a href="{{ route('contacto') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Contacto</a></li>
                         <li><a href="{{ route('login') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Iniciar sesión</a></li>
                         <li><a href="{{ route('register') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Registrarse</a></li>
                     </ul>
