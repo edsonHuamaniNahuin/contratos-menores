@@ -18,7 +18,7 @@ ExecStart=/usr/local/php82/bin/php artisan queue:work --sleep=3 --tries=3 --max-
 KillSignal=SIGTERM
 TimeoutStopSec=30
 
-Restart=on-failure
+Restart=always
 RestartSec=10
 StandardOutput=append:/var/log/vigilante-seace/queue.log
 StandardError=append:/var/log/vigilante-seace/queue-error.log

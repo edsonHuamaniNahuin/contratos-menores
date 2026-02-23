@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
  * Job programado que importa procesos TDR del SEACE y notifica a suscriptores
  * de Telegram y WhatsApp.
  *
- * Horario: Lunes a viernes, cada 2 horas entre 06:00 y 20:00 (hora Lima).
+ * Horario: Lunes a domingo, cada 2 horas entre 06:00 y 20:00 (hora Lima).
  * Ejecuciones: 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00.
  *
  * La ejecución de las 06:00 busca procesos de HOY + AYER para cubrir la

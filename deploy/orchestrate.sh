@@ -507,13 +507,20 @@ do_health() {
     log_step "VERIFICACIÓN DE SALUD"
     local healthy=true
 
-    # 1. Servicios activos
+    # 1. Servicios activos — si alguno está caído, intentar levantarlo
     for svc in "${SERVICES[@]}"; do
         if service_is_active "$svc"; then
             log_ok "${svc}.service activo"
         else
-            log_error "${svc}.service NO activo"
-            healthy=false
+            log_warn "${svc}.service NO activo — intentando levantar..."
+            sudo systemctl reset-failed "${svc}.service" 2>/dev/null || true
+            ensure_clean "$svc"
+            if sudo systemctl start "${svc}.service" 2>/dev/null && wait_for_service "$svc" 15; then
+                log_ok "${svc}.service ✅ recuperado"
+            else
+                log_error "${svc}.service ❌ no se pudo recuperar"
+                healthy=false
+            fi
         fi
     done
 

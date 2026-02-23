@@ -15,14 +15,13 @@ Artisan::command('inspire', function () {
 |--------------------------------------------------------------------------
 | Importador TDR + Notificación Telegram/WhatsApp (Automatizado)
 |--------------------------------------------------------------------------
-| Lunes a viernes, cada 2 horas entre 06:00 y 20:00 (hora Lima).
+| Lunes a domingo, cada 2 horas entre 06:00 y 20:00 (hora Lima).
 | Horarios: 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00
 | La ejecución de las 06:00 busca procesos de HOY + AYER (cubre la
 | brecha nocturna 20:00→06:00). Las demás solo buscan HOY.
 | Carbon::subDay() maneja automáticamente fin de mes (31→1, 28/29→1).
 */
 Schedule::job(new ImportarTdrNotificarJob())
-    ->weekdays()
     ->everyTwoHours()
     ->between('06:00', '20:00')
     ->timezone('America/Lima')
@@ -78,13 +77,12 @@ Schedule::command('subscriptions:renew')
 |--------------------------------------------------------------------------
 | Notificaciones por Email (Procesos nuevos del SEACE)
 |--------------------------------------------------------------------------
-| Se ejecuta junto con el importador TDR (L-V, cada 2h, 06:00-20:00).
+| Se ejecuta junto con el importador TDR (L-D, cada 2h, 06:00-20:00).
 | Envía un email por cada proceso nuevo que coincida con los filtros del
 | suscriptor. Usa dedup para no enviar el mismo proceso dos veces.
 | Dos modos: "recibir todo" o "solo keywords que coincidan".
 */
 Schedule::job(new NotificarEmailSuscriptoresJob())
-    ->weekdays()
     ->everyTwoHours()
     ->between('06:00', '20:00')
     ->timezone('America/Lima')
