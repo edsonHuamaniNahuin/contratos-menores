@@ -23,6 +23,11 @@ class Configuracion extends Component
     public string $analizador_url = 'http://127.0.0.1:8001';
     public bool $analizador_enabled = false;
 
+    // Configuración WhatsApp Bot
+    public string $whatsapp_bot_token = '';
+    public string $whatsapp_group_id = '';
+    public bool $whatsapp_enabled = false;
+
     // Configuración Pasarela de Pago
     public string $payment_gateway = 'mercadopago';
     public string $mercadopago_access_token = '';
@@ -46,29 +51,34 @@ class Configuracion extends Component
 
     public function mount()
     {
-        // Cargar configuración actual desde config
-        $this->telegram_bot_token = config('services.telegram.bot_token', '');
-        $this->telegram_chat_id = config('services.telegram.chat_id', '');
+        // Cargar configuración actual desde config (usar ?? '' para evitar null en propiedades string)
+        $this->telegram_bot_token = config('services.telegram.bot_token') ?? '';
+        $this->telegram_chat_id = config('services.telegram.chat_id') ?? '';
         $this->telegram_enabled = !empty($this->telegram_bot_token) && !empty($this->telegram_chat_id);
 
         // Cargar configuración del bot admin de Telegram
-        $this->telegram_admin_bot_token = config('services.telegram_admin.bot_token', '');
-        $this->telegram_admin_chat_id = config('services.telegram_admin.chat_id', '');
+        $this->telegram_admin_bot_token = config('services.telegram_admin.bot_token') ?? '';
+        $this->telegram_admin_chat_id = config('services.telegram_admin.chat_id') ?? '';
         $this->telegram_admin_enabled = !empty($this->telegram_admin_bot_token) && !empty($this->telegram_admin_chat_id);
 
         // Cargar configuración del analizador
-        $this->analizador_url = config('services.analizador_tdr.url', 'http://127.0.0.1:8001');
-        $this->analizador_enabled = config('services.analizador_tdr.enabled', false);
+        $this->analizador_url = config('services.analizador_tdr.url') ?? 'http://127.0.0.1:8001';
+        $this->analizador_enabled = (bool) (config('services.analizador_tdr.enabled') ?? false);
+
+        // Cargar configuración WhatsApp
+        $this->whatsapp_bot_token = config('services.whatsapp.bot_token') ?? '';
+        $this->whatsapp_group_id = config('services.whatsapp.group_id') ?? '';
+        $this->whatsapp_enabled = !empty($this->whatsapp_bot_token) && !empty($this->whatsapp_group_id);
 
         // Cargar configuración de pasarela de pago
-        $this->payment_gateway = config('services.payment_gateway', 'mercadopago');
-        $this->mercadopago_access_token = config('services.mercadopago.access_token', '');
-        $this->mercadopago_public_key = config('services.mercadopago.public_key', '');
-        $this->mercadopago_webhook_secret = config('services.mercadopago.webhook_secret', '');
-        $this->openpay_merchant_id = config('services.openpay.merchant_id', '');
-        $this->openpay_private_key = config('services.openpay.private_key', '');
-        $this->openpay_public_key = config('services.openpay.public_key', '');
-        $this->openpay_production = (bool) config('services.openpay.production', false);
+        $this->payment_gateway = config('services.payment_gateway') ?? 'mercadopago';
+        $this->mercadopago_access_token = config('services.mercadopago.access_token') ?? '';
+        $this->mercadopago_public_key = config('services.mercadopago.public_key') ?? '';
+        $this->mercadopago_webhook_secret = config('services.mercadopago.webhook_secret') ?? '';
+        $this->openpay_merchant_id = config('services.openpay.merchant_id') ?? '';
+        $this->openpay_private_key = config('services.openpay.private_key') ?? '';
+        $this->openpay_public_key = config('services.openpay.public_key') ?? '';
+        $this->openpay_production = (bool) (config('services.openpay.production') ?? false);
     }
 
     public function guardarConfiguracion()
