@@ -92,6 +92,13 @@ class Configuracion extends Component
                 }
             }
 
+            if ($this->telegram_admin_enabled) {
+                if (empty($this->telegram_admin_bot_token) || empty($this->telegram_admin_chat_id)) {
+                    session()->flash('error', 'Bot Token y Chat ID son requeridos para el Bot Admin de Telegram');
+                    return;
+                }
+            }
+
             if ($this->analizador_enabled) {
                 if (empty($this->analizador_url)) {
                     session()->flash('error', 'URL del Analizador TDR es requerida');
@@ -99,15 +106,19 @@ class Configuracion extends Component
                 }
             }
 
-            // Validar credenciales de la pasarela activa
+            // Validar credenciales de la pasarela activa (solo si el usuario llenó algo parcial)
             if ($this->payment_gateway === 'mercadopago') {
-                if (empty($this->mercadopago_access_token) || empty($this->mercadopago_public_key)) {
-                    session()->flash('error', 'Access Token y Public Key de MercadoPago son requeridos');
+                $mpHasAny = !empty($this->mercadopago_access_token) || !empty($this->mercadopago_public_key);
+                $mpHasAll = !empty($this->mercadopago_access_token) && !empty($this->mercadopago_public_key);
+                if ($mpHasAny && !$mpHasAll) {
+                    session()->flash('error', 'Access Token y Public Key de MercadoPago son requeridos si configuras esa pasarela');
                     return;
                 }
             } elseif ($this->payment_gateway === 'openpay') {
-                if (empty($this->openpay_merchant_id) || empty($this->openpay_private_key) || empty($this->openpay_public_key)) {
-                    session()->flash('error', 'ID, Private Key y Public Key de Openpay son requeridos');
+                $opHasAny = !empty($this->openpay_merchant_id) || !empty($this->openpay_private_key) || !empty($this->openpay_public_key);
+                $opHasAll = !empty($this->openpay_merchant_id) && !empty($this->openpay_private_key) && !empty($this->openpay_public_key);
+                if ($opHasAny && !$opHasAll) {
+                    session()->flash('error', 'Si configuras Openpay, completa ID, Private Key y Public Key');
                     return;
                 }
             }
