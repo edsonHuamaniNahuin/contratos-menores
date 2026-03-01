@@ -673,7 +673,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             : null;
 
         $mensaje = "🏅 *Compatibilidad IA*\n\n";
-        $mensaje .= "📊 *Puntaje:* {$score}/100\n";
+        $mensaje .= "📊 *Puntaje:* {$score}/10\n";
         $mensaje .= "🎯 *Nivel:* {$nivel}\n";
 
         if ($timestamp) {

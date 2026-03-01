@@ -103,9 +103,14 @@ jobs:
       - name: Health check (production URL)
         run: |
           sleep 5
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://licitacionesmype.pe/login 2>/dev/null || echo "000")
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "Production site OK (HTTP $HTTP_CODE)"
+          # Verificar landing pública
+          LANDING_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://licitacionesmype.pe/ 2>/dev/null || echo "000")
+          echo "Landing page: HTTP $LANDING_CODE"
+          # Verificar login
+          LOGIN_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://licitacionesmype.pe/login 2>/dev/null || echo "000")
+          echo "Login page: HTTP $LOGIN_CODE"
+          if [ "$LANDING_CODE" = "200" ] && [ "$LOGIN_CODE" = "200" ]; then
+            echo "Production site OK"
           else
-            echo "WARN: Production site returned HTTP $HTTP_CODE (may need DNS/SSL check)"
+            echo "WARN: Some pages returned unexpected codes (may need DNS/SSL check)"
           fi

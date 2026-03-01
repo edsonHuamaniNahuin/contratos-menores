@@ -10,7 +10,7 @@
                 </p>
             </div>
             @if($totalProcesos > 0)
-                <span class="px-4 py-1.5 bg-primary-500/10 text-primary-800 rounded-full text-sm font-semibold whitespace-nowrap">
+                <span class="px-4 py-1.5 bg-primary-500/10 text-brand-800 rounded-full text-sm font-semibold whitespace-nowrap">
                     {{ $totalProcesos }} proceso(s)
                 </span>
             @endif
@@ -19,7 +19,7 @@
 
     {{-- Feedback --}}
     @if($successMessage)
-        <div class="bg-secondary-500/10 border border-secondary-500/30 text-secondary-600 px-6 py-3 rounded-3xl text-sm font-medium">
+        <div class="bg-secondary-500/10 border border-secondary-500/30 text-secondary-500 px-6 py-3 rounded-3xl text-sm font-medium">
             ✅ {{ $successMessage }}
         </div>
     @endif
@@ -136,7 +136,7 @@
                                     {{ $proceso->codigo ?? 'Sin código' }}
                                 </h3>
                                 @if($proceso->objeto_contratacion)
-                                    <span class="px-2.5 py-0.5 bg-primary-500/10 text-primary-800 rounded-full text-xs font-medium whitespace-nowrap">
+                                    <span class="px-2.5 py-0.5 bg-primary-500/10 text-brand-800 rounded-full text-xs font-medium whitespace-nowrap">
                                         {{ $proceso->objeto_contratacion }}
                                     </span>
                                 @endif
@@ -196,7 +196,7 @@
                             @if($allKeywords->isNotEmpty())
                                 <div class="mt-2 flex flex-wrap gap-1.5">
                                     @foreach($allKeywords as $kw)
-                                        <span class="px-2 py-0.5 bg-secondary-500/10 text-secondary-600 rounded-full text-[10px] font-semibold">
+                                        <span class="px-2 py-0.5 bg-secondary-500/10 text-secondary-500 rounded-full text-[10px] font-semibold">
                                             {{ $kw }}
                                         </span>
                                     @endforeach
@@ -210,7 +210,7 @@
                                 wire:click="renotificarTelegram({{ $proceso->id }})"
                                 wire:loading.attr="disabled"
                                 wire:target="renotificarTelegram({{ $proceso->id }})"
-                                class="flex items-center gap-1.5 px-3 py-2 bg-primary-500/10 text-primary-800 rounded-full text-xs font-medium hover:bg-primary-500/20 transition-colors disabled:opacity-50"
+                                class="flex items-center gap-1.5 px-3 py-2 bg-primary-500/10 text-brand-800 rounded-full text-xs font-medium hover:bg-primary-500/20 transition-colors disabled:opacity-50"
                                 title="Re-enviar por Telegram"
                             >
                                 <span wire:loading.remove wire:target="renotificarTelegram({{ $proceso->id }})">✈️</span>
@@ -227,7 +227,7 @@
                                 wire:click="renotificarWhatsapp({{ $proceso->id }})"
                                 wire:loading.attr="disabled"
                                 wire:target="renotificarWhatsapp({{ $proceso->id }})"
-                                class="flex items-center gap-1.5 px-3 py-2 bg-secondary-500/10 text-secondary-600 rounded-full text-xs font-medium hover:bg-secondary-500/20 transition-colors disabled:opacity-50"
+                                class="flex items-center gap-1.5 px-3 py-2 bg-secondary-500/10 text-secondary-500 rounded-full text-xs font-medium hover:bg-secondary-500/20 transition-colors disabled:opacity-50"
                                 title="Re-enviar por WhatsApp"
                             >
                                 <span wire:loading.remove wire:target="renotificarWhatsapp({{ $proceso->id }})">📱</span>

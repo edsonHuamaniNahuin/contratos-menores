@@ -128,6 +128,13 @@ return [
         'debug_logs' => env('TELEGRAM_DEBUG_LOGS', false),
     ],
 
+    // Bot de Telegram para notificaciones administrativas (nuevos usuarios, suscripciones)
+    'telegram_admin' => [
+        'api_base' => $telegramApiBase ?: null,
+        'bot_token' => env('TELEGRAM_ADMIN_BOT_TOKEN'),
+        'chat_id' => env('TELEGRAM_ADMIN_CHAT_ID'),
+    ],
+
     'whatsapp' => [
         'token' => env('WHATSAPP_TOKEN', ''),
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID', ''),
@@ -148,13 +155,24 @@ return [
         'debug_logs' => env('ANALIZADOR_TDR_DEBUG_LOGS', false),
     ],
 
+    // ─── Pasarela de pago activa ────────────────────────
+    'payment_gateway' => env('PAYMENT_GATEWAY', 'mercadopago'),
+
+    // ─── Mercado Pago ─────────────────────────────────────
+    'mercadopago' => [
+        'access_token'   => env('MERCADOPAGO_ACCESS_TOKEN'),
+        'public_key'     => env('MERCADOPAGO_PUBLIC_KEY'),
+        'webhook_secret' => env('MERCADOPAGO_WEBHOOK_SECRET'),
+    ],
+
+    // ─── Openpay Perú ─────────────────────────────────────
     'openpay' => [
-        'merchant_id'  => env('OPENPAY_MERCHANT_ID'),
-        'private_key'  => env('OPENPAY_PRIVATE_KEY'),
-        'public_key'   => env('OPENPAY_PUBLIC_KEY'),
-        'production'   => env('OPENPAY_PRODUCTION', false),
-        'country'      => env('OPENPAY_COUNTRY', 'PE'), // PE = Perú
-        'currency'     => env('OPENPAY_CURRENCY', 'PEN'),
+        'merchant_id'    => env('OPENPAY_MERCHANT_ID'),
+        'private_key'    => env('OPENPAY_PRIVATE_KEY'),
+        'public_key'     => env('OPENPAY_PUBLIC_KEY'),
+        'production'     => env('OPENPAY_PRODUCTION', false),
+        'country'        => env('OPENPAY_COUNTRY', 'PE'),
+        'currency'       => env('OPENPAY_CURRENCY', 'PEN'),
         'webhook_secret' => env('OPENPAY_WEBHOOK_SECRET'),
     ],
 ];

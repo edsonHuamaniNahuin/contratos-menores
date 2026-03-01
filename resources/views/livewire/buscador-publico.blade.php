@@ -64,7 +64,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 pb-5">
             <!-- Palabra Clave - Ocupa más espacio en desktop -->
             <div class="lg:col-span-4">
-                <label class="block text-xs font-medium mb-1.5 {{ !empty($palabraClave) ? 'text-primary-600 font-semibold' : 'text-neutral-600' }} transition-colors">Palabra Clave</label>
+                <label class="block text-xs font-medium mb-1.5 {{ !empty($palabraClave) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Palabra Clave</label>
                 <div class="relative">
                     <input
                         type="text"
@@ -73,7 +73,7 @@
                         wire:keydown.enter="buscar"
                         class="w-full px-4 py-2.5 pl-10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ !empty($palabraClave) ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}"
                     >
-                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 {{ !empty($palabraClave) ? 'text-primary-600' : 'text-neutral-400' }} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 {{ !empty($palabraClave) ? 'text-brand-600' : 'text-neutral-400' }} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                     <!-- Indicador de carga -->
@@ -95,7 +95,7 @@
                  @click.away="abierto = false"
                  @abrir-dropdown-entidades.window="abierto = true"
             >
-                <label class="block text-xs font-medium mb-1.5 {{ !empty($codigoEntidad) ? 'text-primary-600 font-semibold' : 'text-neutral-600' }} transition-colors">Entidad</label>
+                <label class="block text-xs font-medium mb-1.5 {{ !empty($codigoEntidad) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Entidad</label>
                 <div class="relative">
                     <input
                         type="text"
@@ -105,13 +105,13 @@
                         placeholder="Buscar entidad (mín. 3 caracteres)..."
                         class="w-full px-4 py-2.5 pl-10 pr-10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ !empty($codigoEntidad) ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}"
                     >
-                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 {{ !empty($codigoEntidad) ? 'text-primary-600' : 'text-neutral-400' }} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 {{ !empty($codigoEntidad) ? 'text-brand-600' : 'text-neutral-400' }} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                     </svg>
 
                     <!-- Spinner de búsqueda interno (mientras busca entidades) -->
                     <div wire:loading wire:target="entidadTexto,buscarEntidades" class="absolute right-3 top-1/2 -translate-y-1/2">
-                        <svg class="animate-spin h-4 w-4 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg class="animate-spin h-4 w-4 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -172,7 +172,7 @@
 
             <!-- Objeto -->
             <div class="lg:col-span-2">
-                <label class="block text-xs font-medium mb-1.5 {{ $objetoContrato > 0 ? 'text-primary-600 font-semibold' : 'text-neutral-600' }} transition-colors">Objeto</label>
+                <label class="block text-xs font-medium mb-1.5 {{ $objetoContrato > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Objeto</label>
                 <div class="relative">
                     <select
                         wire:model.live="objetoContrato"
@@ -198,7 +198,7 @@
 
             <!-- Estado -->
             <div class="lg:col-span-2">
-                <label class="block text-xs font-medium mb-1.5 {{ $estadoContrato > 0 ? 'text-primary-600 font-semibold' : 'text-neutral-600' }} transition-colors">Estado</label>
+                <label class="block text-xs font-medium mb-1.5 {{ $estadoContrato > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Estado</label>
                 <div class="relative">
                     <select
                         wire:model.live="estadoContrato"
@@ -274,14 +274,14 @@
                     @click.away="abierto = false"
                     class="relative"
                     wire:key="filter-departamento">
-                        <label class="block text-xs font-medium mb-1.5 {{ $departamento > 0 ? 'text-primary-600 font-semibold' : 'text-neutral-600' }} transition-colors">Departamento</label>
+                        <label class="block text-xs font-medium mb-1.5 {{ $departamento > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Departamento</label>
                         <button
                             type="button"
                             @click="abierto = !abierto"
                             class="w-full px-3 py-2.5 rounded-xl text-sm text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $departamento > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}"
                         >
                             <span class="truncate">{{ $departamento === 0 ? 'Todos' : collect($departamentos)->firstWhere('id', $departamento)['nom'] ?? 'Todos' }}</span>
-                            <svg class="w-4 h-4 {{ $departamento > 0 ? 'text-primary-600' : 'text-neutral-400' }} transition-colors" :class="{'rotate-180': abierto}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 {{ $departamento > 0 ? 'text-brand-600' : 'text-neutral-400' }} transition-colors" :class="{'rotate-180': abierto}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
@@ -295,11 +295,11 @@
                                 >
                             </div>
                             <div class="overflow-y-auto max-h-52">
-                                <button type="button" @click="seleccionar(0, 'Todos')" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors {{ $departamento === 0 ? 'bg-primary-50 text-primary-600 font-medium' : 'text-neutral-700' }}">
+                                <button type="button" @click="seleccionar(0, 'Todos')" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors {{ $departamento === 0 ? 'bg-primary-50 text-brand-600 font-medium' : 'text-neutral-700' }}">
                                     Todos
                                 </button>
                                 <template x-for="depto in opcionesFiltradas()" :key="depto.id">
-                                    <button type="button" @click="seleccionar(depto.id, depto.nom)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors" :class="@js($departamento) === depto.id ? 'bg-primary-50 text-primary-600 font-medium' : 'text-neutral-700'" x-text="depto.nom"></button>
+                                    <button type="button" @click="seleccionar(depto.id, depto.nom)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors" :class="@js($departamento) === depto.id ? 'bg-primary-50 text-brand-600 font-medium' : 'text-neutral-700'" x-text="depto.nom"></button>
                                 </template>
                             </div>
                         </div>
@@ -343,7 +343,7 @@
                     @click.away="abierto = false"
                     class="relative"
                     wire:key="filter-provincia-{{ $departamento }}">
-                        <label class="block text-xs font-medium mb-1.5 {{ $provincia > 0 ? 'text-primary-600 font-semibold' : 'text-neutral-600' }} transition-colors">Provincia</label>
+                        <label class="block text-xs font-medium mb-1.5 {{ $provincia > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Provincia</label>
                         <button
                             type="button"
                             @click="{{ $departamento === 0 ? '' : 'abierto = !abierto' }}"
@@ -359,7 +359,7 @@
                                     {{ collect($provincias)->firstWhere('id', $provincia)['nom'] ?? 'Todas' }}
                                 @endif
                             </span>
-                            <svg class="w-4 h-4 {{ $provincia > 0 ? 'text-primary-600' : 'text-neutral-400' }} transition-colors" :class="{'rotate-180': abierto}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 {{ $provincia > 0 ? 'text-brand-600' : 'text-neutral-400' }} transition-colors" :class="{'rotate-180': abierto}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
@@ -373,11 +373,11 @@
                                 >
                             </div>
                             <div class="overflow-y-auto max-h-52">
-                                <button type="button" @click="seleccionar(0)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors {{ $provincia === 0 ? 'bg-primary-50 text-primary-600 font-medium' : 'text-neutral-700' }}">
+                                <button type="button" @click="seleccionar(0)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors {{ $provincia === 0 ? 'bg-primary-50 text-brand-600 font-medium' : 'text-neutral-700' }}">
                                     Todas
                                 </button>
                                 <template x-for="prov in opcionesFiltradas()" :key="prov.id">
-                                    <button type="button" @click="seleccionar(prov.id)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors" :class="@js($provincia) === prov.id ? 'bg-primary-50 text-primary-600 font-medium' : 'text-neutral-700'" x-text="prov.nom"></button>
+                                    <button type="button" @click="seleccionar(prov.id)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors" :class="@js($provincia) === prov.id ? 'bg-primary-50 text-brand-600 font-medium' : 'text-neutral-700'" x-text="prov.nom"></button>
                                 </template>
                             </div>
                         </div>
@@ -421,7 +421,7 @@
                     @click.away="abierto = false"
                     class="relative"
                     wire:key="filter-distrito-{{ $provincia }}">
-                        <label class="block text-xs font-medium mb-1.5 {{ $distrito > 0 ? 'text-primary-600 font-semibold' : 'text-neutral-600' }} transition-colors">Distrito</label>
+                        <label class="block text-xs font-medium mb-1.5 {{ $distrito > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Distrito</label>
                         <button
                             type="button"
                             @click="{{ $provincia === 0 ? '' : 'abierto = !abierto' }}"
@@ -437,7 +437,7 @@
                                     {{ collect($distritos)->firstWhere('id', $distrito)['nom'] ?? 'Todos' }}
                                 @endif
                             </span>
-                            <svg class="w-4 h-4 {{ $distrito > 0 ? 'text-primary-600' : 'text-neutral-400' }} transition-colors" :class="{'rotate-180': abierto}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 {{ $distrito > 0 ? 'text-brand-600' : 'text-neutral-400' }} transition-colors" :class="{'rotate-180': abierto}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
@@ -451,11 +451,11 @@
                                 >
                             </div>
                             <div class="overflow-y-auto max-h-52">
-                                <button type="button" @click="seleccionar(0)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors {{ $distrito === 0 ? 'bg-primary-50 text-primary-600 font-medium' : 'text-neutral-700' }}">
+                                <button type="button" @click="seleccionar(0)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors {{ $distrito === 0 ? 'bg-primary-50 text-brand-600 font-medium' : 'text-neutral-700' }}">
                                     Todos
                                 </button>
                                 <template x-for="dist in opcionesFiltradas()" :key="dist.id">
-                                    <button type="button" @click="seleccionar(dist.id)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors" :class="@js($distrito) === dist.id ? 'bg-primary-50 text-primary-600 font-medium' : 'text-neutral-700'" x-text="dist.nom"></button>
+                                    <button type="button" @click="seleccionar(dist.id)" class="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 transition-colors" :class="@js($distrito) === dist.id ? 'bg-primary-50 text-brand-600 font-medium' : 'text-neutral-700'" x-text="dist.nom"></button>
                                 </template>
                             </div>
                         </div>
@@ -708,7 +708,7 @@
                                     @php
                                         $estado = strtolower($contrato['nomEstadoContrato'] ?? '');
                                         $badgeClass = match(true) {
-                                            str_contains($estado, 'vigente') => 'bg-secondary-500/10 text-secondary-600 border-secondary-200',
+                                            str_contains($estado, 'vigente') => 'bg-secondary-500/10 text-secondary-500 border-secondary-200',
                                             str_contains($estado, 'evaluación') => 'bg-yellow-50 text-yellow-700 border-yellow-200',
                                             str_contains($estado, 'culminado') => 'bg-neutral-100 text-neutral-700 border-neutral-200',
                                             default => 'bg-neutral-100 text-neutral-700 border-neutral-200',
@@ -733,7 +733,7 @@
                                             wire:click="hacerSeguimiento({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
+                                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
                                             title="Hacer seguimiento"
                                             @mouseenter="showTooltip('Hacer seguimiento', $event)"
                                             @mouseleave="hideTooltip()"
@@ -749,7 +749,7 @@
                                             wire:click="verContrato({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="verContrato({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-secondary-200 text-xs font-semibold text-secondary-600 bg-secondary-50 hover:bg-secondary-100 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-secondary-200 text-xs font-semibold text-secondary-500 bg-secondary-50 hover:bg-secondary-100 transition-colors disabled:opacity-50 disabled:cursor-wait"
                                             title="Ver detalle del proceso"
                                         >
                                             <svg wire:loading.remove wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -764,7 +764,7 @@
                                             wire:click="descargarTdr({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="descargarTdr({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
                                             title="Descargar TDR"
                                         >
                                             <svg wire:loading.remove wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -779,7 +779,7 @@
                                             wire:click="analizarTdr({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="analizarTdr({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeAnalizar ? '' : 'opacity-70' }}"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 text-xs font-semibold text-brand-600 bg-primary-50 hover:bg-primary-100 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeAnalizar ? '' : 'opacity-70' }}"
                                             title="Analizar con IA"
                                         >
                                             <svg wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -845,7 +845,7 @@
                             @foreach(range($start, $end) as $i)
                                 <button
                                     wire:click="irAPagina({{ $i }})"
-                                    class="w-10 h-10 text-sm font-bold rounded-xl transition-all {{ $i === $currentPage ? 'bg-primary-500 text-white shadow-lg scale-110 ring-2 ring-primary-300' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-50 hover:border-primary-500 hover:text-primary-600 shadow-sm' }}"
+                                    class="w-10 h-10 text-sm font-bold rounded-xl transition-all {{ $i === $currentPage ? 'bg-primary-500 text-white shadow-lg scale-110 ring-2 ring-primary-300' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-50 hover:border-primary-500 hover:text-brand-600 shadow-sm' }}"
                                 >
                                     {{ $i }}
                                 </button>
@@ -884,7 +884,7 @@
                 $det = $contratoDetalle;
                 $estadoDet = strtolower($det['nomEstadoContrato'] ?? '');
                 $badgeDetalle = match(true) {
-                    str_contains($estadoDet, 'vigente') => 'bg-secondary-500/10 text-secondary-600 border-secondary-200',
+                    str_contains($estadoDet, 'vigente') => 'bg-secondary-500/10 text-secondary-500 border-secondary-200',
                     str_contains($estadoDet, 'evaluación') => 'bg-yellow-50 text-yellow-700 border-yellow-200',
                     str_contains($estadoDet, 'culminado') => 'bg-neutral-100 text-neutral-700 border-neutral-200',
                     default => 'bg-neutral-100 text-neutral-700 border-neutral-200',
@@ -976,7 +976,7 @@
                                 <p class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">¿Se puede cotizar?</p>
                             </div>
                             @if($puedeCotizar)
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-secondary-500/10 text-secondary-600 border border-secondary-200">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-secondary-500/10 text-secondary-500 border border-secondary-200">
                                     <span class="w-2 h-2 rounded-full bg-secondary-500 animate-pulse"></span>
                                     Sí, abierto
                                 </span>
@@ -994,7 +994,7 @@
                                 wire:click="cerrarDetalle(); hacerSeguimiento({{ $det['idContrato'] }})"
                                 wire:loading.attr="disabled"
                                 wire:target="hacerSeguimiento({{ $det['idContrato'] }})"
-                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
                             >
                                 <svg wire:loading.remove wire:target="hacerSeguimiento({{ $det['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -1007,7 +1007,7 @@
                                 wire:click="cerrarDetalle(); descargarTdr({{ $det['idContrato'] }})"
                                 wire:loading.attr="disabled"
                                 wire:target="descargarTdr({{ $det['idContrato'] }})"
-                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
                             >
                                 <svg wire:loading.remove wire:target="descargarTdr({{ $det['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
@@ -1086,7 +1086,7 @@
                                     <div class="flex items-center gap-2 mb-1">
                                         <p class="text-xs font-semibold uppercase text-primary-500 tracking-[0.2em]">Análisis IA del TDR</p>
                                         @if($isCached)
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-secondary-500/10 text-secondary-600 border border-secondary-200">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-secondary-500/10 text-secondary-500 border border-secondary-200">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-secondary-500 animate-pulse"></span>
                                                 Caché
                                             </span>
@@ -1153,7 +1153,7 @@
                                     <div>
                                         <dt class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Estado</dt>
                                         <dd class="mt-1">
-                                            <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-secondary-500/10 text-secondary-600 border border-secondary-200">
+                                            <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-secondary-500/10 text-secondary-500 border border-secondary-200">
                                                 {{ $analisisContrato['estado'] ?? 'No disponible' }}
                                             </span>
                                         </dd>
@@ -1169,7 +1169,7 @@
                             <div class="border border-neutral-200 rounded-2xl p-5">
                                 <div class="flex items-center gap-2 mb-4">
                                     <div class="w-7 h-7 rounded-lg bg-secondary-500/10 flex items-center justify-center">
-                                        <svg class="w-3.5 h-3.5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-3.5 h-3.5 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                         </svg>
                                     </div>
@@ -1294,13 +1294,13 @@
                             <div class="border border-neutral-200 rounded-2xl p-5 flex flex-col">
                                 <div class="flex items-center gap-2 mb-4">
                                     <div class="w-7 h-7 rounded-lg bg-secondary-500/10 flex items-center justify-center">
-                                        <svg class="w-3.5 h-3.5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-3.5 h-3.5 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
                                         </svg>
                                     </div>
                                     <div class="flex-1 flex items-center justify-between">
                                         <h4 class="text-sm font-bold text-neutral-900">Reglas de negocio</h4>
-                                        <span class="inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full bg-secondary-500/10 text-secondary-600">{{ count($reglasList) }}</span>
+                                        <span class="inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full bg-secondary-500/10 text-secondary-500">{{ count($reglasList) }}</span>
                                     </div>
                                 </div>
                                 <ul class="space-y-2.5 flex-1">
@@ -1431,7 +1431,7 @@
                         Mantener sesion
                     </label>
                     @if($loginError)
-                        <div class="bg-primary-500/10 border border-primary-200 text-primary-600 text-xs font-semibold rounded-2xl px-4 py-2">
+                        <div class="bg-primary-500/10 border border-primary-200 text-brand-600 text-xs font-semibold rounded-2xl px-4 py-2">
                             {{ $loginError }}
                         </div>
                     @endif

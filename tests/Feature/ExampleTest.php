@@ -8,11 +8,21 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * La landing pública (/) responde HTTP 200.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_landing_returns_ok(): void
     {
         $response = $this->get('/');
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * El dashboard redirige a login si no hay sesión.
+     */
+    public function test_dashboard_requires_auth(): void
+    {
+        $response = $this->get('/dashboard');
 
         $response->assertRedirect('/login');
     }

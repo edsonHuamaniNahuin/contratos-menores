@@ -869,7 +869,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             : null;
 
         $mensaje = "🏅 <b>Compatibilidad IA</b>\n\n";
-        $mensaje .= "📊 <b>Puntaje:</b> {$score}/100\n";
+        $mensaje .= "📊 <b>Puntaje:</b> {$score}/10\n";
         $mensaje .= "🎯 <b>Nivel:</b> {$nivel}\n";
 
         if ($timestamp) {

@@ -30,8 +30,8 @@
         <div class="bg-white rounded-3xl shadow-soft p-12 border border-neutral-100">
 
             <!-- Icono de herramientas -->
-            <div class="w-20 h-20 mx-auto mb-8 bg-primary-800/10 rounded-full flex items-center justify-center">
-                <svg class="w-10 h-10 text-primary-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-20 h-20 mx-auto mb-8 bg-brand-800/10 rounded-full flex items-center justify-center">
+                <svg class="w-10 h-10 text-brand-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                         d="M11.42 15.17l-5.21 5.21a2.121 2.121 0 01-3-3l5.21-5.21m4.5-4.5l2.83-2.83a1.5 1.5 0 012.12 0l.71.71a1.5 1.5 0 010 2.12l-2.83 2.83m-7.07 0l7.07-7.07"/>
                 </svg>
@@ -48,10 +48,10 @@
 
             <div class="bg-secondary-500/10 rounded-2xl p-5 mb-8">
                 <div class="flex items-center justify-center gap-2 mb-2">
-                    <svg class="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
                     </svg>
-                    <span class="text-sm font-semibold text-secondary-600">Volveremos pronto</span>
+                    <span class="text-sm font-semibold text-secondary-500">Volveremos pronto</span>
                 </div>
                 <p class="text-sm text-neutral-600">
                     Mientras tanto, puedes seguir usando el buscador público y todas las
@@ -61,11 +61,11 @@
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <a href="{{ route('planes') }}"
-                   class="px-6 py-2.5 text-sm font-medium text-primary-800 border border-primary-800/20 hover:bg-primary-800/5 rounded-full transition-colors">
+                   class="px-6 py-2.5 text-sm font-medium text-brand-800 border border-brand-800/20 hover:bg-brand-800/5 rounded-full transition-colors">
                     Ver planes
                 </a>
                 <a href="{{ url('/') }}"
-                   class="px-6 py-2.5 text-sm font-medium text-white bg-primary-800 hover:bg-primary-600 rounded-full transition-colors">
+                   class="px-6 py-2.5 text-sm font-medium text-white bg-brand-800 hover:bg-brand-600 rounded-full transition-colors">
                     Ir al inicio
                 </a>
             </div>
@@ -73,7 +73,7 @@
 
         <p class="text-xs text-neutral-400 mt-8">
             Si tienes dudas, escríbenos a
-            <a href="mailto:noreply@licitacionesmype.pe" class="text-primary-800 hover:underline">noreply@licitacionesmype.pe</a>
+            <a href="mailto:noreply@licitacionesmype.pe" class="text-brand-800 hover:underline">noreply@licitacionesmype.pe</a>
         </p>
     </div>
 

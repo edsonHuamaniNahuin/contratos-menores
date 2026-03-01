@@ -27,7 +27,7 @@
         <div class="lg:col-span-2 bg-white rounded-3xl shadow-soft p-4 sm:p-8 border border-neutral-100">
             <div class="flex items-center gap-3 mb-6">
                 <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary-500/10">
-                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
                 </span>
@@ -136,7 +136,7 @@
                 @if(auth()->user())
                     <div class="mt-4 flex flex-wrap justify-center gap-1.5">
                         @foreach(auth()->user()->roles as $role)
-                            <span class="px-2.5 py-0.5 bg-primary-500/10 text-primary-600 border border-primary-500/20 rounded-full text-[11px] font-semibold">
+                            <span class="px-2.5 py-0.5 bg-primary-500/10 text-brand-600 border border-primary-500/20 rounded-full text-[11px] font-semibold">
                                 {{ $role->name }}
                             </span>
                         @endforeach

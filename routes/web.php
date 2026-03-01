@@ -30,6 +30,10 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth');
 
 // ─── Rutas públicas ───────────────────────────────────────────────
+Route::get('/', function () {
+    return view('landing');
+})->name('landing');
+
 Route::get('/buscador-publico', function () {
     return view('buscador-publico');
 })->name('buscador.publico');
@@ -41,6 +45,10 @@ Route::get('/planes', function () {
 Route::get('/contacto', function () {
     return view('contacto');
 })->name('contacto');
+
+Route::get('/manual', function () {
+    return view('manual');
+})->name('manual');
 
 // Ruta para descargar archivos temporales del SEACE
 Route::get('/seace/download/{filename}', function ($filename) {
@@ -79,7 +87,7 @@ Route::middleware('auth')->group(function () {
 
 // ─── Rutas protegidas (requieren auth + email verificado) ─────────────
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/', function () {
+    Route::get('/dashboard', function () {
         return view('home');
     })->name('home');
 
@@ -127,22 +135,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ─── Suscripciones / Premium ──────────────────────────────────────
 
-    // ⚠️ PASARELA DE PAGO DESACTIVADA TEMPORALMENTE (mantenimiento Openpay)
-    // Descomentar las rutas originales cuando se resuelva el problema de tokens:
-    //
-    // Route::get('/planes/checkout/{plan}', [SubscriptionController::class, 'checkout'])
-    //     ->name('planes.checkout');
-    //
-    // Route::post('/planes/charge', [SubscriptionController::class, 'charge'])
-    //     ->name('planes.charge');
+    Route::get('/planes/checkout/{plan}', [SubscriptionController::class, 'checkout'])
+        ->name('planes.checkout');
 
-    Route::get('/planes/checkout/{plan}', function () {
-        return view('pagos-mantenimiento');
-    })->name('planes.checkout');
+    Route::post('/planes/charge', [SubscriptionController::class, 'charge'])
+        ->name('planes.charge');
 
-    Route::post('/planes/charge', function () {
-        return redirect()->route('planes.checkout', ['plan' => 'monthly']);
-    })->name('planes.charge');
+    // Callback de MercadoPago (retorno después de pagar en MP)
+    Route::get('/planes/callback', [SubscriptionController::class, 'callback'])
+        ->name('planes.callback');
 
     Route::get('/suscripciones-premium', function () {
         return view('suscripciones-premium');

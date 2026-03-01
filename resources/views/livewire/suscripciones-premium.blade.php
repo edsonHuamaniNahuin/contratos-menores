@@ -113,12 +113,12 @@
                                         </span>
                                         @break
                                     @case('monthly')
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-600">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-brand-600">
                                             📅 Mensual
                                         </span>
                                         @break
                                     @case('yearly')
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-secondary-500/10 text-secondary-600">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-secondary-500/10 text-secondary-500">
                                             📆 Anual
                                         </span>
                                         @break
@@ -127,7 +127,7 @@
                             <td class="px-6 py-4">
                                 @switch($sub->status)
                                     @case('active')
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-secondary-500/10 text-secondary-600">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-secondary-500/10 text-secondary-500">
                                             ● Activa
                                         </span>
                                         @break
@@ -137,7 +137,7 @@
                                         </span>
                                         @break
                                     @case('cancelled')
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-600">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-brand-600">
                                             ✕ Cancelada
                                         </span>
                                         @break
@@ -156,7 +156,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 @if($sub->isActive())
-                                    <span class="text-xs font-bold {{ $sub->daysRemaining() <= 3 ? 'text-amber-600' : 'text-secondary-600' }}">
+                                    <span class="text-xs font-bold {{ $sub->daysRemaining() <= 3 ? 'text-amber-600' : 'text-secondary-500' }}">
                                         {{ $sub->daysRemaining() }}d
                                     </span>
                                 @else
@@ -175,7 +175,7 @@
                                     @if($sub->isActive())
                                         <button
                                             wire:click="openExtendModal({{ $sub->id }})"
-                                            class="px-3 py-1.5 text-xs font-semibold rounded-full border border-primary-300 text-primary-600 hover:bg-primary-50 transition-colors"
+                                            class="px-3 py-1.5 text-xs font-semibold rounded-full border border-primary-300 text-brand-600 hover:bg-primary-50 transition-colors"
                                             title="Extender"
                                         >
                                             + Días
@@ -211,7 +211,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <button
                         wire:click="previousPage"
-                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50"
+                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50"
                         @if($subscriptions->onFirstPage()) disabled @endif
                     >
                         Anterior
@@ -219,7 +219,7 @@
                     <span class="text-xs text-neutral-500">Página {{ $subscriptions->currentPage() }} de {{ $subscriptions->lastPage() }}</span>
                     <button
                         wire:click="nextPage"
-                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50"
+                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50"
                         @if(! $subscriptions->hasMorePages()) disabled @endif
                     >
                         Siguiente

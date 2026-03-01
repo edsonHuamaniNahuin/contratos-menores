@@ -80,7 +80,7 @@
 
                         @if($plan === 'yearly')
                             <div class="mt-4 bg-secondary-500/10 rounded-2xl p-3 text-center">
-                                <p class="text-xs font-semibold text-secondary-600">Ahorras S/ {{ number_format(49*12 - $price, 2) }} al año</p>
+                                <p class="text-xs font-semibold text-secondary-500">Ahorras S/ {{ number_format(49*12 - $price, 2) }} al año</p>
                             </div>
                         @endif
                     @endif

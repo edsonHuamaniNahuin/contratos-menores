@@ -10,20 +10,20 @@
                 <button
                     type="button"
                     wire:click="mesAnterior"
-                    class="w-10 h-10 rounded-full bg-white border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 shadow-sm transition-colors"
+                    class="w-10 h-10 rounded-full bg-white border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 shadow-sm transition-colors"
                     title="Mes anterior"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
                 </button>
-                <div class="px-5 py-2.5 rounded-full bg-white border border-neutral-200 text-sm font-semibold text-primary-600">
+                <div class="px-5 py-2.5 rounded-full bg-white border border-neutral-200 text-sm font-semibold text-brand-600">
                     {{ $this->mesLabel }}
                 </div>
                 <button
                     type="button"
                     wire:click="mesSiguiente"
-                    class="w-10 h-10 rounded-full bg-white border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 shadow-sm transition-colors"
+                    class="w-10 h-10 rounded-full bg-white border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 shadow-sm transition-colors"
                     title="Mes siguiente"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

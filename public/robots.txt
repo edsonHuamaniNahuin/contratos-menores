@@ -1,2 +1,29 @@
 User-agent: *
-Disallow:
+Allow: /
+Allow: /buscador-publico
+Allow: /planes
+Allow: /manual
+Allow: /contacto
+
+# Rutas privadas
+Disallow: /dashboard
+Disallow: /cuentas
+Disallow: /prueba-endpoints
+Disallow: /configuracion
+Disallow: /tdr-repository
+Disallow: /suscriptores
+Disallow: /roles-permisos
+Disallow: /seguimientos
+Disallow: /perfil
+Disallow: /mis-procesos
+Disallow: /suscripciones-premium
+Disallow: /email/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /logout
+Disallow: /seace/
+Disallow: /tdr/
+
+Sitemap: https://licitacionesmype.com/sitemap.xml

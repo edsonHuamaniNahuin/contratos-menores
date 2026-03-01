@@ -44,10 +44,11 @@ DEPLOY_LOG="$LOG_DIR/deploy.log"
 
 # Servicios del proyecto (orden de inicio importa)
 SERVICES=(
-    "analizador-tdr"      # 1ro: FastAPI (sin dependencias)
-    "vigilante-queue"     # 2do: Queue worker (procesa jobs)
-    "telegram-bot"        # 3ro: Telegram (depende de queue + analizador)
-    "whatsapp-bot"        # 4to: WhatsApp (depende de queue + analizador)
+    "analizador-tdr"        # 1ro: FastAPI (sin dependencias)
+    "vigilante-queue"       # 2do: Queue worker (procesa jobs)
+    "vigilante-scheduler"   # 3ro: Scheduler (cron jobs via schedule:work)
+    "telegram-bot"          # 4to: Telegram (depende de queue + analizador)
+    "whatsapp-bot"          # 5to: WhatsApp (depende de queue + analizador)
 )
 
 # Procesos que necesitan force-kill (long-polling, bloqueos)
@@ -55,6 +56,7 @@ ZOMBIE_PATTERNS=(
     "artisan telegram:listen"
     "artisan whatsapp:listen"
     "artisan queue:work"
+    "artisan schedule:work"
     "uvicorn main:app"
 )
 
@@ -146,10 +148,11 @@ ensure_clean() {
     sudo systemctl reset-failed "${svc}.service" 2>/dev/null || true
 
     case "$svc" in
-        telegram-bot)     pattern="artisan telegram:listen" ;;
-        whatsapp-bot)     pattern="artisan whatsapp:listen" ;;
-        vigilante-queue)  pattern="artisan queue:work" ;;
-        analizador-tdr)   pattern="uvicorn main:app" ;;
+        telegram-bot)         pattern="artisan telegram:listen" ;;
+        whatsapp-bot)         pattern="artisan whatsapp:listen" ;;
+        vigilante-queue)      pattern="artisan queue:work" ;;
+        vigilante-scheduler)  pattern="artisan schedule:work" ;;
+        analizador-tdr)       pattern="uvicorn main:app" ;;
     esac
 
     if [ -n "$pattern" ] && pgrep -f "$pattern" &>/dev/null; then

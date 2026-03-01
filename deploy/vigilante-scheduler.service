@@ -1,0 +1,32 @@
+[Unit]
+Description=Vigilante SEACE - Laravel Scheduler
+After=network.target mysql.service
+Wants=mysql.service
+# Límites de reinicio — DEBE estar en [Unit] para systemd <248
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vigilante-seace
+
+# schedule:work es un daemon que ejecuta schedule:run cada minuto
+# Reemplaza la necesidad de un cronjob (* * * * * php artisan schedule:run)
+ExecStart=/usr/local/php82/bin/php artisan schedule:work
+
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/vigilante-seace/scheduler.log
+StandardError=append:/var/log/vigilante-seace/scheduler-error.log
+
+# Seguridad
+NoNewPrivileges=true
+ReadWritePaths=/var/www/vigilante-seace/storage /var/log/vigilante-seace /tmp
+
+[Install]
+WantedBy=multi-user.target

@@ -16,8 +16,12 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Webhook de Openpay (sin autenticación, firma verificada en controller)
-Route::post('/webhooks/openpay', [SubscriptionController::class, 'webhook'])
+Route::post('/webhooks/openpay', [SubscriptionController::class, 'webhookOpenpay'])
     ->name('webhooks.openpay');
+
+// Webhook de MercadoPago (sin autenticación, firma verificada en controller)
+Route::post('/webhooks/mercadopago', [SubscriptionController::class, 'webhookMercadoPago'])
+    ->name('webhooks.mercadopago');
 
 // Webhooks de WhatsApp Business Cloud API (sin autenticación, token verificado en controller)
 Route::get('/webhooks/whatsapp', [WebhookWhatsAppController::class, 'verify'])

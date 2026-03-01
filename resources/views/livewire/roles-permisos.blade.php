@@ -57,7 +57,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <button
                         wire:click="previousPage"
-                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50"
+                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50"
                         @if($users->onFirstPage()) disabled @endif
                     >
                         Anterior
@@ -65,7 +65,7 @@
                     <span class="text-xs text-neutral-500">Pagina {{ $users->currentPage() }} de {{ $users->lastPage() }}</span>
                     <button
                         wire:click="nextPage"
-                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-colors disabled:opacity-50"
+                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50"
                         @if(! $users->hasMorePages()) disabled @endif
                     >
                         Siguiente

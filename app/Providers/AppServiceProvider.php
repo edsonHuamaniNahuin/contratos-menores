@@ -3,9 +3,12 @@
 namespace App\Providers;
 
 use App\Contracts\NotificationTrackerContract;
+use App\Listeners\SendNewUserNotifications;
 use App\Services\ProcessNotificationTracker;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ── Evento: nuevo usuario registrado → notificar admin + correo bienvenida ──
+        Event::listen(Registered::class, SendNewUserNotifications::class);
+
         // ── Rate Limiter para rutas API (requerido por throttleApi()) ──
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());

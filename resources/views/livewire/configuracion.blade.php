@@ -91,6 +91,75 @@
         @endif
     </div>
 
+    {{-- Configuración Telegram Admin Bot (Nuevos usuarios y suscripciones) --}}
+    <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-neutral-900 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-secondary-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.68c.223-.198-.054-.308-.346-.11l-6.4 4.03-2.76-.918c-.6-.183-.612-.6.125-.89l10.782-4.156c.5-.18.943.11.78.89z"/>
+                    </svg>
+                    Bot Admin de Telegram
+                </h2>
+                <p class="text-xs text-neutral-400 mt-1">
+                    Recibe alertas cuando se registran nuevos usuarios o compran suscripciones
+                </p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" wire:model.live="telegram_admin_enabled" class="sr-only peer">
+                <div class="w-14 h-7 bg-neutral-200 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-secondary-500/20 peer-checked:bg-secondary-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all after:shadow-md peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+            </label>
+        </div>
+
+        @if($telegram_admin_enabled)
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        Bot Token <span class="text-primary-500">*</span>
+                    </label>
+                    <input type="text" wire:model="telegram_admin_bot_token"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
+                           placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                    <p class="text-xs text-neutral-400 mt-1">
+                        Bot separado para notificaciones internas — obtener desde <a href="https://t.me/BotFather" target="_blank" class="text-primary-500 hover:underline">@BotFather</a>
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        Chat ID <span class="text-primary-500">*</span>
+                    </label>
+                    <input type="text" wire:model="telegram_admin_chat_id"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
+                           placeholder="123456789">
+                    <p class="text-xs text-neutral-400 mt-1">
+                        Tu Chat ID personal para recibir alertas de gestión del sistema
+                    </p>
+                </div>
+
+                <button wire:click="probarTelegramAdmin"
+                        wire:loading.attr="disabled"
+                        wire:target="probarTelegramAdmin"
+                        class="px-6 py-3 bg-secondary-500 text-white rounded-full hover:bg-secondary-400 font-medium text-sm transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2">
+                    <svg wire:loading.remove wire:target="probarTelegramAdmin" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span wire:loading.remove wire:target="probarTelegramAdmin">Probar Conexión</span>
+                    <span wire:loading wire:target="probarTelegramAdmin">Probando...</span>
+                </button>
+
+                @if($telegramAdminTestResult)
+                    <div class="mt-4 p-4 rounded-2xl border {{ $telegramAdminTestResult['success'] ? 'bg-secondary-500/10 border-secondary-500' : 'bg-primary-500/10 border-primary-500' }}">
+                        <p class="text-sm font-medium text-neutral-900">
+                            {{ $telegramAdminTestResult['success'] ? '✅' : '❌' }}
+                            {{ $telegramAdminTestResult['success'] ? $telegramAdminTestResult['message'] : $telegramAdminTestResult['error'] }}
+                        </p>
+                    </div>
+                @endif
+            </div>
+        @endif
+    </div>
+
     {{-- Configuración Analizador TDR --}}
     <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
         <div class="flex items-center justify-between mb-6">
@@ -158,6 +227,182 @@
                 @endif
             </div>
         @endif
+    </div>
+
+    {{-- Configuración Pasarela de Pago --}}
+    <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-neutral-900 flex items-center gap-2">
+                <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
+                Pasarela de Pago
+            </h2>
+            <p class="text-xs text-neutral-400 mt-1">
+                Configura la pasarela que procesará los pagos de suscripciones premium
+            </p>
+        </div>
+
+        {{-- Selector de pasarela --}}
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-neutral-600 mb-3">Pasarela activa</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {{-- MercadoPago --}}
+                <label class="relative cursor-pointer">
+                    <input type="radio" wire:model.live="payment_gateway" value="mercadopago" class="sr-only peer">
+                    <div class="p-4 rounded-2xl border-2 transition-all peer-checked:border-secondary-500 peer-checked:bg-secondary-500/5 border-neutral-200 hover:border-neutral-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-full bg-[#009EE3]/10 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-[#009EE3]" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M11.6 2C7.2 2 3.6 5.2 3 9.5c-.7 4.7 2.5 9.1 7.2 9.8.5.1 1 .1 1.5.1 4.1 0 7.7-3 8.3-7.1C20.7 7.6 17.5 3.2 12.8 2.2c-.4-.1-.8-.2-1.2-.2zm2.1 7.7c-.2 1.9-1.5 3.2-3.3 3.5-.2 0-.4.1-.6.1-1.6 0-3-1-3.4-2.6-.5-1.9.5-3.8 2.3-4.4.4-.1.7-.2 1.1-.2 1.6 0 3 1 3.4 2.5.2.4.3.7.5 1.1z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-neutral-900">MercadoPago</p>
+                                <p class="text-xs text-neutral-400">Checkout Pro (redirect)</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-neutral-500">Tarjeta, Yape, transferencia. Sin renovación automática.</p>
+                        <div class="absolute top-3 right-3 w-5 h-5 rounded-full border-2 peer-checked:border-secondary-500 peer-checked:bg-secondary-500 border-neutral-300 flex items-center justify-center transition-all">
+                            <svg class="w-3 h-3 text-white hidden peer-checked:block" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                </label>
+
+                {{-- Openpay --}}
+                <label class="relative cursor-pointer">
+                    <input type="radio" wire:model.live="payment_gateway" value="openpay" class="sr-only peer">
+                    <div class="p-4 rounded-2xl border-2 transition-all peer-checked:border-secondary-500 peer-checked:bg-secondary-500/5 border-neutral-200 hover:border-neutral-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-full bg-[#00385C]/10 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-[#00385C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-neutral-900">Openpay</p>
+                                <p class="text-xs text-neutral-400">Tokenización en página</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-neutral-500">Solo tarjeta. Soporta renovación automática con cargo recurrente.</p>
+                        <div class="absolute top-3 right-3 w-5 h-5 rounded-full border-2 peer-checked:border-secondary-500 peer-checked:bg-secondary-500 border-neutral-300 flex items-center justify-center transition-all">
+                            <svg class="w-3 h-3 text-white hidden peer-checked:block" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        {{-- Credenciales MercadoPago --}}
+        @if($payment_gateway === 'mercadopago')
+            <div class="space-y-4 border-t border-neutral-100 pt-6">
+                <h3 class="text-sm font-bold text-neutral-700 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#009EE3]"></span>
+                    Credenciales MercadoPago
+                </h3>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        Access Token <span class="text-primary-500">*</span>
+                    </label>
+                    <input type="password" wire:model="mercadopago_access_token"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all font-mono text-sm"
+                           placeholder="APP_USR-0000000000000000-000000-xxxxxxxxxx-000000000">
+                    <p class="text-xs text-neutral-400 mt-1">
+                        Token privado — panel <a href="https://www.mercadopago.com.pe/developers/panel/app" target="_blank" class="text-primary-500 hover:underline">MercadoPago Developers</a>
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        Public Key <span class="text-primary-500">*</span>
+                    </label>
+                    <input type="text" wire:model="mercadopago_public_key"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all font-mono text-sm"
+                           placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        Webhook Secret <span class="text-neutral-400 font-normal">(opcional)</span>
+                    </label>
+                    <input type="password" wire:model="mercadopago_webhook_secret"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all font-mono text-sm"
+                           placeholder="Firma secreta para verificar webhooks">
+                    <p class="text-xs text-neutral-400 mt-1">
+                        Configura el webhook en <code class="bg-neutral-100 px-1.5 py-0.5 rounded text-xs">{{ url('/api/webhooks/mercadopago') }}</code>
+                    </p>
+                </div>
+            </div>
+        @endif
+
+        {{-- Credenciales Openpay --}}
+        @if($payment_gateway === 'openpay')
+            <div class="space-y-4 border-t border-neutral-100 pt-6">
+                <h3 class="text-sm font-bold text-neutral-700 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#00385C]"></span>
+                    Credenciales Openpay
+                </h3>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        Merchant ID <span class="text-primary-500">*</span>
+                    </label>
+                    <input type="text" wire:model="openpay_merchant_id"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all font-mono text-sm"
+                           placeholder="mxxxxxxxxxxxxxxxxx">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        Private Key (SK) <span class="text-primary-500">*</span>
+                    </label>
+                    <input type="password" wire:model="openpay_private_key"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all font-mono text-sm"
+                           placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        Public Key (PK) <span class="text-primary-500">*</span>
+                    </label>
+                    <input type="text" wire:model="openpay_public_key"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all font-mono text-sm"
+                           placeholder="pk_xxxxxxxxxxxxxxxxxxxxxxxx">
+                </div>
+                <div class="flex items-center gap-3">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" wire:model.live="openpay_production" class="sr-only peer">
+                        <div class="w-14 h-7 bg-neutral-200 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-secondary-500/20 peer-checked:bg-secondary-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all after:shadow-md peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                    </label>
+                    <span class="text-sm text-neutral-600">Modo Producción</span>
+                </div>
+                <p class="text-xs text-neutral-400 mt-1">
+                    Webhook URL: <code class="bg-neutral-100 px-1.5 py-0.5 rounded text-xs">{{ url('/api/webhooks/openpay') }}</code>
+                </p>
+            </div>
+        @endif
+
+        {{-- Botón probar --}}
+        <div class="mt-6">
+            <button wire:click="probarGateway"
+                    wire:loading.attr="disabled"
+                    wire:target="probarGateway"
+                    class="px-6 py-3 bg-primary-500 text-white rounded-full hover:bg-primary-400 font-medium text-sm transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2">
+                <svg wire:loading.remove wire:target="probarGateway" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span wire:loading.remove wire:target="probarGateway">Verificar Conexión</span>
+                <span wire:loading wire:target="probarGateway">Verificando...</span>
+            </button>
+
+            @if($gatewayTestResult)
+                <div class="mt-4 p-4 rounded-2xl border {{ $gatewayTestResult['success'] ? 'bg-secondary-500/10 border-secondary-500' : 'bg-primary-500/10 border-primary-500' }}">
+                    <p class="text-sm font-medium text-neutral-900">
+                        {{ $gatewayTestResult['success'] ? '✅' : '❌' }}
+                        {{ $gatewayTestResult['success'] ? $gatewayTestResult['message'] : $gatewayTestResult['error'] }}
+                    </p>
+                </div>
+            @endif
+        </div>
     </div>
 
     {{-- Botón Guardar --}}

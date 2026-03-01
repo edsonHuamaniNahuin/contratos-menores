@@ -24,6 +24,13 @@ module.exports = {
                     200: '#79E9BC',
                     100: '#A4EFD1',
                 },
+                // Paleta "Brand" — Tonos oscuros para landing, heroes y páginas públicas
+                brand: {
+                    900: '#012D32', // Más oscuro (hover, gradientes profundos)
+                    800: '#025964', // Base oscuro (botones, badges, heroes)
+                    600: '#2A737D', // Acento medio (gradientes finales)
+                    200: '#7BA8AD', // Texto claro sobre fondos oscuros
+                },
                 // Escala de Grises y Neutros (UI Minimalista)
                 neutral: {
                     50: '#F9FAFB', // Fondo general (App Background)

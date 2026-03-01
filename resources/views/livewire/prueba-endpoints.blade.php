@@ -547,7 +547,7 @@
                                     </svg>
                                     Tipo de Contratación
                                 </div>
-                                <p class="text-base font-semibold text-primary-800">{{ $resultadoAnalisis['contexto_contrato']['objeto'] }}</p>
+                                <p class="text-base font-semibold text-brand-800">{{ $resultadoAnalisis['contexto_contrato']['objeto'] }}</p>
                             </div>
 
                             <!-- Fecha de Cierre -->
@@ -575,7 +575,7 @@
 
                         <!-- Etapa y Fecha -->
                         <div class="mt-4 flex items-center gap-3 flex-wrap">
-                            <span class="px-4 py-2 rounded-full text-xs font-medium bg-primary-800/10 text-primary-800">
+                            <span class="px-4 py-2 rounded-full text-xs font-medium bg-brand-800/10 text-brand-800">
                                 {{ $resultadoAnalisis['contexto_contrato']['etapa'] }}
                             </span>
                             @if($resultadoAnalisis['contexto_contrato']['fecha_publicacion'])
@@ -588,7 +588,7 @@
                 @endif
 
                 <!-- ANÁLISIS INTELIGENTE DEL TDR -->
-                <div class="mt-4 bg-gradient-to-br from-primary-800/5 to-secondary-500/5 border-2 {{ $resultadoAnalisis['success'] ? 'border-secondary-500' : 'border-primary-500' }} rounded-2xl p-6">
+                <div class="mt-4 bg-gradient-to-br from-brand-800/5 to-secondary-500/5 border-2 {{ $resultadoAnalisis['success'] ? 'border-secondary-500' : 'border-primary-500' }} rounded-2xl p-6">
                     <div class="flex items-start gap-3 mb-4">
                         @if($resultadoAnalisis['success'])
                             <svg class="w-6 h-6 text-secondary-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -1015,8 +1015,8 @@
                                             </p>
                                         </div>
                                         <div class="flex gap-2 text-xs font-semibold flex-wrap">
-                                            <span class="px-3 py-1 rounded-full bg-secondary-500/15 text-secondary-600">Coincidencias: {{ $suscriptor['coincidencias'] }}</span>
-                                            <span class="px-3 py-1 rounded-full bg-primary-500/15 text-primary-600">Enviados: {{ $suscriptor['envios_exitosos'] }}</span>
+                                            <span class="px-3 py-1 rounded-full bg-secondary-500/15 text-secondary-500">Coincidencias: {{ $suscriptor['coincidencias'] }}</span>
+                                            <span class="px-3 py-1 rounded-full bg-primary-500/15 text-brand-600">Enviados: {{ $suscriptor['envios_exitosos'] }}</span>
                                             @if(($suscriptor['dedup_omitidos'] ?? 0) > 0)
                                                 <span class="px-3 py-1 rounded-full bg-neutral-100 text-neutral-500">Dedup: {{ $suscriptor['dedup_omitidos'] }}</span>
                                             @endif
@@ -1052,7 +1052,7 @@
                                         </div>
                                     @endif
                                     @if(!empty($suscriptor['errores']))
-                                        <div class="mt-3 text-[11px] text-primary-600">
+                                        <div class="mt-3 text-[11px] text-brand-600">
                                             @foreach($suscriptor['errores'] as $error)
                                                 <p>⚠️ {{ $error }}</p>
                                             @endforeach
@@ -1195,7 +1195,7 @@
                                                             @endforeach
                                                         </div>
                                                         @if(!empty($envio['mensaje']))
-                                                            <p class="w-full text-[10px] text-primary-600">{{ $envio['mensaje'] }}</p>
+                                                            <p class="w-full text-[10px] text-brand-600">{{ $envio['mensaje'] }}</p>
                                                         @endif
                                                     </div>
                                                 @endforeach

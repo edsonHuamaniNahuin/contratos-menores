@@ -77,7 +77,7 @@
                 <div x-data="{ showHelp: false }">
                     <label class="flex items-center gap-1.5 text-xs font-medium text-neutral-600 mb-2">
                         Chat ID <span class="text-red-500">*</span>
-                        <button type="button" @click="showHelp = !showHelp" class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/15 hover:bg-primary-500/25 text-primary-600 transition-colors ring-1 ring-primary-500/30" title="Como obtener tu Chat ID">
+                        <button type="button" @click="showHelp = !showHelp" class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/15 hover:bg-primary-500/25 text-brand-600 transition-colors ring-1 ring-primary-500/30" title="Como obtener tu Chat ID">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01"/></svg>
                         </button>
                     </label>
@@ -104,7 +104,7 @@
 
                             <div class="flex items-center gap-2.5 mb-5">
                                 <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-500/10">
-                                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01"/></svg>
+                                    <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01"/></svg>
                                 </span>
                                 <h3 class="text-sm font-bold text-neutral-900">Como obtener tu Chat ID</h3>
                             </div>
@@ -117,7 +117,7 @@
                                         <p class="text-[11px] text-neutral-500 mt-0.5">Busca al bot
                                             <button type="button"
                                                 @click="navigator.clipboard.writeText('@userinfobot'); copied = 'bot'; setTimeout(() => copied = null, 2000)"
-                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 hover:bg-primary-500/10 rounded text-[11px] font-mono text-primary-600 cursor-pointer transition-colors"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 hover:bg-primary-500/10 rounded text-[11px] font-mono text-brand-600 cursor-pointer transition-colors"
                                                 title="Clic para copiar">
                                                 <span x-text="copied === 'bot' ? '✓ Copiado!' : '@userinfobot'"></span>
                                                 <svg x-show="copied !== 'bot'" class="w-3 h-3 text-neutral-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -132,7 +132,7 @@
                                         <p class="text-[11px] text-neutral-500 mt-0.5">Envia el comando
                                             <button type="button"
                                                 @click="navigator.clipboard.writeText('/start'); copied = 'cmd'; setTimeout(() => copied = null, 2000)"
-                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 hover:bg-primary-500/10 rounded text-[11px] font-mono text-primary-600 cursor-pointer transition-colors"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 hover:bg-primary-500/10 rounded text-[11px] font-mono text-brand-600 cursor-pointer transition-colors"
                                                 title="Clic para copiar">
                                                 <span x-text="copied === 'cmd' ? '✓ Copiado!' : '/start'"></span>
                                                 <svg x-show="copied !== 'cmd'" class="w-3 h-3 text-neutral-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -190,7 +190,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col gap-0.5">
                         <div class="flex items-center gap-2 text-xs font-medium text-neutral-600">
-                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/10 text-primary-600">
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/10 text-brand-600">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
                                 </svg>
@@ -227,7 +227,7 @@
                         x-transition:leave-end="opacity-0"
                         class="absolute -top-5 right-0 z-10 flex items-start gap-3 rounded-2xl bg-white border border-primary-200 shadow-soft px-4 py-3 max-w-sm"
                     >
-                        <div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
+                        <div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-brand-600">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M12 5.5a7 7 0 100 14 7 7 0 000-14z" />
                             </svg>
@@ -319,7 +319,7 @@
                                 wire:loading.attr="disabled"
                                 wire:target="agregarKeywordManual"
                                 x-on:click="if(selected.length >= limit){ $event.preventDefault(); $event.stopImmediatePropagation(); triggerLimitToast(); }"
-                                class="px-4 py-2 bg-white border border-primary-500 text-primary-600 rounded-full text-xs font-semibold hover:bg-primary-50 transition-all disabled:opacity-60">
+                                class="px-4 py-2 bg-white border border-primary-500 text-brand-600 rounded-full text-xs font-semibold hover:bg-primary-50 transition-all disabled:opacity-60">
                             <span wire:loading.remove wire:target="agregarKeywordManual">Guardar en catalogo y seleccionar</span>
                             <span wire:loading wire:target="agregarKeywordManual">Guardando...</span>
                         </button>
@@ -388,7 +388,7 @@
                                 @if($isAdmin && $suscripcion->user)
                                     <div class="flex items-center gap-1.5 mb-1.5">
                                         <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                        <span class="text-[11px] font-semibold text-primary-600">{{ $suscripcion->user->name }}</span>
+                                        <span class="text-[11px] font-semibold text-brand-600">{{ $suscripcion->user->name }}</span>
                                         <span class="text-[11px] text-neutral-400">({{ $suscripcion->user->email }})</span>
                                     </div>
                                 @endif
@@ -553,7 +553,7 @@
                     <div x-data="{ showHelp: false }">
                         <label class="flex items-center gap-1.5 text-xs font-medium text-neutral-600 mb-2">
                             Numero de WhatsApp <span class="text-red-500">*</span>
-                            <button type="button" @click="showHelp = !showHelp" class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/15 hover:bg-secondary-500/25 text-primary-600 transition-colors ring-1 ring-primary-500/30" title="Formato del numero">
+                            <button type="button" @click="showHelp = !showHelp" class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/15 hover:bg-secondary-500/25 text-brand-600 transition-colors ring-1 ring-primary-500/30" title="Formato del numero">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01"/></svg>
                             </button>
                         </label>
@@ -607,7 +607,7 @@
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-2 text-xs font-medium text-neutral-600">
-                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/10 text-primary-600">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/10 text-brand-600">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
                                     </svg>
@@ -644,7 +644,7 @@
                             x-transition:leave-end="opacity-0"
                             class="absolute -top-5 right-0 z-10 flex items-start gap-3 rounded-2xl bg-white border border-secondary-500/30 shadow-soft px-4 py-3 max-w-sm"
                         >
-                            <div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
+                            <div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-brand-600">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M12 5.5a7 7 0 100 14 7 7 0 000-14z" />
                                 </svg>
@@ -712,7 +712,7 @@
                                             </div>
                                             <button type="button"
                                                 wire:click="quitarWaKeyword({{ $keywordId }})"
-                                                class="w-7 h-7 flex items-center justify-center rounded-full border border-primary-500/60 text-primary-600 hover:bg-primary-500/10 transition-colors">
+                                                class="w-7 h-7 flex items-center justify-center rounded-full border border-primary-500/60 text-brand-600 hover:bg-primary-500/10 transition-colors">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
@@ -739,7 +739,7 @@
                                     wire:loading.attr="disabled"
                                     wire:target="agregarWaKeywordManual"
                                     x-on:click="if(selected.length >= limit){ $event.preventDefault(); $event.stopImmediatePropagation(); triggerLimitToast(); }"
-                                    class="px-4 py-2 bg-white border border-secondary-500 text-primary-600 rounded-full text-xs font-semibold hover:bg-secondary-500/5 transition-all disabled:opacity-60">
+                                    class="px-4 py-2 bg-white border border-secondary-500 text-brand-600 rounded-full text-xs font-semibold hover:bg-secondary-500/5 transition-all disabled:opacity-60">
                                 <span wire:loading.remove wire:target="agregarWaKeywordManual">Guardar en catalogo y seleccionar</span>
                                 <span wire:loading wire:target="agregarWaKeywordManual">Guardando...</span>
                             </button>
@@ -800,7 +800,7 @@
                         <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
                             <p class="text-sm font-bold text-neutral-900 font-mono">+{{ $whatsappSubscription->phone_number }}</p>
                             @if($whatsappSubscription->activo)
-                                <span class="px-2 py-0.5 bg-secondary-500/20 text-primary-600 border border-secondary-500/30 rounded-full text-xs font-semibold">✓ Activo</span>
+                                <span class="px-2 py-0.5 bg-secondary-500/20 text-brand-600 border border-secondary-500/30 rounded-full text-xs font-semibold">✓ Activo</span>
                             @else
                                 <span class="px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded-full text-xs font-semibold">✗ Inactivo</span>
                             @endif
@@ -818,7 +818,7 @@
                         @if($whatsappSubscription->keywords->isNotEmpty())
                             <div class="flex flex-wrap gap-1.5 mt-3">
                                 @foreach($whatsappSubscription->keywords as $keyword)
-                                    <span class="text-[11px] px-2 py-0.5 rounded-full border border-secondary-500/40 text-primary-600 bg-primary-500/10">
+                                    <span class="text-[11px] px-2 py-0.5 rounded-full border border-secondary-500/40 text-brand-600 bg-primary-500/10">
                                         {{ $keyword->nombre }}
                                     </span>
                                 @endforeach
@@ -1012,7 +1012,7 @@
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-2 text-xs font-medium text-neutral-600">
-                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/10 text-primary-600">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500/10 text-brand-600">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
                                     </svg>
@@ -1050,7 +1050,7 @@
                             x-transition:leave-end="opacity-0"
                             class="absolute -top-5 right-0 z-10 flex items-start gap-3 rounded-2xl bg-white border border-primary-200 shadow-soft px-4 py-3 max-w-sm"
                         >
-                            <div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
+                            <div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-brand-600">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M12 5.5a7 7 0 100 14 7 7 0 000-14z" />
                                 </svg>
@@ -1145,7 +1145,7 @@
                                     wire:loading.attr="disabled"
                                     wire:target="agregarEmailKeywordManual"
                                     x-on:click="if(selected.length >= limit){ $event.preventDefault(); $event.stopImmediatePropagation(); triggerLimitToast(); }"
-                                    class="px-4 py-2 bg-white border border-primary-500 text-primary-600 rounded-full text-xs font-semibold hover:bg-primary-50 transition-all disabled:opacity-60">
+                                    class="px-4 py-2 bg-white border border-primary-500 text-brand-600 rounded-full text-xs font-semibold hover:bg-primary-50 transition-all disabled:opacity-60">
                                 <span wire:loading.remove wire:target="agregarEmailKeywordManual">Guardar en catalogo y seleccionar</span>
                                 <span wire:loading wire:target="agregarEmailKeywordManual">Guardando...</span>
                             </button>
