@@ -39,16 +39,37 @@ APP_DIR="${VPS_APP_DIR:-/var/www/vigilante-seace}"
 PYTHON_DIR="$APP_DIR/analizador-tdr"
 PHP_BIN="${PHP_BIN:-/usr/local/php82/bin/php}"
 COMPOSER_BIN="${COMPOSER_BIN:-/usr/local/bin/composer}"
-LOG_DIR="/var/log/vigilante-seace"
+
+# ── Detección de ambiente desde .env ──────────────────────────
+if [ -f "$APP_DIR/.env" ]; then
+    APP_ENV=$(grep -E "^APP_ENV=" "$APP_DIR/.env" | head -1 | cut -d= -f2 | tr -d '"' | tr -d "'" || echo "production")
+else
+    APP_ENV="production"
+fi
+
+case "$APP_ENV" in
+    qa|staging)
+        ENV_SUFFIX="-qa"
+        LOG_DIR="/var/log/vigilante-seace-qa"
+        SERVICE_SRC_DIR="deploy/qa"
+        ;;
+    *)
+        ENV_SUFFIX=""
+        LOG_DIR="/var/log/vigilante-seace"
+        SERVICE_SRC_DIR="deploy"
+        ;;
+esac
+
 DEPLOY_LOG="$LOG_DIR/deploy.log"
 
 # Servicios del proyecto (orden de inicio importa)
+# En QA los servicios tienen sufijo -qa para coexistir con producción
 SERVICES=(
-    "analizador-tdr"        # 1ro: FastAPI (sin dependencias)
-    "vigilante-queue"       # 2do: Queue worker (procesa jobs)
-    "vigilante-scheduler"   # 3ro: Scheduler (cron jobs via schedule:work)
-    "telegram-bot"          # 4to: Telegram (depende de queue + analizador)
-    "whatsapp-bot"          # 5to: WhatsApp (depende de queue + analizador)
+    "analizador-tdr${ENV_SUFFIX}"        # 1ro: FastAPI (sin dependencias)
+    "vigilante-queue${ENV_SUFFIX}"       # 2do: Queue worker (procesa jobs)
+    "vigilante-scheduler${ENV_SUFFIX}"   # 3ro: Scheduler (cron jobs via schedule:work)
+    "telegram-bot${ENV_SUFFIX}"          # 4to: Telegram (depende de queue + analizador)
+    "whatsapp-bot${ENV_SUFFIX}"          # 5to: WhatsApp (depende de queue + analizador)
 )
 
 # Procesos que necesitan force-kill (long-polling, bloqueos)
@@ -101,22 +122,42 @@ service_is_active() {
     systemctl is-active --quiet "${1}.service" 2>/dev/null
 }
 
-# Mata procesos zombies por patrón
+# Mata procesos zombies por patrón.
+# En entornos compartidos (prod + QA en mismo VPS), solo mata procesos
+# cuyo cwd pertenezca a APP_DIR, evitando daño cruzado.
 kill_zombies() {
     local pattern="$1"
     local pids
     pids=$(pgrep -f "$pattern" 2>/dev/null || true)
 
     if [ -n "$pids" ]; then
-        log_warn "Matando procesos zombie: $pattern (PIDs: $pids)"
-        pkill -9 -f "$pattern" 2>/dev/null || true
-        sleep 1
-        # Verificar que murieron
-        if pgrep -f "$pattern" &>/dev/null; then
-            log_error "No se pudieron matar procesos: $pattern"
-            return 1
+        local app_prefix="${APP_DIR%/}/"
+        local target_pids=""
+
+        for pid in $pids; do
+            local proc_cwd
+            proc_cwd=$(readlink /proc/$pid/cwd 2>/dev/null || true)
+            local proc_prefix="${proc_cwd%/}/"
+
+            # Solo matar si el proceso pertenece a NUESTRO directorio
+            if [ -z "$proc_cwd" ] || [[ "$proc_prefix" == "$app_prefix"* ]]; then
+                target_pids="$target_pids $pid"
+            elif [ "$VERBOSE" = true ]; then
+                log_info "Ignorando PID $pid (cwd: $proc_cwd ≠ $APP_DIR)"
+            fi
+        done
+
+        target_pids=$(echo "$target_pids" | xargs)  # trim
+        if [ -n "$target_pids" ]; then
+            log_warn "Matando procesos zombie: $pattern (PIDs: $target_pids)"
+            for pid in $target_pids; do
+                kill -9 "$pid" 2>/dev/null || true
+            done
+            sleep 1
+            log_ok "Procesos eliminados: $pattern"
+        elif [ "$VERBOSE" = true ]; then
+            log_info "Sin zombies propios para: $pattern"
         fi
-        log_ok "Procesos eliminados: $pattern"
     elif [ "$VERBOSE" = true ]; then
         log_info "Sin zombies para: $pattern"
     fi
@@ -148,11 +189,11 @@ ensure_clean() {
     sudo systemctl reset-failed "${svc}.service" 2>/dev/null || true
 
     case "$svc" in
-        telegram-bot)         pattern="artisan telegram:listen" ;;
-        whatsapp-bot)         pattern="artisan whatsapp:listen" ;;
-        vigilante-queue)      pattern="artisan queue:work" ;;
-        vigilante-scheduler)  pattern="artisan schedule:work" ;;
-        analizador-tdr)       pattern="uvicorn main:app" ;;
+        telegram-bot*)        pattern="artisan telegram:listen" ;;
+        whatsapp-bot*)        pattern="artisan whatsapp:listen" ;;
+        vigilante-queue*)     pattern="artisan queue:work" ;;
+        vigilante-scheduler*) pattern="artisan schedule:work" ;;
+        analizador-tdr*)      pattern="uvicorn main:app" ;;
     esac
 
     if [ -n "$pattern" ] && pgrep -f "$pattern" &>/dev/null; then
@@ -162,7 +203,7 @@ ensure_clean() {
 
     # Telegram: limpiar lock stale de --isolated (por si se usó manualmente)
     # y esperar 5s para que la API libere la sesión de long-polling
-    if [ "$svc" = "telegram-bot" ]; then
+    if [[ "$svc" == telegram-bot* ]]; then
         cd "$APP_DIR"
         # Liberar lock de Isolatable sin tinker (evita problema de psysh/www-data)
         $PHP_BIN -r "
@@ -179,7 +220,7 @@ ensure_clean() {
     fi
 
     # WhatsApp: limpiar lock de --isolated
-    if [ "$svc" = "whatsapp-bot" ]; then
+    if [[ "$svc" == whatsapp-bot* ]]; then
         cd "$APP_DIR"
         $PHP_BIN -r "
             require '$APP_DIR/vendor/autoload.php';
@@ -204,7 +245,7 @@ do_stop() {
     for ((i=${#SERVICES[@]}-1; i>=0; i--)); do
         local svc="${SERVICES[$i]}"
         if service_is_active "$svc"; then
-            [ "$svc" = "telegram-bot" ] && had_telegram=true
+            [[ "$svc" == telegram-bot* ]] && had_telegram=true
             log_info "Deteniendo ${svc}.service..."
             sudo systemctl stop "${svc}.service" 2>/dev/null || true
             log_ok "${svc}.service detenido"
@@ -321,14 +362,14 @@ do_smart_restart() {
 }
 
 do_sync() {
-    log_step "SINCRONIZANDO SERVICE FILES"
+    log_step "SINCRONIZANDO SERVICE FILES${ENV_SUFFIX:+ ($APP_ENV)}"
 
     cd "$APP_DIR"
 
-    # Copiar service files
+    # Copiar service files (QA usa deploy/qa/, prod usa deploy/)
     local files_synced=0
     for svc in "${SERVICES[@]}"; do
-        local src="deploy/${svc}.service"
+        local src="${SERVICE_SRC_DIR}/${svc}.service"
         local dst="/etc/systemd/system/${svc}.service"
 
         if [ -f "$src" ]; then
@@ -345,8 +386,8 @@ do_sync() {
         fi
     done
 
-    # Logrotate
-    if [ -f "deploy/logrotate-vigilante" ]; then
+    # Logrotate (solo para producción, QA comparte la misma config de rotación)
+    if [ -z "$ENV_SUFFIX" ] && [ -f "deploy/logrotate-vigilante" ]; then
         if ! cmp -s "deploy/logrotate-vigilante" "/etc/logrotate.d/vigilante-seace" 2>/dev/null; then
             sudo cp deploy/logrotate-vigilante /etc/logrotate.d/vigilante-seace
             sudo chmod 644 /etc/logrotate.d/vigilante-seace
@@ -374,7 +415,7 @@ do_sync() {
 do_deploy() {
     local start_time=$(date +%s)
 
-    log_step "DEPLOY COMPLETO - $(date '+%Y-%m-%d %H:%M:%S')"
+    log_step "DEPLOY COMPLETO ($APP_ENV) - $(date '+%Y-%m-%d %H:%M:%S')"
     log_deploy "========== DEPLOY INICIADO =========="
 
     # ═══ BUILD PHASE (servicios siguen corriendo — sin downtime) ═══
@@ -383,9 +424,14 @@ do_deploy() {
     if [ "$SKIP_PULL" = false ]; then
         log_step "GIT PULL"
         cd "$APP_DIR"
-        git fetch origin main
-        git reset --hard origin/main
-        log_ok "Código actualizado"
+        # QA obtiene develop, producción obtiene main
+        local branch="main"
+        if [ -n "$ENV_SUFFIX" ]; then
+            branch="develop"
+        fi
+        git fetch origin "$branch"
+        git reset --hard "origin/$branch"
+        log_ok "Código actualizado (rama: $branch)"
     else
         log_info "Saltando git pull (--skip-pull)"
         cd "$APP_DIR"
@@ -538,11 +584,15 @@ do_health() {
         fi
     done
 
-    # 2. Analizador TDR API (puerto 8001)
-    if curl -sf --max-time 5 http://127.0.0.1:8001/health &>/dev/null; then
-        log_ok "Analizador TDR API respondiendo en :8001"
+    # 2. Analizador TDR API (prod=8001, QA=8002)
+    local analizador_port=8001
+    if [ -n "$ENV_SUFFIX" ]; then
+        analizador_port=8002
+    fi
+    if curl -sf --max-time 5 "http://127.0.0.1:${analizador_port}/health" &>/dev/null; then
+        log_ok "Analizador TDR API respondiendo en :${analizador_port}"
     else
-        log_warn "Analizador TDR API no responde en :8001 (puede tardar en iniciar)"
+        log_warn "Analizador TDR API no responde en :${analizador_port} (puede tardar en iniciar)"
     fi
 
     # 3. Laravel funcional
@@ -555,7 +605,13 @@ do_health() {
     fi
 
     # 4. Sin procesos duplicados (telegram bot)
-    local telegram_count=$(pgrep -f "artisan telegram:listen" 2>/dev/null | wc -l)
+    # En entornos compartidos, contar solo procesos de NUESTRO directorio
+    local app_prefix="${APP_DIR%/}/"
+    local telegram_count=0
+    for pid in $(pgrep -f "artisan telegram:listen" 2>/dev/null || true); do
+        local cwd=$(readlink /proc/$pid/cwd 2>/dev/null || true)
+        [[ "${cwd%/}/" == "$app_prefix"* ]] && telegram_count=$((telegram_count + 1))
+    done
     if [ "$telegram_count" -le 1 ]; then
         log_ok "Telegram bot: $telegram_count instancia(s) (correcto)"
     else
@@ -564,7 +620,11 @@ do_health() {
     fi
 
     # 5. Sin procesos duplicados (whatsapp bot)
-    local whatsapp_count=$(pgrep -f "artisan whatsapp:listen" 2>/dev/null | wc -l)
+    local whatsapp_count=0
+    for pid in $(pgrep -f "artisan whatsapp:listen" 2>/dev/null || true); do
+        local cwd=$(readlink /proc/$pid/cwd 2>/dev/null || true)
+        [[ "${cwd%/}/" == "$app_prefix"* ]] && whatsapp_count=$((whatsapp_count + 1))
+    done
     if [ "$whatsapp_count" -le 1 ]; then
         log_ok "WhatsApp bot: $whatsapp_count instancia(s) (correcto)"
     else
