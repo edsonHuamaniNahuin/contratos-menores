@@ -114,7 +114,12 @@ jobs:
           cache: pip
           cache-dependency-path: analizador-tdr/requirements.txt
 
-      - name: Install dependencies
+      - name: Install system dependencies (Tesseract OCR)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-spa
+
+      - name: Install Python dependencies
         working-directory: analizador-tdr
         run: |
           python -m pip install --upgrade pip
@@ -124,6 +129,8 @@ jobs:
         working-directory: analizador-tdr
         run: |
           python -c "from app.services.analyzer_service import TDRAnalyzerService; print('Imports OK')"
+          python -c "from app.services.pdf_reader import SmartPDFReaderPipeline; print('PDF Reader OK')"
+          python -c "from app.services.pdf_reader.ocr_processor import TesseractOCRProcessor; p = TesseractOCRProcessor(); assert p.is_available(), 'Tesseract not found'; print('OCR OK')"
 
       - name: Check config loads
         working-directory: analizador-tdr

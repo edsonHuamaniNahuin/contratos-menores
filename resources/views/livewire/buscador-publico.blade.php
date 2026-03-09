@@ -588,6 +588,7 @@
         @php
             $puedeAnalizar = auth()->user()?->hasPermission('analyze-tdr') ?? false;
             $puedeSeguimiento = auth()->user()?->hasPermission('follow-contracts') ?? false;
+            $puedeCotizarPermiso = auth()->user()?->hasPermission('cotizar-seace') ?? false;
         @endphp
         <!-- Tabla de Resultados -->
         <div class="bg-white rounded-3xl shadow-soft overflow-hidden border border-neutral-200 w-full min-w-0">
@@ -789,6 +790,23 @@
                                             <span wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Analizar</span>
                                             <span wire:loading wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Analizando...</span>
                                         </button>
+                                        {{-- Cotizar --}}
+                                        @if($contrato['cotizar'] ?? false)
+                                            <button
+                                                wire:click="cotizarEnSeace({{ $contrato['idContrato'] }})"
+                                                wire:loading.attr="disabled"
+                                                wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary-500 text-white text-xs font-semibold hover:bg-secondary-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait {{ $puedeCotizarPermiso ? '' : 'opacity-70' }}"
+                                                title="Cotizar en el portal SEACE"
+                                            >
+                                                <svg wire:loading.remove wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                <svg wire:loading wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                                <span wire:loading.remove wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="hidden xl:inline">Cotizar</span>
+                                                <span wire:loading wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="hidden xl:inline">Preparando...</span>
+                                            </button>
+                                        @endif
                                     </div>
                                     @if(isset($archivosErrores[$contrato['idContrato']]))
                                         <div class="text-[11px] text-primary-700 mt-2">
@@ -976,10 +994,26 @@
                                 <p class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">¿Se puede cotizar?</p>
                             </div>
                             @if($puedeCotizar)
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-secondary-500/10 text-secondary-500 border border-secondary-200">
-                                    <span class="w-2 h-2 rounded-full bg-secondary-500 animate-pulse"></span>
-                                    Sí, abierto
-                                </span>
+                                <div class="flex items-center gap-3">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-secondary-500/10 text-secondary-500 border border-secondary-200">
+                                        <span class="w-2 h-2 rounded-full bg-secondary-500 animate-pulse"></span>
+                                        Sí, abierto
+                                    </span>
+                                    <button
+                                        wire:click="cerrarDetalle(); cotizarEnSeace({{ $det['idContrato'] }})"
+                                        wire:loading.attr="disabled"
+                                        wire:target="cotizarEnSeace({{ $det['idContrato'] }})"
+                                        class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-secondary-500 text-white text-xs font-semibold hover:bg-secondary-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
+                                        title="Ir al portal SEACE a cotizar"
+                                    >
+                                        <svg wire:loading.remove wire:target="cotizarEnSeace({{ $det['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <svg wire:loading wire:target="cotizarEnSeace({{ $det['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                        <span wire:loading.remove wire:target="cotizarEnSeace({{ $det['idContrato'] }})">Cotizar ahora</span>
+                                        <span wire:loading wire:target="cotizarEnSeace({{ $det['idContrato'] }})">Preparando...</span>
+                                    </button>
+                                </div>
                             @else
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-neutral-100 text-neutral-500 border border-neutral-200">
                                     <span class="w-2 h-2 rounded-full bg-neutral-400"></span>
@@ -1029,6 +1063,21 @@
                                 <span wire:loading.remove wire:target="analizarTdr({{ $det['idContrato'] }})">Analizar con IA</span>
                                 <span wire:loading wire:target="analizarTdr({{ $det['idContrato'] }})">Analizando...</span>
                             </button>
+                            @if($puedeCotizar)
+                                <button
+                                    wire:click="cerrarDetalle(); cotizarEnSeace({{ $det['idContrato'] }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="cotizarEnSeace({{ $det['idContrato'] }})"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-secondary-500 text-white text-sm font-semibold hover:bg-secondary-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
+                                >
+                                    <svg wire:loading.remove wire:target="cotizarEnSeace({{ $det['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <svg wire:loading wire:target="cotizarEnSeace({{ $det['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                    <span wire:loading.remove wire:target="cotizarEnSeace({{ $det['idContrato'] }})">Cotizar en SEACE</span>
+                                    <span wire:loading wire:target="cotizarEnSeace({{ $det['idContrato'] }})">Preparando...</span>
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -1486,6 +1535,239 @@
         </div>
     @endif
 
+    {{-- ═══════════════════════════════════════════════════════════════
+         Modal Cotizador SEACE — Instrucciones paso a paso
+         El portal SEACE usa navegación single-tab (sessionStorage):
+         abrir una URL en nueva pestaña pierde la sesión.
+         El usuario debe buscar el contrato DENTRO del portal.
+         ═══════════════════════════════════════════════════════════════ --}}
+    <div
+        x-data="cotizadorSeace()"
+        x-show="abierto"
+        x-cloak
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+        @keydown.escape.window="cerrar()"
+    >
+        {{-- Backdrop --}}
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="cerrar()"></div>
+
+        {{-- Panel --}}
+        <div
+            x-show="abierto"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+            class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+        >
+            {{-- Header --}}
+            <div class="bg-gradient-to-r from-primary-800 to-primary-600 px-6 py-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-lg">Cotizar en SEACE</h3>
+                            <p class="text-white/70 text-xs" x-text="codigo"></p>
+                        </div>
+                    </div>
+                    <button @click="cerrar()" class="text-white/70 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Body --}}
+            <div class="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto">
+
+                {{-- Banner explicativo amigable --}}
+                <div class="bg-gradient-to-r from-secondary-500/10 to-secondary-500/5 border border-secondary-200/40 rounded-2xl px-4 py-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-secondary-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-4 h-4 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-neutral-900">Estamos casi allí</p>
+                            <p class="text-xs text-neutral-600 mt-0.5 leading-relaxed">
+                                El portal SEACE requiere que la cotización se realice desde su propia plataforma por razones de seguridad.
+                                Te dejamos todo listo para que sea rápido: <b class="text-neutral-900">solo copia, pega y cotiza</b>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Datos del contrato para buscar en el portal --}}
+                <div class="bg-neutral-50 rounded-2xl p-4 space-y-3">
+                    {{-- Código de proceso (copiable) --}}
+                    <div>
+                        <p class="text-xs text-neutral-400 font-medium mb-1">Código de proceso</p>
+                        <div class="flex items-center gap-2">
+                            <span class="flex-1 bg-white border border-neutral-200 rounded-full px-4 py-2 text-sm text-neutral-900 font-bold font-mono truncate" x-text="codigo"></span>
+                            <button
+                                @click="copiarCodigo()"
+                                class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all duration-200"
+                                :class="copiadoCodigo ? 'bg-secondary-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-100'"
+                            >
+                                <template x-if="!copiadoCodigo">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                </template>
+                                <template x-if="copiadoCodigo">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </template>
+                                <span x-text="copiadoCodigo ? '¡Copiado!' : 'Copiar'"></span>
+                            </button>
+                        </div>
+                    </div>
+                    {{-- Entidad --}}
+                    <template x-if="entidad">
+                        <div>
+                            <p class="text-xs text-neutral-400 font-medium mb-0.5">Entidad</p>
+                            <p class="text-sm text-neutral-900 font-semibold" x-text="entidad"></p>
+                        </div>
+                    </template>
+                </div>
+
+                {{-- Pasos guiados --}}
+                <div class="space-y-4">
+                    <h4 class="text-sm font-bold text-neutral-900">3 pasos rápidos:</h4>
+
+                    {{-- Paso 1 --}}
+                    <div class="flex items-start gap-3">
+                        <span class="w-7 h-7 rounded-full bg-secondary-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
+                        <div class="flex-1">
+                            <p class="text-sm text-neutral-900 font-semibold">Ingresa al portal SEACE</p>
+                            <p class="text-xs text-neutral-400 mt-0.5">Se abrirá en una nueva pestaña. Inicia sesión con tu cuenta de proveedor.</p>
+                        </div>
+                    </div>
+
+                    {{-- Paso 2 --}}
+                    <div class="flex items-start gap-3">
+                        <span class="w-7 h-7 rounded-full bg-secondary-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</span>
+                        <div class="flex-1">
+                            <p class="text-sm text-neutral-900 font-semibold">Pega el código en el buscador</p>
+                            <p class="text-xs text-neutral-400 mt-0.5">Ya lo copiamos por ti. Solo haz <b class="text-neutral-600">Ctrl+V</b> en el buscador del portal y presiona buscar.</p>
+                        </div>
+                    </div>
+
+                    {{-- Paso 3 --}}
+                    <div class="flex items-start gap-3">
+                        <span class="w-7 h-7 rounded-full bg-secondary-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</span>
+                        <div class="flex-1">
+                            <p class="text-sm text-neutral-900 font-semibold">Cotiza directamente</p>
+                            <p class="text-xs text-neutral-400 mt-0.5">Encontrarás el proceso y podrás enviar tu cotización desde ahí.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Nota informativa --}}
+                <div class="bg-primary-900/5 border border-primary-400/20 rounded-2xl px-4 py-3">
+                    <div class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-primary-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <p class="text-xs text-primary-800">
+                            <b>¿Por qué no te llevamos directo?</b> El portal SEACE protege cada sesión de usuario de forma individual. Las cotizaciones solo pueden enviarse navegando dentro de su plataforma — esto garantiza la seguridad de tu cuenta y la validez de tu oferta.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex items-center justify-between gap-3">
+                <button
+                    @click="cerrar()"
+                    class="px-5 py-2.5 rounded-full text-sm font-semibold text-neutral-600 hover:bg-neutral-200 transition-colors"
+                >
+                    Cancelar
+                </button>
+                <button
+                    @click="abrirSeace()"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-secondary-500 text-white text-sm font-bold hover:bg-secondary-600 transition-colors shadow-sm"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    Ir al portal SEACE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function cotizadorSeace() {
+            return {
+                abierto: false,
+                urlLogin: '',
+                idContrato: null,
+                codigo: '',
+                entidad: '',
+                copiadoCodigo: false,
+
+                init() {
+                    window.addEventListener('abrir-cotizador-seace', (e) => {
+                        const d = e.detail;
+                        this.urlLogin = d.urlLogin || '';
+                        this.idContrato = d.idContrato || null;
+                        this.codigo = d.desContratacion || '';
+                        this.entidad = d.entidad || '';
+                        this.copiadoCodigo = false;
+                        this.abierto = true;
+                        // Copiar código de proceso automáticamente al abrir
+                        this.$nextTick(() => this.copiarCodigo());
+                    });
+                },
+
+                copiarCodigo() {
+                    if (!this.codigo) return;
+                    navigator.clipboard.writeText(this.codigo).then(() => {
+                        this.copiadoCodigo = true;
+                        setTimeout(() => { this.copiadoCodigo = false; }, 3000);
+                    }).catch(() => {
+                        const ta = document.createElement('textarea');
+                        ta.value = this.codigo;
+                        ta.style.position = 'fixed';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        this.copiadoCodigo = true;
+                        setTimeout(() => { this.copiadoCodigo = false; }, 3000);
+                    });
+                },
+
+                abrirSeace() {
+                    // Asegurar que el código está copiado antes de abrir
+                    this.copiarCodigo();
+                    window.open(this.urlLogin, '_blank');
+                },
+
+                cerrar() {
+                    this.abierto = false;
+                }
+            };
+        }
+    </script>
+
 
 </div>
 
@@ -1512,6 +1794,20 @@
         }
 
         window.location.href = event.url;
+    });
+
+    /**
+     * Cotizar en SEACE: abre modal guiado con pasos e instrucciones.
+     * El portal SEACE usa navegación single-tab (sessionStorage),
+     * así que el usuario debe buscar el contrato dentro del portal.
+     */
+    $wire.on('cotizar-seace-modal', (payload) => {
+        const data = Array.isArray(payload) ? payload[0] : payload;
+        if (!data?.desContratacion) {
+            console.error('cotizar-seace-modal: faltan datos del contrato');
+            return;
+        }
+        window.dispatchEvent(new CustomEvent('abrir-cotizador-seace', { detail: data }));
     });
 </script>
 @endscript

@@ -104,6 +104,7 @@ class BuscadorPublico extends Component
     public ?array $analisisContrato = null;
 
     public ?int $seguimientoEnCurso = null;
+    public ?int $cotizandoEnCurso = null;
     public bool $mostrarLoginModal = false;
     public bool $mostrarAccesoRestringido = false;
     public string $loginModalMensaje = 'Inicia sesion para continuar.';
@@ -808,6 +809,62 @@ class BuscadorPublico extends Component
             $this->notify('No se pudo activar el seguimiento: ' . $e->getMessage(), 'error');
         } finally {
             $this->seguimientoEnCurso = null;
+        }
+    }
+
+    /**
+     * Cotizar en el portal SEACE.
+     *
+     * 1. Verifica permiso 'cotizar-seace'
+     * 2. Valida que el contrato tenga cotizar=true
+     * 3. Abre modal guiado con pasos para cotizar en SEACE
+     *
+     * El portal SEACE usa navegación single-tab (sessionStorage):
+     * abrir URLs externas pierde la sesión. El usuario debe buscar
+     * el contrato dentro del portal usando el código de proceso.
+     */
+    public function cotizarEnSeace(int $idContrato): void
+    {
+        $this->cotizandoEnCurso = $idContrato;
+
+        try {
+            if (!$this->ensurePermission(
+                'cotizar-seace',
+                'Inicia sesión para cotizar en el portal SEACE.',
+                'Tu cuenta no tiene acceso para cotizar. Solicita Proveedor Premium.'
+            )) {
+                return;
+            }
+
+            $contrato = $this->resolveContrato($idContrato);
+            if (!$contrato) {
+                $this->notify('No se encontraron datos del contrato.', 'warning');
+                return;
+            }
+
+            // Verificar que el contrato acepta cotizaciones
+            if (!($contrato['cotizar'] ?? false)) {
+                $this->notify('Este proceso no está abierto para cotización actualmente.', 'warning');
+                return;
+            }
+
+            $seaceBase = rtrim(config('services.seace.frontend_origin', 'https://prod6.seace.gob.pe'), '/');
+            $urlLogin = "{$seaceBase}/auth-proveedor/";
+
+            $this->dispatch('cotizar-seace-modal', [
+                'urlLogin'        => $urlLogin,
+                'idContrato'      => $idContrato,
+                'desContratacion' => $contrato['desContratacion'] ?? "Contrato #{$idContrato}",
+                'entidad'         => $contrato['nomEntidad'] ?? '',
+            ]);
+        } catch (Exception $e) {
+            Log::error('BuscadorPublico:cotizarEnSeace', [
+                'id_contrato' => $idContrato,
+                'error' => $e->getMessage(),
+            ]);
+            $this->notify('No se pudo iniciar la cotización: ' . $e->getMessage(), 'error');
+        } finally {
+            $this->cotizandoEnCurso = null;
         }
     }
 

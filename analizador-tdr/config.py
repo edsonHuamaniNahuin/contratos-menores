@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 10
     request_timeout_seconds: int = 60
 
+    # PDF Reader Pipeline (Extracción inteligente)
+    ocr_enabled: bool = True                   # Usa Tesseract OCR para imágenes (si está instalado)
+    table_extraction_enabled: bool = True      # Detecta y extrae tablas con PyMuPDF
+    min_image_size_bytes: int = 5000           # Bytes mínimos para procesar una imagen (filtra íconos)
+
     # Procesamiento Asíncrono (para scraper: 3-10 docs/40min = 360 docs/día)
     max_concurrent_requests: int = 3
     enable_batch_processing: bool = True

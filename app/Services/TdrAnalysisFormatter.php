@@ -281,6 +281,94 @@ class TdrAnalysisFormatter
         return rtrim($truncated) . $suffix;
     }
 
+    /**
+     * Formatea el resultado de análisis de direccionamiento (corrupción) para Telegram (HTML).
+     */
+    public function formatDireccionamientoForTelegram(array $analysis, string $archivo, ?array $contextoContrato = null): string
+    {
+        $data = $this->normalize($analysis);
+
+        $score = (int) ($data['score_riesgo_corrupcion'] ?? 0);
+        $veredicto = $data['veredicto_flash'] ?? 'SIN VEREDICTO';
+        $hallazgos = $data['hallazgos_criticos'] ?? [];
+        $argumento = $data['argumento_para_observacion'] ?? '';
+
+        $gauge = $this->buildScoreGauge($score);
+        $veredictoIcon = match ($veredicto) {
+            'LIMPIO' => '🟢',
+            'SOSPECHOSO' => '🟡',
+            'ALTAMENTE DIRECCIONADO' => '🔴',
+            default => '⚪',
+        };
+
+        $mensaje = "🔍 <b>ANÁLISIS DE DIRECCIONAMIENTO</b>\n\n";
+        $mensaje .= '📄 <b>Archivo:</b> ' . $this->escapeHtml($archivo) . "\n\n";
+
+        if ($contextoContrato) {
+            $mensaje .= $this->formatContractContext($contextoContrato);
+        }
+
+        $mensaje .= "📊 <b>Score de Riesgo:</b> {$gauge} <b>{$score}/100</b>\n";
+        $mensaje .= "{$veredictoIcon} <b>Veredicto:</b> {$veredicto}\n\n";
+
+        if (!empty($hallazgos) && is_array($hallazgos)) {
+            $mensaje .= "🚩 <b>Hallazgos Críticos:</b>\n";
+            foreach ($hallazgos as $hallazgo) {
+                if (!is_array($hallazgo)) {
+                    $mensaje .= '• ' . $this->escapeHtml((string) $hallazgo) . "\n";
+                    continue;
+                }
+
+                $categoria = $hallazgo['categoria'] ?? 'General';
+                $descripcion = $hallazgo['descripcion_hallazgo'] ?? '';
+                $redFlag = $hallazgo['red_flag_detectada'] ?? '';
+                $gravedad = $hallazgo['nivel_de_gravedad'] ?? 'Medio';
+
+                $gravedadIcon = match ($gravedad) {
+                    'Alto' => '🔴',
+                    'Medio' => '🟡',
+                    'Bajo' => '🟢',
+                    default => '⚪',
+                };
+
+                $mensaje .= "\n{$gravedadIcon} <b>[{$categoria}]</b> ({$gravedad})\n";
+                if ($redFlag) {
+                    $mensaje .= '  🚨 ' . $this->escapeHtml($redFlag) . "\n";
+                }
+                if ($descripcion) {
+                    $mensaje .= '  ' . $this->escapeHtml($descripcion) . "\n";
+                }
+            }
+            $mensaje .= "\n";
+        }
+
+        if ($argumento) {
+            $mensaje .= "📝 <b>Argumento para Observación:</b>\n";
+            $mensaje .= $this->escapeHtml($argumento) . "\n";
+        }
+
+        return trim($this->applyTelegramLimit($mensaje));
+    }
+
+    /**
+     * Construir barra visual de gauge para el score de riesgo.
+     */
+    protected function buildScoreGauge(int $score): string
+    {
+        $filled = (int) round($score / 10);
+        $empty = 10 - $filled;
+
+        if ($score <= 30) {
+            $bar = str_repeat('🟩', $filled) . str_repeat('⬜', $empty);
+        } elseif ($score <= 60) {
+            $bar = str_repeat('🟨', $filled) . str_repeat('⬜', $empty);
+        } else {
+            $bar = str_repeat('🟥', $filled) . str_repeat('⬜', $empty);
+        }
+
+        return $bar;
+    }
+
     protected function stringLength(string $value): int
     {
         if (function_exists('mb_strlen')) {

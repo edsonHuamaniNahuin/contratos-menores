@@ -1,79 +1,60 @@
 """
 Servicio de procesamiento de PDF.
-Extrae texto completo usando PyMuPDF (fitz).
+Delega la extracción al pipeline SmartPDFReader (texto + tablas + OCR de imágenes).
+Mantiene la interfaz pública original para no romper el pipeline existente.
 """
 import fitz  # PyMuPDF
 import io
 from typing import Optional
 import logging
 
+from config import settings
+from app.services.pdf_reader import SmartPDFReaderPipeline
+
 logger = logging.getLogger(__name__)
 
 
 class PDFProcessorService:
-    """Servicio para extraer texto de archivos PDF"""
+    """
+    Servicio para extraer texto de archivos PDF.
+
+    Internamente usa SmartPDFReaderPipeline (SOLID) para:
+    - Texto digital: extracción directa con PyMuPDF
+    - Tablas: detección y formateo estructurado
+    - Imágenes: OCR con Tesseract (si está disponible)
+
+    La interfaz pública (extract_text_from_pdf, extract_metadata) NO cambia.
+    """
 
     def __init__(self):
         self.logger = logger
+        self._pipeline = SmartPDFReaderPipeline(
+            ocr_enabled=getattr(settings, "ocr_enabled", True),
+            table_extraction_enabled=getattr(settings, "table_extraction_enabled", True),
+            min_image_size=getattr(settings, "min_image_size_bytes", 5_000),
+        )
 
     def extract_text_from_pdf(self, pdf_bytes: bytes) -> str:
         """
-        Extrae todo el texto de un PDF usando PyMuPDF.
+        Extrae todo el contenido de un PDF usando el pipeline inteligente.
         NOTA: PyMuPDF es síncrono, por eso este método NO es async.
 
         Args:
             pdf_bytes: Contenido binario del archivo PDF
 
         Returns:
-            str: Texto completo extraído del PDF
+            str: Texto completo extraído del PDF (incluye tablas formateadas y OCR)
 
         Raises:
             ValueError: Si el PDF está corrupto o no se puede procesar
         """
         try:
-            # Crear stream en memoria desde bytes
-            pdf_stream = io.BytesIO(pdf_bytes)
+            self.logger.info("Extrayendo contenido con SmartPDFReaderPipeline...")
+            return self._pipeline.extract(pdf_bytes)
 
-            # Abrir PDF desde el stream
-            doc = fitz.open(stream=pdf_stream, filetype="pdf")
-
-            # Extraer texto de todas las páginas
-            full_text = ""
-            num_pages = len(doc)
-
-            for page_num in range(num_pages):
-                page = doc.load_page(page_num)
-
-                # Intentar múltiples métodos de extracción
-                # Método 1: text (más rápido)
-                text = page.get_text("text")
-
-                # Método 2: Si text no funciona bien, intentar blocks (preserva estructura)
-                if len(text.strip()) < 50:
-                    blocks = page.get_text("blocks")
-                    text = "\n".join([block[4] for block in blocks if len(block) > 4])
-
-                # Método 3: Si sigue vacío, intentar dict (más detallado)
-                if len(text.strip()) < 50:
-                    text_dict = page.get_text("dict")
-                    text = "\n".join([block.get("text", "") for block in text_dict.get("blocks", [])])
-
-                full_text += f"\n--- Página {page_num + 1} ---\n{text}\n"
-
-            # Cerrar documento
-            doc.close()
-            pdf_stream.close()
-
-            if not full_text.strip():
-                raise ValueError("El PDF no contiene texto extraíble (puede ser un PDF escaneado)")
-
-            self.logger.info(f"PDF procesado: {num_pages} páginas, {len(full_text)} caracteres")
-
-            return full_text.strip()
-
-        except fitz.FileDataError as e:
-            self.logger.error(f"Error al abrir PDF: {str(e)}")
-            raise ValueError("El archivo no es un PDF válido o está corrupto")
+        except ValueError:
+            # Re-raise errores de validación del pipeline
+            raise
 
         except Exception as e:
             self.logger.error(f"Error inesperado al procesar PDF: {str(e)}")

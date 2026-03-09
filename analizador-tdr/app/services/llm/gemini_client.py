@@ -214,3 +214,65 @@ Reglas:
         except Exception as e:
             self.logger.error(f"❌ Error en compatibilidad Gemini: {str(e)}")
             raise ValueError(f"Error al evaluar compatibilidad: {str(e)}")
+
+    async def analyze_direccionamiento(self, context: str) -> Dict:
+        """Análisis forense de direccionamiento/corrupción usando Gemini."""
+        try:
+            self.logger.info(f"🔍 Analizando direccionamiento con Gemini ({self.model_name})")
+
+            forensic_config = types.GenerateContentConfig(
+                temperature=0.15,
+                top_p=0.95,
+                top_k=40,
+                max_output_tokens=16384,
+                response_mime_type="application/json",
+                system_instruction=self.FORENSIC_SYSTEM_PROMPT,
+                safety_settings=self.generation_config.safety_settings,
+            )
+
+            user_prompt = f"""
+Analiza este TDR/ET del SEACE (Perú) buscando indicios de direccionamiento y corrupción.
+Responde ÚNICAMENTE con un JSON que siga este esquema:
+{self.FORENSIC_JSON_TEMPLATE.strip()}
+
+Reglas:
+- score_riesgo_corrupcion: entero 0-100. 0=sin indicios, 100=direccionamiento evidente.
+- veredicto_flash: "LIMPIO" si score<30, "SOSPECHOSO" si 30-69, "ALTAMENTE DIRECCIONADO" si >=70.
+- hallazgos_criticos: lista de hallazgos con categoría, descripción, red flag y gravedad. Puede ser vacía si score<30.
+- argumento_para_observacion: texto legal/técnico formal para presentar observación ante el Comité de Selección cuestionando la pluralidad. Si es LIMPIO, indica que no se encontraron indicios.
+- Máximo 8 hallazgos.
+- No incluyas texto fuera del JSON.
+
+TDR:
+{context}
+"""
+            if hasattr(self.client, "aio"):
+                response = await self.client.aio.models.generate_content(
+                    model=self.model_name,
+                    contents=user_prompt,
+                    config=forensic_config,
+                )
+            else:
+                import asyncio
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model=self.model_name,
+                    contents=user_prompt,
+                    config=forensic_config,
+                )
+
+            response_text = self._extract_text(response).strip()
+            self.logger.debug(f"Direccionamiento Gemini (primeros 500 chars): {response_text[:500]}")
+
+            result = self._parse_json_response(response_text)
+            self.logger.info("✅ Análisis de direccionamiento completado con Gemini")
+            return result
+
+        except Exception as e:
+            self.logger.error(f"❌ Error en direccionamiento Gemini: {str(e)}")
+            return {
+                "score_riesgo_corrupcion": 0,
+                "veredicto_flash": "LIMPIO",
+                "hallazgos_criticos": [],
+                "argumento_para_observacion": f"Error al analizar: {str(e)}",
+            }

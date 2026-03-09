@@ -261,6 +261,61 @@ class AnalizadorTDRService
         ];
     }
 
+    /**
+     * Analizar direccionamiento/corrupción en un TDR.
+     * Reutiliza la misma extracción de texto pero con prompt forense.
+     */
+    public function analyzeDireccionamiento(string $filePath): array
+    {
+        if (!$this->enabled) {
+            throw new Exception('Servicio AnalizadorTDR deshabilitado');
+        }
+
+        if (!file_exists($filePath)) {
+            throw new Exception("Archivo no encontrado: {$filePath}");
+        }
+
+        try {
+            $fileName = basename($filePath);
+            $fullUrl = "{$this->baseUrl}/analyze-direccionamiento";
+
+            $this->debug('Inicio análisis de direccionamiento', [
+                'file_path' => $filePath,
+                'file_name' => $fileName,
+                'full_url' => $fullUrl,
+            ]);
+
+            $response = Http::timeout($this->timeout)
+                ->attach('file', file_get_contents($filePath), $fileName)
+                ->post($fullUrl);
+
+            if (!$response->successful()) {
+                Log::error('AnalizadorTDR: Error HTTP en direccionamiento', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                throw new Exception('Error HTTP ' . $response->status() . ': ' . $response->body());
+            }
+
+            $data = $response->json();
+
+            Log::info('AnalizadorTDR: direccionamiento completado', [
+                'success' => $data['success'] ?? false,
+                'file' => $fileName,
+                'score' => $data['data']['score_riesgo_corrupcion'] ?? null,
+            ]);
+
+            return $data;
+
+        } catch (Exception $e) {
+            Log::error('AnalizadorTDR: Error en direccionamiento', [
+                'file' => basename($filePath),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
     protected function debug(string $message, array $context = []): void
     {
         if (!$this->debugLogging) {

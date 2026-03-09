@@ -10,6 +10,7 @@ from app.models.schemas import (
     TDRAnalysisResponse,
     CompatibilityScoreRequest,
     CompatibilityScoreResponse,
+    DireccionamientoAnalysisResponse,
 )
 from datetime import datetime
 import logging
@@ -53,57 +54,50 @@ class TDRAnalyzerService:
         Raises:
             ValueError: Si hay errores en el procesamiento o validación
         """
-        self.logger.info("=== INICIANDO PIPELINE DE ANÁLISIS DE TDR (PDF DIRECTO) ===")
-
-        # ESTRATEGIA NUEVA: Enviar PDF directamente a Gemini (soporta PDFs nativos)
-        self.logger.info("📄 Usando estrategia de PDF directo (sin extracción de texto)")
+        self.logger.info("=== INICIANDO PIPELINE DE ANÁLISIS DE TDR (EXTRACCIÓN INTELIGENTE) ===")
 
         llm_client = LLMFactory.create_client(llm_provider)
 
-        # Verificar si el cliente soporta análisis de PDF directo
-        if hasattr(llm_client, 'analyze_tdr_from_pdf'):
-            self.logger.info("✅ Cliente LLM soporta PDF directo")
-            analysis_dict = await llm_client.analyze_tdr_from_pdf(pdf_bytes, "tdr.pdf")
-        else:
-            # FALLBACK: Extraer texto y usar método tradicional
-            self.logger.warning("⚠️  Cliente LLM no soporta PDF directo, usando extracción de texto...")
+        # ESTRATEGIA: Extracción local inteligente → texto enriquecido → LLM
+        # Evita enviar el PDF completo al LLM (ahorro de tokens a escala)
+        self.logger.info("📄 Extrayendo contenido con SmartPDFReaderPipeline (texto + tablas + OCR)...")
 
-            # Paso 1: Extraer texto del PDF (método SÍNCRONO - PyMuPDF no es async)
-            self.logger.info("Paso 1/4: Extrayendo texto del PDF...")
-            full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
+        # Paso 1: Extraer texto con pipeline inteligente (método SÍNCRONO)
+        self.logger.info("Paso 1/4: Extrayendo contenido del PDF...")
+        full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
 
-            if len(full_text) < 100:
-                raise ValueError("El PDF contiene muy poco texto para analizar")
+        if len(full_text) < 100:
+            raise ValueError("El PDF contiene muy poco texto para analizar")
 
-            self.logger.info(f"✓ Texto extraído: {len(full_text)} caracteres")
+        self.logger.info(f"✓ Texto extraído: {len(full_text)} caracteres")
 
-            # Paso 2 y 3: Construir contexto para el LLM
-            # Si el documento es pequeño (<5000 caracteres), enviar todo directamente sin RAG
-            if len(full_text) < 5000:
-                self.logger.info("⚡ Documento pequeño detectado, enviando texto completo al LLM (sin RAG)...")
-                context = f"""DOCUMENTO COMPLETO DEL TDR:
+        # Paso 2 y 3: Construir contexto para el LLM
+        # Si el documento es pequeño (<5000 caracteres), enviar todo directamente sin RAG
+        if len(full_text) < 5000:
+            self.logger.info("⚡ Documento pequeño detectado, enviando texto completo al LLM (sin RAG)...")
+            context = f"""DOCUMENTO COMPLETO DEL TDR:
 
 {full_text}
 
 ===== FIN DEL DOCUMENTO ====="""
-                self.logger.info(f"✓ Contexto completo preparado: {len(context)} caracteres")
-            else:
-                # Paso 2: Recuperar fragmentos relevantes (RAG) - método SÍNCRONO
-                self.logger.info("Paso 2/4: Recuperando fragmentos relevantes (RAG)...")
-                fragments = self.rag_extractor.extract_relevant_fragments(full_text)
+            self.logger.info(f"✓ Contexto completo preparado: {len(context)} caracteres")
+        else:
+            # Paso 2: Recuperar fragmentos relevantes (RAG) - método SÍNCRONO
+            self.logger.info("Paso 2/4: Recuperando fragmentos relevantes (RAG)...")
+            fragments = self.rag_extractor.extract_relevant_fragments(full_text)
 
-                # Verificar que se recuperaron fragmentos
-                total_fragments = sum(len(chunks) for chunks in fragments.values())
-                self.logger.info(f"✓ Fragmentos recuperados: {total_fragments} chunks")
+            # Verificar que se recuperaron fragmentos
+            total_fragments = sum(len(chunks) for chunks in fragments.values())
+            self.logger.info(f"✓ Fragmentos recuperados: {total_fragments} chunks")
 
-                # Paso 3: Construir contexto para el LLM - método SÍNCRONO
-                self.logger.info("Paso 3/4: Construyendo contexto para el LLM...")
-                context = self.rag_extractor.build_context_for_llm(fragments)
-                self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
+            # Paso 3: Construir contexto para el LLM - método SÍNCRONO
+            self.logger.info("Paso 3/4: Construyendo contexto para el LLM...")
+            context = self.rag_extractor.build_context_for_llm(fragments)
+            self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
 
-            # Paso 4: Analizar con el LLM usando texto
-            self.logger.info(f"Paso 4/4: Analizando con LLM (provider: {llm_provider or 'default'})...")
-            analysis_dict = await llm_client.analyze_tdr(context)
+        # Paso 4: Analizar con el LLM usando texto enriquecido
+        self.logger.info(f"Paso 4/4: Analizando con LLM (provider: {llm_provider or 'default'})...")
+        analysis_dict = await llm_client.analyze_tdr(context)
 
         # Asegurar que el payload cumpla con límites antes de validar
         analysis_dict = self._sanitize_llm_payload(analysis_dict)
@@ -187,5 +181,73 @@ class TDRAnalyzerService:
 
         if not payload.get("timestamp"):
             payload["timestamp"] = datetime.utcnow()
+
+        return payload
+
+    async def analyze_direccionamiento_document(
+        self,
+        pdf_bytes: bytes,
+        llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None
+    ) -> DireccionamientoAnalysisResponse:
+        """
+        Pipeline de análisis forense de direccionamiento.
+        Reutiliza la extracción de texto (SmartPDFReaderPipeline + RAG)
+        pero usa el prompt forense para detectar corrupción.
+        """
+        self.logger.info("=== INICIANDO PIPELINE DE DIRECCIONAMIENTO ===")
+
+        llm_client = LLMFactory.create_client(llm_provider)
+
+        # Paso 1: Extraer texto (mismo pipeline que análisis general)
+        self.logger.info("📄 Extrayendo contenido con SmartPDFReaderPipeline...")
+        full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
+
+        if len(full_text) < 100:
+            raise ValueError("El PDF contiene muy poco texto para analizar")
+
+        self.logger.info(f"✓ Texto extraído: {len(full_text)} caracteres")
+
+        # Paso 2-3: Construir contexto (mismo que análisis general)
+        if len(full_text) < 5000:
+            context = f"DOCUMENTO COMPLETO DEL TDR:\n\n{full_text}\n\n===== FIN DEL DOCUMENTO ====="
+        else:
+            fragments = self.rag_extractor.extract_relevant_fragments(full_text)
+            context = self.rag_extractor.build_context_for_llm(fragments)
+
+        self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
+
+        # Paso 4: Analizar con prompt forense
+        self.logger.info("🔍 Analizando direccionamiento con LLM...")
+        analysis_dict = await llm_client.analyze_direccionamiento(context)
+        analysis_dict = self._sanitize_direccionamiento_payload(analysis_dict)
+
+        # Paso 5: Validar con Pydantic
+        try:
+            validated = DireccionamientoAnalysisResponse(**analysis_dict)
+            self.logger.info(f"✅ Direccionamiento completado — Score: {validated.score_riesgo_corrupcion}, Veredicto: {validated.veredicto_flash}")
+            return validated
+        except Exception as e:
+            self.logger.error(f"Error al validar respuesta de direccionamiento: {str(e)}")
+            raise ValueError(f"Respuesta del LLM no cumple esquema: {str(e)}")
+
+    def _sanitize_direccionamiento_payload(self, payload: Dict) -> Dict:
+        """Ajusta el payload de direccionamiento para cumplir con el esquema."""
+        score = payload.get("score_riesgo_corrupcion")
+        try:
+            payload["score_riesgo_corrupcion"] = max(0, min(100, int(score)))
+        except (TypeError, ValueError):
+            payload["score_riesgo_corrupcion"] = 0
+
+        veredicto = (payload.get("veredicto_flash") or "").upper()
+        if veredicto not in {"LIMPIO", "SOSPECHOSO", "ALTAMENTE DIRECCIONADO"}:
+            s = payload["score_riesgo_corrupcion"]
+            veredicto = "ALTAMENTE DIRECCIONADO" if s >= 70 else ("SOSPECHOSO" if s >= 30 else "LIMPIO")
+        payload["veredicto_flash"] = veredicto
+
+        if not isinstance(payload.get("hallazgos_criticos"), list):
+            payload["hallazgos_criticos"] = []
+
+        if not payload.get("argumento_para_observacion"):
+            payload["argumento_para_observacion"] = "Sin argumento generado por el modelo."
 
         return payload

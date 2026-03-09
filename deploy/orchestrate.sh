@@ -413,6 +413,17 @@ do_deploy() {
     if [ "$SKIP_DEPS" = false ]; then
         log_step "DEPENDENCIAS PYTHON"
         cd "$PYTHON_DIR"
+
+        # Instalar Tesseract OCR si no está presente (necesario para OCR de imágenes en PDFs)
+        if ! command -v tesseract &>/dev/null; then
+            log_info "Instalando Tesseract OCR + idioma español..."
+            sudo apt-get update -qq 2>/dev/null
+            sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-spa 2>&1 | tail -2
+            log_ok "Tesseract OCR instalado"
+        elif [ "$VERBOSE" = true ]; then
+            log_info "Tesseract OCR ya instalado: $(tesseract --version 2>&1 | head -1)"
+        fi
+
         if [ ! -d "venv" ]; then
             /usr/local/python311/bin/python3 -m venv venv
             log_info "Virtualenv creado"

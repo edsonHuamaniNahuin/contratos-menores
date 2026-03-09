@@ -93,3 +93,38 @@ TDR:
         except Exception as e:
             self.logger.error(f"Error en compatibilidad OpenAI: {str(e)}")
             raise ValueError(f"Error al evaluar compatibilidad: {str(e)}")
+
+    async def analyze_direccionamiento(self, context: str) -> Dict:
+        """Análisis forense de direccionamiento/corrupción usando OpenAI."""
+        try:
+            self.logger.info(f"🔍 Analizando direccionamiento con OpenAI ({self.model_name})")
+
+            user_prompt = f"""
+Analiza este TDR/ET del SEACE (Perú) buscando indicios de direccionamiento y corrupción.
+Responde ÚNICAMENTE con un JSON que siga este esquema:
+{self.FORENSIC_JSON_TEMPLATE.strip()}
+
+Reglas:
+- score_riesgo_corrupcion: entero 0-100.
+- veredicto_flash: "LIMPIO" si score<30, "SOSPECHOSO" si 30-69, "ALTAMENTE DIRECCIONADO" si >=70.
+- Máximo 8 hallazgos.
+
+TDR:
+{context}
+"""
+            response = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": self.FORENSIC_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.15,
+                max_tokens=4096,
+                response_format={"type": "json_object"},
+            )
+
+            response_text = response.choices[0].message.content
+            return self._parse_json_response(response_text)
+        except Exception as e:
+            self.logger.error(f"❌ Error en direccionamiento OpenAI: {str(e)}")
+            raise ValueError(f"Error al analizar direccionamiento: {str(e)}")

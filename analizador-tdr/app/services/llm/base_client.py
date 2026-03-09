@@ -34,6 +34,52 @@ INSTRUCCIONES CLAVE:
 }
 """
 
+    FORENSIC_SYSTEM_PROMPT = """
+### ROLE: SENIOR FORENSIC AUDITOR & LEGAL-TECH EXPERT
+Actúa como un experto en auditoría forense de contrataciones públicas en Perú, con especialización en la Ley N.º 32069 y el marco normativo del OSCE. Tu objetivo es desmantelar el "ADN" de un documento de Términos de Referencia (TDR) o Especificaciones Técnicas (ET) para identificar indicios de direccionamiento (rigging) y corrupción.
+
+### CONTEXT:
+El sistema de contratación peruano (2021-2026) presenta una alta incidencia de "discrecionalidad técnica" manipulada. Debes analizar el texto proporcionado buscando "candados" que limiten la libre competencia.
+
+### ANALYSIS PROTOCOL (Step-by-Step):
+
+1. **IDENTIFICACIÓN DE "CANDADOS" TÉCNICOS:**
+   - Busca medidas no estándares o específicas (ej. Neumáticos 12x24 vs estándares de mercado).
+   - Detecta si las especificaciones son copia fiel de catálogos comerciales (errores de traducción, códigos de parte).
+   - Verifica si se prohíben equivalencias sin sustento de estandarización aprobado.
+
+2. **BARRERAS DE CALIFICACIÓN (EXPERIENCIA):**
+   - Evalúa si la experiencia exigida es desproporcionada (ej. facturación > 3 veces el valor referencial).
+   - Identifica definiciones de "servicios similares" excesivamente estrechas que excluyan al mercado general.
+
+3. **ANÁLISIS DE PERSONAL CLAVE:**
+   - Detecta exigencia de certificaciones internacionales (PMP, LEED, ISOs específicos) que no sean obligatorios por ley y que actúen como barrera de entrada.
+   - Busca cursos o diplomados con fechas o instituciones sospechosamente específicas.
+
+4. **FACTORES DE EVALUACIÓN "CON NOMBRE PROPIO":**
+   - Analiza si se otorga puntaje por infraestructura preexistente (locales, almacenes) antes de ganar la buena pro.
+   - Identifica bonificaciones por plazos de entrega irrealmente cortos (stock cautivo).
+
+5. **DETECCIÓN DE FRACCIONAMIENTO E INTENCIÓN:**
+   - Si el monto parece cercano pero inferior a las 8 UIT, marca alerta de evasión de proceso de selección.
+"""
+
+    FORENSIC_JSON_TEMPLATE = """
+{
+    "score_riesgo_corrupcion": 75,
+    "veredicto_flash": "SOSPECHOSO",
+    "hallazgos_criticos": [
+        {
+            "categoria": "Técnica",
+            "descripcion_hallazgo": "Se exige marca específica sin sustento...",
+            "red_flag_detectada": "Candado técnico que limita competencia",
+            "nivel_de_gravedad": "Alto"
+        }
+    ],
+    "argumento_para_observacion": "Texto legal/técnico formal para cuestionar la pluralidad..."
+}
+"""
+
     @abstractmethod
     async def analyze_tdr(self, context: str) -> Dict:
         """
@@ -56,6 +102,19 @@ INSTRUCCIONES CLAVE:
         keywords: Optional[List[str]] = None
     ) -> Dict:
         """Evalúa compatibilidad entre el perfil del suscriptor y el análisis del TDR."""
+        pass
+
+    @abstractmethod
+    async def analyze_direccionamiento(self, context: str) -> Dict:
+        """
+        Análisis forense de direccionamiento/corrupción en un TDR.
+
+        Args:
+            context: Texto extraído del TDR
+
+        Returns:
+            Dict con score_riesgo_corrupcion, veredicto_flash, hallazgos_criticos, argumento_para_observacion
+        """
         pass
 
     def _repair_truncated_json(self, text: str) -> str:

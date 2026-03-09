@@ -299,6 +299,32 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                     $forceRefresh
                 );
 
+            } elseif (strpos($data, 'cotizar_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+
+                $this->info("💼 Usuario {$chatId} solicitó cotizar contrato {$idContrato}");
+
+                $this->answerCallbackQuery($callbackId, '💼 Preparando enlace de cotización...', $token);
+                $this->prepararCotizacionParaUsuario($chatId, $idContrato, $token);
+
+            } elseif (strpos($data, 'direcc_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
+                $this->info("🔍 Usuario {$chatId} solicitó análisis de direccionamiento del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+
+                $this->answerCallbackQuery($callbackId, '⏳ Analizando direccionamiento...', $token);
+                $this->analizarDireccionamientoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+
             } else {
                 $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
             }
@@ -436,6 +462,86 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         }
     }
 
+    /**
+     * Analizar direccionamiento (corrupción) de TDR y enviar resultado al usuario.
+     */
+    protected function analizarDireccionamientoParaUsuario(
+        string $chatId,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        string $token
+    ): void {
+        $loadingMsgId = null;
+
+        try {
+            $cuenta = CuentaSeace::activa()->first();
+
+            if ($idContratoArchivo === 0) {
+                $this->enviarMensaje($chatId, '❌ ID de archivo inválido. Por favor, intenta de nuevo.', $token);
+                return;
+            }
+
+            $tdrService = new TdrAnalysisService();
+            $cachedContrato = $this->getCachedContratoPayload($idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            $this->sendChatAction($chatId, 'typing', $token);
+            $loadingMsgId = $this->enviarMensajeProcesando(
+                $chatId,
+                "⏳ <b>Analizando direccionamiento con IA...</b>\n📄 {$nombreArchivo}\n\n🔍 Detectando indicios de corrupción en las bases...",
+                $token
+            );
+
+            $this->info("🔍 Analizando direccionamiento {$nombreArchivo} (ID: {$idContratoArchivo}) con IA...");
+            $resultado = $tdrService->analizarDesdeSeace(
+                $idContratoArchivo,
+                $nombreArchivo,
+                $cuenta,
+                $contratoData,
+                'telegram',
+                false,
+                'direccionamiento'
+            );
+
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
+
+            if ($resultado['success'] ?? false) {
+                $this->enviarResultadoDireccionamientoTelegram($chatId, $resultado, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+                $this->info("✅ Análisis de direccionamiento enviado a usuario {$chatId}");
+            } else {
+                $errorMsg = $resultado['error'] ?? 'Error desconocido';
+
+                if (strpos($errorMsg, 'temporalmente') !== false || strpos($errorMsg, 'intenta') !== false) {
+                    $retryCallback = $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+                    $keyboard = [
+                        'inline_keyboard' => [
+                            [['text' => '🔄 Reintentar Direccionamiento', 'callback_data' => $retryCallback]]
+                        ]
+                    ];
+                    $this->enviarMensajeConBotones($chatId, "❌ {$errorMsg}", $keyboard, $token);
+                } else {
+                    $this->enviarMensaje($chatId, "❌ Error al analizar direccionamiento: {$errorMsg}", $token);
+                }
+            }
+
+        } catch (\Exception $e) {
+            if ($loadingMsgId ?? null) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
+
+            Log::error('Error al analizar direccionamiento para usuario', [
+                'chat_id' => $chatId,
+                'id_contrato' => $idContrato,
+                'exception' => $e->getMessage(),
+            ]);
+
+            $this->enviarMensaje($chatId, "❌ Error al procesar: {$e->getMessage()}", $token);
+        }
+    }
+
     /**     * Enviar mensaje con botones inline
      */
     protected function enviarMensajeConBotones(string $chatId, string $mensaje, array $keyboard, string $token): void
@@ -494,6 +600,8 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             ?? $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato);
 
         $downloadCallback = $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo);
+        $cotizarCallback  = $this->buildCallbackData('cotizar', $idContrato, $idContratoArchivo, $nombreArchivo);
+        $direccCallback   = $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
         $keyboard = [
             'inline_keyboard' => [
                 [
@@ -501,12 +609,143 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                         'text' => '📥 Descargar TDR',
                         'callback_data' => $downloadCallback,
                     ]
+                ],
+                [
+                    [
+                        'text' => '🔍 Detectar Direccionamiento',
+                        'callback_data' => $direccCallback,
+                    ]
+                ],
+                [
+                    [
+                        'text' => '💼 Cotizar en SEACE',
+                        'callback_data' => $cotizarCallback,
+                    ]
                 ]
             ]
         ];
 
         $this->enviarMensajeConBotones($chatId, $mensaje, $keyboard, $token);
     }
+
+    /**
+     * Enviar resultado del análisis de direccionamiento (corrupción) por Telegram.
+     */
+    protected function enviarResultadoDireccionamientoTelegram(
+        string $chatId,
+        array $resultado,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        string $token
+    ): void {
+        $analisisData = $resultado['data']['analisis'] ?? [];
+        $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
+        $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
+
+        $mensaje = $resultado['formatted']['telegram']
+            ?? $this->formatter->formatDireccionamientoForTelegram($analisisData, $archivoNombre, $contextoContrato);
+
+        $downloadCallback = $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo);
+        $analizarCallback = $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
+        $keyboard = [
+            'inline_keyboard' => [
+                [
+                    [
+                        'text' => '🤖 Análisis General TDR',
+                        'callback_data' => $analizarCallback,
+                    ]
+                ],
+                [
+                    [
+                        'text' => '📥 Descargar TDR',
+                        'callback_data' => $downloadCallback,
+                    ]
+                ],
+            ]
+        ];
+
+        $this->enviarMensajeConBotones($chatId, $mensaje, $keyboard, $token);
+    }
+
+    /**
+     * Preparar enlace de cotización SEACE para el usuario de Telegram.
+     *
+     * Envía un mensaje con:
+     * - URL de login del SEACE (botón inline)
+     * - URL de cotización en formato monospace (fácil de copiar en Telegram)
+     * - Instrucciones paso a paso
+     *
+     * No se puede autenticar automáticamente en SEACE desde fuera del
+     * dominio (Same-Origin Policy), así que guiamos al usuario.
+     */
+    protected function prepararCotizacionParaUsuario(
+        string $chatId,
+        int $idContrato,
+        string $token
+    ): void {
+        try {
+            if ($idContrato <= 0) {
+                $this->enviarMensaje($chatId, '❌ ID de contrato inválido para cotizar.', $token);
+                return;
+            }
+
+            $this->sendChatAction($chatId, 'typing', $token);
+
+            // Construir URL de login del portal SEACE
+            $seaceBase = rtrim(config('services.seace.frontend_origin', 'https://prod6.seace.gob.pe'), '/');
+            $urlLogin = "{$seaceBase}/auth-proveedor/";
+
+            // Recuperar contexto del contrato si está cacheado
+            $cachedContrato = $this->getCachedContratoPayload($idContrato);
+            $codigoProceso = $cachedContrato['desContratacion'] ?? "Contrato #{$idContrato}";
+            $entidad = $cachedContrato['nomEntidad'] ?? '';
+
+            $mensaje = "💼 <b>Cotizar en SEACE</b>\n\n";
+            $mensaje .= "⚡ <i>Estamos casi allí — te dejamos todo listo para que sea rápido.</i>\n\n";
+            $mensaje .= "📝 <b>Código:</b> <code>{$codigoProceso}</code>\n";
+
+            if ($entidad) {
+                $mensaje .= "🏢 <b>Entidad:</b> {$entidad}\n";
+            }
+
+            $mensaje .= "\n<b>3 pasos rápidos:</b>\n\n";
+            $mensaje .= "1️⃣ Toca el código de arriba para <b>copiarlo</b>.\n\n";
+            $mensaje .= "2️⃣ <b>Ingresa al portal SEACE</b> con el botón de abajo e inicia sesión.\n\n";
+            $mensaje .= "3️⃣ En el buscador del portal, <b>pega el código</b> (Ctrl+V) y envía tu cotización.\n\n";
+            $mensaje .= "🔒 <i>¿Por qué no te llevamos directo? El portal SEACE protege cada sesión de forma individual. Las cotizaciones solo pueden enviarse navegando dentro de su plataforma, garantizando la seguridad de tu cuenta.</i>";
+
+            $keyboard = [
+                'inline_keyboard' => [
+                    [
+                        [
+                            'text' => '🔗 Ir al portal SEACE',
+                            'url'  => $urlLogin,
+                        ],
+                    ],
+                ],
+            ];
+
+            $this->enviarMensajeConBotones($chatId, $mensaje, $keyboard, $token);
+
+            $this->info("✅ Instrucciones de cotización enviadas a usuario {$chatId} (contrato {$idContrato})"
+);
+
+        } catch (\Exception $e) {
+            Log::error('Error al preparar cotización para usuario', [
+                'chat_id'     => $chatId,
+                'id_contrato' => $idContrato,
+                'exception'   => $e->getMessage(),
+            ]);
+
+            $this->enviarMensaje(
+                $chatId,
+                '❌ Error al preparar el enlace de cotización. Intenta nuevamente.',
+                $token
+            );
+        }
+    }
+
     /**
      * Descargar archivo TDR y enviarlo al usuario por Telegram
      * Reutiliza la lógica de descarga del TdrAnalysisService
@@ -907,6 +1146,12 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                     [
                         'text' => '🔄 Recalcular Score',
                         'callback_data' => $this->buildCallbackData('compatrefresh', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                ],
+                [
+                    [
+                        'text' => '💼 Cotizar en SEACE',
+                        'callback_data' => $this->buildCallbackData('cotizar', $idContrato, $idContratoArchivo, $nombreArchivo),
                     ],
                 ],
             ],

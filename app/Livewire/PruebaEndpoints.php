@@ -1147,19 +1147,20 @@ class PruebaEndpoints extends Component
                 throw new RuntimeException('Debes iniciar sesión para ejecutar el importador.');
             }
 
-            // Obtener suscriptores de TODOS los canales del usuario
+            // Cargar TODOS los suscriptores activos (igual que el Job de producción)
+            // para que el escaneo de prueba refleje exactamente el comportamiento real.
             $telegramSubs = TelegramSubscription::with('keywords')
-                ->where('user_id', $userId)
                 ->activas()
                 ->get();
 
             $whatsappSubs = WhatsAppSubscription::with('keywords')
-                ->where('user_id', $userId)
                 ->activas()
                 ->get();
 
-            // Merge polimórfico (Telegram + WhatsApp)
-            $suscripciones = $telegramSubs->merge($whatsappSubs);
+            // Concat polimórfico (Telegram + WhatsApp)
+            // IMPORTANTE: usar concat() en lugar de merge() porque merge() reemplaza
+            // elementos con el mismo ID (ej: Telegram #2 se pierde si existe WhatsApp #2).
+            $suscripciones = $telegramSubs->concat($whatsappSubs);
 
             $this->suscriptoresActivos = $suscripciones->count();
 
@@ -1211,12 +1212,8 @@ class PruebaEndpoints extends Component
             return;
         }
 
-        $this->suscriptoresActivos = TelegramSubscription::where('user_id', $userId)
-            ->activas()
-            ->count()
-            + WhatsAppSubscription::where('user_id', $userId)
-            ->activas()
-            ->count();
+        $this->suscriptoresActivos = TelegramSubscription::activas()->count()
+            + WhatsAppSubscription::activas()->count();
     }
 
     /**

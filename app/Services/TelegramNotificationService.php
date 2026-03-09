@@ -287,7 +287,7 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
             ]);
         }
 
-        return [
+        $keyboard = [
             'inline_keyboard' => [
                 [
                     [
@@ -305,8 +305,27 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
                         'callback_data' => $this->buildCallbackData('compatibilidad', $idContrato, $idContratoArchivo, $nombreArchivo),
                     ],
                 ],
+                [
+                    [
+                        'text' => '🔍 Detectar Direccionamiento',
+                        'callback_data' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                ],
             ],
         ];
+
+        // Agregar botón "Cotizar en SEACE" si la cotización está abierta
+        $cotizarAbierto = $contratoData['cotizar'] ?? true;
+        if ($cotizarAbierto) {
+            $keyboard['inline_keyboard'][] = [
+                [
+                    'text' => '💼 Cotizar en SEACE',
+                    'callback_data' => $this->buildCallbackData('cotizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                ],
+            ];
+        }
+
+        return $keyboard;
     }
 
     public function cacheContratoContext(array $contratoData): void
@@ -330,6 +349,7 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
             'fecFinCotizacion' => $contratoData['fecFinCotizacion'] ?? null,
             'idContratoArchivo' => $contratoData['idContratoArchivo'] ?? null,
             'nombreArchivo' => $contratoData['nombreArchivo'] ?? null,
+            'cotizar' => $contratoData['cotizar'] ?? null,
         ];
 
         Cache::put(

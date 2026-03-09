@@ -119,6 +119,17 @@ class ImportadorTdrEngine
                     $recipientId
                 );
 
+                // Resolver canal UNA sola vez por suscriptor (no cambia entre contratos)
+                $channel = $this->resolveChannelForSubscription($suscripcion);
+                $canalDisponible = $channel !== null;
+
+                if (!$canalDisponible) {
+                    Log::info('ImportadorTdrEngine: canal no disponible para suscriptor, coincidencias se contarán pero no se enviarán', [
+                        'suscriptor' => $nombreSuscriptor,
+                        'canal' => $canal,
+                    ]);
+                }
+
                 foreach ($indiceFiltrados as $contratoId => $contrato) {
                     // Dedup per-subscriber: omitir si ya fue notificado a este usuario+canal+recipient
                     if (in_array((string) $contratoId, $yaNotificados, true)) {
@@ -129,6 +140,18 @@ class ImportadorTdrEngine
                     $resultado = $suscripcion->resolverCoincidenciasContrato($contrato);
 
                     if (!$resultado['pasa']) {
+                        continue;
+                    }
+
+                    // Registrar coincidencia ANTES del envío (desacoplar match de send)
+                    $coincidencias[] = [
+                        'codigo' => $contrato['desContratacion'] ?? 'N/A',
+                        'entidad' => $contrato['nomEntidad'] ?? 'N/A',
+                        'match_keywords' => $resultado['keywords'],
+                    ];
+
+                    // Si el canal no está disponible, contar coincidencia pero no enviar
+                    if (!$canalDisponible) {
                         continue;
                     }
 
@@ -143,16 +166,6 @@ class ImportadorTdrEngine
                         $archivoMetaCache[$contratoSeaceId] ?? []
                     );
                     $payloadContrato['_match_keywords'] = $resultado['keywords'];
-
-                    $channel = $this->resolveChannelForSubscription($suscripcion);
-
-                    if (!$channel) {
-                        Log::warning('ImportadorTdrEngine: no se encontró canal para suscriptor', [
-                            'suscriptor' => $suscripcion->id ?? 'unknown',
-                            'tipo' => get_class($suscripcion),
-                        ]);
-                        continue;
-                    }
 
                     $respuesta = $channel->enviarProcesoASuscriptor(
                         $suscripcion,
@@ -187,12 +200,6 @@ class ImportadorTdrEngine
                         $erroresEnvio++;
                         $detalleErrores[] = $respuesta['message'] ?? 'Error desconocido';
                     }
-
-                    $coincidencias[] = [
-                        'codigo' => $contrato['desContratacion'] ?? 'N/A',
-                        'entidad' => $contrato['nomEntidad'] ?? 'N/A',
-                        'match_keywords' => $resultado['keywords'],
-                    ];
                 }
 
                 $totalCoincidencias += count($coincidencias);
@@ -208,6 +215,7 @@ class ImportadorTdrEngine
                     'envios_exitosos' => $enviosExitosos,
                     'envios_fallidos' => $enviosFallidos,
                     'dedup_omitidos' => $dedupOmitidos,
+                    'canal_disponible' => $canalDisponible,
                     'errores' => array_slice($detalleErrores, 0, 3),
                     'muestras' => array_slice($coincidencias, 0, 3),
                 ];

@@ -48,5 +48,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('follow-contracts', fn ($user) => $user->hasPermission('follow-contracts'));
         Gate::define('manage-subscriptions', fn ($user) => $user->hasPermission('manage-subscriptions'));
         Gate::define('view-mis-procesos', fn ($user) => $user->hasPermission('view-mis-procesos'));
+        Gate::define('cotizar-seace', fn ($user) => $user->hasPermission('cotizar-seace'));
     }
 }

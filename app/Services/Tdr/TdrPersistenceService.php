@@ -120,7 +120,7 @@ class TdrPersistenceService
         ])->save();
     }
 
-    public function getCachedAnalysis(ContratoArchivo $archivo, bool $forceRefresh = false): ?TdrAnalisis
+    public function getCachedAnalysis(ContratoArchivo $archivo, bool $forceRefresh = false, string $tipoAnalisis = 'general'): ?TdrAnalisis
     {
         if ($forceRefresh) {
             return null;
@@ -128,6 +128,7 @@ class TdrPersistenceService
 
         $analisis = $archivo->analisis()
             ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
+            ->where('tipo_analisis', $tipoAnalisis)
             ->latest('analizado_en')
             ->first();
 
@@ -151,8 +152,11 @@ class TdrPersistenceService
         ?array $contextoContrato = null,
         array $meta = []
     ): TdrAnalisis {
+        $tipoAnalisis = $meta['tipo_analisis'] ?? TdrAnalisis::TIPO_GENERAL;
+
         $attributes = [
             'contrato_archivo_id' => $archivo->id,
+            'tipo_analisis' => $tipoAnalisis,
             'proveedor' => $meta['proveedor'] ?? $this->defaultProvider,
             'modelo' => $meta['modelo'] ?? $this->defaultModel,
         ];

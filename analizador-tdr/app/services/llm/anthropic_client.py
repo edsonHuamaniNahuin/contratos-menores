@@ -91,3 +91,37 @@ Recuerda: Devuelve SOLO el objeto JSON sin texto adicional.
         except Exception as e:
             self.logger.error(f"Error en compatibilidad Anthropic: {str(e)}")
             raise ValueError(f"Error al evaluar compatibilidad: {str(e)}")
+
+    async def analyze_direccionamiento(self, context: str) -> Dict:
+        """Análisis forense de direccionamiento/corrupción usando Claude."""
+        try:
+            self.logger.info(f"🔍 Analizando direccionamiento con Anthropic ({self.model_name})")
+
+            user_prompt = f"""
+Analiza este TDR/ET del SEACE (Perú) buscando indicios de direccionamiento y corrupción.
+Responde ÚNICAMENTE con un JSON que siga este esquema:
+{self.FORENSIC_JSON_TEMPLATE.strip()}
+
+Reglas:
+- score_riesgo_corrupcion: entero 0-100.
+- veredicto_flash: "LIMPIO" si score<30, "SOSPECHOSO" si 30-69, "ALTAMENTE DIRECCIONADO" si >=70.
+- Máximo 8 hallazgos.
+
+TDR:
+{context}
+
+Devuelve SOLO el objeto JSON sin texto adicional.
+"""
+            response = await self.client.messages.create(
+                model=self.model_name,
+                max_tokens=4096,
+                temperature=0.15,
+                system=self.FORENSIC_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+
+            response_text = response.content[0].text
+            return self._parse_json_response(response_text)
+        except Exception as e:
+            self.logger.error(f"❌ Error en direccionamiento Anthropic: {str(e)}")
+            raise ValueError(f"Error al analizar direccionamiento: {str(e)}")

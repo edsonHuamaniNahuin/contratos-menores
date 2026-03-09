@@ -14,10 +14,14 @@ class TdrAnalisis extends Model
     public const ESTADO_EXITOSO = 'exitoso';
     public const ESTADO_FALLIDO = 'fallido';
 
+    public const TIPO_GENERAL = 'general';
+    public const TIPO_DIRECCIONAMIENTO = 'direccionamiento';
+
     protected $table = 'tdr_analisis';
 
     protected $fillable = [
         'contrato_archivo_id',
+        'tipo_analisis',
         'estado',
         'proveedor',
         'modelo',

@@ -17,6 +17,7 @@ from app.models.schemas import (
     HealthCheckResponse,
     ErrorResponse,
     CompatibilityScoreRequest,
+    DireccionamientoAnalysisResponse,
 )
 from app.services.analyzer_service import TDRAnalyzerService
 
@@ -183,6 +184,64 @@ async def analyze_tdr(
             status_code=500,
             detail=f"Error interno al procesar el TDR: {str(e)}"
         )
+
+
+@app.post(
+    "/analyze-direccionamiento",
+    tags=["Analysis"],
+    summary="Detecta indicios de direccionamiento y corrupción en un TDR"
+)
+async def analyze_direccionamiento(
+    file: UploadFile = File(..., description="Archivo PDF del TDR"),
+    llm_provider: str = None
+):
+    """
+    **Análisis forense de direccionamiento en TDR.**
+
+    Recibe un PDF y evalúa indicadores de corrupción y direccionamiento
+    según la Ley N.º 32069 y normativa OSCE.
+
+    Retorna score de riesgo (0-100), veredicto flash, hallazgos críticos
+    y argumento legal para presentar observación formal.
+    """
+    try:
+        if not file.filename.endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
+
+        pdf_bytes = await file.read()
+        file_size_mb = len(pdf_bytes) / (1024 * 1024)
+
+        if file_size_mb > settings.max_file_size_mb:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Archivo excede tamaño máximo ({settings.max_file_size_mb}MB)"
+            )
+
+        logger.info(f"🔍 Direccionamiento: {file.filename} ({file_size_mb:.2f} MB)")
+
+        if llm_provider and llm_provider not in ["gemini", "openai", "anthropic"]:
+            raise HTTPException(status_code=400, detail=f"Proveedor LLM no válido: {llm_provider}")
+
+        result = await analyzer_service.analyze_direccionamiento_document(
+            pdf_bytes=pdf_bytes,
+            llm_provider=llm_provider
+        )
+
+        logger.info(f"✅ Direccionamiento completado: {file.filename} — Score: {result.score_riesgo_corrupcion}")
+
+        return {
+            "success": True,
+            "data": result.model_dump(),
+            "timestamp": datetime.now().isoformat(),
+            "filename": file.filename
+        }
+
+    except ValueError as e:
+        logger.error(f"Error de validación en direccionamiento: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error inesperado en direccionamiento: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 
 @app.post(

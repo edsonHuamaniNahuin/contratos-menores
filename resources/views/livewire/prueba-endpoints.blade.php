@@ -1020,6 +1020,9 @@
                                             @if(($suscriptor['dedup_omitidos'] ?? 0) > 0)
                                                 <span class="px-3 py-1 rounded-full bg-neutral-100 text-neutral-500">Dedup: {{ $suscriptor['dedup_omitidos'] }}</span>
                                             @endif
+                                            @if(!($suscriptor['canal_disponible'] ?? true))
+                                                <span class="px-3 py-1 rounded-full bg-red-500/15 text-red-600">⚠️ Canal no configurado</span>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="mt-3 text-xs text-neutral-500">

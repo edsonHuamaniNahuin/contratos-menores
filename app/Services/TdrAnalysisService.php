@@ -55,7 +55,8 @@ class TdrAnalysisService
         ?CuentaSeace $cuenta = null,
         ?array $contratoData = null,
         string $target = 'dashboard',
-        bool $forceRefresh = false
+        bool $forceRefresh = false,
+        string $tipoAnalisis = 'general'
     ): array {
         try {
             $this->debug('Inicio análisis TDR', [
@@ -63,6 +64,7 @@ class TdrAnalysisService
                 'nombreArchivo' => $nombreArchivo,
                 'cuenta_id' => $cuenta?->id,
                 'force_refresh' => $forceRefresh,
+                'tipo_analisis' => $tipoAnalisis,
             ]);
 
             if (!config('services.analizador_tdr.enabled', false)) {
@@ -81,32 +83,30 @@ class TdrAnalysisService
             );
 
             // ── Fast-path: resultado ya existe en DB ─────────────────
-            if ($cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh)) {
+            if ($cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh, $tipoAnalisis)) {
                 $this->debug('Usando análisis en caché', [
                     'contrato_archivo_id' => $archivoPersistido->id,
                     'analisis_id' => $cachedAnalisis->id,
+                    'tipo_analisis' => $tipoAnalisis,
                 ]);
 
                 $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
-                return $this->buildResponseFromPayload($payload, $target);
+                return $this->buildResponseFromPayload($payload, $target, $tipoAnalisis);
             }
 
             // ── Lock atómico (DB): solo 1 proceso llama al LLM por archivo ──
-            // Si otro proceso ya está analizando, bloquea hasta que
-            // termine (máx ANALYSIS_LOCK_WAIT s), luego re-chequea cache.
             $lock = Cache::lock(
-                self::ANALYSIS_LOCK_PREFIX . $idContratoArchivo,
+                self::ANALYSIS_LOCK_PREFIX . $tipoAnalisis . ':' . $idContratoArchivo,
                 self::ANALYSIS_LOCK_TTL
             );
 
             $acquired = $lock->block(self::ANALYSIS_LOCK_WAIT);
 
             if (!$acquired) {
-                // Timeout esperando — re-chequear cache por si el otro acabó
-                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh);
+                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh, $tipoAnalisis);
                 if ($cachedAnalisis) {
                     $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
-                    return $this->buildResponseFromPayload($payload, $target);
+                    return $this->buildResponseFromPayload($payload, $target, $tipoAnalisis);
                 }
 
                 return [
@@ -117,13 +117,13 @@ class TdrAnalysisService
 
             try {
                 // ── Double-check: otro proceso pudo completar mientras esperábamos ──
-                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh);
+                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh, $tipoAnalisis);
                 if ($cachedAnalisis) {
                     $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
-                    return $this->buildResponseFromPayload($payload, $target);
+                    return $this->buildResponseFromPayload($payload, $target, $tipoAnalisis);
                 }
 
-                return $this->executeAnalysis($archivoPersistido, $idContratoArchivo, $nombreArchivo, $cuenta, $contratoData, $target);
+                return $this->executeAnalysis($archivoPersistido, $idContratoArchivo, $nombreArchivo, $cuenta, $contratoData, $target, $tipoAnalisis);
             } finally {
                 $lock->release();
             }
@@ -151,7 +151,8 @@ class TdrAnalysisService
         string $nombreArchivo,
         ?CuentaSeace $cuenta,
         ?array $contratoData,
-        string $target
+        string $target,
+        string $tipoAnalisis = 'general'
     ): array {
         // Usar endpoint autenticado si hay cuenta, de lo contrario fallback a endpoint público
         if ($cuenta) {
@@ -175,13 +176,21 @@ class TdrAnalysisService
         }
 
         $analizador = new AnalizadorTDRService();
-        $resultado = $analizador->analyzeSingle($filePath);
+
+        if ($tipoAnalisis === 'direccionamiento') {
+            $resultado = $analizador->analyzeDireccionamiento($filePath);
+        } else {
+            $resultado = $analizador->analyzeSingle($filePath);
+        }
 
         if (!$resultado['success']) {
             return $resultado;
         }
 
-        $analisisData = $this->normalizeAnalysisKeys($resultado['data'] ?? []);
+        $analisisData = $tipoAnalisis === 'direccionamiento'
+            ? ($resultado['data'] ?? [])
+            : $this->normalizeAnalysisKeys($resultado['data'] ?? []);
+
         $contextoContrato = $this->buildContextoContrato($contratoData, $archivoPersistido);
 
         $analisisModel = $this->persistence->storeAnalysis(
@@ -192,12 +201,13 @@ class TdrAnalysisService
             [
                 'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
                 'modelo' => config('services.analizador_tdr.model'),
+                'tipo_analisis' => $tipoAnalisis,
             ]
         );
 
         $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
 
-        return $this->buildResponseFromPayload($payload, $target);
+        return $this->buildResponseFromPayload($payload, $target, $tipoAnalisis);
     }
 
     /**
@@ -207,7 +217,8 @@ class TdrAnalysisService
         ContratoArchivo $archivoPersistido,
         ?array $contratoData = null,
         string $target = 'dashboard',
-        bool $forceRefresh = false
+        bool $forceRefresh = false,
+        string $tipoAnalisis = 'general'
     ): array {
         try {
             $this->debug('Inicio análisis TDR local', [
@@ -223,25 +234,25 @@ class TdrAnalysisService
             }
 
             // ── Fast-path ──
-            if ($cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh)) {
+            if ($cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh, $tipoAnalisis)) {
                 $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
-                return $this->buildResponseFromPayload($payload, $target);
+                return $this->buildResponseFromPayload($payload, $target, $tipoAnalisis);
             }
 
             // ── Lock atómico (misma lógica que analizarDesdeSeace) ──
             $archivoSeaceId = $archivoPersistido->id_archivo_seace ?? $archivoPersistido->id;
             $lock = Cache::lock(
-                self::ANALYSIS_LOCK_PREFIX . $archivoSeaceId,
+                self::ANALYSIS_LOCK_PREFIX . $tipoAnalisis . ':' . $archivoSeaceId,
                 self::ANALYSIS_LOCK_TTL
             );
 
             $acquired = $lock->block(self::ANALYSIS_LOCK_WAIT);
 
             if (!$acquired) {
-                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh);
+                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh, $tipoAnalisis);
                 if ($cachedAnalisis) {
                     $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
-                    return $this->buildResponseFromPayload($payload, $target);
+                    return $this->buildResponseFromPayload($payload, $target, $tipoAnalisis);
                 }
 
                 return [
@@ -252,10 +263,10 @@ class TdrAnalysisService
 
             try {
                 // ── Double-check ──
-                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh);
+                $cachedAnalisis = $this->persistence->getCachedAnalysis($archivoPersistido, $forceRefresh, $tipoAnalisis);
                 if ($cachedAnalisis) {
                     $payload = $this->persistence->buildPayloadFromAnalysis($cachedAnalisis, true);
-                    return $this->buildResponseFromPayload($payload, $target);
+                    return $this->buildResponseFromPayload($payload, $target, $tipoAnalisis);
                 }
 
                 $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
@@ -268,13 +279,20 @@ class TdrAnalysisService
                 }
 
                 $analizador = new AnalizadorTDRService();
-                $resultado = $analizador->analyzeSingle($filePath);
+
+                if ($tipoAnalisis === 'direccionamiento') {
+                    $resultado = $analizador->analyzeDireccionamiento($filePath);
+                } else {
+                    $resultado = $analizador->analyzeSingle($filePath);
+                }
 
                 if (!($resultado['success'] ?? false)) {
                     return $resultado;
                 }
 
-                $analisisData = $this->normalizeAnalysisKeys($resultado['data'] ?? []);
+                $analisisData = $tipoAnalisis === 'direccionamiento'
+                    ? ($resultado['data'] ?? [])
+                    : $this->normalizeAnalysisKeys($resultado['data'] ?? []);
                 $contextoContrato = $this->buildContextoContrato($contratoData, $archivoPersistido);
 
                 $analisisModel = $this->persistence->storeAnalysis(
@@ -285,12 +303,13 @@ class TdrAnalysisService
                     [
                         'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
                         'modelo' => config('services.analizador_tdr.model'),
+                        'tipo_analisis' => $tipoAnalisis,
                     ]
                 );
 
                 $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
 
-                return $this->buildResponseFromPayload($payload, $target);
+                return $this->buildResponseFromPayload($payload, $target, $tipoAnalisis);
             } finally {
                 $lock->release();
             }
@@ -330,19 +349,28 @@ class TdrAnalysisService
         return $this->buildResponseFromPayload($payload, $target);
     }
 
-    protected function buildResponseFromPayload(array $payload, string $target): array
+    protected function buildResponseFromPayload(array $payload, string $target, string $tipoAnalisis = 'general'): array
     {
         $response = [
             'success' => true,
             'data' => $payload,
+            'tipo_analisis' => $tipoAnalisis,
         ];
 
         if ($target === 'telegram') {
-            $response['formatted']['telegram'] = $this->formatter->formatForTelegram(
-                $payload['analisis'] ?? [],
-                $payload['archivo'] ?? 'Archivo',
-                $payload['contexto_contrato'] ?? null
-            );
+            if ($tipoAnalisis === 'direccionamiento') {
+                $response['formatted']['telegram'] = $this->formatter->formatDireccionamientoForTelegram(
+                    $payload['analisis'] ?? [],
+                    $payload['archivo'] ?? 'Archivo',
+                    $payload['contexto_contrato'] ?? null
+                );
+            } else {
+                $response['formatted']['telegram'] = $this->formatter->formatForTelegram(
+                    $payload['analisis'] ?? [],
+                    $payload['archivo'] ?? 'Archivo',
+                    $payload['contexto_contrato'] ?? null
+                );
+            }
         }
 
         return $response;

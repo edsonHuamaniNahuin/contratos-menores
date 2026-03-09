@@ -111,6 +111,43 @@ class CompatibilityScoreResponse(BaseModel):
     )
 
 
+class DireccionamientoHallazgo(BaseModel):
+    """Un hallazgo individual de direccionamiento/corrupción."""
+    categoria: Literal[
+        "Técnica", "Experiencia", "Personal", "Puntaje", "Fraccionamiento", "Otra"
+    ] = Field(..., description="Categoría del hallazgo")
+    descripcion_hallazgo: str = Field(
+        ..., min_length=10, max_length=500,
+        description="Descripción del hallazgo identificado"
+    )
+    red_flag_detectada: str = Field(
+        ..., min_length=5, max_length=300,
+        description="Red flag o señal de alerta concreta"
+    )
+    nivel_de_gravedad: Literal["Alto", "Medio", "Bajo"] = Field(
+        ..., description="Gravedad del hallazgo"
+    )
+
+
+class DireccionamientoAnalysisResponse(BaseModel):
+    """Respuesta de análisis forense de direccionamiento en TDR."""
+    score_riesgo_corrupcion: int = Field(
+        ..., ge=0, le=100,
+        description="Score de riesgo de corrupción (0-100)"
+    )
+    veredicto_flash: Literal["LIMPIO", "SOSPECHOSO", "ALTAMENTE DIRECCIONADO"] = Field(
+        ..., description="Veredicto rápido del análisis"
+    )
+    hallazgos_criticos: List[DireccionamientoHallazgo] = Field(
+        default_factory=list,
+        description="Lista de hallazgos de direccionamiento"
+    )
+    argumento_para_observacion: str = Field(
+        ..., min_length=20, max_length=2000,
+        description="Texto legal/técnico para presentar observación formal"
+    )
+
+
 class HealthCheckResponse(BaseModel):
     """Respuesta del endpoint de health check"""
     status: str

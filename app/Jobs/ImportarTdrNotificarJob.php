@@ -96,8 +96,10 @@ class ImportarTdrNotificarJob implements ShouldQueue
             ->activas()
             ->get();
 
-        // Merge en una sola colección polimórfica
-        $suscripciones = $telegramSubs->merge($whatsappSubs);
+        // Concat en una sola colección polimórfica
+        // IMPORTANTE: usar concat() en lugar de merge() porque merge() reemplaza
+        // elementos con el mismo ID (ej: Telegram #2 se pierde si existe WhatsApp #2).
+        $suscripciones = $telegramSubs->concat($whatsappSubs);
 
         if ($suscripciones->isEmpty()) {
             Log::warning('ImportarTdrNotificarJob: no hay suscriptores activos (Telegram ni WhatsApp), abortando.');
