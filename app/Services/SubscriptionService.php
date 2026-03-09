@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\PremiumAuditLog;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\AdminTelegramNotificationService;
+use App\Services\PremiumAuditService;
 use App\Services\Payments\PaymentGatewayManager;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -57,9 +59,16 @@ class SubscriptionService
                 'payment_method'   => 'none',
                 'amount'           => 0,
                 'currency'         => 'PEN',
+                'auto_renew'       => true,
             ]);
 
             $this->assignPremiumRole($user);
+
+            PremiumAuditService::logGranted(
+                $user,
+                PremiumAuditLog::SOURCE_TRIAL,
+                $subscription,
+            );
 
             Log::info('Trial sin tarjeta activado', [
                 'user_id'  => $user->id,
@@ -118,6 +127,12 @@ class SubscriptionService
             $subscription = $user->subscriptions()->create($subscriptionData);
 
             $this->assignPremiumRole($user);
+
+            PremiumAuditService::logGranted(
+                $user,
+                PremiumAuditLog::SOURCE_TRIAL,
+                $subscription,
+            );
 
             Log::info('Trial con tarjeta activado', [
                 'user_id'     => $user->id,
@@ -184,6 +199,12 @@ class SubscriptionService
 
             $this->assignPremiumRole($user);
 
+            PremiumAuditService::logGranted(
+                $user,
+                PremiumAuditLog::SOURCE_PURCHASE,
+                $subscription,
+            );
+
             Log::info('Suscripción premium activada', [
                 'user_id'    => $user->id,
                 'plan'       => $plan,
@@ -218,6 +239,14 @@ class SubscriptionService
             $subscription->cancel();
             $this->revokePremiumRole($user);
 
+            PremiumAuditService::logRevoked(
+                $user,
+                PremiumAuditLog::SOURCE_PURCHASE,
+                $subscription,
+                null,
+                ['reason' => 'Cancelación por el usuario']
+            );
+
             Log::info('Suscripción cancelada', ['user_id' => $user->id]);
             return true;
         });
@@ -245,6 +274,14 @@ class SubscriptionService
                 $subscription->markExpired();
                 if ($subscription->user) {
                     $this->revokePremiumRole($subscription->user);
+
+                    PremiumAuditService::logRevoked(
+                        $subscription->user,
+                        PremiumAuditLog::SOURCE_SYSTEM_EXPIRY,
+                        $subscription,
+                        null,
+                        ['reason' => 'Suscripción vencida automáticamente']
+                    );
                 }
             });
             $count++;
@@ -284,6 +321,7 @@ class SubscriptionService
         $expiring = Subscription::where('status', Subscription::STATUS_ACTIVE)
             ->where('ends_at', '<=', now()->addHours(24))
             ->where('ends_at', '>', now())
+            ->where('auto_renew', true)
             ->where(function ($q) {
                 // Buscar en campos gateway_* O en openpay_* (legacy)
                 $q->where(function ($q2) {
@@ -379,6 +417,14 @@ class SubscriptionService
                     }
 
                     $subscription->user->subscriptions()->create($newData);
+
+                    // Audit: renovación exitosa
+                    $newSub = $subscription->user->subscriptions()->latest('id')->first();
+                    PremiumAuditService::logGranted(
+                        $subscription->user,
+                        PremiumAuditLog::SOURCE_RENEWAL,
+                        $newSub,
+                    );
                 });
 
                 Log::info('Suscripción renovada automáticamente', [
@@ -460,6 +506,14 @@ class SubscriptionService
 
             $this->assignPremiumRole($user);
 
+            PremiumAuditService::logGranted(
+                $user,
+                PremiumAuditLog::SOURCE_ADMIN,
+                $subscription,
+                auth()->id(),
+                ['reason' => 'Premium otorgado manualmente por admin']
+            );
+
             Log::info('Premium otorgado por admin', [
                 'user_id' => $user->id,
                 'days'    => $endsAt->diffInDays($now),
@@ -467,6 +521,33 @@ class SubscriptionService
 
             return $subscription;
         });
+    }
+
+    /* ────────────────────────────────
+     |  User self-service
+     |──────────────────────────────── */
+
+    /**
+     * Cambia el flag auto_renew de la suscripción activa.
+     */
+    public function toggleAutoRenew(User $user): ?Subscription
+    {
+        $subscription = $user->activeSubscription();
+
+        if (!$subscription) {
+            return null;
+        }
+
+        $subscription->update([
+            'auto_renew' => !$subscription->auto_renew,
+        ]);
+
+        Log::info('Auto-renew cambiado', [
+            'user_id'    => $user->id,
+            'auto_renew' => $subscription->fresh()->auto_renew,
+        ]);
+
+        return $subscription->fresh();
     }
 
     /* ────────────────────────────────

@@ -129,6 +129,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('perfil');
     })->name('perfil');
 
+    Route::get('/mi-suscripcion', function () {
+        return view('mi-suscripcion');
+    })->name('mi.suscripcion');
+
     Route::get('/mis-procesos', function () {
         return view('mis-procesos');
     })->name('mis.procesos')->middleware('can:view-mis-procesos');
