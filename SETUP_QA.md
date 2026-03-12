@@ -49,6 +49,16 @@ DB_DATABASE=vigilante_seace_qa
 DB_USERNAME=vigilante
 DB_PASSWORD=V1g1l4nt3S34c32026
 
+# Correo (MailerSend SMTP — mismas credenciales que producción)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailersend.net
+MAIL_PORT=587
+MAIL_USERNAME=MS_756fgs@licitacionesmype.pe
+MAIL_PASSWORD=<TU_MAILERSEND_PASSWORD>
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@licitacionesmype.pe
+MAIL_FROM_NAME="${APP_NAME}"
+
 # Token del BOT de QA (diferente al de producción)
 TELEGRAM_BOT_TOKEN=<TOKEN_DEL_BOT_QA>
 TELEGRAM_CHAT_ID=<TU_CHAT_ID>
