@@ -78,6 +78,11 @@ El sistema de contratación peruano (2021-2026) presenta una alta incidencia de 
     ],
     "argumento_para_observacion": "Texto legal/técnico formal para cuestionar la pluralidad..."
 }
+
+VALORES PERMITIDOS (OBLIGATORIO respetar exactamente):
+- categoria: SOLO uno de ["Técnica", "Experiencia", "Personal", "Puntaje", "Fraccionamiento", "Otra"]
+- nivel_de_gravedad: SOLO uno de ["Alto", "Medio", "Bajo"]
+- veredicto_flash: SOLO uno de ["LIMPIO", "SOSPECHOSO", "ALTAMENTE DIRECCIONADO"]
 """
 
     @abstractmethod

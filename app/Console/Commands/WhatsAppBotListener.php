@@ -333,6 +333,22 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $this->whatsapp->enviarMensaje($phoneNumber, $forceRefresh ? '🔄 Recalculando score...' : '⏱️ Calculando score...');
                 $this->evaluarCompatibilidadParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo, $forceRefresh);
 
+            } elseif (str_starts_with($data, 'direcc_')) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
+                $this->info("🔍 Usuario {$phoneNumber} solicitó direccionamiento del contrato {$idContrato}");
+                $this->whatsapp->enviarMensaje($phoneNumber, '⏳ Analizando direccionamiento...');
+                $this->analizarDireccionamientoParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo);
+
             } else {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida');
             }
@@ -408,13 +424,117 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $mensaje = $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato);
         $mensaje = $this->htmlToWhatsApp($mensaje);
 
-        // Botón de descarga después del análisis
+        // Botones después del análisis: descarga + direccionamiento
         $keyboard = [
             'type' => 'button',
             'body' => ['text' => $mensaje],
             'footer' => ['text' => '🤖 Vigilante SEACE'],
             'action' => [
                 'buttons' => [
+                    [
+                        'type' => 'reply',
+                        'reply' => [
+                            'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                            'title' => '📥 Descargar TDR',
+                        ],
+                    ],
+                    [
+                        'type' => 'reply',
+                        'reply' => [
+                            'id' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
+                            'title' => '🔍 Direccionamiento',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+    }
+
+    // ─── Direccionamiento ────────────────────────────────────────────
+
+    protected function analizarDireccionamientoParaUsuario(
+        string $phoneNumber,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo
+    ): void {
+        try {
+            $cuenta = CuentaSeace::activa()->first();
+
+            if ($idContratoArchivo === 0) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ ID de archivo inválido. Por favor, intenta de nuevo.');
+                return;
+            }
+
+            $tdrService = new TdrAnalysisService();
+            $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            $this->whatsapp->enviarMensaje(
+                $phoneNumber,
+                "⏳ Analizando direccionamiento con IA...\n📄 {$nombreArchivo}\n\n🔍 Detectando indicios de corrupción en las bases..."
+            );
+
+            $this->info("🔍 Analizando direccionamiento {$nombreArchivo} (ID: {$idContratoArchivo}) con IA...");
+
+            $resultado = $tdrService->analizarDesdeSeace(
+                $idContratoArchivo,
+                $nombreArchivo,
+                $cuenta,
+                $contratoData,
+                'whatsapp',
+                false,
+                'direccionamiento'
+            );
+
+            if ($resultado['success'] ?? false) {
+                $this->enviarResultadoDireccionamientoWhatsApp($phoneNumber, $resultado, $idContrato, $idContratoArchivo, $nombreArchivo);
+                $this->info("✅ Análisis de direccionamiento enviado a {$phoneNumber}");
+            } else {
+                $errorMsg = $resultado['error'] ?? 'Error desconocido';
+                $this->enviarMensajeErrorConReintento($phoneNumber, $errorMsg, 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+            }
+        } catch (\Exception $e) {
+            Log::error('WhatsApp: Error al analizar direccionamiento', [
+                'phone' => $phoneNumber,
+                'id_contrato' => $idContrato,
+                'exception' => $e->getMessage(),
+            ]);
+            $this->enviarMensajeErrorConReintento($phoneNumber, $e->getMessage(), 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+        }
+    }
+
+    protected function enviarResultadoDireccionamientoWhatsApp(
+        string $phoneNumber,
+        array $resultado,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo
+    ): void {
+        $analisisData = $resultado['data']['analisis'] ?? [];
+        $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
+        $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
+
+        $mensaje = $resultado['formatted']['whatsapp']
+            ?? $this->htmlToWhatsApp(
+                $this->formatter->formatDireccionamientoForTelegram($analisisData, $archivoNombre, $contextoContrato)
+            );
+
+        $keyboard = [
+            'type' => 'button',
+            'body' => ['text' => $mensaje],
+            'footer' => ['text' => '🤖 Vigilante SEACE'],
+            'action' => [
+                'buttons' => [
+                    [
+                        'type' => 'reply',
+                        'reply' => [
+                            'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                            'title' => '🤖 Análisis General',
+                        ],
+                    ],
                     [
                         'type' => 'reply',
                         'reply' => [

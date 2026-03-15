@@ -676,16 +676,14 @@ class Suscriptores extends Component
                 return;
             }
 
-            $mensajePrueba = "🧪 *MENSAJE DE PRUEBA*\n\n";
-            $mensajePrueba .= "Este es un mensaje de prueba del sistema Vigilante SEACE.\n\n";
-            $mensajePrueba .= "✅ Tu suscripcion de WhatsApp esta funcionando correctamente.\n";
-            $mensajePrueba .= "📅 Fecha: " . now()->format('d/m/Y H:i:s');
-
-            $resultado = $servicio->enviarMensaje($waSub->phone_number, $mensajePrueba);
+            // Usar Template Message (hello_world) para garantizar la entrega.
+            // Los mensajes de texto libre solo llegan dentro de la ventana de 24h
+            // (el usuario debe haber escrito primero al numero Business).
+            $resultado = $servicio->enviarTemplate($waSub->phone_number, 'hello_world', 'en_US');
 
             if ($resultado['success']) {
-                session()->flash('wa_success', '✅ Mensaje de prueba enviado a +' . $waSub->phone_number);
-                Log::info('WhatsApp: Prueba exitosa', ['phone' => $waSub->phone_number]);
+                session()->flash('wa_success', '✅ Mensaje de prueba enviado a +' . $waSub->phone_number . '. Revisa tu WhatsApp. Si lo recibes, responde cualquier mensaje para habilitar notificaciones personalizadas.');
+                Log::info('WhatsApp: Prueba exitosa (template)', ['phone' => $waSub->phone_number]);
             } else {
                 session()->flash('wa_error', '❌ Error al enviar: ' . ($resultado['message'] ?? 'Error desconocido'));
             }

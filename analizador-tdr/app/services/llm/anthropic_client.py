@@ -102,10 +102,13 @@ Analiza este TDR/ET del SEACE (Perú) buscando indicios de direccionamiento y co
 Responde ÚNICAMENTE con un JSON que siga este esquema:
 {self.FORENSIC_JSON_TEMPLATE.strip()}
 
-Reglas:
+Reglas ESTRICTAS:
 - score_riesgo_corrupcion: entero 0-100.
 - veredicto_flash: "LIMPIO" si score<30, "SOSPECHOSO" si 30-69, "ALTAMENTE DIRECCIONADO" si >=70.
 - Máximo 8 hallazgos.
+- Cada hallazgo DEBE usar EXACTAMENTE estos valores:
+  * categoria: "Técnica" | "Experiencia" | "Personal" | "Puntaje" | "Fraccionamiento" | "Otra" (NO inventar categorías)
+  * nivel_de_gravedad: "Alto" | "Medio" | "Bajo" (NO usar "Muy Alto", "Crítico" ni variantes)
 
 TDR:
 {context}

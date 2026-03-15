@@ -478,6 +478,68 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     }
 
     /**
+     * Enviar mensaje de plantilla (Template Message) vía WhatsApp Cloud API.
+     *
+     * Los Template Messages se entregan siempre, sin necesidad de ventana de 24h.
+     * Útil para primer contacto o mensajes de prueba.
+     *
+     * @see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-message-templates
+     */
+    public function enviarTemplate(string $recipientId, string $templateName = 'hello_world', string $languageCode = 'en_US', array $components = []): array
+    {
+        if (!$this->enabled) {
+            return [
+                'success' => false,
+                'message' => 'WhatsApp Bot está deshabilitado en la configuración',
+            ];
+        }
+
+        try {
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
+                'to' => $this->normalizePhone($recipientId),
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'code' => $languageCode,
+                    ],
+                ],
+            ];
+
+            if (!empty($components)) {
+                $payload['template']['components'] = $components;
+            }
+
+            $response = Http::withToken($this->token)
+                ->timeout($this->timeout)
+                ->post($this->buildApiUrl('messages'), $payload);
+
+            if ($response->successful()) {
+                $this->debug('Template enviado', ['to' => $recipientId, 'template' => $templateName]);
+                return [
+                    'success' => true,
+                    'message' => 'Template enviado exitosamente',
+                    'wamid' => $response->json('messages.0.id'),
+                ];
+            }
+
+            $error = $response->json('error.message') ?? $response->body();
+            Log::error('WhatsApp: Error al enviar template', [
+                'to' => $recipientId,
+                'template' => $templateName,
+                'error' => $error,
+                'status' => $response->status(),
+            ]);
+
+            return ['success' => false, 'message' => $error];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error de conexión: ' . $e->getMessage()];
+        }
+    }
+
+    /**
      * Construir URL de la API de WhatsApp Cloud.
      */
     protected function buildApiUrl(string $endpoint): string

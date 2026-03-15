@@ -230,6 +230,43 @@ class TDRAnalyzerService:
             self.logger.error(f"Error al validar respuesta de direccionamiento: {str(e)}")
             raise ValueError(f"Respuesta del LLM no cumple esquema: {str(e)}")
 
+    # Mapeos para normalizar valores inventados por el LLM
+    _GRAVEDAD_MAP = {
+        "muy alto": "Alto", "critico": "Alto", "crítico": "Alto",
+        "muy alta": "Alto", "extremo": "Alto", "grave": "Alto",
+        "alto": "Alto", "alta": "Alto",
+        "medio": "Medio", "media": "Medio", "moderado": "Medio", "moderada": "Medio",
+        "bajo": "Bajo", "baja": "Bajo", "leve": "Bajo", "menor": "Bajo", "minimo": "Bajo",
+    }
+    _CATEGORIAS_VALIDAS = {"Técnica", "Experiencia", "Personal", "Puntaje", "Fraccionamiento", "Otra"}
+    _CATEGORIA_MAP = {
+        "tecnica": "Técnica", "técnica": "Técnica", "tecnologia": "Técnica",
+        "especificacion": "Técnica", "especificaciones": "Técnica",
+        "experiencia": "Experiencia", "calificacion": "Experiencia", "calificación": "Experiencia",
+        "personal": "Personal", "personal clave": "Personal", "equipo": "Personal",
+        "puntaje": "Puntaje", "evaluacion": "Puntaje", "evaluación": "Puntaje", "puntuacion": "Puntaje",
+        "fraccionamiento": "Fraccionamiento",
+        "otra": "Otra", "otro": "Otra", "general": "Otra",
+    }
+
+    def _normalize_gravedad(self, valor: str) -> str:
+        """Normaliza nivel_de_gravedad al valor exacto del schema."""
+        return self._GRAVEDAD_MAP.get(valor.strip().lower(), "Medio")
+
+    def _normalize_categoria(self, valor: str) -> str:
+        """Normaliza categoria al valor exacto del schema."""
+        cleaned = valor.strip()
+        if cleaned in self._CATEGORIAS_VALIDAS:
+            return cleaned
+        key = cleaned.lower()
+        if key in self._CATEGORIA_MAP:
+            return self._CATEGORIA_MAP[key]
+        # Si contiene alguna categoría válida como substring, usar esa
+        for cat_key, cat_val in self._CATEGORIA_MAP.items():
+            if cat_key in key:
+                return cat_val
+        return "Otra"
+
     def _sanitize_direccionamiento_payload(self, payload: Dict) -> Dict:
         """Ajusta el payload de direccionamiento para cumplir con el esquema."""
         score = payload.get("score_riesgo_corrupcion")
@@ -246,6 +283,20 @@ class TDRAnalyzerService:
 
         if not isinstance(payload.get("hallazgos_criticos"), list):
             payload["hallazgos_criticos"] = []
+
+        # Normalizar campos de cada hallazgo para que cumplan con el schema
+        sanitized_hallazgos = []
+        for h in payload["hallazgos_criticos"][:8]:
+            if not isinstance(h, dict):
+                continue
+            h["nivel_de_gravedad"] = self._normalize_gravedad(
+                str(h.get("nivel_de_gravedad", "Medio"))
+            )
+            h["categoria"] = self._normalize_categoria(
+                str(h.get("categoria", "Otra"))
+            )
+            sanitized_hallazgos.append(h)
+        payload["hallazgos_criticos"] = sanitized_hallazgos
 
         if not payload.get("argumento_para_observacion"):
             payload["argumento_para_observacion"] = "Sin argumento generado por el modelo."
