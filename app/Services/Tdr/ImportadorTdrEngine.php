@@ -103,7 +103,7 @@ class ImportadorTdrEngine
 
         foreach ($suscripciones->chunk(20) as $grupo) {
             foreach ($grupo as $suscripcion) {
-                $nombreSuscriptor = $suscripcion->nombre ?: ('ID ' . ($suscripcion->getRecipientId ?? $suscripcion->id));
+                $nombreSuscriptor = $suscripcion->nombre ?: ('ID ' . ($suscripcion->getRecipientId() ?? $suscripcion->id));
                 $coincidencias = [];
                 $enviosExitosos = 0;
                 $enviosFallidos = 0;
