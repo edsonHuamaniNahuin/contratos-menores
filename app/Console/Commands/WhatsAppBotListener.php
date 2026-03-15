@@ -238,11 +238,16 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $from = $message['from'] ?? '';
         $type = $message['type'] ?? '';
 
-        // Solo procesar clicks en botones interactivos
+        // Procesar clicks en botones interactivos (button_reply) y listas (list_reply)
         if ($type === 'interactive') {
             $interactive = $message['interactive'] ?? [];
-            $buttonReply = $interactive['button_reply'] ?? [];
-            $callbackData = $buttonReply['id'] ?? '';
+            $interactiveType = $interactive['type'] ?? '';
+
+            $callbackData = match ($interactiveType) {
+                'button_reply' => $interactive['button_reply']['id'] ?? '',
+                'list_reply'   => $interactive['list_reply']['id'] ?? '',
+                default        => '',
+            };
 
             if (!empty($callbackData)) {
                 $this->handleButtonClick($from, $callbackData);

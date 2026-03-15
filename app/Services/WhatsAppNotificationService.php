@@ -88,7 +88,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
             ? $suscripcion->getRecipientId()
             : $suscripcion->phone_number;
 
-        $keyboard = $this->buildDefaultKeyboard($contratoData);
+        $keyboard = $this->buildDefaultKeyboard($contratoData, $mensaje);
 
         $resultado = $keyboard
             ? $this->enviarMensajeConBotones($recipientId, $mensaje, $keyboard)
@@ -199,12 +199,15 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     // ─── InteractiveChannelContract ────────────────────────────────────
 
     /**
-     * Construir estructura de botones interactivos (WhatsApp Cloud API format).
+     * Construir Interactive List Message para la notificación inicial.
      *
-     * WhatsApp permite máximo 3 botones por mensaje interactivo (tipo button).
-     * Cada botón tiene un `id` que funciona como callback_data.
+     * WhatsApp reply buttons permiten máximo 3 botones. Para soportar 4 acciones
+     * (Analizar, Descargar, Compatibilidad, Direccionamiento) se usa Interactive
+     * List Message que soporta hasta 10 opciones en secciones.
+     *
+     * @see https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages
      */
-    public function buildDefaultKeyboard(array $contratoData): ?array
+    public function buildDefaultKeyboard(array $contratoData, ?string $bodyText = null): ?array
     {
         $idContrato = (int) ($contratoData['idContrato'] ?? 0);
 
@@ -215,47 +218,60 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         $idContratoArchivo = (int) ($contratoData['idContratoArchivo'] ?? 0);
         $nombreArchivo = $contratoData['nombreArchivo'] ?? 'tdr.pdf';
 
-        // Nota: Si idContratoArchivo=0, los botones se envían igualmente.
-        // Los bot listeners resuelven el archivo dinámicamente vía resolveArchivoFromCallback().
         if ($idContratoArchivo <= 0) {
             Log::debug('WhatsApp: botones con idContratoArchivo=0 (resolución dinámica en callback)', [
                 'idContrato' => $idContrato,
             ]);
         }
 
+        // Usar texto completo si se proporcionó (incluye keywords y company)
+        $body = $bodyText
+            ? $this->stripHtmlToWhatsApp($bodyText)
+            : $this->stripHtmlToWhatsApp($this->construirMensaje($contratoData));
+
+        // List message body: máximo 1024 chars
+        if (mb_strlen($body) > 1024) {
+            $body = mb_substr($body, 0, 1021) . '...';
+        }
+
         return [
-            'type' => 'button',
+            'type' => 'list',
             'header' => [
                 'type' => 'text',
                 'text' => '📋 Acciones del Proceso',
             ],
             'body' => [
-                'text' => $this->stripHtmlToWhatsApp($this->construirMensaje($contratoData)),
+                'text' => $body,
             ],
             'footer' => [
                 'text' => '🤖 Vigilante SEACE',
             ],
             'action' => [
-                'buttons' => [
+                'button' => 'Ver acciones',
+                'sections' => [
                     [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '🤖 Analizar TDR',
-                        ],
-                    ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '📥 Descargar TDR',
-                        ],
-                    ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('compatibilidad', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '🏅 Compatibilidad',
+                        'title' => 'Acciones disponibles',
+                        'rows' => [
+                            [
+                                'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🤖 Analizar TDR',
+                                'description' => 'Análisis forense con IA',
+                            ],
+                            [
+                                'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '📥 Descargar TDR',
+                                'description' => 'Descargar documento PDF',
+                            ],
+                            [
+                                'id' => $this->buildCallbackData('compatibilidad', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🏅 Compatibilidad',
+                                'description' => 'Score vs perfil de empresa',
+                            ],
+                            [
+                                'id' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🔍 Direccionamiento',
+                                'description' => 'Detectar indicios de corrupción',
+                            ],
                         ],
                     ],
                 ],
