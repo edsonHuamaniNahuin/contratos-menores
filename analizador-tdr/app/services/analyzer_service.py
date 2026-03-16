@@ -235,13 +235,18 @@ class TDRAnalyzerService:
         "muy alto": "Alto", "critico": "Alto", "crítico": "Alto",
         "muy alta": "Alto", "extremo": "Alto", "grave": "Alto",
         "alto": "Alto", "alta": "Alto",
+        "medio-alto": "Alto", "medio alto": "Alto",
         "medio": "Medio", "media": "Medio", "moderado": "Medio", "moderada": "Medio",
+        "medio-bajo": "Bajo", "medio bajo": "Bajo",
         "bajo": "Bajo", "baja": "Bajo", "leve": "Bajo", "menor": "Bajo", "minimo": "Bajo",
     }
     _CATEGORIAS_VALIDAS = {"Técnica", "Experiencia", "Personal", "Puntaje", "Fraccionamiento", "Otra"}
     _CATEGORIA_MAP = {
         "tecnica": "Técnica", "técnica": "Técnica", "tecnologia": "Técnica",
         "especificacion": "Técnica", "especificaciones": "Técnica",
+        "logística": "Técnica", "logistica": "Técnica", "geográfica": "Técnica",
+        "geografica": "Técnica", "logística/geográfica": "Técnica",
+        "administrativa": "Técnica", "procedimental": "Técnica",
         "experiencia": "Experiencia", "calificacion": "Experiencia", "calificación": "Experiencia",
         "personal": "Personal", "personal clave": "Personal", "equipo": "Personal",
         "puntaje": "Puntaje", "evaluacion": "Puntaje", "evaluación": "Puntaje", "puntuacion": "Puntaje",
@@ -300,5 +305,10 @@ class TDRAnalyzerService:
 
         if not payload.get("argumento_para_observacion"):
             payload["argumento_para_observacion"] = "Sin argumento generado por el modelo."
+
+        # Truncar argumento si excede max_length del schema (2000 chars)
+        arg = payload.get("argumento_para_observacion", "")
+        if len(arg) > 2000:
+            payload["argumento_para_observacion"] = arg[:1997] + "..."
 
         return payload

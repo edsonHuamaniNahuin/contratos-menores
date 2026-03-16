@@ -332,6 +332,11 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                 return ['success' => false, 'message' => 'No se pudo subir el archivo a WhatsApp'];
             }
 
+            // Asegurar que filename tenga extensión para que Meta lo muestre correctamente
+            if (!pathinfo($filename, PATHINFO_EXTENSION)) {
+                $filename .= '.pdf';
+            }
+
             // 2. Enviar documento con media_id
             $response = Http::withToken($this->token)
                 ->timeout($this->timeout)
@@ -440,14 +445,19 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
 
     protected function sanitizeCallbackFilename(string $nombre): string
     {
-        $sanitized = str_replace([' ', '/', '\\'], '_', $nombre);
-        $sanitized = preg_replace('/[^A-Za-z0-9_\-.]/', '', $sanitized) ?? '';
+        $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+        $base = pathinfo($nombre, PATHINFO_FILENAME);
+
+        $sanitized = str_replace([' ', '/', '\\'], '_', $base);
+        $sanitized = preg_replace('/[^A-Za-z0-9_\-]/', '', $sanitized) ?? '';
 
         if ($sanitized === '') {
-            $sanitized = 'archivo.pdf';
+            return 'archivo.pdf';
         }
 
-        return substr($sanitized, 0, 30);
+        $ext = in_array($ext, ['pdf', 'doc', 'docx', 'zip', 'rar', 'xls', 'xlsx']) ? $ext : 'pdf';
+        $maxBase = 30 - strlen($ext) - 1;
+        return substr($sanitized, 0, $maxBase) . '.' . $ext;
     }
 
     /**
@@ -489,7 +499,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'xls' => 'application/vnd.ms-excel',
             'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            default => 'application/octet-stream',
+            default => 'application/pdf', // TDR siempre es PDF; evitar octet-stream
         };
     }
 

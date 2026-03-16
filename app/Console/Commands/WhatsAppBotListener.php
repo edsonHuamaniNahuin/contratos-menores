@@ -940,9 +940,20 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
 
     protected function sanitizeCallbackFilename(string $nombre): string
     {
-        $sanitized = str_replace([' ', '/', '\\'], '_', $nombre);
-        $sanitized = preg_replace('/[^A-Za-z0-9_\-.]/', '', $sanitized) ?? '';
-        return substr($sanitized ?: 'archivo.pdf', 0, 30);
+        $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+        $base = pathinfo($nombre, PATHINFO_FILENAME);
+
+        $sanitized = str_replace([' ', '/', '\\'], '_', $base);
+        $sanitized = preg_replace('/[^A-Za-z0-9_\-]/', '', $sanitized) ?? '';
+
+        if ($sanitized === '') {
+            return 'archivo.pdf';
+        }
+
+        // Preservar extensión, truncar base para que quepa dentro de 30 chars
+        $ext = in_array($ext, ['pdf', 'doc', 'docx', 'zip', 'rar', 'xls', 'xlsx']) ? $ext : 'pdf';
+        $maxBase = 30 - strlen($ext) - 1; // -1 para el punto
+        return substr($sanitized, 0, $maxBase) . '.' . $ext;
     }
 
     protected function htmlToWhatsApp(string $html): string
