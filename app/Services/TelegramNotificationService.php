@@ -20,7 +20,7 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
     protected bool $enabled;
     protected bool $debugLogging;
     protected int $contratoCacheTtl;
-    protected string $contratoCachePrefix = 'telegram:contrato:';
+    protected string $contratoCachePrefix;
 
     public function __construct()
     {
@@ -31,6 +31,7 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
         $this->debugLogging = (bool) config('services.telegram.debug_logs', false);
         $this->enabled = $this->botToken !== '' && $this->apiBase !== '';
         $this->contratoCacheTtl = (int) config('services.telegram.contrato_cache_ttl', 720);
+        $this->contratoCachePrefix = 'telegram:' . config('app.env', 'production') . ':contrato:';
 
         if ($this->botToken !== '' && $this->apiBase === '') {
             Log::warning('Telegram: TELEGRAM_API_BASE no configurado; deshabilitando bot hasta definirlo.');
