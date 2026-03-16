@@ -40,6 +40,7 @@ class Subscription extends Model
         'currency',
         'metadata',
         'cancelled_at',
+        'auto_renew',
     ];
 
     protected $casts = [
@@ -49,6 +50,7 @@ class Subscription extends Model
         'cancelled_at'   => 'datetime',
         'amount'         => 'decimal:2',
         'metadata'       => 'array',
+        'auto_renew'     => 'boolean',
     ];
 
     /* ────────────────────────────────

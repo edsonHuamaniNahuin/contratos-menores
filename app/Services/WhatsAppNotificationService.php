@@ -33,7 +33,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     protected bool $enabled;
     protected bool $debugLogging;
     protected int $contratoCacheTtl;
-    protected string $contratoCachePrefix = 'whatsapp:contrato:';
+    protected string $contratoCachePrefix;
 
     public function __construct()
     {
@@ -44,6 +44,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         $this->timeout = (int) config('services.whatsapp.timeout', 15);
         $this->debugLogging = (bool) config('services.whatsapp.debug_logs', false);
         $this->contratoCacheTtl = (int) config('services.whatsapp.contrato_cache_ttl', 720);
+        $this->contratoCachePrefix = 'whatsapp:' . config('app.env', 'production') . ':contrato:';
 
         $this->enabled = $this->token !== '' && $this->phoneNumberId !== '';
 
@@ -199,10 +200,13 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     // ─── InteractiveChannelContract ────────────────────────────────────
 
     /**
-     * Construir estructura de botones interactivos (WhatsApp Cloud API format).
+     * Construir Interactive List Message para la notificación inicial.
      *
-     * WhatsApp permite máximo 3 botones por mensaje interactivo (tipo button).
-     * Cada botón tiene un `id` que funciona como callback_data.
+     * WhatsApp reply buttons permiten máximo 3 botones. Para soportar 4 acciones
+     * (Analizar, Descargar, Compatibilidad, Direccionamiento) se usa Interactive
+     * List Message que soporta hasta 10 opciones en secciones.
+     *
+     * @see https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages
      */
     public function buildDefaultKeyboard(array $contratoData): ?array
     {
@@ -215,47 +219,57 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         $idContratoArchivo = (int) ($contratoData['idContratoArchivo'] ?? 0);
         $nombreArchivo = $contratoData['nombreArchivo'] ?? 'tdr.pdf';
 
-        // Nota: Si idContratoArchivo=0, los botones se envían igualmente.
-        // Los bot listeners resuelven el archivo dinámicamente vía resolveArchivoFromCallback().
         if ($idContratoArchivo <= 0) {
             Log::debug('WhatsApp: botones con idContratoArchivo=0 (resolución dinámica en callback)', [
                 'idContrato' => $idContrato,
             ]);
         }
 
+        $body = $this->stripHtmlToWhatsApp($this->construirMensaje($contratoData));
+
+        // List message body: máximo 1024 chars
+        if (mb_strlen($body) > 1024) {
+            $body = mb_substr($body, 0, 1021) . '...';
+        }
+
         return [
-            'type' => 'button',
+            'type' => 'list',
             'header' => [
                 'type' => 'text',
                 'text' => '📋 Acciones del Proceso',
             ],
             'body' => [
-                'text' => $this->stripHtmlToWhatsApp($this->construirMensaje($contratoData)),
+                'text' => $body,
             ],
             'footer' => [
                 'text' => '🤖 Vigilante SEACE',
             ],
             'action' => [
-                'buttons' => [
+                'button' => 'Ver acciones',
+                'sections' => [
                     [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '🤖 Analizar TDR',
-                        ],
-                    ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '📥 Descargar TDR',
-                        ],
-                    ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('compatibilidad', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '🏅 Compatibilidad',
+                        'title' => 'Acciones disponibles',
+                        'rows' => [
+                            [
+                                'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🤖 Analizar TDR',
+                                'description' => 'Análisis forense con IA',
+                            ],
+                            [
+                                'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '📥 Descargar TDR',
+                                'description' => 'Descargar documento PDF',
+                            ],
+                            [
+                                'id' => $this->buildCallbackData('compatibilidad', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🏅 Compatibilidad',
+                                'description' => 'Score vs perfil de empresa',
+                            ],
+                            [
+                                'id' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🔍 Direccionamiento',
+                                'description' => 'Detectar indicios de corrupción',
+                            ],
                         ],
                     ],
                 ],
@@ -314,6 +328,11 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
 
             if (!$mediaId) {
                 return ['success' => false, 'message' => 'No se pudo subir el archivo a WhatsApp'];
+            }
+
+            // Asegurar que filename tenga extensión para que Meta lo muestre correctamente
+            if (!pathinfo($filename, PATHINFO_EXTENSION)) {
+                $filename .= '.pdf';
             }
 
             // 2. Enviar documento con media_id
@@ -424,14 +443,19 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
 
     protected function sanitizeCallbackFilename(string $nombre): string
     {
-        $sanitized = str_replace([' ', '/', '\\'], '_', $nombre);
-        $sanitized = preg_replace('/[^A-Za-z0-9_\-.]/', '', $sanitized) ?? '';
+        $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+        $base = pathinfo($nombre, PATHINFO_FILENAME);
+
+        $sanitized = str_replace([' ', '/', '\\'], '_', $base);
+        $sanitized = preg_replace('/[^A-Za-z0-9_\-]/', '', $sanitized) ?? '';
 
         if ($sanitized === '') {
-            $sanitized = 'archivo.pdf';
+            return 'archivo.pdf';
         }
 
-        return substr($sanitized, 0, 30);
+        $ext = in_array($ext, ['pdf', 'doc', 'docx', 'zip', 'rar', 'xls', 'xlsx']) ? $ext : 'pdf';
+        $maxBase = 30 - strlen($ext) - 1;
+        return substr($sanitized, 0, $maxBase) . '.' . $ext;
     }
 
     /**
@@ -473,8 +497,70 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'xls' => 'application/vnd.ms-excel',
             'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            default => 'application/octet-stream',
+            default => 'application/pdf', // TDR siempre es PDF; evitar octet-stream
         };
+    }
+
+    /**
+     * Enviar mensaje de plantilla (Template Message) vía WhatsApp Cloud API.
+     *
+     * Los Template Messages se entregan siempre, sin necesidad de ventana de 24h.
+     * Útil para primer contacto o mensajes de prueba.
+     *
+     * @see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-message-templates
+     */
+    public function enviarTemplate(string $recipientId, string $templateName = 'hello_world', string $languageCode = 'en_US', array $components = []): array
+    {
+        if (!$this->enabled) {
+            return [
+                'success' => false,
+                'message' => 'WhatsApp Bot está deshabilitado en la configuración',
+            ];
+        }
+
+        try {
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
+                'to' => $this->normalizePhone($recipientId),
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'code' => $languageCode,
+                    ],
+                ],
+            ];
+
+            if (!empty($components)) {
+                $payload['template']['components'] = $components;
+            }
+
+            $response = Http::withToken($this->token)
+                ->timeout($this->timeout)
+                ->post($this->buildApiUrl('messages'), $payload);
+
+            if ($response->successful()) {
+                $this->debug('Template enviado', ['to' => $recipientId, 'template' => $templateName]);
+                return [
+                    'success' => true,
+                    'message' => 'Template enviado exitosamente',
+                    'wamid' => $response->json('messages.0.id'),
+                ];
+            }
+
+            $error = $response->json('error.message') ?? $response->body();
+            Log::error('WhatsApp: Error al enviar template', [
+                'to' => $recipientId,
+                'template' => $templateName,
+                'error' => $error,
+                'status' => $response->status(),
+            ]);
+
+            return ['success' => false, 'message' => $error];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error de conexión: ' . $e->getMessage()];
+        }
     }
 
     /**

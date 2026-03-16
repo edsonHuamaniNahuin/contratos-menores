@@ -3,8 +3,13 @@
 namespace App\Livewire;
 
 use App\Models\Permission;
+use App\Models\PremiumAuditLog;
 use App\Models\Role;
+use App\Models\Subscription;
 use App\Models\User;
+use App\Services\PremiumAuditService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -43,14 +48,67 @@ class RolesPermisos extends Component
             return;
         }
 
-        $user = User::findOrFail($userId);
+        $user = User::with('roles')->findOrFail($userId);
 
         if ($this->isLastAdminChange($userId, (int) $roleId)) {
             $this->errorMessage = 'No puedes dejar el sistema sin al menos un administrador.';
             return;
         }
 
-        $user->roles()->sync([$roleId]);
+        $wasPremium = $user->hasRole('proveedor-premium');
+        $newRole    = Role::findOrFail($roleId);
+        $willBePremium = $newRole->slug === 'proveedor-premium';
+
+        DB::transaction(function () use ($user, $roleId, $wasPremium, $willBePremium) {
+            $user->roles()->sync([$roleId]);
+
+            // ── Si PIERDE premium: cancelar suscripción activa + audit ──
+            if ($wasPremium && !$willBePremium) {
+                $activeSub = $user->activeSubscription();
+                if ($activeSub) {
+                    $activeSub->cancel();
+                }
+
+                PremiumAuditService::logRevoked(
+                    $user,
+                    PremiumAuditLog::SOURCE_ADMIN_ROLE,
+                    $activeSub,
+                    Auth::id(),
+                    ['reason' => 'Rol cambiado por administrador']
+                );
+            }
+
+            // ── Si GANA premium vía cambio de rol: crear suscripción admin + audit ──
+            if (!$wasPremium && $willBePremium) {
+                // Expirar suscripciones anteriores
+                $user->subscriptions()
+                    ->where('status', Subscription::STATUS_ACTIVE)
+                    ->update(['status' => Subscription::STATUS_EXPIRED]);
+
+                $subscription = $user->subscriptions()->create([
+                    'plan'     => 'monthly',
+                    'status'   => Subscription::STATUS_ACTIVE,
+                    'starts_at' => now(),
+                    'ends_at'  => now()->addDays(30),
+                    'amount'   => 0,
+                    'currency' => 'PEN',
+                    'metadata' => [
+                        'granted_by'  => 'admin_role_change',
+                        'admin_id'    => Auth::id(),
+                        'granted_at'  => now()->toDateTimeString(),
+                    ],
+                ]);
+
+                PremiumAuditService::logGranted(
+                    $user,
+                    PremiumAuditLog::SOURCE_ADMIN_ROLE,
+                    $subscription,
+                    Auth::id(),
+                    ['reason' => 'Rol asignado por administrador']
+                );
+            }
+        });
+
         $this->userRoles[$userId] = $roleId;
 
         session()->flash('success', '✅ Rol actualizado');

@@ -1,0 +1,28 @@
+[Unit]
+Description=Vigilante SEACE QA - Laravel Scheduler
+After=network.target mysql.service
+Wants=mysql.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vigilante-seace-qa
+
+ExecStart=/usr/local/php82/bin/php artisan schedule:work
+
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/vigilante-seace-qa/scheduler.log
+StandardError=append:/var/log/vigilante-seace-qa/scheduler-error.log
+
+NoNewPrivileges=true
+ReadWritePaths=/var/www/vigilante-seace-qa/storage /var/log/vigilante-seace-qa /tmp
+
+[Install]
+WantedBy=multi-user.target

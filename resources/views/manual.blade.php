@@ -3,6 +3,33 @@
 @section('title', 'Manual del Usuario — Licitaciones MYPe')
 @section('meta_description', 'Guía completa para usar Licitaciones MYPe: buscador de licitaciones SEACE, análisis con IA, notificaciones automáticas, score de compatibilidad y más.')
 
+@php
+    /**
+     * Helper: genera un bloque de imagen referencial.
+     * Si el archivo no existe muestra un placeholder estilizado.
+     * Ruta base: public/images/manual/
+     */
+    function manualImg(string $filename, string $alt, string $caption = ''): string {
+        $path = 'images/manual/' . $filename;
+        $exists = file_exists(public_path($path));
+        $html  = '<figure class="my-6">';
+        if ($exists) {
+            $html .= '<img src="' . asset($path) . '" alt="' . e($alt) . '" class="w-full rounded-2xl border border-neutral-200 shadow-soft" loading="lazy">';
+        } else {
+            $html .= '<div class="w-full rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 flex flex-col items-center justify-center py-12 px-6">';
+            $html .= '<svg class="w-12 h-12 text-neutral-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>';
+            $html .= '<p class="text-sm text-neutral-400 font-medium">' . e($alt) . '</p>';
+            $html .= '<p class="text-xs text-neutral-300 mt-1">Archivo: ' . e($filename) . '</p>';
+            $html .= '</div>';
+        }
+        if ($caption) {
+            $html .= '<figcaption class="text-xs text-neutral-400 text-center mt-2">' . e($caption) . '</figcaption>';
+        }
+        $html .= '</figure>';
+        return $html;
+    }
+@endphp
+
 @section('content')
 <div x-data="{
     activeTab: window.location.hash ? window.location.hash.substring(1) : 'inicio',
@@ -33,7 +60,7 @@
                 <circle cx="100" cy="250" r="150" fill="white"/>
             </svg>
         </div>
-        <div class="relative z-10 max-w-4xl mx-auto px-6 py-12 sm:py-16">
+        <div class="relative z-10 max-w-6xl mx-auto px-6 py-12 sm:py-16">
             <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-4">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                 Manual del Usuario
@@ -49,7 +76,7 @@
 
     {{-- ═══ TAB NAVIGATION ═══ --}}
     <div class="sticky top-[73px] z-40 bg-white border-b border-neutral-100 shadow-sm">
-        <div class="max-w-4xl mx-auto px-6">
+        <div class="max-w-6xl mx-auto px-6">
             <div class="flex items-center gap-1 overflow-x-auto scrollbar-hide py-2 -mx-1">
                 <template x-for="tab in tabs" :key="tab.id">
                     <button
@@ -68,7 +95,7 @@
     </div>
 
     {{-- ═══ CONTENIDO POR TABS ═══ --}}
-    <div class="max-w-4xl mx-auto px-6 py-10">
+    <div class="max-w-6xl mx-auto px-6 py-10">
 
         {{-- ━━━ TAB 1: INTRODUCCIÓN ━━━ --}}
         <div x-show="activeTab === 'inicio'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
@@ -81,6 +108,8 @@
                     <p class="text-neutral-600 leading-relaxed mb-6">
                         El motor de nuestra plataforma, <strong class="text-brand-800">Vigilante SEACE</strong>, trabaja 24/7 monitoreando el portal de contrataciones del Estado para que tú no tengas que hacerlo.
                     </p>
+
+                    {!! manualImg('inicio-plataforma.png', 'Vista general de la plataforma Licitaciones MYPe', 'Página principal con acceso al buscador y funciones principales') !!}
 
                     <div class="grid sm:grid-cols-2 gap-4">
                         <div class="bg-neutral-50 rounded-2xl p-5 border border-neutral-200">
@@ -144,6 +173,8 @@
                         El Buscador Público es la herramienta principal de la plataforma. Te permite buscar procesos de contratación del Estado peruano en tiempo real directamente desde la API del SEACE.
                     </p>
 
+                    {!! manualImg('buscador-vista-general.png', 'Vista general del Buscador Público', 'Panel de búsqueda con filtros y tabla de resultados') !!}
+
                     <h3 class="text-lg font-bold text-neutral-900 mb-3">Filtros disponibles</h3>
                     <div class="overflow-x-auto mb-6">
                         <table class="w-full text-sm">
@@ -163,6 +194,8 @@
                             </tbody>
                         </table>
                     </div>
+
+                    {!! manualImg('buscador-filtros.png', 'Detalle de los filtros del buscador', 'Filtros por palabra clave, entidad, objeto, estado y departamento') !!}
 
                     <h3 class="text-lg font-bold text-neutral-900 mb-3">Acciones por proceso</h3>
                     <p class="text-neutral-600 leading-relaxed mb-4">Al hacer clic en un proceso verás su detalle completo con varias opciones:</p>
@@ -196,6 +229,8 @@
                             </div>
                         </div>
                     </div>
+
+                    {!! manualImg('buscador-detalle-proceso.png', 'Detalle de un proceso con acciones disponibles', 'Vista de detalle mostrando información del proceso y botones de acción') !!}
                 </section>
 
                 <div class="flex justify-between">
@@ -221,6 +256,8 @@
                     <p class="text-neutral-600 leading-relaxed mb-6">
                         Visualiza datos y estadísticas de las contrataciones del Estado peruano para entender el panorama de las licitaciones.
                     </p>
+
+                    {!! manualImg('dashboard-graficos.png', 'Dashboard con gráficos estadísticos', 'Visualización de KPIs, distribuciones por estado y objeto, tendencias mensuales') !!}
 
                     <h3 class="text-lg font-bold text-neutral-900 mb-3">Métricas y gráficos incluidos</h3>
                     <div class="grid sm:grid-cols-2 gap-3 mb-6">
@@ -255,6 +292,8 @@
                     <p class="text-neutral-600 leading-relaxed mb-6">
                         Agrega procesos a un calendario visual mensual para organizar tus postulaciones y nunca perder una fecha límite.
                     </p>
+
+                    {!! manualImg('dashboard-calendario.png', 'Calendario de seguimientos con indicadores de urgencia', 'Vista mensual con procesos organizados por colores de urgencia') !!}
 
                     <h3 class="text-lg font-bold text-neutral-900 mb-3">¿Cómo funciona?</h3>
                     <div class="space-y-3 mb-6">
@@ -302,6 +341,8 @@
                     <p class="text-neutral-600 leading-relaxed mb-6">
                         Historial completo de todos los procesos notificados por Telegram, WhatsApp o Email según tus palabras clave.
                     </p>
+
+                    {!! manualImg('dashboard-mis-procesos.png', 'Lista de mis procesos notificados', 'Historial de procesos con opciones de re-notificación por canal') !!}
 
                     <h3 class="text-lg font-bold text-neutral-900 mb-3">Re-notificación</h3>
                     <p class="text-neutral-600 text-sm leading-relaxed mb-3">Puedes re-enviar cualquier proceso a tus canales activos:</p>
@@ -380,6 +421,8 @@
                         </div>
                     </div>
 
+                    {!! manualImg('premium-keywords.png', 'Configuración de palabras clave desde el perfil', 'Sección de suscripciones con campo para agregar y gestionar keywords') !!}
+
                     <h3 class="text-lg font-bold text-neutral-900 mb-3">Ejemplos de buenas palabras clave</h3>
                     <div class="flex flex-wrap gap-2 mb-6">
                         @foreach (['laptop', 'consultoría', 'limpieza', 'software', 'capacitación', 'seguridad', 'mantenimiento', 'servicio de internet', 'útiles de oficina', 'transporte'] as $keyword)
@@ -420,6 +463,8 @@
                             <div><p class="text-sm font-bold text-green-600">7.0 - 10</p><p class="text-xs text-neutral-500">Alta</p></div>
                         </div>
                     </div>
+
+                    {!! manualImg('premium-score.png', 'Score de compatibilidad calculado por IA', 'Resultado del análisis mostrando puntaje y recomendaciones') !!}
 
                     <h3 class="text-lg font-bold text-neutral-900 mb-3">Factores que considera la IA</h3>
                     <ul class="space-y-2 text-sm text-neutral-600 mb-6">
@@ -516,6 +561,8 @@
                         @endforeach
                     </div>
 
+                    {!! manualImg('bot-telegram-notificacion.png', 'Notificación del bot de Telegram', 'Ejemplo de notificación con botones interactivos: Analizar TDR, Descargar, Compatibilidad') !!}
+
                     <h3 class="text-lg font-bold text-neutral-900 mb-4">Botones en cada notificación</h3>
                     <div class="space-y-3 mb-6">
                         @foreach ([
@@ -547,6 +594,8 @@
                     <p class="text-neutral-600 leading-relaxed mb-6">
                         Similar al bot de Telegram, te envía notificaciones automáticas directamente a tu número de teléfono registrado.
                     </p>
+
+                    {!! manualImg('bot-whatsapp-chat.png', 'Chat del bot de WhatsApp', 'Ejemplo de notificación y respuestas en WhatsApp') !!}
 
                     <h3 class="text-lg font-bold text-neutral-900 mb-3">Funcionalidades</h3>
                     <ul class="space-y-2 text-sm text-neutral-600">

@@ -1,0 +1,30 @@
+[Unit]
+Description=Vigilante SEACE QA - WhatsApp Bot Listener
+After=network.target mysql.service
+Wants=mysql.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vigilante-seace-qa
+
+ExecStart=/usr/local/php82/bin/php artisan whatsapp:listen
+
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec=15
+
+Restart=on-failure
+RestartSec=30
+StandardOutput=append:/var/log/vigilante-seace-qa/whatsapp-bot.log
+StandardError=append:/var/log/vigilante-seace-qa/whatsapp-bot-error.log
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/www/vigilante-seace-qa/storage /var/log/vigilante-seace-qa /tmp
+
+[Install]
+WantedBy=multi-user.target

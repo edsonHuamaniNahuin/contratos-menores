@@ -608,9 +608,9 @@
                 </div>
             </div>
 
-            <!-- Tabla -->
-            <div class="overflow-x-auto px-4 lg:px-6 py-4">
-                <table class="w-full min-w-[980px]">
+            <!-- Tabla Desktop -->
+            <div class="hidden lg:block overflow-x-auto px-6 py-4">
+                <table class="w-full">
                     <thead class="bg-neutral-100 border-b border-neutral-200">
                         <tr>
                             <th class="px-4 lg:px-6 py-3.5 text-left">
@@ -818,6 +818,123 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Cards Mobile/Tablet -->
+            <div class="lg:hidden px-4 py-4 space-y-3">
+                @foreach($resultados as $index => $contrato)
+                    <div class="border border-neutral-200 rounded-2xl p-4 space-y-3 {{ $index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50' }}">
+                        {{-- Fila superior: Código + Estado --}}
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-neutral-900 truncate">{{ $contrato['desContratacion'] ?? 'N/A' }}</p>
+                                <p class="text-xs text-neutral-500 mt-0.5">N° {{ $contrato['nroContratacion'] ?? '-' }}</p>
+                            </div>
+                            @php
+                                $estadoMobile = strtolower($contrato['nomEstadoContrato'] ?? '');
+                                $badgeMobileClass = match(true) {
+                                    str_contains($estadoMobile, 'vigente') => 'bg-secondary-500/10 text-secondary-500 border-secondary-200',
+                                    str_contains($estadoMobile, 'evaluación') => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                    str_contains($estadoMobile, 'culminado') => 'bg-neutral-100 text-neutral-700 border-neutral-200',
+                                    default => 'bg-neutral-100 text-neutral-700 border-neutral-200',
+                                };
+                            @endphp
+                            <span class="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full border shrink-0 {{ $badgeMobileClass }}">
+                                {{ $contrato['nomEstadoContrato'] ?? 'N/A' }}
+                            </span>
+                        </div>
+
+                        {{-- Entidad --}}
+                        <div>
+                            <p class="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider">Entidad</p>
+                            <p class="text-sm text-neutral-900 font-medium leading-snug">{{ $contrato['nomEntidad'] ?? 'N/A' }}</p>
+                        </div>
+
+                        {{-- Objeto --}}
+                        <div>
+                            <p class="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider">Objeto</p>
+                            <p class="text-sm text-neutral-900 leading-snug">
+                                <span class="font-medium">{{ $contrato['nomObjetoContrato'] ?? 'N/A' }}</span>
+                                <span class="text-neutral-500"> — {{ \Illuminate\Support\Str::limit($contrato['desObjetoContrato'] ?? '-', 120) }}</span>
+                            </p>
+                        </div>
+
+                        {{-- Fecha publicación --}}
+                        <div class="flex items-center gap-1.5 text-xs text-neutral-500">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span title="{{ $contrato['fecPublica_completa'] ?? $contrato['fecPublica'] ?? '' }}">
+                                {{ $contrato['fecPublica_amigable'] ?? $contrato['fecPublica'] ?? 'N/A' }}
+                            </span>
+                        </div>
+
+                        {{-- Acciones --}}
+                        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-neutral-100">
+                            {{-- Seguimiento --}}
+                            <button
+                                wire:click="hacerSeguimiento({{ $contrato['idContrato'] }})"
+                                wire:loading.attr="disabled"
+                                wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})"
+                                class="inline-flex items-center justify-center w-8 h-8 rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50 {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
+                                title="Hacer seguimiento"
+                            >
+                                <svg wire:loading.remove wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <svg wire:loading wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            </button>
+                            {{-- Ver --}}
+                            <button
+                                wire:click="verContrato({{ $contrato['idContrato'] }})"
+                                wire:loading.attr="disabled"
+                                wire:target="verContrato({{ $contrato['idContrato'] }})"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-secondary-200 text-xs font-semibold text-secondary-500 bg-secondary-50 hover:bg-secondary-100 transition-colors disabled:opacity-50"
+                                title="Ver detalle"
+                            >
+                                <svg wire:loading.remove wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <svg wire:loading wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                <span>Ver</span>
+                            </button>
+                            {{-- Descargar --}}
+                            <button
+                                wire:click="descargarTdr({{ $contrato['idContrato'] }})"
+                                wire:loading.attr="disabled"
+                                wire:target="descargarTdr({{ $contrato['idContrato'] }})"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50"
+                                title="Descargar TDR"
+                            >
+                                <svg wire:loading.remove wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+                                </svg>
+                                <svg wire:loading wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                <span wire:loading.remove wire:target="descargarTdr({{ $contrato['idContrato'] }})">TDR</span>
+                                <span wire:loading wire:target="descargarTdr({{ $contrato['idContrato'] }})">...</span>
+                            </button>
+                            {{-- Analizar --}}
+                            <button
+                                wire:click="analizarTdr({{ $contrato['idContrato'] }})"
+                                wire:loading.attr="disabled"
+                                wire:target="analizarTdr({{ $contrato['idContrato'] }})"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 text-xs font-semibold text-brand-600 bg-primary-50 hover:bg-primary-100 transition-colors disabled:opacity-50 {{ $puedeAnalizar ? '' : 'opacity-70' }}"
+                                title="Analizar con IA"
+                            >
+                                <svg wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                                </svg>
+                                <svg wire:loading wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                <span wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})">IA</span>
+                                <span wire:loading wire:target="analizarTdr({{ $contrato['idContrato'] }})">...</span>
+                            </button>
+                        </div>
+                        @if(isset($archivosErrores[$contrato['idContrato']]))
+                            <div class="text-[11px] text-primary-700">
+                                {{ $archivosErrores[$contrato['idContrato']] }}
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
             </div>
 
             <!-- Paginación -->

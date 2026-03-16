@@ -54,27 +54,15 @@ class SubscriptionController extends Controller
 
         $result = $gateway->createCheckout($user, $plan, $isTrial);
 
-        // Trial directo (MercadoPago): activar sin pago
-        if (($result['type'] ?? '') === 'trial') {
-            try {
-                $this->subscriptionService->startTrial($user, $gateway->name());
-
-                return redirect()->route('home')
-                    ->with('success', '¡Tu trial de 15 días ha sido activado!');
-            } catch (\Exception $e) {
-                return redirect()->route('planes')
-                    ->with('error', 'Error activando el trial: ' . $e->getMessage());
-            }
-        }
+        // Guardar datos de checkout en sesión (necesario para callback de Checkout Pro)
+        session([
+            'checkout_plan'     => $plan,
+            'checkout_is_trial' => $isTrial,
+            'checkout_gateway'  => $gateway->name(),
+        ]);
 
         // Redirect externo (reservado para futuras pasarelas)
         if (($result['type'] ?? '') === 'redirect') {
-            session([
-                'checkout_plan'     => $plan,
-                'checkout_is_trial' => $isTrial,
-                'checkout_gateway'  => $gateway->name(),
-            ]);
-
             return redirect($result['url']);
         }
 
@@ -95,7 +83,7 @@ class SubscriptionController extends Controller
     {
         $request->validate([
             'plan'              => 'required|in:monthly,yearly',
-            'token_id'          => 'required|string',
+            'token_id'          => 'nullable|string',
             'device_session_id' => 'required|string',
             'is_trial'          => 'sometimes|boolean',
         ]);
@@ -142,7 +130,7 @@ class SubscriptionController extends Controller
                     'charge_id'         => $result['charge_id'],
                     'customer_id'       => $result['customer_id'],
                     'card_id'           => $result['card_id'],
-                    'payment_method'    => 'card',
+                    'payment_method'    => $result['payment_method'] ?? 'card',
                     'amount'            => $result['amount'],
                     'currency'          => 'PEN',
                     'metadata'          => $result['data'] ?? null,

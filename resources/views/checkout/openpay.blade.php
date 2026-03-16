@@ -13,7 +13,7 @@
 
     <!-- Navbar -->
     <nav class="bg-white border-b border-neutral-100 px-6 py-4">
-        <div class="max-w-3xl mx-auto flex items-center justify-between">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
             <a href="{{ url('/') }}" class="flex items-center gap-2">
                 <div class="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-400 rounded-xl flex items-center justify-center">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,7 +28,7 @@
         </div>
     </nav>
 
-    <div class="max-w-3xl mx-auto px-6 py-16" x-data="checkoutForm()" x-cloak>
+    <div class="max-w-6xl mx-auto px-6 py-16" x-data="checkoutForm()" x-cloak>
         <div class="grid md:grid-cols-5 gap-8">
 
             {{-- Resumen del plan --}}

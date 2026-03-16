@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Permission;
+use App\Models\PremiumAuditLog;
 use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\ContratoSeguimiento;
@@ -91,9 +92,13 @@ class User extends Authenticatable implements MustVerifyEmail
             ->first();
     }
 
+    /**
+     * Indica si el usuario tiene acceso premium.
+     * ROL ES LA FUENTE ÚNICA DE VERDAD — no depende de la tabla subscriptions.
+     */
     public function isPremium(): bool
     {
-        return $this->activeSubscription() !== null;
+        return $this->hasRole('proveedor-premium') || $this->isAdmin();
     }
 
     public function isOnTrial(): bool
@@ -155,6 +160,15 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->roles
             ->flatMap(fn (Role $role) => $role->permissions)
             ->contains(fn (Permission $permission) => $permission->slug === $slug);
+    }
+
+    /* ────────────────────────────────
+     |  Premium Audit
+     |──────────────────────────────── */
+
+    public function premiumAuditLogs(): HasMany
+    {
+        return $this->hasMany(PremiumAuditLog::class)->latest('created_at');
     }
 
     /**

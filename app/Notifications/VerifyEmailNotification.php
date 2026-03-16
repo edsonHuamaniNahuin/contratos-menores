@@ -3,14 +3,18 @@
 namespace App\Notifications;
 
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 
 /**
  * Notificación personalizada de verificación de correo.
  * Extiende la de Laravel para mantener la URL firmada pero con diseño propio.
+ * Implementa ShouldQueue para no bloquear el registro si SMTP falla.
  */
-class VerifyEmailNotification extends VerifyEmail
+class VerifyEmailNotification extends VerifyEmail implements ShouldQueue
 {
+    use Queueable;
     protected function buildMailMessage($url): MailMessage
     {
         return (new MailMessage())

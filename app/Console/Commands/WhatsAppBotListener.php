@@ -46,12 +46,17 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
     protected $signature = 'whatsapp:listen {--once : Procesar solo una vez}';
     protected $description = 'Procesar webhooks de WhatsApp Business API (callbacks de botones interactivos)';
 
-    private const OFFSET_CACHE_KEY = 'whatsapp:listener:last_processed';
     private const OFFSET_CACHE_TTL = 2592000; // 30 días
 
     protected bool $shouldStop = false;
     protected bool $debugLogging;
-    protected string $contratoCachePrefix = 'whatsapp:contrato:';
+
+    /**
+     * Prefijo de cache por ambiente para aislar QA y Producción.
+     * Evita que ambos listeners procesen los mismos mensajes si comparten BD.
+     */
+    protected string $envCachePrefix;
+    protected string $contratoCachePrefix;
     protected TdrAnalysisFormatter $formatter;
     protected CompatibilityScoreService $compatibilityService;
     protected AccountCompatibilityService $compatibilityRepository;
@@ -61,6 +66,8 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
     {
         parent::__construct();
         $this->debugLogging = (bool) config('services.whatsapp.debug_logs', false);
+        $this->envCachePrefix = 'whatsapp:' . config('app.env', 'production') . ':';
+        $this->contratoCachePrefix = $this->envCachePrefix . 'contrato:';
         $this->formatter = new TdrAnalysisFormatter();
         $this->compatibilityService = app(CompatibilityScoreService::class);
         $this->compatibilityRepository = app(AccountCompatibilityService::class);
@@ -165,11 +172,12 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
      * Procesar mensajes encolados vía webhook.
      *
      * Los webhooks de Meta llegan al controller WebhookWhatsAppController
-     * que los encola en cache bajo la key 'whatsapp:incoming_messages'.
+     * que los encola en cache bajo la key '{env}:incoming_messages'.
      */
     protected function processQueuedMessages(): void
     {
-        $messages = Cache::pull('whatsapp:incoming_messages', []);
+        $queueKey = $this->envCachePrefix . 'incoming_messages';
+        $messages = Cache::pull($queueKey, []);
 
         if (empty($messages)) {
             return;
@@ -179,7 +187,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             if ($this->shouldStop) {
                 // Re-encolar mensajes no procesados
                 $remaining = array_slice($messages, array_search($message, $messages));
-                Cache::put('whatsapp:incoming_messages', $remaining, now()->addHours(24));
+                Cache::put($queueKey, $remaining, now()->addHours(24));
                 break;
             }
 
@@ -238,14 +246,20 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $from = $message['from'] ?? '';
         $type = $message['type'] ?? '';
 
-        // Solo procesar clicks en botones interactivos
+        // Procesar clicks en botones interactivos (button_reply) y listas (list_reply)
         if ($type === 'interactive') {
             $interactive = $message['interactive'] ?? [];
-            $buttonReply = $interactive['button_reply'] ?? [];
-            $callbackData = $buttonReply['id'] ?? '';
+            $interactiveType = $interactive['type'] ?? '';
+
+            $callbackData = match ($interactiveType) {
+                'button_reply' => $interactive['button_reply']['id'] ?? '',
+                'list_reply'   => $interactive['list_reply']['id'] ?? '',
+                default        => '',
+            };
 
             if (!empty($callbackData)) {
-                $this->handleButtonClick($from, $callbackData);
+                $messageId = $message['id'] ?? '';
+                $this->handleButtonClick($from, $callbackData, $messageId);
             }
         }
     }
@@ -254,20 +268,22 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
      * Procesar click en botón interactivo.
      * Misma lógica que TelegramBotListener::handleCallbackQuery().
      */
-    protected function handleButtonClick(string $phoneNumber, string $data): void
+    protected function handleButtonClick(string $phoneNumber, string $data, string $messageId = ''): void
     {
-        // Dedup atómico: evita procesamiento duplicado por webhook retry
-        $dedupKey = "whatsapp:cb:" . md5($phoneNumber . '|' . $data . '|' . time());
+        // Dedup atómico: evita procesamiento duplicado por webhook retry o doble ambiente
+        $dedupSeed = $messageId !== '' ? $messageId : ($phoneNumber . '|' . $data);
+        $dedupKey = $this->envCachePrefix . 'cb:' . md5($dedupSeed);
         if (!Cache::add($dedupKey, true, 300)) {
             $this->debug("Callback ya procesado, ignorando (dedup)", [
                 'phone' => $phoneNumber,
                 'data' => $data,
+                'messageId' => $messageId,
             ]);
             return;
         }
 
         // Lock anti doble-click
-        $actionLockKey = 'whatsapp:action:' . md5($phoneNumber . '|' . $data);
+        $actionLockKey = $this->envCachePrefix . 'action:' . md5($phoneNumber . '|' . $data);
         $actionLock = Cache::lock($actionLockKey, 25);
 
         if (!$actionLock->get()) {
@@ -332,6 +348,22 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $this->info("🏅 Usuario {$phoneNumber} solicitó compatibilidad del contrato {$idContrato}");
                 $this->whatsapp->enviarMensaje($phoneNumber, $forceRefresh ? '🔄 Recalculando score...' : '⏱️ Calculando score...');
                 $this->evaluarCompatibilidadParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo, $forceRefresh);
+
+            } elseif (str_starts_with($data, 'direcc_')) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
+                $this->info("🔍 Usuario {$phoneNumber} solicitó direccionamiento del contrato {$idContrato}");
+                $this->whatsapp->enviarMensaje($phoneNumber, '⏳ Analizando direccionamiento...');
+                $this->analizarDireccionamientoParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo);
 
             } else {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida');
@@ -408,13 +440,117 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $mensaje = $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato);
         $mensaje = $this->htmlToWhatsApp($mensaje);
 
-        // Botón de descarga después del análisis
+        // Botones después del análisis: descarga + direccionamiento
         $keyboard = [
             'type' => 'button',
             'body' => ['text' => $mensaje],
             'footer' => ['text' => '🤖 Vigilante SEACE'],
             'action' => [
                 'buttons' => [
+                    [
+                        'type' => 'reply',
+                        'reply' => [
+                            'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                            'title' => '📥 Descargar TDR',
+                        ],
+                    ],
+                    [
+                        'type' => 'reply',
+                        'reply' => [
+                            'id' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
+                            'title' => '🔍 Direccionamiento',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+    }
+
+    // ─── Direccionamiento ────────────────────────────────────────────
+
+    protected function analizarDireccionamientoParaUsuario(
+        string $phoneNumber,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo
+    ): void {
+        try {
+            $cuenta = CuentaSeace::activa()->first();
+
+            if ($idContratoArchivo === 0) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ ID de archivo inválido. Por favor, intenta de nuevo.');
+                return;
+            }
+
+            $tdrService = new TdrAnalysisService();
+            $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            $this->whatsapp->enviarMensaje(
+                $phoneNumber,
+                "⏳ Analizando direccionamiento con IA...\n📄 {$nombreArchivo}\n\n🔍 Detectando indicios de corrupción en las bases..."
+            );
+
+            $this->info("🔍 Analizando direccionamiento {$nombreArchivo} (ID: {$idContratoArchivo}) con IA...");
+
+            $resultado = $tdrService->analizarDesdeSeace(
+                $idContratoArchivo,
+                $nombreArchivo,
+                $cuenta,
+                $contratoData,
+                'whatsapp',
+                false,
+                'direccionamiento'
+            );
+
+            if ($resultado['success'] ?? false) {
+                $this->enviarResultadoDireccionamientoWhatsApp($phoneNumber, $resultado, $idContrato, $idContratoArchivo, $nombreArchivo);
+                $this->info("✅ Análisis de direccionamiento enviado a {$phoneNumber}");
+            } else {
+                $errorMsg = $resultado['error'] ?? 'Error desconocido';
+                $this->enviarMensajeErrorConReintento($phoneNumber, $errorMsg, 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+            }
+        } catch (\Exception $e) {
+            Log::error('WhatsApp: Error al analizar direccionamiento', [
+                'phone' => $phoneNumber,
+                'id_contrato' => $idContrato,
+                'exception' => $e->getMessage(),
+            ]);
+            $this->enviarMensajeErrorConReintento($phoneNumber, $e->getMessage(), 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+        }
+    }
+
+    protected function enviarResultadoDireccionamientoWhatsApp(
+        string $phoneNumber,
+        array $resultado,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo
+    ): void {
+        $analisisData = $resultado['data']['analisis'] ?? [];
+        $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
+        $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
+
+        $mensaje = $resultado['formatted']['whatsapp']
+            ?? $this->htmlToWhatsApp(
+                $this->formatter->formatDireccionamientoForTelegram($analisisData, $archivoNombre, $contextoContrato)
+            );
+
+        $keyboard = [
+            'type' => 'button',
+            'body' => ['text' => $mensaje],
+            'footer' => ['text' => '🤖 Vigilante SEACE'],
+            'action' => [
+                'buttons' => [
+                    [
+                        'type' => 'reply',
+                        'reply' => [
+                            'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                            'title' => '🤖 Análisis General',
+                        ],
+                    ],
                     [
                         'type' => 'reply',
                         'reply' => [
@@ -815,9 +951,20 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
 
     protected function sanitizeCallbackFilename(string $nombre): string
     {
-        $sanitized = str_replace([' ', '/', '\\'], '_', $nombre);
-        $sanitized = preg_replace('/[^A-Za-z0-9_\-.]/', '', $sanitized) ?? '';
-        return substr($sanitized ?: 'archivo.pdf', 0, 30);
+        $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+        $base = pathinfo($nombre, PATHINFO_FILENAME);
+
+        $sanitized = str_replace([' ', '/', '\\'], '_', $base);
+        $sanitized = preg_replace('/[^A-Za-z0-9_\-]/', '', $sanitized) ?? '';
+
+        if ($sanitized === '') {
+            return 'archivo.pdf';
+        }
+
+        // Preservar extensión, truncar base para que quepa dentro de 30 chars
+        $ext = in_array($ext, ['pdf', 'doc', 'docx', 'zip', 'rar', 'xls', 'xlsx']) ? $ext : 'pdf';
+        $maxBase = 30 - strlen($ext) - 1; // -1 para el punto
+        return substr($sanitized, 0, $maxBase) . '.' . $ext;
     }
 
     protected function htmlToWhatsApp(string $html): string
