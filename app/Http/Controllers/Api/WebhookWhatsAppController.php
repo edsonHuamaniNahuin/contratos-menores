@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Console\Commands\WhatsAppBotListener;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -86,9 +85,6 @@ class WebhookWhatsAppController extends Controller
         // Encolar para procesamiento por WhatsAppBotListener
         $this->enqueuePayload($payload);
 
-        // Intentar procesamiento inline si el listener no está corriendo
-        $this->tryInlineProcessing($payload);
-
         return response()->json(['status' => 'ok'], 200);
     }
 
@@ -97,7 +93,9 @@ class WebhookWhatsAppController extends Controller
      */
     protected function enqueuePayload(array $payload): void
     {
-        $existing = Cache::get('whatsapp:incoming_messages', []);
+        $cacheKey = 'whatsapp:' . config('app.env', 'production') . ':incoming_messages';
+
+        $existing = Cache::get($cacheKey, []);
         $existing[] = $payload;
 
         // Limitar cola a 500 mensajes para evitar memory issues
@@ -105,25 +103,11 @@ class WebhookWhatsAppController extends Controller
             $existing = array_slice($existing, -500);
         }
 
-        Cache::put('whatsapp:incoming_messages', $existing, now()->addHours(24));
+        Cache::put($cacheKey, $existing, now()->addHours(24));
 
         Log::debug('WhatsApp Webhook: payload encolado', [
             'queue_size' => count($existing),
         ]);
     }
 
-    /**
-     * Intentar procesar el payload inline (para entornos sin listener activo).
-     */
-    protected function tryInlineProcessing(array $payload): void
-    {
-        try {
-            $listener = new WhatsAppBotListener();
-            $listener->processIncomingMessage($payload);
-        } catch (\Throwable $e) {
-            Log::error('WhatsApp Webhook: error en procesamiento inline', [
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
 }

@@ -46,12 +46,17 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
     protected $signature = 'whatsapp:listen {--once : Procesar solo una vez}';
     protected $description = 'Procesar webhooks de WhatsApp Business API (callbacks de botones interactivos)';
 
-    private const OFFSET_CACHE_KEY = 'whatsapp:listener:last_processed';
     private const OFFSET_CACHE_TTL = 2592000; // 30 días
 
     protected bool $shouldStop = false;
     protected bool $debugLogging;
-    protected string $contratoCachePrefix = 'whatsapp:contrato:';
+
+    /**
+     * Prefijo de cache por ambiente para aislar QA y Producción.
+     * Evita que ambos listeners procesen los mismos mensajes si comparten BD.
+     */
+    protected string $envCachePrefix;
+    protected string $contratoCachePrefix;
     protected TdrAnalysisFormatter $formatter;
     protected CompatibilityScoreService $compatibilityService;
     protected AccountCompatibilityService $compatibilityRepository;
@@ -61,6 +66,8 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
     {
         parent::__construct();
         $this->debugLogging = (bool) config('services.whatsapp.debug_logs', false);
+        $this->envCachePrefix = 'whatsapp:' . config('app.env', 'production') . ':';
+        $this->contratoCachePrefix = $this->envCachePrefix . 'contrato:';
         $this->formatter = new TdrAnalysisFormatter();
         $this->compatibilityService = app(CompatibilityScoreService::class);
         $this->compatibilityRepository = app(AccountCompatibilityService::class);
@@ -165,11 +172,12 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
      * Procesar mensajes encolados vía webhook.
      *
      * Los webhooks de Meta llegan al controller WebhookWhatsAppController
-     * que los encola en cache bajo la key 'whatsapp:incoming_messages'.
+     * que los encola en cache bajo la key '{env}:incoming_messages'.
      */
     protected function processQueuedMessages(): void
     {
-        $messages = Cache::pull('whatsapp:incoming_messages', []);
+        $queueKey = $this->envCachePrefix . 'incoming_messages';
+        $messages = Cache::pull($queueKey, []);
 
         if (empty($messages)) {
             return;
@@ -179,7 +187,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             if ($this->shouldStop) {
                 // Re-encolar mensajes no procesados
                 $remaining = array_slice($messages, array_search($message, $messages));
-                Cache::put('whatsapp:incoming_messages', $remaining, now()->addHours(24));
+                Cache::put($queueKey, $remaining, now()->addHours(24));
                 break;
             }
 
@@ -250,7 +258,8 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             };
 
             if (!empty($callbackData)) {
-                $this->handleButtonClick($from, $callbackData);
+                $messageId = $message['id'] ?? '';
+                $this->handleButtonClick($from, $callbackData, $messageId);
             }
         }
     }
@@ -259,20 +268,22 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
      * Procesar click en botón interactivo.
      * Misma lógica que TelegramBotListener::handleCallbackQuery().
      */
-    protected function handleButtonClick(string $phoneNumber, string $data): void
+    protected function handleButtonClick(string $phoneNumber, string $data, string $messageId = ''): void
     {
-        // Dedup atómico: evita procesamiento duplicado por webhook retry
-        $dedupKey = "whatsapp:cb:" . md5($phoneNumber . '|' . $data . '|' . time());
+        // Dedup atómico: evita procesamiento duplicado por webhook retry o doble ambiente
+        $dedupSeed = $messageId !== '' ? $messageId : ($phoneNumber . '|' . $data);
+        $dedupKey = $this->envCachePrefix . 'cb:' . md5($dedupSeed);
         if (!Cache::add($dedupKey, true, 300)) {
             $this->debug("Callback ya procesado, ignorando (dedup)", [
                 'phone' => $phoneNumber,
                 'data' => $data,
+                'messageId' => $messageId,
             ]);
             return;
         }
 
         // Lock anti doble-click
-        $actionLockKey = 'whatsapp:action:' . md5($phoneNumber . '|' . $data);
+        $actionLockKey = $this->envCachePrefix . 'action:' . md5($phoneNumber . '|' . $data);
         $actionLock = Cache::lock($actionLockKey, 25);
 
         if (!$actionLock->get()) {

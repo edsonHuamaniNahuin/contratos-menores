@@ -33,7 +33,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     protected bool $enabled;
     protected bool $debugLogging;
     protected int $contratoCacheTtl;
-    protected string $contratoCachePrefix = 'whatsapp:contrato:';
+    protected string $contratoCachePrefix;
 
     public function __construct()
     {
@@ -44,6 +44,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         $this->timeout = (int) config('services.whatsapp.timeout', 15);
         $this->debugLogging = (bool) config('services.whatsapp.debug_logs', false);
         $this->contratoCacheTtl = (int) config('services.whatsapp.contrato_cache_ttl', 720);
+        $this->contratoCachePrefix = 'whatsapp:' . config('app.env', 'production') . ':contrato:';
 
         $this->enabled = $this->token !== '' && $this->phoneNumberId !== '';
 
