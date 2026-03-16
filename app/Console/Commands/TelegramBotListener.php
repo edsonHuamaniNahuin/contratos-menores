@@ -28,7 +28,6 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
     protected $description = 'Escuchar actualizaciones de Telegram (polling) y procesar clicks de botones';
 
     // ── Offset persistente: sobrevive reinicios ──────────────────────
-    private const OFFSET_CACHE_KEY = 'telegram:listener:last_offset';
     private const OFFSET_CACHE_TTL = 2592000; // 30 días en segundos
 
     protected int $lastUpdateId = 0;
@@ -39,7 +38,13 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
     protected TdrAnalysisFormatter $formatter;
     protected CompatibilityScoreService $compatibilityService;
     protected AccountCompatibilityService $compatibilityRepository;
-    protected string $contratoCachePrefix = 'telegram:contrato:';
+
+    /**
+     * Prefijo de cache por ambiente para aislar QA y Producción.
+     */
+    protected string $envCachePrefix;
+    protected string $contratoCachePrefix;
+    protected string $offsetCacheKey;
 
     public function __construct()
     {
@@ -47,6 +52,9 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $this->baseUrl = (string) config('services.seace.base_url');
         $this->telegramApiBase = rtrim((string) config('services.telegram.api_base', ''), '/');
         $this->debugLogging = (bool) config('services.telegram.debug_logs', false);
+        $this->envCachePrefix = 'telegram:' . config('app.env', 'production') . ':';
+        $this->contratoCachePrefix = $this->envCachePrefix . 'contrato:';
+        $this->offsetCacheKey = $this->envCachePrefix . 'listener:last_offset';
         $this->formatter = new TdrAnalysisFormatter();
         $this->compatibilityService = app(CompatibilityScoreService::class);
         $this->compatibilityRepository = app(AccountCompatibilityService::class);
@@ -71,7 +79,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         }
 
         // ── Restaurar offset persistente (sobrevive reinicios) ───────
-        $this->lastUpdateId = (int) Cache::get(self::OFFSET_CACHE_KEY, 0);
+        $this->lastUpdateId = (int) Cache::get($this->offsetCacheKey, 0);
         if ($this->lastUpdateId > 0) {
             $this->info("📍 Offset restaurado: {$this->lastUpdateId}");
         }
@@ -103,7 +111,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                     $this->lastUpdateId = $update['update_id'];
 
                     // Persistir offset inmediatamente tras recibirlo
-                    Cache::put(self::OFFSET_CACHE_KEY, $this->lastUpdateId, self::OFFSET_CACHE_TTL);
+                    Cache::put($this->offsetCacheKey, $this->lastUpdateId, self::OFFSET_CACHE_TTL);
 
                     if (isset($update['callback_query'])) {
                         $this->handleCallbackQuery($update['callback_query'], $token);
@@ -135,7 +143,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
      */
     public function isolatableId(): string
     {
-        return 'telegram-bot-listener';
+        return 'telegram-bot-listener-' . config('app.env', 'production');
     }
 
     /**
@@ -200,7 +208,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
         // ── Deduplicación atómica: si ya se procesó este callback, ignorar ──
         // Cache::add() retorna false si la key ya existe (atómico en DB/Redis)
-        $dedupKey = "telegram:cb:{$callbackId}";
+        $dedupKey = $this->envCachePrefix . "cb:{$callbackId}";
         if (!Cache::add($dedupKey, true, 300)) {
             $this->debug("Callback {$callbackId} ya procesado, ignorando (dedup)", [
                 'chat_id' => $chatId,
@@ -213,7 +221,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
         // ── Lock anti doble-click: evita ejecutar la MISMA acción en paralelo ──
         // callback_id cambia por click, así que además bloqueamos por chat+payload.
-        $actionLockKey = 'telegram:action:' . md5($chatId . '|' . $data);
+        $actionLockKey = $this->envCachePrefix . 'action:' . md5($chatId . '|' . $data);
         $actionLock = Cache::lock($actionLockKey, 25);
 
         if (!$actionLock->get()) {
