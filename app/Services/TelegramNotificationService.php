@@ -366,14 +366,20 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
 
     protected function sanitizeCallbackFilename(string $nombre): string
     {
-        $sanitized = str_replace([' ', '/', '\\'], '_', $nombre);
-        $sanitized = preg_replace('/[^A-Za-z0-9_\-.]/', '', $sanitized) ?? '';
+        $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+        $base = pathinfo($nombre, PATHINFO_FILENAME);
+
+        $sanitized = str_replace([' ', '/', '\\'], '_', $base);
+        $sanitized = preg_replace('/[^A-Za-z0-9_\-]/', '', $sanitized) ?? '';
 
         if ($sanitized === '') {
-            $sanitized = 'archivo.pdf';
+            return 'archivo.pdf';
         }
 
-        return substr($sanitized, 0, 30);
+        // Preservar extensión, truncar base para que quepa dentro de 30 chars
+        $ext = in_array($ext, ['pdf', 'doc', 'docx', 'zip', 'rar', 'xls', 'xlsx']) ? $ext : 'pdf';
+        $maxBase = 30 - strlen($ext) - 1;
+        return substr($sanitized, 0, $maxBase) . '.' . $ext;
     }
 
     public function notifyNewContract(Contrato $contrato, ?array $archivo = null): bool

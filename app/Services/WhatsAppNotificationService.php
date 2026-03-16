@@ -88,7 +88,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
             ? $suscripcion->getRecipientId()
             : $suscripcion->phone_number;
 
-        $keyboard = $this->buildDefaultKeyboard($contratoData, $mensaje);
+        $keyboard = $this->buildDefaultKeyboard($contratoData);
 
         $resultado = $keyboard
             ? $this->enviarMensajeConBotones($recipientId, $mensaje, $keyboard)
@@ -207,7 +207,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      *
      * @see https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages
      */
-    public function buildDefaultKeyboard(array $contratoData, ?string $bodyText = null): ?array
+    public function buildDefaultKeyboard(array $contratoData): ?array
     {
         $idContrato = (int) ($contratoData['idContrato'] ?? 0);
 
@@ -224,10 +224,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
             ]);
         }
 
-        // Usar texto completo si se proporcionó (incluye keywords y company)
-        $body = $bodyText
-            ? $this->stripHtmlToWhatsApp($bodyText)
-            : $this->stripHtmlToWhatsApp($this->construirMensaje($contratoData));
+        $body = $this->stripHtmlToWhatsApp($this->construirMensaje($contratoData));
 
         // List message body: máximo 1024 chars
         if (mb_strlen($body) > 1024) {
