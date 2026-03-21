@@ -204,6 +204,7 @@ class TdrPersistenceService
             'timestamp' => optional($analisis->analizado_en)->toDateTimeString() ?? optional($analisis->updated_at)->toDateTimeString(),
             'cache' => $fromCache,
             'analisis_id' => $analisis->id,
+            'share_url' => $analisis->esExitoso() ? $analisis->share_url : null,
         ];
     }
 

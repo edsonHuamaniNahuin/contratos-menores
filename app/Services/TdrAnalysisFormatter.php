@@ -10,7 +10,7 @@ class TdrAnalysisFormatter
     /**
      * Formatea el resultado para mensajes de Telegram (HTML) priorizando texto legible.
      */
-    public function formatForTelegram(array $analysis, string $archivo, ?array $contextoContrato = null): string
+    public function formatForTelegram(array $analysis, string $archivo, ?array $contextoContrato = null, ?string $shareUrl = null): string
     {
         $data = $this->normalize($analysis);
         $mensaje = "🤖 <b>ANÁLISIS IA COMPLETADO</b>\n\n";
@@ -89,7 +89,7 @@ class TdrAnalysisFormatter
             $mensaje .= $this->formatFallbackKeyValues($data);
         }
 
-        $mensaje = $this->applyTelegramLimit($mensaje);
+        $mensaje = $this->applyTelegramLimit($mensaje, $shareUrl);
 
         return trim($mensaje);
     }
@@ -266,7 +266,7 @@ class TdrAnalysisFormatter
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
-    protected function applyTelegramLimit(string $message): string
+    protected function applyTelegramLimit(string $message, ?string $shareUrl = null): string
     {
         $message = trim($message);
         if ($this->stringLength($message) <= self::MAX_TELEGRAM_CHARS) {
@@ -274,9 +274,17 @@ class TdrAnalysisFormatter
         }
 
         $plain = trim(strip_tags($message));
-        $suffix = self::TRUNCATED_NOTICE;
+        $suffix = $shareUrl
+            ? "\n\n⚠️ Resumen truncado.\n🔗 Ver información completa: {$shareUrl}"
+            : self::TRUNCATED_NOTICE;
         $limit = self::MAX_TELEGRAM_CHARS - $this->stringLength($suffix);
         $truncated = $this->stringSlice($plain, 0, max(0, $limit));
+
+        // Cortar en el último salto de línea para no dejar texto a medias
+        $lastNewline = strrpos($truncated, "\n");
+        if ($lastNewline !== false && $lastNewline > ($limit * 0.6)) {
+            $truncated = substr($truncated, 0, $lastNewline);
+        }
 
         return rtrim($truncated) . $suffix;
     }
@@ -284,7 +292,7 @@ class TdrAnalysisFormatter
     /**
      * Formatea el resultado de análisis de direccionamiento (corrupción) para Telegram (HTML).
      */
-    public function formatDireccionamientoForTelegram(array $analysis, string $archivo, ?array $contextoContrato = null): string
+    public function formatDireccionamientoForTelegram(array $analysis, string $archivo, ?array $contextoContrato = null, ?string $shareUrl = null): string
     {
         $data = $this->normalize($analysis);
 
@@ -347,7 +355,7 @@ class TdrAnalysisFormatter
             $mensaje .= $this->escapeHtml($argumento) . "\n";
         }
 
-        return trim($this->applyTelegramLimit($mensaje));
+        return trim($this->applyTelegramLimit($mensaje, $shareUrl));
     }
 
     /**
