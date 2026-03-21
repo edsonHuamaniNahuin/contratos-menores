@@ -3,6 +3,7 @@
 namespace App\Services\Contratos;
 
 use App\Models\Contrato;
+use App\Models\TdrAnalisis;
 use Carbon\Carbon;
 
 class ContratoAnalyticsService
@@ -141,6 +142,176 @@ class ContratoAnalyticsService
         return [
             'labels' => $departamentos->pluck('departamento')->map(fn ($d) => $d ?: 'Sin departamento'),
             'values' => $departamentos->pluck('total'),
+        ];
+    }
+
+    // ── TDR Direccionamiento Analytics ─────────────────────────────
+
+    /**
+     * Contadores generales de análisis de direccionamiento.
+     */
+    public function tdrCounters(): array
+    {
+        $base = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
+            ->where('estado', TdrAnalisis::ESTADO_EXITOSO);
+
+        $total = (clone $base)->count();
+
+        $analisis = (clone $base)->get(['resumen']);
+
+        $veredictos = $analisis->countBy(fn ($a) => $a->resumen['veredicto_flash'] ?? 'DESCONOCIDO');
+
+        return [
+            'total' => $total,
+            'limpio' => $veredictos->get('LIMPIO', 0),
+            'sospechoso' => $veredictos->get('SOSPECHOSO', 0),
+            'direccionado' => $veredictos->get('ALTAMENTE DIRECCIONADO', 0),
+            'score_promedio' => $total > 0
+                ? round($analisis->avg(fn ($a) => $a->resumen['score_riesgo_corrupcion'] ?? 0))
+                : 0,
+        ];
+    }
+
+    /**
+     * Distribución de veredictos (LIMPIO / SOSPECHOSO / ALTAMENTE DIRECCIONADO).
+     */
+    public function tdrVeredictos(): array
+    {
+        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
+            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
+            ->get(['resumen']);
+
+        $veredictos = $analisis->countBy(fn ($a) => $a->resumen['veredicto_flash'] ?? 'DESCONOCIDO')
+            ->sortDesc();
+
+        return [
+            'labels' => $veredictos->keys()->values(),
+            'values' => $veredictos->values()->values(),
+        ];
+    }
+
+    /**
+     * Distribución de scores por rangos (0-20, 21-40, 41-60, 61-80, 81-100).
+     */
+    public function tdrScoreRanges(): array
+    {
+        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
+            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
+            ->get(['resumen']);
+
+        $rangos = [
+            '0-20' => 0,
+            '21-40' => 0,
+            '41-60' => 0,
+            '61-80' => 0,
+            '81-100' => 0,
+        ];
+
+        foreach ($analisis as $a) {
+            $score = $a->resumen['score_riesgo_corrupcion'] ?? 0;
+            match (true) {
+                $score <= 20 => $rangos['0-20']++,
+                $score <= 40 => $rangos['21-40']++,
+                $score <= 60 => $rangos['41-60']++,
+                $score <= 80 => $rangos['61-80']++,
+                default => $rangos['81-100']++,
+            };
+        }
+
+        return [
+            'labels' => array_keys($rangos),
+            'values' => array_values($rangos),
+        ];
+    }
+
+    /**
+     * Hallazgos por categoría (Técnica, Experiencia, Personal, etc.).
+     */
+    public function tdrHallazgosPorCategoria(): array
+    {
+        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
+            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
+            ->get(['resumen']);
+
+        $categorias = collect();
+        foreach ($analisis as $a) {
+            $hallazgos = $a->resumen['hallazgos_criticos'] ?? [];
+            foreach ($hallazgos as $h) {
+                $cat = $h['categoria'] ?? 'Otra';
+                $categorias->push($cat);
+            }
+        }
+
+        $conteo = $categorias->countBy()->sortDesc();
+
+        return [
+            'labels' => $conteo->keys()->values(),
+            'values' => $conteo->values()->values(),
+        ];
+    }
+
+    /**
+     * Hallazgos por nivel de gravedad (Alto, Medio, Bajo).
+     */
+    public function tdrGravedadHallazgos(): array
+    {
+        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
+            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
+            ->get(['resumen']);
+
+        $niveles = collect();
+        foreach ($analisis as $a) {
+            $hallazgos = $a->resumen['hallazgos_criticos'] ?? [];
+            foreach ($hallazgos as $h) {
+                $niveles->push($h['nivel_de_gravedad'] ?? 'Bajo');
+            }
+        }
+
+        $orden = ['Alto' => 0, 'Medio' => 0, 'Bajo' => 0];
+        foreach ($niveles->countBy() as $nivel => $count) {
+            $orden[$nivel] = $count;
+        }
+
+        return [
+            'labels' => array_keys($orden),
+            'values' => array_values($orden),
+        ];
+    }
+
+    /**
+     * Score promedio por mes (últimos N meses).
+     */
+    public function tdrScorePorMes(int $meses = 6): array
+    {
+        $inicio = Carbon::now()->startOfMonth()->subMonths($meses - 1);
+
+        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
+            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
+            ->where('analizado_en', '>=', $inicio)
+            ->get(['resumen', 'analizado_en']);
+
+        $porMes = $analisis->groupBy(fn ($a) => $a->analizado_en->format('Y-m'));
+
+        $labels = [];
+        $valuesScore = [];
+        $valuesCount = [];
+
+        for ($i = 0; $i < $meses; $i++) {
+            $mes = $inicio->copy()->addMonths($i);
+            $key = $mes->format('Y-m');
+            $labels[] = $mes->translatedFormat('M y');
+
+            $grupo = $porMes->get($key, collect());
+            $valuesScore[] = $grupo->isNotEmpty()
+                ? round($grupo->avg(fn ($a) => $a->resumen['score_riesgo_corrupcion'] ?? 0))
+                : 0;
+            $valuesCount[] = $grupo->count();
+        }
+
+        return [
+            'labels' => $labels,
+            'scores' => $valuesScore,
+            'counts' => $valuesCount,
         ];
     }
 }

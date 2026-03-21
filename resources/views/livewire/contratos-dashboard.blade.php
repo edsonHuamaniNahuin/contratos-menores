@@ -245,6 +245,104 @@
             @endif
         </div>
     </div>
+
+    {{-- ═══════════════════════════════════════════════════════════
+         SECCIÓN: Análisis de Direccionamiento (eTDR Corrupción)
+    ═══════════════════════════════════════════════════════════ --}}
+    @if($tdrCounters['total'] > 0)
+    <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 p-6 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <p class="text-sm font-medium text-neutral-400">Inteligencia anticorrupción</p>
+                <h3 class="text-2xl font-bold text-neutral-900 mt-1">Análisis de Direccionamiento eTDR</h3>
+                <p class="text-xs text-neutral-500 mt-1">Resultados de {{ $tdrCounters['total'] }} análisis de direccionamiento con IA</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-neutral-600 bg-neutral-50 border border-neutral-100 px-3 py-1 rounded-full">
+                    Score promedio: {{ $tdrCounters['score_promedio'] }}/100
+                </span>
+            </div>
+        </div>
+
+        {{-- Cards resumen TDR --}}
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-neutral-50 border border-neutral-200 rounded-3xl p-4">
+                <p class="text-xs text-neutral-400">Total analizados</p>
+                <p class="text-2xl font-bold text-neutral-900">{{ $tdrCounters['total'] }}</p>
+            </div>
+            <div class="bg-neutral-50 border border-secondary-200 rounded-3xl p-4">
+                <p class="text-xs text-neutral-400">✅ Limpios</p>
+                <p class="text-2xl font-bold text-neutral-900">{{ $tdrCounters['limpio'] }}</p>
+            </div>
+            <div class="bg-neutral-50 border border-neutral-200 rounded-3xl p-4">
+                <p class="text-xs text-neutral-400">⚠️ Sospechosos</p>
+                <p class="text-2xl font-bold text-neutral-900">{{ $tdrCounters['sospechoso'] }}</p>
+            </div>
+            <div class="bg-neutral-50 border border-neutral-200 rounded-3xl p-4">
+                <p class="text-xs text-neutral-400">🚨 Direccionados</p>
+                <p class="text-2xl font-bold text-neutral-900">{{ $tdrCounters['direccionado'] }}</p>
+            </div>
+        </div>
+
+        {{-- Gráficos TDR --}}
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            {{-- Veredictos (doughnut) --}}
+            <div class="bg-neutral-50 border border-neutral-200 rounded-3xl p-6 shadow-soft">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold text-neutral-900">Veredicto de direccionamiento</h4>
+                    <span class="text-xs text-neutral-400">Distribución</span>
+                </div>
+                <div class="h-64" wire:ignore>
+                    <canvas id="chart-tdr-veredictos" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            {{-- Score por rangos (bar) --}}
+            <div class="bg-neutral-50 border border-neutral-200 rounded-3xl p-6 shadow-soft">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold text-neutral-900">Score de riesgo por rango</h4>
+                    <span class="text-xs text-neutral-400">0 = limpio, 100 = direccionado</span>
+                </div>
+                <div class="h-64" wire:ignore>
+                    <canvas id="chart-tdr-scores" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            {{-- Hallazgos por categoría (bar) --}}
+            <div class="bg-neutral-50 border border-neutral-200 rounded-3xl p-6 shadow-soft">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold text-neutral-900">Red flags por categoría</h4>
+                    <span class="text-xs text-neutral-400">Hallazgos críticos detectados</span>
+                </div>
+                <div class="h-64" wire:ignore>
+                    <canvas id="chart-tdr-categorias" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            {{-- Gravedad de hallazgos (doughnut) --}}
+            <div class="bg-neutral-50 border border-neutral-200 rounded-3xl p-6 shadow-soft">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold text-neutral-900">Gravedad de hallazgos</h4>
+                    <span class="text-xs text-neutral-400">Nivel de severidad</span>
+                </div>
+                <div class="h-64" wire:ignore>
+                    <canvas id="chart-tdr-gravedad" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            {{-- Score promedio por mes (line + bar combo) --}}
+            <div class="bg-neutral-50 border border-neutral-200 rounded-3xl p-6 shadow-soft xl:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold text-neutral-900">Tendencia de riesgo mensual</h4>
+                    <span class="text-xs text-neutral-400">Score promedio y cantidad de análisis</span>
+                </div>
+                <div class="h-72" wire:ignore>
+                    <canvas id="chart-tdr-tendencia" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 
 @push('styles')
@@ -816,6 +914,177 @@
             }
 
             console.info(`[charts] created ${successCount}/4 charts successfully`);
+
+            // ── TDR Direccionamiento Charts ─────────────────────────────
+            let tdrCount = 0;
+
+            const tdrPalette = {
+                limpio: '#00D47E',
+                sospechoso: '#F59E0B',
+                direccionado: '#EF4444',
+                alto: '#EF4444',
+                medio: '#F59E0B',
+                bajo: '#00D47E',
+            };
+
+            // Veredictos (doughnut)
+            if (charts.tdr_veredictos && makeChart('chart-tdr-veredictos', {
+                type: 'doughnut',
+                data: {
+                    labels: charts.tdr_veredictos.labels || [],
+                    datasets: [{
+                        data: charts.tdr_veredictos.values || [],
+                        backgroundColor: (charts.tdr_veredictos.labels || []).map(l => {
+                            if (l === 'LIMPIO') return tdrPalette.limpio;
+                            if (l === 'SOSPECHOSO') return tdrPalette.sospechoso;
+                            return tdrPalette.direccionado;
+                        }),
+                        borderWidth: 0,
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '62%',
+                    radius: '75%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#111827', font: { size: 12 } } },
+                    },
+                },
+            })) tdrCount++;
+
+            // Score por rangos (bar con gradiente)
+            if (charts.tdr_score_ranges && makeChart('chart-tdr-scores', {
+                type: 'bar',
+                data: {
+                    labels: charts.tdr_score_ranges.labels || [],
+                    datasets: [{
+                        label: 'Análisis',
+                        data: charts.tdr_score_ranges.values || [],
+                        backgroundColor: ['#00D47E', '#29DA93', '#F59E0B', '#EF8C44', '#EF4444'],
+                        borderRadius: 8,
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#4B5563' }, grid: { display: false } },
+                        y: { ticks: { color: '#4B5563', stepSize: 1 }, grid: { color: '#E5E7EB' }, beginAtZero: true },
+                    },
+                    plugins: { legend: { display: false } },
+                },
+            })) tdrCount++;
+
+            // Hallazgos por categoría (bar horizontal)
+            if (charts.tdr_hallazgos_categoria && makeChart('chart-tdr-categorias', {
+                type: 'bar',
+                data: {
+                    labels: charts.tdr_hallazgos_categoria.labels || [],
+                    datasets: [{
+                        label: 'Red flags',
+                        data: charts.tdr_hallazgos_categoria.values || [],
+                        backgroundColor: chartPalette.primary,
+                        borderRadius: 8,
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: { ticks: { color: '#4B5563', stepSize: 1 }, grid: { color: '#E5E7EB' }, beginAtZero: true },
+                        y: { ticks: { color: '#4B5563' }, grid: { display: false } },
+                    },
+                    plugins: { legend: { display: false } },
+                },
+            })) tdrCount++;
+
+            // Gravedad (doughnut)
+            if (charts.tdr_gravedad && makeChart('chart-tdr-gravedad', {
+                type: 'doughnut',
+                data: {
+                    labels: charts.tdr_gravedad.labels || [],
+                    datasets: [{
+                        data: charts.tdr_gravedad.values || [],
+                        backgroundColor: (charts.tdr_gravedad.labels || []).map(l => {
+                            if (l === 'Alto') return tdrPalette.alto;
+                            if (l === 'Medio') return tdrPalette.medio;
+                            return tdrPalette.bajo;
+                        }),
+                        borderWidth: 0,
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '62%',
+                    radius: '75%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#111827', font: { size: 12 } } },
+                    },
+                },
+            })) tdrCount++;
+
+            // Tendencia mensual (line + bar combo)
+            if (charts.tdr_score_mes && makeChart('chart-tdr-tendencia', {
+                type: 'bar',
+                data: {
+                    labels: charts.tdr_score_mes.labels || [],
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Score promedio',
+                            data: charts.tdr_score_mes.scores || [],
+                            borderColor: tdrPalette.direccionado,
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.35,
+                            fill: true,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#FFFFFF',
+                            pointBorderColor: tdrPalette.direccionado,
+                            pointBorderWidth: 2,
+                            yAxisID: 'y',
+                            order: 1,
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Análisis realizados',
+                            data: charts.tdr_score_mes.counts || [],
+                            backgroundColor: chartPalette.primaryLight,
+                            borderRadius: 8,
+                            yAxisID: 'y1',
+                            order: 2,
+                        },
+                    ],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#4B5563' }, grid: { display: false } },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            min: 0,
+                            max: 100,
+                            ticks: { color: '#EF4444', stepSize: 20 },
+                            grid: { color: '#E5E7EB' },
+                            title: { display: true, text: 'Score riesgo', color: '#EF4444', font: { size: 11 } },
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            ticks: { color: '#2A737D', stepSize: 1 },
+                            grid: { display: false },
+                            title: { display: true, text: 'Cantidad', color: '#2A737D', font: { size: 11 } },
+                        },
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#111827', font: { size: 12 } } },
+                    },
+                },
+            })) tdrCount++;
+
+            if (tdrCount > 0) {
+                console.info(`[charts] TDR charts: ${tdrCount}/5 created`);
+            }
 
             // Solo intentar mapa si el contenedor existe (filtro "Todos")
             if (document.getElementById('map-heat')) {
