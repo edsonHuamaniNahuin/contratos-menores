@@ -60,7 +60,7 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
         ]);
 
         // ── 1. Obtener suscriptores activos de email ──────────────
-        $suscripciones = EmailSubscription::with('keywords')
+        $suscripciones = EmailSubscription::with('user.subscriberProfile.keywords')
             ->activas()
             ->get();
 

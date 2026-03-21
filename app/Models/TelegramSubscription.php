@@ -22,7 +22,6 @@ class TelegramSubscription extends Model
         'username',
         'activo',
         'filtros',
-        'company_copy',
         'subscrito_at',
         'ultima_notificacion_at',
         'notificaciones_recibidas',
@@ -40,12 +39,37 @@ class TelegramSubscription extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Keywords delegados al perfil unificado del usuario.
+     */
     public function keywords(): BelongsToMany
     {
+        $profile = $this->user?->subscriberProfile;
+
+        if ($profile) {
+            return $profile->keywords();
+        }
+
+        // Fallback: relación vacía para evitar errores si no hay perfil
         return $this->belongsToMany(
             NotificationKeyword::class,
-            'notification_keyword_subscription'
-        )->withTimestamps();
+            'subscriber_profile_keyword',
+            'subscriber_profile_id',
+            'notification_keyword_id'
+        )->whereRaw('1 = 0');
+    }
+
+    public function getCompanyCopy(): ?string
+    {
+        return $this->user?->subscriberProfile?->company_copy;
+    }
+
+    /**
+     * Accessor: $subscription->company_copy sigue funcionando.
+     */
+    public function getCompanyCopyAttribute(): ?string
+    {
+        return $this->getCompanyCopy();
     }
 
     public function matches(): HasMany

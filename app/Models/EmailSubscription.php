@@ -34,12 +34,23 @@ class EmailSubscription extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Keywords delegados al perfil unificado del usuario.
+     */
     public function keywords(): BelongsToMany
     {
+        $profile = $this->user?->subscriberProfile;
+
+        if ($profile) {
+            return $profile->keywords();
+        }
+
         return $this->belongsToMany(
             NotificationKeyword::class,
-            'email_subscription_keyword'
-        )->withTimestamps();
+            'subscriber_profile_keyword',
+            'subscriber_profile_id',
+            'notification_keyword_id'
+        )->whereRaw('1 = 0');
     }
 
     public function sends(): HasMany

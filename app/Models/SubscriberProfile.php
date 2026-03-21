@@ -4,27 +4,27 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class NotificationKeyword extends Model
+class SubscriberProfile extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'nombre',
-        'slug',
-        'descripcion',
-        'es_publico',
+        'user_id',
+        'company_copy',
     ];
 
-    protected $casts = [
-        'es_publico' => 'boolean',
-    ];
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
-    public function subscriberProfiles(): BelongsToMany
+    public function keywords(): BelongsToMany
     {
         return $this->belongsToMany(
-            SubscriberProfile::class,
+            NotificationKeyword::class,
             'subscriber_profile_keyword'
         )->withTimestamps();
     }

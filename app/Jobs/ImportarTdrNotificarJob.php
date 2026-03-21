@@ -88,11 +88,11 @@ class ImportarTdrNotificarJob implements ShouldQueue
         }
 
         // Obtener TODOS los suscriptores activos de TODOS los canales
-        $telegramSubs = TelegramSubscription::with('keywords')
+        $telegramSubs = TelegramSubscription::with('user.subscriberProfile.keywords')
             ->activas()
             ->get();
 
-        $whatsappSubs = WhatsAppSubscription::with('keywords')
+        $whatsappSubs = WhatsAppSubscription::with('user.subscriberProfile.keywords')
             ->activas()
             ->get();
 
