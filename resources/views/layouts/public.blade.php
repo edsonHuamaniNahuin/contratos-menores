@@ -154,6 +154,9 @@
                     <h4 class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Empresa</h4>
                     <ul class="space-y-2.5 text-sm text-neutral-400">
                         <li><a href="{{ route('contacto') }}" class="hover:text-white transition-colors">Contacto</a></li>
+                        <li><a href="{{ route('legal.politica-privacidad') }}" class="hover:text-white transition-colors">Política de privacidad</a></li>
+                        <li><a href="{{ route('legal.condiciones-servicio') }}" class="hover:text-white transition-colors">Condiciones del servicio</a></li>
+                        <li><a href="{{ route('legal.eliminacion-datos') }}" class="hover:text-white transition-colors">Eliminación de datos</a></li>
                         @guest
                             <li><a href="{{ route('login') }}" class="hover:text-white transition-colors">Iniciar sesión</a></li>
                             <li><a href="{{ route('register') }}" class="hover:text-white transition-colors">Crear cuenta</a></li>

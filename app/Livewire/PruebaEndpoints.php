@@ -1149,11 +1149,11 @@ class PruebaEndpoints extends Component
 
             // Cargar TODOS los suscriptores activos (igual que el Job de producción)
             // para que el escaneo de prueba refleje exactamente el comportamiento real.
-            $telegramSubs = TelegramSubscription::with('keywords')
+            $telegramSubs = TelegramSubscription::with('user.subscriberProfile.keywords')
                 ->activas()
                 ->get();
 
-            $whatsappSubs = WhatsAppSubscription::with('keywords')
+            $whatsappSubs = WhatsAppSubscription::with('user.subscriberProfile.keywords')
                 ->activas()
                 ->get();
 

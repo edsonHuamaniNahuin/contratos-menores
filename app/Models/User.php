@@ -7,6 +7,7 @@ use App\Models\PremiumAuditLog;
 use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\ContratoSeguimiento;
+use App\Models\SubscriberProfile;
 use App\Models\TelegramSubscription;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
@@ -65,6 +66,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function telegramSubscriptions(): HasMany
     {
         return $this->hasMany(TelegramSubscription::class);
+    }
+
+    public function subscriberProfile(): HasOne
+    {
+        return $this->hasOne(SubscriberProfile::class);
+    }
+
+    public function getOrCreateSubscriberProfile(): SubscriberProfile
+    {
+        return $this->subscriberProfile ?? $this->subscriberProfile()->create();
     }
 
     public function seguimientos(): HasMany

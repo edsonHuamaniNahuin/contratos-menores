@@ -415,13 +415,22 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $errorMsg = $resultado['error'] ?? 'Error desconocido';
                 $this->enviarMensajeErrorConReintento($phoneNumber, $errorMsg, 'analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('WhatsApp: Error al analizar proceso', [
                 'phone' => $phoneNumber,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
+                'trace_preview' => substr($e->getTraceAsString(), 0, 300),
             ]);
-            $this->enviarMensajeErrorConReintento($phoneNumber, $e->getMessage(), 'analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
+            try {
+                $this->enviarMensajeErrorConReintento($phoneNumber, $e->getMessage(), 'analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
+            } catch (\Throwable $sendError) {
+                Log::error('WhatsApp: No se pudo enviar mensaje de error al usuario', [
+                    'phone' => $phoneNumber,
+                    'original_error' => $e->getMessage(),
+                    'send_error' => $sendError->getMessage(),
+                ]);
+            }
         }
     }
 
@@ -440,32 +449,63 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $mensaje = $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato);
         $mensaje = $this->htmlToWhatsApp($mensaje);
 
-        // Botones después del análisis: descarga + direccionamiento
-        $keyboard = [
-            'type' => 'button',
-            'body' => ['text' => $mensaje],
-            'footer' => ['text' => '🤖 Vigilante SEACE'],
-            'action' => [
-                'buttons' => [
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '📥 Descargar TDR',
+        // WhatsApp interactive body limit: 1024 chars.
+        // Si el mensaje es largo, enviar como texto plano primero y luego botones aparte.
+        if (mb_strlen($mensaje) > 1024) {
+            // 1) Enviar resultado completo como texto normal (límite 4096 chars)
+            $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
+
+            // 2) Enviar botones de acción en un mensaje interactivo corto
+            $keyboard = [
+                'type' => 'button',
+                'body' => ['text' => "✅ Análisis completado\n\n¿Qué deseas hacer ahora?"],
+                'footer' => ['text' => '🤖 Vigilante SEACE'],
+                'action' => [
+                    'buttons' => [
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '📥 Descargar TDR',
+                            ],
                         ],
-                    ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '🔍 Direccionamiento',
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🔍 Direccionamiento',
+                            ],
                         ],
                     ],
                 ],
-            ],
-        ];
-
-        $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+            ];
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, "✅ Análisis completado\n\n¿Qué deseas hacer ahora?", $keyboard);
+        } else {
+            $keyboard = [
+                'type' => 'button',
+                'body' => ['text' => $mensaje],
+                'footer' => ['text' => '🤖 Vigilante SEACE'],
+                'action' => [
+                    'buttons' => [
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '📥 Descargar TDR',
+                            ],
+                        ],
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🔍 Direccionamiento',
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+        }
     }
 
     // ─── Direccionamiento ────────────────────────────────────────────
@@ -512,13 +552,22 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $errorMsg = $resultado['error'] ?? 'Error desconocido';
                 $this->enviarMensajeErrorConReintento($phoneNumber, $errorMsg, 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('WhatsApp: Error al analizar direccionamiento', [
                 'phone' => $phoneNumber,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
+                'trace_preview' => substr($e->getTraceAsString(), 0, 300),
             ]);
-            $this->enviarMensajeErrorConReintento($phoneNumber, $e->getMessage(), 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+            try {
+                $this->enviarMensajeErrorConReintento($phoneNumber, $e->getMessage(), 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+            } catch (\Throwable $sendError) {
+                Log::error('WhatsApp: No se pudo enviar mensaje de error al usuario', [
+                    'phone' => $phoneNumber,
+                    'original_error' => $e->getMessage(),
+                    'send_error' => $sendError->getMessage(),
+                ]);
+            }
         }
     }
 
@@ -538,31 +587,60 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $this->formatter->formatDireccionamientoForTelegram($analisisData, $archivoNombre, $contextoContrato)
             );
 
-        $keyboard = [
-            'type' => 'button',
-            'body' => ['text' => $mensaje],
-            'footer' => ['text' => '🤖 Vigilante SEACE'],
-            'action' => [
-                'buttons' => [
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '🤖 Análisis General',
+        // WhatsApp interactive body limit: 1024 chars.
+        if (mb_strlen($mensaje) > 1024) {
+            $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
+
+            $keyboard = [
+                'type' => 'button',
+                'body' => ['text' => "✅ Análisis de direccionamiento completado\n\n¿Qué deseas hacer ahora?"],
+                'footer' => ['text' => '🤖 Vigilante SEACE'],
+                'action' => [
+                    'buttons' => [
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🤖 Análisis General',
+                            ],
                         ],
-                    ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '📥 Descargar TDR',
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '📥 Descargar TDR',
+                            ],
                         ],
                     ],
                 ],
-            ],
-        ];
-
-        $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+            ];
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, "✅ Análisis de direccionamiento completado\n\n¿Qué deseas hacer ahora?", $keyboard);
+        } else {
+            $keyboard = [
+                'type' => 'button',
+                'body' => ['text' => $mensaje],
+                'footer' => ['text' => '🤖 Vigilante SEACE'],
+                'action' => [
+                    'buttons' => [
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '🤖 Análisis General',
+                            ],
+                        ],
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '📥 Descargar TDR',
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+        }
     }
 
     // ─── Descarga TDR ───────────────────────────────────────────────
@@ -831,38 +909,51 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
 
         $mensaje .= "\n🤖 _Vigilante SEACE_";
 
-        $keyboard = [
-            'type' => 'button',
-            'body' => ['text' => $mensaje],
-            'footer' => ['text' => '🤖 Vigilante SEACE'],
-            'action' => [
-                'buttons' => [
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '📥 Descargar TDR',
-                        ],
-                    ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '🤖 Analizar TDR',
-                        ],
-                    ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => $this->buildCallbackData('compatrefresh', $idContrato, $idContratoArchivo, $nombreArchivo),
-                            'title' => '🔄 Recalcular',
-                        ],
-                    ],
+        $actionButtons = [
+            [
+                'type' => 'reply',
+                'reply' => [
+                    'id' => $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    'title' => '📥 Descargar TDR',
+                ],
+            ],
+            [
+                'type' => 'reply',
+                'reply' => [
+                    'id' => $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    'title' => '🤖 Analizar TDR',
+                ],
+            ],
+            [
+                'type' => 'reply',
+                'reply' => [
+                    'id' => $this->buildCallbackData('compatrefresh', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    'title' => '🔄 Recalcular',
                 ],
             ],
         ];
 
-        $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+        // WhatsApp interactive body limit: 1024 chars.
+        if (mb_strlen($mensaje) > 1024) {
+            $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
+
+            $shortBody = "🏅 Score: {$score}/10 — {$nivel}\n\n¿Qué deseas hacer ahora?";
+            $keyboard = [
+                'type' => 'button',
+                'body' => ['text' => $shortBody],
+                'footer' => ['text' => '🤖 Vigilante SEACE'],
+                'action' => ['buttons' => $actionButtons],
+            ];
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $shortBody, $keyboard);
+        } else {
+            $keyboard = [
+                'type' => 'button',
+                'body' => ['text' => $mensaje],
+                'footer' => ['text' => '🤖 Vigilante SEACE'],
+                'action' => ['buttons' => $actionButtons],
+            ];
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+        }
     }
 
     // ─── Helpers ────────────────────────────────────────────────────

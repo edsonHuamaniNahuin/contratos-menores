@@ -31,7 +31,6 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
         'nombre',
         'activo',
         'filtros',
-        'company_copy',
         'subscrito_at',
         'ultima_notificacion_at',
         'notificaciones_recibidas',
@@ -51,14 +50,23 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Keywords delegados al perfil unificado del usuario.
+     */
     public function keywords(): BelongsToMany
     {
+        $profile = $this->user?->subscriberProfile;
+
+        if ($profile) {
+            return $profile->keywords();
+        }
+
         return $this->belongsToMany(
             NotificationKeyword::class,
-            'whatsapp_subscription_keyword',
-            'whatsapp_subscription_id',    // FK de este modelo en la pivot
-            'notification_keyword_id'       // FK del modelo relacionado en la pivot
-        )->withTimestamps();
+            'subscriber_profile_keyword',
+            'subscriber_profile_id',
+            'notification_keyword_id'
+        )->whereRaw('1 = 0');
     }
 
     public function matches(): HasMany
@@ -84,7 +92,15 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
 
     public function getCompanyCopy(): ?string
     {
-        return $this->company_copy;
+        return $this->user?->subscriberProfile?->company_copy;
+    }
+
+    /**
+     * Accessor: $subscription->company_copy sigue funcionando.
+     */
+    public function getCompanyCopyAttribute(): ?string
+    {
+        return $this->getCompanyCopy();
     }
 
     public function resolverCoincidenciasContrato(array $contratoData): array

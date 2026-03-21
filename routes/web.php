@@ -50,6 +50,19 @@ Route::get('/manual', function () {
     return view('manual');
 })->name('manual');
 
+// ─── Páginas legales ───────────────────────────────────────────────
+Route::get('/politica-de-privacidad', function () {
+    return view('legal.politica-privacidad');
+})->name('legal.politica-privacidad');
+
+Route::get('/eliminacion-de-datos', function () {
+    return view('legal.eliminacion-datos');
+})->name('legal.eliminacion-datos');
+
+Route::get('/condiciones-del-servicio', function () {
+    return view('legal.condiciones-servicio');
+})->name('legal.condiciones-servicio');
+
 // Ruta para descargar archivos temporales del SEACE
 Route::get('/seace/download/{filename}', function ($filename) {
     $path = storage_path('app/temp/' . $filename);
