@@ -7,8 +7,8 @@
 {{-- Schema.org SoftwareApplication --}}
 <script type="application/ld+json">
 {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
+    "@@context": "https://schema.org",
+    "@@type": "SoftwareApplication",
     "name": "Licitaciones MYPe — Vigilante SEACE",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
@@ -16,14 +16,14 @@
     "url": "{{ config('app.url') }}",
     "offers": [
         {
-            "@type": "Offer",
+            "@@type": "Offer",
             "price": "0",
             "priceCurrency": "PEN",
             "name": "Plan Gratuito",
             "description": "Buscador público ilimitado, dashboard de estadísticas"
         },
         {
-            "@type": "Offer",
+            "@@type": "Offer",
             "price": "49",
             "priceCurrency": "PEN",
             "name": "Plan Premium",
@@ -41,6 +41,7 @@
 }
 </script>
 {{-- Schema.org FAQPage --}}
+@verbatim
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
@@ -89,6 +90,7 @@
     ]
 }
 </script>
+@endverbatim
 @endpush
 
 @section('content')
