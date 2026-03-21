@@ -148,16 +148,46 @@ class ContratoAnalyticsService
     // ── TDR Direccionamiento Analytics ─────────────────────────────
 
     /**
+     * Construye query base de TDR con filtros opcionales por contrato (departamento, entidad, fecha).
+     */
+    private function tdrBaseQuery(?int $codigoDepartamento = null, ?string $entidad = null, ?Carbon $desde = null, ?Carbon $hasta = null)
+    {
+        $query = TdrAnalisis::where('tdr_analisis.tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
+            ->where('tdr_analisis.estado', TdrAnalisis::ESTADO_EXITOSO);
+
+        if ($codigoDepartamento || $entidad || $desde || $hasta) {
+            $query->join('contrato_archivos', 'tdr_analisis.contrato_archivo_id', '=', 'contrato_archivos.id')
+                  ->join('contratos', 'contrato_archivos.contrato_id', '=', 'contratos.id');
+
+            if ($codigoDepartamento) {
+                $query->where('contratos.codigo_departamento', $codigoDepartamento);
+            }
+            if ($entidad) {
+                $query->where('contratos.entidad', 'like', '%' . $entidad . '%');
+            }
+            if ($desde) {
+                $query->where('contratos.fecha_publicacion', '>=', $desde);
+            }
+            if ($hasta) {
+                $query->where('contratos.fecha_publicacion', '<=', $hasta);
+            }
+
+            $query->select('tdr_analisis.*');
+        }
+
+        return $query;
+    }
+
+    /**
      * Contadores generales de análisis de direccionamiento.
      */
-    public function tdrCounters(): array
+    public function tdrCounters(?int $codigoDepartamento = null, ?string $entidad = null, ?Carbon $desde = null, ?Carbon $hasta = null): array
     {
-        $base = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
-            ->where('estado', TdrAnalisis::ESTADO_EXITOSO);
+        $base = $this->tdrBaseQuery($codigoDepartamento, $entidad, $desde, $hasta);
 
         $total = (clone $base)->count();
 
-        $analisis = (clone $base)->get(['resumen']);
+        $analisis = (clone $base)->get(['tdr_analisis.resumen']);
 
         $veredictos = $analisis->countBy(fn ($a) => $a->resumen['veredicto_flash'] ?? 'DESCONOCIDO');
 
@@ -175,11 +205,10 @@ class ContratoAnalyticsService
     /**
      * Distribución de veredictos (LIMPIO / SOSPECHOSO / ALTAMENTE DIRECCIONADO).
      */
-    public function tdrVeredictos(): array
+    public function tdrVeredictos(?int $codigoDepartamento = null, ?string $entidad = null, ?Carbon $desde = null, ?Carbon $hasta = null): array
     {
-        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
-            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
-            ->get(['resumen']);
+        $analisis = $this->tdrBaseQuery($codigoDepartamento, $entidad, $desde, $hasta)
+            ->get(['tdr_analisis.resumen']);
 
         $veredictos = $analisis->countBy(fn ($a) => $a->resumen['veredicto_flash'] ?? 'DESCONOCIDO')
             ->sortDesc();
@@ -193,11 +222,10 @@ class ContratoAnalyticsService
     /**
      * Distribución de scores por rangos (0-20, 21-40, 41-60, 61-80, 81-100).
      */
-    public function tdrScoreRanges(): array
+    public function tdrScoreRanges(?int $codigoDepartamento = null, ?string $entidad = null, ?Carbon $desde = null, ?Carbon $hasta = null): array
     {
-        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
-            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
-            ->get(['resumen']);
+        $analisis = $this->tdrBaseQuery($codigoDepartamento, $entidad, $desde, $hasta)
+            ->get(['tdr_analisis.resumen']);
 
         $rangos = [
             '0-20' => 0,
@@ -227,11 +255,10 @@ class ContratoAnalyticsService
     /**
      * Hallazgos por categoría (Técnica, Experiencia, Personal, etc.).
      */
-    public function tdrHallazgosPorCategoria(): array
+    public function tdrHallazgosPorCategoria(?int $codigoDepartamento = null, ?string $entidad = null, ?Carbon $desde = null, ?Carbon $hasta = null): array
     {
-        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
-            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
-            ->get(['resumen']);
+        $analisis = $this->tdrBaseQuery($codigoDepartamento, $entidad, $desde, $hasta)
+            ->get(['tdr_analisis.resumen']);
 
         $categorias = collect();
         foreach ($analisis as $a) {
@@ -253,11 +280,10 @@ class ContratoAnalyticsService
     /**
      * Hallazgos por nivel de gravedad (Alto, Medio, Bajo).
      */
-    public function tdrGravedadHallazgos(): array
+    public function tdrGravedadHallazgos(?int $codigoDepartamento = null, ?string $entidad = null, ?Carbon $desde = null, ?Carbon $hasta = null): array
     {
-        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
-            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
-            ->get(['resumen']);
+        $analisis = $this->tdrBaseQuery($codigoDepartamento, $entidad, $desde, $hasta)
+            ->get(['tdr_analisis.resumen']);
 
         $niveles = collect();
         foreach ($analisis as $a) {
@@ -281,14 +307,18 @@ class ContratoAnalyticsService
     /**
      * Score promedio por mes (últimos N meses).
      */
-    public function tdrScorePorMes(int $meses = 6): array
+    public function tdrScorePorMes(int $meses = 6, ?int $codigoDepartamento = null, ?string $entidad = null, ?Carbon $desde = null, ?Carbon $hasta = null): array
     {
-        $inicio = Carbon::now()->startOfMonth()->subMonths($meses - 1);
+        $inicio = $desde ? $desde->copy()->startOfMonth() : Carbon::now()->startOfMonth()->subMonths($meses - 1);
 
-        $analisis = TdrAnalisis::where('tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
-            ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
-            ->where('analizado_en', '>=', $inicio)
-            ->get(['resumen', 'analizado_en']);
+        $query = $this->tdrBaseQuery($codigoDepartamento, $entidad, null, null)
+            ->where('tdr_analisis.analizado_en', '>=', $inicio);
+
+        if ($hasta) {
+            $query->where('tdr_analisis.analizado_en', '<=', $hasta);
+        }
+
+        $analisis = $query->get(['tdr_analisis.resumen', 'tdr_analisis.analizado_en']);
 
         $porMes = $analisis->groupBy(fn ($a) => $a->analizado_en->format('Y-m'));
 
@@ -296,7 +326,13 @@ class ContratoAnalyticsService
         $valuesScore = [];
         $valuesCount = [];
 
-        for ($i = 0; $i < $meses; $i++) {
+        $fin = $hasta ? $hasta->copy()->endOfMonth() : Carbon::now()->endOfMonth();
+        $mesesCalculados = $inicio->diffInMonths($fin) + 1;
+        if ($mesesCalculados < 1) {
+            $mesesCalculados = $meses;
+        }
+
+        for ($i = 0; $i < $mesesCalculados; $i++) {
             $mes = $inicio->copy()->addMonths($i);
             $key = $mes->format('Y-m');
             $labels[] = $mes->translatedFormat('M y');
@@ -312,6 +348,41 @@ class ContratoAnalyticsService
             'labels' => $labels,
             'scores' => $valuesScore,
             'counts' => $valuesCount,
+        ];
+    }
+
+    /**
+     * Top entidades con más análisis de direccionamiento.
+     */
+    public function tdrTopEntidades(int $limite = 10, ?int $codigoDepartamento = null, ?string $entidad = null, ?Carbon $desde = null, ?Carbon $hasta = null): array
+    {
+        $query = TdrAnalisis::where('tdr_analisis.tipo_analisis', TdrAnalisis::TIPO_DIRECCIONAMIENTO)
+            ->where('tdr_analisis.estado', TdrAnalisis::ESTADO_EXITOSO)
+            ->join('contrato_archivos', 'tdr_analisis.contrato_archivo_id', '=', 'contrato_archivos.id')
+            ->join('contratos', 'contrato_archivos.contrato_id', '=', 'contratos.id');
+
+        if ($codigoDepartamento) {
+            $query->where('contratos.codigo_departamento', $codigoDepartamento);
+        }
+        if ($entidad) {
+            $query->where('contratos.entidad', 'like', '%' . $entidad . '%');
+        }
+        if ($desde) {
+            $query->where('contratos.fecha_publicacion', '>=', $desde);
+        }
+        if ($hasta) {
+            $query->where('contratos.fecha_publicacion', '<=', $hasta);
+        }
+
+        $entidades = $query->selectRaw('contratos.entidad, COUNT(*) as total')
+            ->groupBy('contratos.entidad')
+            ->orderByDesc('total')
+            ->limit($limite)
+            ->get();
+
+        return [
+            'labels' => $entidades->pluck('entidad'),
+            'values' => $entidades->pluck('total'),
         ];
     }
 }

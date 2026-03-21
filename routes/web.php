@@ -221,6 +221,7 @@ Allow: /condiciones-del-servicio
 
 # Rutas privadas
 Disallow: /dashboard
+Disallow: /direccionamiento
 Disallow: /cuentas
 Disallow: /prueba-endpoints
 Disallow: /configuracion
@@ -317,6 +318,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tdr-repository', function () {
         return view('tdr-repository');
     })->name('tdr.repository')->middleware('can:view-tdr-repository');
+
+    Route::get('/direccionamiento', function () {
+        return view('direccionamiento');
+    })->name('direccionamiento')->middleware('can:view-tdr-repository');
 
     Route::get('/suscriptores', function () {
         return view('suscriptores');
