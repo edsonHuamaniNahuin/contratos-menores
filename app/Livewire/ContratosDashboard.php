@@ -193,12 +193,6 @@ class ContratosDashboard extends Component
             'por_mes' => $this->analyticsService->publicacionesPorMes(6, $departamento, $desde, $hasta),
             'top_entidades' => $this->analyticsService->topEntidades(8, $departamento, $desde, $hasta),
             'por_departamento' => $this->analyticsService->distribucionPorDepartamento(10, $departamento, $desde, $hasta),
-            // TDR Direccionamiento
-            'tdr_veredictos' => $this->analyticsService->tdrVeredictos(),
-            'tdr_score_ranges' => $this->analyticsService->tdrScoreRanges(),
-            'tdr_hallazgos_categoria' => $this->analyticsService->tdrHallazgosPorCategoria(),
-            'tdr_gravedad' => $this->analyticsService->tdrGravedadHallazgos(),
-            'tdr_score_mes' => $this->analyticsService->tdrScorePorMes(6),
         ];
     }
 
@@ -381,7 +375,6 @@ class ContratosDashboard extends Component
             'contratos' => $this->contratos,
             'estadisticas' => $this->estadisticas,
             'chartData' => $this->chartData,
-            'tdrCounters' => $this->analyticsService->tdrCounters(),
         ]);
     }
 }
