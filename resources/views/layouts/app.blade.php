@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name', 'Vigilante SEACE'))</title>
+    @unless(app()->environment('production'))
+        <meta name="robots" content="noindex, nofollow">
+    @endunless
     @yield('seo')
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Google Analytics — Consent Mode v2 -->
+    @if(app()->environment('production'))
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
@@ -28,6 +32,7 @@
         gtag('js', new Date());
         gtag('config', 'G-4PRW1QCW48');
     </script>
+    @endif
 </head>
 <body class="font-sans antialiased min-h-screen bg-neutral-100" x-data="{ sidebarOpen: false }" :class="{ 'overflow-hidden': sidebarOpen }">
     <div class="min-h-screen bg-neutral-100 flex overflow-x-hidden">

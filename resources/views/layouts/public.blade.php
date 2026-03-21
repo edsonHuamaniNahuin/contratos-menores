@@ -6,11 +6,15 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Licitaciones MYPe')</title>
     <meta name="description" content="@yield('meta_description', 'Plataforma inteligente de monitoreo de licitaciones y contrataciones del Estado peruano. Buscador SEACE, alertas automáticas y análisis con IA.')">
+    @unless(app()->environment('production'))
+        <meta name="robots" content="noindex, nofollow">
+    @endunless
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="canonical" href="{{ url()->current() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Google Analytics — Consent Mode v2 -->
+    @if(app()->environment('production'))
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
@@ -29,6 +33,7 @@
         gtag('js', new Date());
         gtag('config', 'G-4PRW1QCW48');
     </script>
+    @endif
     @stack('head')
 </head>
 <body class="font-sans antialiased min-h-screen bg-white">

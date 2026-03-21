@@ -444,10 +444,14 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $analisisData = $resultado['data']['analisis'] ?? [];
         $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
         $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
+        $shareUrl = $resultado['data']['share_url'] ?? null;
 
         // Formatear para WhatsApp (mismo formatter, luego convertimos HTML → WA)
-        $mensaje = $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato);
+        $mensaje = $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato, $shareUrl);
         $mensaje = $this->htmlToWhatsApp($mensaje);
+
+        // Agregar enlace de compartir al final si hay share URL
+        $shareLinks = $this->buildShareLinks($shareUrl);
 
         // WhatsApp interactive body limit: 1024 chars.
         // Si el mensaje es largo, enviar como texto plano primero y luego botones aparte.
@@ -456,9 +460,10 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
 
             // 2) Enviar botones de acción en un mensaje interactivo corto
+            $shortBody = "✅ Análisis completado\n\n¿Qué deseas hacer ahora?" . $shareLinks;
             $keyboard = [
                 'type' => 'button',
-                'body' => ['text' => "✅ Análisis completado\n\n¿Qué deseas hacer ahora?"],
+                'body' => ['text' => $shortBody],
                 'footer' => ['text' => '🤖 Vigilante SEACE'],
                 'action' => [
                     'buttons' => [
@@ -479,11 +484,12 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                     ],
                 ],
             ];
-            $this->whatsapp->enviarMensajeConBotones($phoneNumber, "✅ Análisis completado\n\n¿Qué deseas hacer ahora?", $keyboard);
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $shortBody, $keyboard);
         } else {
+            $bodyText = $mensaje . $shareLinks;
             $keyboard = [
                 'type' => 'button',
-                'body' => ['text' => $mensaje],
+                'body' => ['text' => $bodyText],
                 'footer' => ['text' => '🤖 Vigilante SEACE'],
                 'action' => [
                     'buttons' => [
@@ -504,7 +510,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                     ],
                 ],
             ];
-            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $bodyText, $keyboard);
         }
     }
 
@@ -581,19 +587,23 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $analisisData = $resultado['data']['analisis'] ?? [];
         $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
         $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
+        $shareUrl = $resultado['data']['share_url'] ?? null;
 
         $mensaje = $resultado['formatted']['whatsapp']
             ?? $this->htmlToWhatsApp(
-                $this->formatter->formatDireccionamientoForTelegram($analisisData, $archivoNombre, $contextoContrato)
+                $this->formatter->formatDireccionamientoForTelegram($analisisData, $archivoNombre, $contextoContrato, $shareUrl)
             );
+
+        $shareLinks = $this->buildShareLinks($shareUrl);
 
         // WhatsApp interactive body limit: 1024 chars.
         if (mb_strlen($mensaje) > 1024) {
             $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
 
+            $shortBody = "✅ Análisis de direccionamiento completado\n\n¿Qué deseas hacer ahora?" . $shareLinks;
             $keyboard = [
                 'type' => 'button',
-                'body' => ['text' => "✅ Análisis de direccionamiento completado\n\n¿Qué deseas hacer ahora?"],
+                'body' => ['text' => $shortBody],
                 'footer' => ['text' => '🤖 Vigilante SEACE'],
                 'action' => [
                     'buttons' => [
@@ -614,11 +624,12 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                     ],
                 ],
             ];
-            $this->whatsapp->enviarMensajeConBotones($phoneNumber, "✅ Análisis de direccionamiento completado\n\n¿Qué deseas hacer ahora?", $keyboard);
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $shortBody, $keyboard);
         } else {
+            $bodyText = $mensaje . $shareLinks;
             $keyboard = [
                 'type' => 'button',
-                'body' => ['text' => $mensaje],
+                'body' => ['text' => $bodyText],
                 'footer' => ['text' => '🤖 Vigilante SEACE'],
                 'action' => [
                     'buttons' => [
@@ -639,7 +650,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                     ],
                 ],
             ];
-            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $mensaje, $keyboard);
+            $this->whatsapp->enviarMensajeConBotones($phoneNumber, $bodyText, $keyboard);
         }
     }
 
@@ -909,6 +920,10 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
 
         $mensaje .= "\n🤖 _Vigilante SEACE_";
 
+        // Agregar enlace de compartir si hay análisis asociado
+        $shareUrl = $match->analisis_payload['share_url'] ?? null;
+        $mensaje .= $this->buildShareLinks($shareUrl);
+
         $actionButtons = [
             [
                 'type' => 'reply',
@@ -977,6 +992,15 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             'fecPublica' => $cacheData['fecPublica'] ?? $contexto['fecha_publicacion'] ?? null,
             'fecFinCotizacion' => $cacheData['fecFinCotizacion'] ?? $contexto['fecha_cierre'] ?? null,
         ];
+    }
+
+    protected function buildShareLinks(?string $shareUrl): string
+    {
+        if (!$shareUrl) {
+            return '';
+        }
+
+        return "\n\n📤 *Compartir resultado:* {$shareUrl}";
     }
 
     protected function buildCallbackData(string $action, int $idContrato, int $idArchivo, string $nombreArchivo): string
@@ -1063,7 +1087,8 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $text = str_replace(['<b>', '</b>'], '*', $html);
         $text = str_replace(['<i>', '</i>'], '_', $text);
         $text = str_replace(['<code>', '</code>'], '```', $text);
-        return strip_tags($text);
+        $text = strip_tags($text);
+        return html_entity_decode($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     /**

@@ -603,9 +603,10 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $analisisData = $resultado['data']['analisis'] ?? [];
         $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
         $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
+        $shareUrl = $resultado['data']['share_url'] ?? null;
 
         $mensaje = $resultado['formatted']['telegram']
-            ?? $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato);
+            ?? $this->formatter->formatForTelegram($analisisData, $archivoNombre, $contextoContrato, $shareUrl);
 
         $downloadCallback = $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo);
         $cotizarCallback  = $this->buildCallbackData('cotizar', $idContrato, $idContratoArchivo, $nombreArchivo);
@@ -629,7 +630,13 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                         'text' => '💼 Cotizar en SEACE',
                         'callback_data' => $cotizarCallback,
                     ]
-                ]
+                ],
+                ...($shareUrl ? [[
+                    [
+                        'text' => '📤 Compartir resultado',
+                        'url'  => $shareUrl,
+                    ]
+                ]] : []),
             ]
         ];
 
@@ -650,9 +657,10 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $analisisData = $resultado['data']['analisis'] ?? [];
         $archivoNombre = $resultado['data']['archivo'] ?? $nombreArchivo;
         $contextoContrato = $resultado['data']['contexto_contrato'] ?? null;
+        $shareUrl = $resultado['data']['share_url'] ?? null;
 
         $mensaje = $resultado['formatted']['telegram']
-            ?? $this->formatter->formatDireccionamientoForTelegram($analisisData, $archivoNombre, $contextoContrato);
+            ?? $this->formatter->formatDireccionamientoForTelegram($analisisData, $archivoNombre, $contextoContrato, $shareUrl);
 
         $downloadCallback = $this->buildCallbackData('descargar', $idContrato, $idContratoArchivo, $nombreArchivo);
         $analizarCallback = $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
@@ -670,6 +678,12 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                         'callback_data' => $downloadCallback,
                     ]
                 ],
+                ...($shareUrl ? [[
+                    [
+                        'text' => '📤 Compartir resultado',
+                        'url'  => $shareUrl,
+                    ]
+                ]] : []),
             ]
         ];
 
@@ -700,14 +714,21 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
             $this->sendChatAction($chatId, 'typing', $token);
 
-            // Construir URL de login del portal SEACE
-            $seaceBase = rtrim(config('services.seace.frontend_origin', 'https://prod6.seace.gob.pe'), '/');
-            $urlLogin = "{$seaceBase}/auth-proveedor/";
-
             // Recuperar contexto del contrato si está cacheado
             $cachedContrato = $this->getCachedContratoPayload($idContrato);
             $codigoProceso = $cachedContrato['desContratacion'] ?? "Contrato #{$idContrato}";
             $entidad = $cachedContrato['nomEntidad'] ?? '';
+
+            // Construir URL de la guía de cotización
+            $cotizarGuiaUrl = url('/cotizar-guia') . '?' . http_build_query(array_filter([
+                'proceso' => $codigoProceso,
+                'entidad' => $entidad,
+                'id' => $idContrato,
+            ]));
+
+            // Construir URL del portal SEACE
+            $seaceBase = rtrim(config('services.seace.frontend_origin', 'https://prod6.seace.gob.pe'), '/');
+            $urlLogin = "{$seaceBase}/auth-proveedor/";
 
             $mensaje = "💼 <b>Cotizar en SEACE</b>\n\n";
             $mensaje .= "⚡ <i>Estamos casi allí — te dejamos todo listo para que sea rápido.</i>\n\n";
@@ -725,6 +746,12 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
             $keyboard = [
                 'inline_keyboard' => [
+                    [
+                        [
+                            'text' => '📖 Ver guía completa de cotización',
+                            'url'  => $cotizarGuiaUrl,
+                        ],
+                    ],
                     [
                         [
                             'text' => '🔗 Ir al portal SEACE',
@@ -1138,6 +1165,8 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
         $mensaje .= "\n🤖 <i>Vigilante SEACE</i>";
 
+        $shareUrl = $match->analisis_payload['share_url'] ?? null;
+
         $keyboard = [
             'inline_keyboard' => [
                 [
@@ -1162,6 +1191,12 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                         'callback_data' => $this->buildCallbackData('cotizar', $idContrato, $idContratoArchivo, $nombreArchivo),
                     ],
                 ],
+                ...($shareUrl ? [[
+                    [
+                        'text' => '📤 Compartir resultado',
+                        'url'  => $shareUrl,
+                    ]
+                ]] : []),
             ],
         ];
 

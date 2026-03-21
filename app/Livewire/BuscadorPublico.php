@@ -29,44 +29,53 @@ class BuscadorPublico extends Component
     protected CompatibilityScoreService $compatibilityService;
     protected array $contratosIndexados = [];
 
-    // Parámetros de búsqueda (sincronizados con URL)
-    #[Url(keep: true)]
+    // ─── Parámetros de búsqueda (URL SEO-friendly con slugs) ────────
+
+    #[Url(as: 'palabraClave')]
     public string $palabraClave = '';
 
-    #[Url(keep: true)]
+    #[Url(as: 'entidad')]
     public string $entidadTexto = '';
 
-    #[Url(keep: true)]
+    // Código CONSUCODE (interno, NO en URL)
     public string $codigoEntidad = '';
 
-    #[Url(keep: true)]
+    // Slugs SEO-friendly (sincronizados con URL)
+    #[Url(as: 'objeto')]
+    public string $objetoSlug = '';
+
+    #[Url(as: 'estado')]
+    public string $estadoSlug = '';
+
+    #[Url(as: 'dep')]
+    public string $depSlug = '';
+
+    #[Url(as: 'prov')]
+    public string $provSlug = '';
+
+    #[Url(as: 'dist')]
+    public string $distSlug = '';
+
+    // IDs numéricos internos (resueltos desde slugs, NO en URL)
     public int $objetoContrato = 0;
-
-    #[Url(keep: true)]
     public int $estadoContrato = 0;
-
-    #[Url(keep: true)]
     public int $departamento = 0;
-
-    #[Url(keep: true)]
     public int $provincia = 0;
-
-    #[Url(keep: true)]
     public int $distrito = 0;
 
-    #[Url(keep: true)]
+    #[Url]
     public int $pagina = 1;
 
-    #[Url(keep: true)]
+    #[Url(as: 'porPagina')]
     public int $registrosPorPagina = 20;
 
     // El año se envía automáticamente como el año actual (no es filtro)
 
     // Ordenamiento
-    #[Url(keep: true)]
+    #[Url(as: 'ordenarPor')]
     public string $ordenarPor = 'fecha_publicacion'; // fecha_publicacion, codigo, entidad, estado
 
-    #[Url(keep: true)]
+    #[Url(as: 'direccion')]
     public string $direccionOrden = 'desc'; // asc, desc
 
     // Estados de carga
@@ -141,6 +150,9 @@ class BuscadorPublico extends Component
     {
         $this->cargarCatalogos();
 
+        // Resolver slugs de URL → IDs internos (+ backward compat con URLs viejas)
+        $this->syncFromUrl();
+
         // Ejecutar búsqueda inicial incluso con filtros por defecto
         $this->buscar();
     }
@@ -165,6 +177,146 @@ class BuscadorPublico extends Component
         $this->departamentos = $departamentosResponse['data'] ?? [];
 
         $this->cargandoFiltros = false;
+    }
+
+    // ─── Slug ↔ ID resolution (SEO-friendly URLs) ──────────────────
+
+    /**
+     * Sincronizar parámetros de URL (slugs) con IDs internos.
+     * Maneja backward compatibility con URLs antiguas que usan IDs numéricos.
+     */
+    private function syncFromUrl(): void
+    {
+        $request = request();
+
+        // ── Backward compat: leer params numéricos de URLs viejas ──
+        if (empty($this->objetoSlug) && $request->has('objetoContrato')) {
+            $legacyId = (int) $request->get('objetoContrato');
+            if ($legacyId > 0) {
+                $this->objetoSlug = $this->resolveSlugFromId($legacyId, $this->objetos);
+            }
+        }
+        if (empty($this->estadoSlug) && $request->has('estadoContrato')) {
+            $legacyId = (int) $request->get('estadoContrato');
+            if ($legacyId > 0) {
+                $this->estadoSlug = $this->resolveSlugFromId($legacyId, $this->estados);
+            }
+        }
+        if (empty($this->depSlug) && $request->has('departamento')) {
+            $legacyId = (int) $request->get('departamento');
+            if ($legacyId > 0) {
+                $this->depSlug = $this->resolveSlugFromId($legacyId, $this->departamentos);
+            }
+        }
+        // Legacy codigoEntidad
+        if (empty($this->codigoEntidad) && $request->has('codigoEntidad')) {
+            $this->codigoEntidad = (string) $request->get('codigoEntidad');
+        }
+        // Legacy entidadTexto (alias viejo)
+        if (empty($this->entidadTexto) && $request->has('entidadTexto')) {
+            $this->entidadTexto = (string) $request->get('entidadTexto');
+        }
+
+        // ── Resolver slugs a IDs internos ──
+        $this->objetoContrato = $this->resolveIdFromSlug($this->objetoSlug, $this->objetos);
+        $this->estadoContrato = $this->resolveIdFromSlug($this->estadoSlug, $this->estados);
+        $this->departamento = $this->resolveIdFromSlug($this->depSlug, $this->departamentos);
+
+        // ── Geo cascada: provincias (requiere departamento) ──
+        if ($this->departamento > 0) {
+            $resultado = $this->buscadorService->obtenerProvincias($this->departamento);
+            $this->provincias = $resultado['data'] ?? [];
+
+            // Backward compat: provincia numérica
+            if (empty($this->provSlug) && $request->has('provincia')) {
+                $legacyId = (int) $request->get('provincia');
+                if ($legacyId > 0) {
+                    $this->provSlug = $this->resolveSlugFromId($legacyId, $this->provincias);
+                }
+            }
+
+            $this->provincia = $this->resolveIdFromSlug($this->provSlug, $this->provincias);
+
+            // Distritos (requiere provincia)
+            if ($this->provincia > 0) {
+                $resultado = $this->buscadorService->obtenerDistritos($this->provincia);
+                $this->distritos = $resultado['data'] ?? [];
+
+                // Backward compat: distrito numérico
+                if (empty($this->distSlug) && $request->has('distrito')) {
+                    $legacyId = (int) $request->get('distrito');
+                    if ($legacyId > 0) {
+                        $this->distSlug = $this->resolveSlugFromId($legacyId, $this->distritos);
+                    }
+                }
+
+                $this->distrito = $this->resolveIdFromSlug($this->distSlug, $this->distritos);
+            }
+        }
+
+        // ── Resolver entidad texto → código CONSUCODE (si falta) ──
+        if (!empty($this->entidadTexto) && empty($this->codigoEntidad)) {
+            $resultado = $this->buscadorService->buscarEntidades($this->entidadTexto);
+            foreach ($resultado['data'] ?? [] as $entidad) {
+                if (strcasecmp(trim($entidad['razonSocial'] ?? ''), trim($this->entidadTexto)) === 0) {
+                    $this->codigoEntidad = (string) ($entidad['codigoConsucode'] ?? '');
+                    break;
+                }
+            }
+        }
+
+        // Abrir filtros geográficos si hay algún filtro geo activo
+        if ($this->departamento > 0) {
+            $this->mostrarFiltrosAvanzados = true;
+        }
+    }
+
+    /**
+     * Generar slug SEO-friendly desde un nombre de catálogo.
+     * Ej: "LIMA" → "lima", "SAN MARTÍN" → "san-martin"
+     */
+    private function slugify(string $name): string
+    {
+        $slug = mb_strtolower(trim($name));
+        $slug = strtr($slug, [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+            'ñ' => 'n', 'ü' => 'u',
+        ]);
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+        return trim($slug, '-');
+    }
+
+    /**
+     * Resolver un slug (o valor numérico legacy) a un ID de catálogo.
+     */
+    private function resolveIdFromSlug(string $slug, array $catalog): int
+    {
+        if (empty($slug)) return 0;
+
+        // Backward compat: si es numérico, devolver directo
+        if (ctype_digit($slug)) return (int) $slug;
+
+        foreach ($catalog as $item) {
+            if ($this->slugify($item['nom'] ?? '') === $slug) {
+                return (int) ($item['id'] ?? 0);
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Resolver un ID numérico al slug correspondiente del catálogo.
+     */
+    private function resolveSlugFromId(int $id, array $catalog): string
+    {
+        if ($id <= 0) return '';
+
+        foreach ($catalog as $item) {
+            if ((int) ($item['id'] ?? 0) === $id) {
+                return $this->slugify($item['nom'] ?? '');
+            }
+        }
+        return '';
     }
 
     /**
@@ -250,8 +402,11 @@ class BuscadorPublico extends Component
      */
     public function updatedDepartamento($value): void
     {
+        $this->depSlug = $this->resolveSlugFromId((int) $value, $this->departamentos);
         $this->provincia = 0;
+        $this->provSlug = '';
         $this->distrito = 0;
+        $this->distSlug = '';
         $this->provincias = [];
         $this->distritos = [];
 
@@ -269,7 +424,9 @@ class BuscadorPublico extends Component
      */
     public function updatedProvincia($value): void
     {
+        $this->provSlug = $this->resolveSlugFromId((int) $value, $this->provincias);
         $this->distrito = 0;
+        $this->distSlug = '';
         $this->distritos = [];
 
         if ($value > 0) {
@@ -377,6 +534,11 @@ class BuscadorPublico extends Component
             'provincia',
             'distrito',
             'pagina',
+            'objetoSlug',
+            'estadoSlug',
+            'depSlug',
+            'provSlug',
+            'distSlug',
         ]);
 
         $this->provincias = [];
@@ -550,6 +712,7 @@ class BuscadorPublico extends Component
      */
     public function updatedObjetoContrato($value): void
     {
+        $this->objetoSlug = $this->resolveSlugFromId((int) $value, $this->objetos);
         $this->buscar();
     }
 
@@ -558,6 +721,7 @@ class BuscadorPublico extends Component
      */
     public function updatedEstadoContrato($value): void
     {
+        $this->estadoSlug = $this->resolveSlugFromId((int) $value, $this->estados);
         $this->buscar();
     }
 
@@ -566,6 +730,7 @@ class BuscadorPublico extends Component
      */
     public function updatedDistrito($value): void
     {
+        $this->distSlug = $this->resolveSlugFromId((int) $value, $this->distritos);
         $this->buscar();
     }
 

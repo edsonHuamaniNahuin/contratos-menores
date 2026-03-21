@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 
 class TdrAnalisis extends Model
 {
@@ -22,6 +23,7 @@ class TdrAnalisis extends Model
     protected $fillable = [
         'contrato_archivo_id',
         'tipo_analisis',
+        'share_token',
         'estado',
         'proveedor',
         'modelo',
@@ -56,5 +58,26 @@ class TdrAnalisis extends Model
     public function esExitoso(): bool
     {
         return $this->estado === self::ESTADO_EXITOSO;
+    }
+
+    /**
+     * Genera un share_token UUID cuando el análisis se marca como exitoso.
+     */
+    public function ensureShareToken(): string
+    {
+        if (!$this->share_token) {
+            $this->share_token = Str::uuid()->toString();
+            $this->saveQuietly();
+        }
+
+        return $this->share_token;
+    }
+
+    /**
+     * URL pública para ver el análisis completo.
+     */
+    public function getShareUrlAttribute(): string
+    {
+        return url('/analisis/' . $this->ensureShareToken());
     }
 }

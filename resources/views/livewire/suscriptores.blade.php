@@ -280,7 +280,7 @@
                 $telegramHasSubs = $suscripciones->isNotEmpty();
                 $telegramAllActive = $telegramHasSubs && $suscripciones->every(fn($s) => $s->activo);
             @endphp
-            <div class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$telegramHasSubs ? 'opacity-50' : '' }}">
+            <div wire:key="tg-toggle-{{ $telegramAllActive ? '1' : '0' }}" class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$telegramHasSubs ? 'opacity-50' : '' }}">
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center {{ $telegramAllActive ? 'bg-secondary-500/20' : 'bg-neutral-200' }}">
                         <svg class="w-4.5 h-4.5 {{ $telegramAllActive ? 'text-primary-500' : 'text-neutral-400' }}" fill="currentColor" viewBox="0 0 24 24">
@@ -313,7 +313,7 @@
                 $waExists = $whatsappSubscription !== null;
                 $waActive = $waExists && $whatsappSubscription->activo;
             @endphp
-            <div class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$waExists ? 'opacity-50' : '' }}">
+            <div wire:key="wa-toggle-{{ $waActive ? '1' : '0' }}" class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$waExists ? 'opacity-50' : '' }}">
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center {{ $waActive ? 'bg-secondary-500/20' : 'bg-neutral-200' }}">
                         <svg class="w-4.5 h-4.5 {{ $waActive ? 'text-primary-500' : 'text-neutral-400' }}" fill="currentColor" viewBox="0 0 24 24">
@@ -346,7 +346,7 @@
                 $emailExists = $emailSubscription !== null;
                 $emailActive = $emailExists && $emailSubscription->activo;
             @endphp
-            <div class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$emailExists ? 'opacity-50' : '' }}">
+            <div wire:key="email-toggle-{{ $emailActive ? '1' : '0' }}" class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$emailExists ? 'opacity-50' : '' }}">
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center {{ $emailActive ? 'bg-secondary-500/20' : 'bg-neutral-200' }}">
                         <svg class="w-4.5 h-4.5 {{ $emailActive ? 'text-primary-500' : 'text-neutral-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
