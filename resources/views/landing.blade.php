@@ -130,31 +130,33 @@
             </a>
             @endguest
         </div>
-        <p class="text-white/70 text-sm font-medium mt-6">Sin tarjeta de crédito &middot; 15 días de prueba Premium</p>
+        <p class="text-white/70 text-sm font-medium mt-6">Obtén 15 días de prueba Premium al registrarte</p>
     </div>
 </section>
 
 {{-- ═══════════════════════════════════════════════════════════════
      STATS BAR — Cifras de autoridad (E-E-A-T)
 ═══════════════════════════════════════════════════════════════ --}}
-<section class="bg-white border-b border-neutral-100">
-    <div class="max-w-5xl mx-auto px-6 py-8">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-            <div>
-                <p class="text-2xl sm:text-3xl font-extrabold text-neutral-900">29,000+</p>
-                <p class="text-xs text-neutral-400 mt-1">Procesos del SEACE monitoreados</p>
-            </div>
-            <div>
-                <p class="text-2xl sm:text-3xl font-extrabold text-neutral-900">25</p>
-                <p class="text-xs text-neutral-400 mt-1">Departamentos cubiertos</p>
-            </div>
-            <div>
-                <p class="text-2xl sm:text-3xl font-extrabold text-neutral-900">24/7</p>
-                <p class="text-xs text-neutral-400 mt-1">Monitoreo continuo SEACE</p>
-            </div>
-            <div>
-                <p class="text-2xl sm:text-3xl font-extrabold text-neutral-900">&lt; 5 min</p>
-                <p class="text-xs text-neutral-400 mt-1">Alerta tras publicación</p>
+<section class="bg-white">
+    <div class="max-w-6xl mx-auto px-6 py-10">
+        <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 px-8 py-8">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+                <div>
+                    <p class="text-2xl sm:text-3xl font-extrabold text-neutral-900">29,000+</p>
+                    <p class="text-sm text-neutral-600 mt-1">Procesos monitoreados</p>
+                </div>
+                <div>
+                    <p class="text-2xl sm:text-3xl font-extrabold text-neutral-900">25</p>
+                    <p class="text-sm text-neutral-600 mt-1">Departamentos cubiertos</p>
+                </div>
+                <div>
+                    <p class="text-2xl sm:text-3xl font-extrabold text-neutral-900">24/7</p>
+                    <p class="text-sm text-neutral-600 mt-1">Monitoreo continuo</p>
+                </div>
+                <div>
+                    <p class="text-2xl sm:text-3xl font-extrabold text-neutral-900">&lt; 5 min</p>
+                    <p class="text-sm text-neutral-600 mt-1">Alerta tras publicación</p>
+                </div>
             </div>
         </div>
     </div>
@@ -164,38 +166,38 @@
      PROBLEMA → SOLUCIÓN — Keywords: revisar SEACE, licitaciones MYPE
 ═══════════════════════════════════════════════════════════════ --}}
 <section class="bg-neutral-50 py-20">
-    <div class="max-w-5xl mx-auto px-6">
-        <div class="text-center mb-14">
-            <p class="text-xs font-semibold text-brand-800 uppercase tracking-wider mb-2">El problema de las MYPEs</p>
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-3">El problema de las MYPEs</p>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-4">
                 Revisar el SEACE manualmente es una pesadilla
             </h2>
-            <p class="text-neutral-500 max-w-xl mx-auto">
+            <p class="text-base text-neutral-600 max-w-2xl mx-auto leading-relaxed">
                 Miles de contrataciones nuevas cada día en el portal del OSCE, interfaces lentas, documentos TDR extensos y oportunidades de licitación que se pierden en minutos.
             </p>
         </div>
 
-        <div class="grid sm:grid-cols-3 gap-6">
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6 text-center">
-                <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div class="grid sm:grid-cols-3 gap-8">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8 text-center">
+                <div class="w-14 h-14 bg-brand-800/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                    <svg class="w-7 h-7 text-brand-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <h3 class="text-sm font-bold text-neutral-900 mb-2">2-3 horas diarias perdidas</h3>
-                <p class="text-xs text-neutral-500 leading-relaxed">Revisar manualmente cada licitación en el SEACE consume horas buscando contrataciones menores relevantes para tu MYPE.</p>
+                <h3 class="text-base font-bold text-neutral-900 mb-2">2-3 horas diarias perdidas</h3>
+                <p class="text-sm text-neutral-600 leading-relaxed">Revisar manualmente cada licitación en el SEACE consume horas buscando contrataciones menores relevantes para tu MYPE.</p>
             </div>
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6 text-center">
-                <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8 text-center">
+                <div class="w-14 h-14 bg-brand-800/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                    <svg class="w-7 h-7 text-brand-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </div>
-                <h3 class="text-sm font-bold text-neutral-900 mb-2">TDR de 20-50 páginas</h3>
-                <p class="text-xs text-neutral-500 leading-relaxed">Cada proceso tiene Términos de Referencia extensos que necesitas leer para evaluar requisitos, experiencia y penalidades.</p>
+                <h3 class="text-base font-bold text-neutral-900 mb-2">TDR de 20-50 páginas</h3>
+                <p class="text-sm text-neutral-600 leading-relaxed">Cada proceso tiene Términos de Referencia extensos que necesitas leer para evaluar requisitos, experiencia y penalidades.</p>
             </div>
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6 text-center">
-                <div class="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8 text-center">
+                <div class="w-14 h-14 bg-brand-800/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                    <svg class="w-7 h-7 text-brand-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <h3 class="text-sm font-bold text-neutral-900 mb-2">Cotizaciones que vencen rápido</h3>
-                <p class="text-xs text-neutral-500 leading-relaxed">Las contrataciones menores hasta 8 UIT tienen ventanas cortas. Si no las ves a tiempo, pierdes la oportunidad de cotizar.</p>
+                <h3 class="text-base font-bold text-neutral-900 mb-2">Cotizaciones que vencen rápido</h3>
+                <p class="text-sm text-neutral-600 leading-relaxed">Las contrataciones menores hasta 8 UIT tienen ventanas cortas. Si no las ves a tiempo, pierdes la oportunidad de cotizar.</p>
             </div>
         </div>
     </div>
@@ -205,18 +207,18 @@
      FEATURES — Keywords: alertas licitaciones, analizador TDR IA, bot licitaciones
 ═══════════════════════════════════════════════════════════════ --}}
 <section class="bg-white py-20">
-    <div class="max-w-5xl mx-auto px-6">
-        <div class="text-center mb-14">
-            <p class="text-xs font-semibold text-brand-800 uppercase tracking-wider mb-2">La solución para tu empresa</p>
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-3">La solución para tu empresa</p>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-4">
                 Alertas de licitaciones y análisis TDR con IA
             </h2>
-            <p class="text-neutral-500 max-w-xl mx-auto">
+            <p class="text-base text-neutral-600 max-w-2xl mx-auto leading-relaxed">
                 Automatiza el monitoreo del SEACE, analiza Términos de Referencia en segundos y prioriza las mejores oportunidades de contratación pública.
             </p>
         </div>
 
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             @php
             $features = [
                 [
@@ -259,19 +261,19 @@
             @endphp
 
             @foreach ($features as $feat)
-            <div class="bg-neutral-50 rounded-3xl p-6 border border-neutral-100 hover:shadow-soft transition-shadow">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="w-12 h-12 bg-brand-800/10 rounded-2xl flex items-center justify-center">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8 hover:shadow-lg transition-shadow">
+                <div class="flex items-start justify-between mb-5">
+                    <div class="w-14 h-14 bg-brand-800/10 rounded-2xl flex items-center justify-center">
                         {!! $feat['icon'] !!}
                     </div>
                     @if ($feat['premium'])
                         <span class="text-[10px] font-bold bg-brand-800 text-white px-2.5 py-1 rounded-full">Premium</span>
                     @else
-                        <span class="text-[10px] font-bold bg-neutral-200 text-neutral-600 px-2.5 py-1 rounded-full">Gratis</span>
+                        <span class="text-[10px] font-bold bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full">Gratis</span>
                     @endif
                 </div>
-                <h3 class="text-sm font-bold text-neutral-900 mb-2">{{ $feat['title'] }}</h3>
-                <p class="text-xs text-neutral-500 leading-relaxed">{{ $feat['desc'] }}</p>
+                <h3 class="text-base font-bold text-neutral-900 mb-2">{{ $feat['title'] }}</h3>
+                <p class="text-sm text-neutral-600 leading-relaxed">{{ $feat['desc'] }}</p>
             </div>
             @endforeach
         </div>
@@ -282,59 +284,81 @@
      COMPARATIVA — Commercial investigation: software vs consultoría
 ═══════════════════════════════════════════════════════════════ --}}
 <section class="bg-neutral-50 py-20">
-    <div class="max-w-4xl mx-auto px-6">
-        <div class="text-center mb-14">
-            <p class="text-xs font-semibold text-brand-800 uppercase tracking-wider mb-2">Comparativa</p>
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-3">Comparativa</p>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-4">
                 ¿Software de licitaciones o consultoría manual?
             </h2>
-            <p class="text-neutral-500 max-w-xl mx-auto">
+            <p class="text-base text-neutral-600 max-w-2xl mx-auto leading-relaxed">
                 Las MYPEs necesitan herramientas accesibles, no consultores costosos. Compara y decide.
             </p>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
-                <thead>
-                    <tr>
-                        <th class="text-left py-3 px-4 bg-neutral-100 rounded-tl-2xl font-semibold text-neutral-700">Criterio</th>
-                        <th class="text-center py-3 px-4 bg-brand-800 text-white font-semibold">Licitaciones MYPe</th>
-                        <th class="text-center py-3 px-4 bg-neutral-100 rounded-tr-2xl font-semibold text-neutral-700">Consultoría tradicional</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    <tr>
-                        <td class="py-3 px-4 text-neutral-700">Costo mensual</td>
-                        <td class="py-3 px-4 text-center font-semibold text-brand-800">Desde S/ 0 (gratis)</td>
-                        <td class="py-3 px-4 text-center text-neutral-500">S/ 500 — S/ 2,000+</td>
-                    </tr>
-                    <tr>
-                        <td class="py-3 px-4 text-neutral-700">Monitoreo del SEACE</td>
-                        <td class="py-3 px-4 text-center text-brand-800">✅ Automático 24/7</td>
-                        <td class="py-3 px-4 text-center text-neutral-500">Horario laboral</td>
-                    </tr>
-                    <tr>
-                        <td class="py-3 px-4 text-neutral-700">Análisis de TDR</td>
-                        <td class="py-3 px-4 text-center text-brand-800">✅ IA en segundos</td>
-                        <td class="py-3 px-4 text-center text-neutral-500">Manual, horas/días</td>
-                    </tr>
-                    <tr>
-                        <td class="py-3 px-4 text-neutral-700">Alertas inmediatas</td>
-                        <td class="py-3 px-4 text-center text-brand-800">✅ Telegram / WhatsApp</td>
-                        <td class="py-3 px-4 text-center text-neutral-500">Email o llamada</td>
-                    </tr>
-                    <tr>
-                        <td class="py-3 px-4 text-neutral-700">Cobertura</td>
-                        <td class="py-3 px-4 text-center text-brand-800">✅ 25 departamentos</td>
-                        <td class="py-3 px-4 text-center text-neutral-500">1-3 departamentos</td>
-                    </tr>
-                    <tr>
-                        <td class="py-3 px-4 text-neutral-700">Detección de direccionamiento</td>
-                        <td class="py-3 px-4 text-center text-brand-800">✅ IA forense</td>
-                        <td class="py-3 px-4 text-center text-neutral-500">No disponible</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th class="text-left py-4 px-6 bg-neutral-50 font-semibold text-neutral-900">Criterio</th>
+                            <th class="text-center py-4 px-6 bg-brand-800 text-white font-semibold">Licitaciones MYPe</th>
+                            <th class="text-center py-4 px-6 bg-neutral-50 font-semibold text-neutral-900">Consultoría tradicional</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-neutral-100">
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Costo mensual</td>
+                            <td class="py-3.5 px-6 text-center font-semibold text-brand-800">Desde S/ 0 · Premium S/ 49</td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">S/ 500 — S/ 2,000+</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Monitoreo del SEACE</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Automático 24/7</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">Horario laboral</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Análisis de TDR con IA</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Resumen automático en segundos</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">Manual, horas/días</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Alertas Telegram y WhatsApp</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Automáticas por keywords</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">No disponible</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Notificaciones por correo</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Resumen + seguimiento directo</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">Email manual</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Score de compatibilidad</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Puntaje automático 0-10</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">Evaluación subjetiva</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Detección de direccionamiento</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> IA forense anticorrupción</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">No disponible</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Seguimiento y calendario</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Fechas y recordatorios</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">Manual en Excel</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Alertas inteligentes con IA</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Análisis + score en cada alerta</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">No disponible</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Cobertura nacional</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> 25 departamentos</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">1-3 departamentos</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </section>
@@ -343,28 +367,28 @@
      HOW IT WORKS — Keywords: cómo participar licitaciones, RNP, cotizar
 ═══════════════════════════════════════════════════════════════ --}}
 <section class="bg-white py-20">
-    <div class="max-w-4xl mx-auto px-6">
-        <div class="text-center mb-14">
-            <p class="text-xs font-semibold text-brand-800 uppercase tracking-wider mb-2">Súper fácil</p>
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-3">Súper fácil</p>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-neutral-900">
                 ¿Cómo empezar a ganar licitaciones del Estado?
             </h2>
         </div>
 
-        <div class="space-y-8">
+        <div class="space-y-6">
             @foreach ([
-                ['Crea tu cuenta gratis', 'Regístrate en menos de 1 minuto. Solo necesitas un correo electrónico. Sin tarjeta de crédito. Accede al buscador de licitaciones del SEACE de forma inmediata.'],
+                ['Crea tu cuenta gratis', 'Regístrate en menos de 1 minuto. Solo necesitas un correo electrónico. Accede al buscador de licitaciones del SEACE de forma inmediata.'],
                 ['Busca contrataciones menores y licitaciones', 'Usa el buscador público para encontrar procesos por palabra clave, departamento, entidad o tipo de contrato. Filtra contrataciones menores hasta 8 UIT ideales para MYPEs.'],
                 ['Configura alertas por Telegram o WhatsApp', 'Activa Premium, agrega tus palabras clave y conecta tu bot de Telegram o WhatsApp para recibir notificaciones cuando se publiquen licitaciones relevantes.'],
                 ['Deja que la IA analice los TDR por ti', 'El analizador de TDR con inteligencia artificial lee documentos completos, obtén scores de compatibilidad y prioriza las mejores oportunidades para tu empresa.'],
             ] as $i => $step)
-            <div class="flex items-start gap-6">
+            <div class="flex items-start gap-5">
                 <div class="flex-shrink-0">
-                    <span class="bg-brand-800 text-white text-lg font-bold w-12 h-12 rounded-full flex items-center justify-center">{{ $i + 1 }}</span>
+                    <span class="bg-brand-800 text-white text-lg font-bold w-12 h-12 rounded-full flex items-center justify-center shadow-soft">{{ $i + 1 }}</span>
                 </div>
-                <div class="bg-neutral-50 rounded-2xl shadow-soft border border-neutral-100 p-6 flex-1">
+                <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6 flex-1">
                     <h3 class="text-base font-bold text-neutral-900 mb-1">{{ $step[0] }}</h3>
-                    <p class="text-sm text-neutral-500 leading-relaxed">{{ $step[1] }}</p>
+                    <p class="text-sm text-neutral-600 leading-relaxed">{{ $step[1] }}</p>
                 </div>
             </div>
             @endforeach
@@ -376,66 +400,66 @@
      TIPOS DE CONTRATACIÓN — Informational: Ley 32069, contrataciones menores
 ═══════════════════════════════════════════════════════════════ --}}
 <section class="bg-neutral-50 py-20">
-    <div class="max-w-5xl mx-auto px-6">
-        <div class="text-center mb-14">
-            <p class="text-xs font-semibold text-brand-800 uppercase tracking-wider mb-2">Contrataciones del Estado</p>
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-3">Contrataciones del Estado</p>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-4">
                 Tipos de licitaciones que puedes ganar como MYPE
             </h2>
-            <p class="text-neutral-500 max-w-xl mx-auto">
-                El Estado peruano ofrece distintas modalidades de contratación. La <strong>Ley 32069</strong> y el OSCE regulan los procesos publicados en el SEACE.
+            <p class="text-base text-neutral-600 max-w-2xl mx-auto leading-relaxed">
+                El Estado peruano ofrece distintas modalidades de contratación. La <strong class="text-neutral-900">Ley 32069</strong> y el OSCE regulan los procesos publicados en el SEACE.
             </p>
         </div>
 
-        <div class="grid sm:grid-cols-2 gap-6">
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
-                <div class="flex items-center gap-3 mb-3">
-                    <span class="bg-secondary-100 text-secondary-700 text-xs font-bold px-3 py-1 rounded-full">Ideal para MYPEs</span>
+        <div class="grid sm:grid-cols-2 gap-8">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="bg-secondary-100 text-secondary-500 text-xs font-bold px-3 py-1 rounded-full">Ideal para MYPEs</span>
                 </div>
-                <h3 class="text-base font-bold text-neutral-900 mb-2">Contrataciones menores a 8 UIT</h3>
-                <p class="text-sm text-neutral-500 leading-relaxed mb-3">
-                    Procesos por montos hasta <strong>S/ 41,600</strong> (2025) que no requieren proceso de selección formal. La entidad solicita cotizaciones y adjudica directamente. Requisitos: RNP vigente, habilidad tributaria y cotización dentro del plazo.
+                <h3 class="text-base font-bold text-neutral-900 mb-3">Contrataciones menores a 8 UIT</h3>
+                <p class="text-sm text-neutral-600 leading-relaxed mb-4">
+                    Procesos por montos hasta <strong class="text-neutral-900">S/ 41,600</strong> (2025) que no requieren proceso de selección formal. La entidad solicita cotizaciones y adjudica directamente. Requisitos: RNP vigente, habilidad tributaria y cotización dentro del plazo.
                 </p>
-                <ul class="text-xs text-neutral-500 space-y-1">
-                    <li class="flex items-center gap-2"><span class="text-secondary-500">✓</span> Sin proceso de selección</li>
-                    <li class="flex items-center gap-2"><span class="text-secondary-500">✓</span> Adjudicación directa</li>
-                    <li class="flex items-center gap-2"><span class="text-secondary-500">✓</span> Plazos cortos de cotización</li>
+                <ul class="text-sm text-neutral-600 space-y-2">
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Sin proceso de selección</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Adjudicación directa</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Plazos cortos de cotización</li>
                 </ul>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
-                <h3 class="text-base font-bold text-neutral-900 mb-2">Adjudicación Simplificada</h3>
-                <p class="text-sm text-neutral-500 leading-relaxed mb-3">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
+                <h3 class="text-base font-bold text-neutral-900 mb-3">Adjudicación Simplificada</h3>
+                <p class="text-sm text-neutral-600 leading-relaxed mb-4">
                     Para bienes y servicios de 8 UIT a 400 UIT. Proceso con etapas de registro, presentación de ofertas y evaluación. Publicado en el SEACE con cronograma definido.
                 </p>
-                <ul class="text-xs text-neutral-500 space-y-1">
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Proceso formal en SEACE</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Evaluación técnica y económica</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Mayor valor de contrato</li>
+                <ul class="text-sm text-neutral-600 space-y-2">
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Proceso formal en SEACE</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Evaluación técnica y económica</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Mayor valor de contrato</li>
                 </ul>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
-                <h3 class="text-base font-bold text-neutral-900 mb-2">Licitación Pública</h3>
-                <p class="text-sm text-neutral-500 leading-relaxed mb-3">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
+                <h3 class="text-base font-bold text-neutral-900 mb-3">Licitación Pública</h3>
+                <p class="text-sm text-neutral-600 leading-relaxed mb-4">
                     Para bienes y obras de mayor cuantía. Proceso completo con bases, absolución de consultas, evaluación y buena pro. Requiere experiencia demostrable y garantías.
                 </p>
-                <ul class="text-xs text-neutral-500 space-y-1">
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Mayor cuantía</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Proceso más riguroso</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Requiere garantías formales</li>
+                <ul class="text-sm text-neutral-600 space-y-2">
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Mayor cuantía</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Proceso más riguroso</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Requiere garantías formales</li>
                 </ul>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
-                <h3 class="text-base font-bold text-neutral-900 mb-2">Concurso Público de Servicios</h3>
-                <p class="text-sm text-neutral-500 leading-relaxed mb-3">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
+                <h3 class="text-base font-bold text-neutral-900 mb-3">Concurso Público de Servicios</h3>
+                <p class="text-sm text-neutral-600 leading-relaxed mb-4">
                     Para servicios y consultorías de mayor cuantía. Incluye consultorías de obra y servicios especializados. Evaluación técnica detallada de propuestas.
                 </p>
-                <ul class="text-xs text-neutral-500 space-y-1">
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Servicios especializados</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Consultorías de obra</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Peso técnico relevante</li>
+                <ul class="text-sm text-neutral-600 space-y-2">
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Servicios especializados</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Consultorías de obra</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-brand-800 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Peso técnico relevante</li>
                 </ul>
             </div>
         </div>
@@ -446,41 +470,42 @@
      PRICING PREVIEW — Transactional: SaaS licitaciones precio
 ═══════════════════════════════════════════════════════════════ --}}
 <section class="bg-white py-20">
-    <div class="max-w-4xl mx-auto px-6">
-        <div class="text-center mb-14">
-            <p class="text-xs font-semibold text-brand-800 uppercase tracking-wider mb-2">Planes accesibles para MYPEs</p>
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-3">Planes accesibles para MYPEs</p>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-4">
                 Empieza gratis, crece cuando quieras
             </h2>
         </div>
 
-        <div class="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            <div class="rounded-3xl border border-neutral-200 p-8">
-                <p class="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Gratuito</p>
+        <div class="grid sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
+                <p class="text-xs font-bold text-neutral-600 uppercase tracking-widest mb-2">Gratuito</p>
                 <p class="text-4xl font-extrabold text-neutral-900 mb-1">S/ 0</p>
-                <p class="text-xs text-neutral-400 mb-6">para siempre</p>
+                <p class="text-sm text-neutral-600 mb-6">para siempre</p>
                 <ul class="text-sm text-neutral-600 space-y-3 mb-8">
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Buscador de licitaciones ilimitado</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Descarga de documentos TDR</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Dashboard de estadísticas</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Detalle de cada proceso SEACE</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Buscador de licitaciones ilimitado</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Descarga de documentos TDR</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Dashboard de estadísticas</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Detalle de cada proceso SEACE</li>
                 </ul>
-                <a href="{{ route('register') }}" class="block w-full text-center py-3 text-sm font-bold border-2 border-neutral-200 text-neutral-700 rounded-full hover:bg-neutral-50 transition-colors">
+                <a href="{{ route('register') }}" class="block w-full text-center py-3 text-sm font-bold border-2 border-neutral-200 text-neutral-900 rounded-full hover:bg-neutral-50 transition-colors">
                     Crear Cuenta Gratis
                 </a>
             </div>
 
-            <div class="rounded-3xl border-2 border-brand-800 p-8 relative">
+            <div class="bg-white rounded-3xl shadow-soft border-2 border-brand-800 p-8 relative">
                 <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-800 text-white text-xs font-bold px-4 py-1 rounded-full">Recomendado</span>
-                <p class="text-xs font-semibold text-brand-800 uppercase tracking-wider mb-2">Premium</p>
+                <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-2">Premium</p>
                 <p class="text-4xl font-extrabold text-neutral-900 mb-1">S/ 49<span class="text-lg text-neutral-400 font-normal">/mes</span></p>
-                <p class="text-xs text-neutral-400 mb-6">15 días de prueba gratis</p>
+                <p class="text-sm text-neutral-600 mb-6">15 días de prueba al registrarte</p>
                 <ul class="text-sm text-neutral-600 space-y-3 mb-8">
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Todo lo del plan gratuito</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Analizador de TDR con IA</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Score de compatibilidad</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Alertas Telegram + WhatsApp + Email</li>
-                    <li class="flex items-center gap-2"><span class="text-brand-800">✓</span> Detección de direccionamiento</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Todo lo del plan gratuito</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Analizador de TDR con IA</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Score de compatibilidad</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Alertas Telegram + WhatsApp + Email</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Detección de direccionamiento</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Seguimiento y calendario</li>
                 </ul>
                 <a href="{{ route('planes') }}" class="block w-full text-center py-3 text-sm font-bold bg-brand-800 text-white rounded-full hover:bg-brand-900 transition-colors">
                     Ver Todos los Planes →
@@ -494,9 +519,9 @@
      FAQ — GEO optimized: preguntas frecuentes, Ley 32069, RNP, 8 UIT
 ═══════════════════════════════════════════════════════════════ --}}
 <section class="bg-neutral-50 py-20">
-    <div class="max-w-3xl mx-auto px-6">
-        <div class="text-center mb-14">
-            <p class="text-xs font-semibold text-brand-800 uppercase tracking-wider mb-2">Preguntas frecuentes</p>
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-3">Preguntas frecuentes</p>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-4">
                 Lo que las MYPEs preguntan sobre licitaciones
             </h2>
@@ -529,12 +554,12 @@
                     'a' => 'El <strong>buscador gratuito</strong> te permite buscar licitaciones del SEACE sin límite y ver el detalle de cada proceso. El plan <strong>Premium</strong> (S/ 49/mes) agrega: análisis automático de TDR con IA, alertas por Telegram/WhatsApp/Email, score de compatibilidad, detección de direccionamiento y calendario de seguimientos.',
                 ],
             ] as $i => $faq)
-            <div class="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+            <div class="bg-white rounded-2xl border border-neutral-100 shadow-soft overflow-hidden">
                 <button
                     @click="open === {{ $i }} ? open = null : open = {{ $i }}"
                     class="w-full flex items-center justify-between px-6 py-4 text-left"
                 >
-                    <span class="text-sm font-semibold text-neutral-900 pr-4">{{ $faq['q'] }}</span>
+                    <span class="text-sm font-bold text-neutral-900 pr-4">{{ $faq['q'] }}</span>
                     <svg class="w-5 h-5 text-neutral-400 flex-shrink-0 transition-transform" :class="open === {{ $i }} && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
@@ -560,11 +585,11 @@
             <circle cx="300" cy="350" r="200" fill="white"/>
         </svg>
     </div>
-    <div class="relative z-10 max-w-3xl mx-auto px-6 text-center">
+    <div class="relative z-10 max-w-6xl mx-auto px-6 text-center">
         <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">
             Empieza a ganar licitaciones del Estado hoy
         </h2>
-        <p class="text-primary-200 text-base sm:text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+        <p class="text-primary-200 text-base sm:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
             Únete a las MYPEs que ya usan inteligencia artificial para encontrar contrataciones menores, analizar TDR y cotizar más rápido en el SEACE.
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
