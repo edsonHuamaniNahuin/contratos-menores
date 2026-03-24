@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * Proceso SEACE notificado.
@@ -43,6 +44,29 @@ class NotifiedProcess extends Model
     public function sends(): HasMany
     {
         return $this->hasMany(NotificationSend::class, 'notified_process_id');
+    }
+
+    /**
+     * Archivos de contrato vinculados por id_contrato_seace.
+     */
+    public function contratosArchivo(): HasMany
+    {
+        return $this->hasMany(ContratoArchivo::class, 'id_contrato_seace', 'seace_proceso_id');
+    }
+
+    /**
+     * Análisis TDR a través de los archivos de contrato.
+     */
+    public function analisisTdr(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            TdrAnalisis::class,
+            ContratoArchivo::class,
+            'id_contrato_seace',       // FK en contrato_archivos
+            'contrato_archivo_id',     // FK en tdr_analisis
+            'seace_proceso_id',        // Local key en notified_processes
+            'id',                      // Local key en contrato_archivos
+        );
     }
 
     // ─── Scopes ─────────────────────────────────────────────────────

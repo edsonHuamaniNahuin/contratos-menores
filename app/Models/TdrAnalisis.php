@@ -22,6 +22,7 @@ class TdrAnalisis extends Model
 
     protected $fillable = [
         'contrato_archivo_id',
+        'requested_by_user_id',
         'tipo_analisis',
         'share_token',
         'estado',
@@ -53,6 +54,11 @@ class TdrAnalisis extends Model
     public function archivo(): BelongsTo
     {
         return $this->belongsTo(ContratoArchivo::class, 'contrato_archivo_id');
+    }
+
+    public function requestedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'requested_by_user_id');
     }
 
     public function esExitoso(): bool

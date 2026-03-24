@@ -242,7 +242,10 @@ class MisProcesosNotificados extends Component
 
         $query = NotifiedProcess::query()
             ->whereHas('sends', fn ($q) => $q->where('user_id', $userId))
-            ->with(['sends' => fn ($q) => $q->where('user_id', $userId)->orderBy('notified_at', 'desc')])
+            ->with([
+                'sends' => fn ($q) => $q->where('user_id', $userId)->orderBy('notified_at', 'desc'),
+                'analisisTdr' => fn ($q) => $q->where('estado', 'exitoso'),
+            ])
             ->orderByDesc(
                 NotificationSend::select('notified_at')
                     ->whereColumn('notified_process_id', 'notified_processes.id')

@@ -122,8 +122,17 @@ class TdrRepositoryManager extends Component
 
     public function render()
     {
+        $user = auth()->user();
+        $isAdmin = $user && $user->hasRole('admin');
+
         $query = ContratoArchivo::query()
             ->with(['ultimoAnalisisExitoso'])
+            ->when(!$isAdmin, function ($builder) {
+                // Usuarios no-admin solo ven archivos con análisis solicitados por ellos
+                $builder->whereHas('analisis', function ($sub) {
+                    $sub->where('requested_by_user_id', auth()->id());
+                });
+            })
             ->when($this->busqueda !== '', function ($builder) {
                 $busqueda = '%' . $this->busqueda . '%';
                 $builder->where(function ($sub) use ($busqueda) {
@@ -142,9 +151,14 @@ class TdrRepositoryManager extends Component
 
         $archivos = $query->paginate($this->perPage);
 
+        $statsQuery = ContratoArchivo::query();
+        if (!$isAdmin) {
+            $statsQuery->whereHas('analisis', fn ($q) => $q->where('requested_by_user_id', auth()->id()));
+        }
+
         $stats = [
-            'total' => ContratoArchivo::count(),
-            'analizados' => ContratoArchivo::whereHas('analisis', function ($q) {
+            'total' => (clone $statsQuery)->count(),
+            'analizados' => (clone $statsQuery)->whereHas('analisis', function ($q) {
                 $q->where('estado', 'exitoso');
             })->count(),
         ];
@@ -152,6 +166,7 @@ class TdrRepositoryManager extends Component
         return view('livewire.tdr-repository-manager', [
             'archivos' => $archivos,
             'stats' => $stats,
+            'isAdmin' => $isAdmin,
         ]);
     }
 }
