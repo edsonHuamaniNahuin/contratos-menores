@@ -47,6 +47,7 @@ class SeguimientosCalendario extends Component
     {
         $this->cargarSeguimientos();
         $this->generarCalendario();
+        $this->dispatch('seguimientos-updated');
     }
 
     protected function cargarSeguimientos(): void
@@ -95,6 +96,19 @@ class SeguimientosCalendario extends Component
     {
         $this->detalleId = null;
         $this->detalleSeguimiento = null;
+    }
+
+    public function eliminarSeguimiento(int $id): void
+    {
+        ContratoSeguimiento::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->delete();
+
+        if ($this->detalleId === $id) {
+            $this->cerrarDetalle();
+        }
+
+        $this->cargar();
     }
 
     protected function generarCalendario(): void
@@ -172,6 +186,13 @@ class SeguimientosCalendario extends Component
 
     public function render()
     {
-        return view('livewire.seguimientos-calendario');
+        $col = collect($this->seguimientos);
+
+        return view('livewire.seguimientos-calendario', [
+            'totalSeguimientos' => $col->count(),
+            'totalCriticos' => $col->where('urgencia', 'critico')->count(),
+            'totalAltos' => $col->where('urgencia', 'alto')->count(),
+            'totalEstables' => $col->whereNotIn('urgencia', ['critico', 'alto'])->count(),
+        ]);
     }
 }

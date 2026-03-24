@@ -192,7 +192,26 @@
                                     ->flatten()
                                     ->unique()
                                     ->values();
+
+                                $tieneTdr = $proceso->analisisTdr->contains('tipo_analisis', 'general');
+                                $tieneScore = $proceso->analisisTdr->contains('tipo_analisis', 'direccionamiento');
                             @endphp
+
+                            {{-- Indicadores TDR / Score --}}
+                            @if($tieneTdr || $tieneScore)
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    @if($tieneTdr)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-primary-500/10 text-brand-800 rounded-full text-xs font-semibold">
+                                            📄 TDR Analizado
+                                        </span>
+                                    @endif
+                                    @if($tieneScore)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-500/10 text-amber-700 rounded-full text-xs font-semibold">
+                                            🎯 Score Direccionamiento
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
                             @if($allKeywords->isNotEmpty())
                                 <div class="mt-2 flex flex-wrap gap-1.5">
                                     @foreach($allKeywords as $kw)

@@ -275,15 +275,19 @@
         </div>
 
         <div class="space-y-3">
-            {{-- Toggle Telegram --}}
+            {{-- Toggle Telegram (optimistic UI con Alpine) --}}
             @php
                 $telegramHasSubs = $suscripciones->isNotEmpty();
                 $telegramAllActive = $telegramHasSubs && $suscripciones->every(fn($s) => $s->activo);
             @endphp
-            <div wire:key="tg-toggle" class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$telegramHasSubs ? 'opacity-50' : '' }}">
+            <div wire:key="tg-toggle-{{ $telegramAllActive ? '1' : '0' }}"
+                 x-data="{ active: {{ $telegramAllActive ? 'true' : 'false' }}, hasSubs: {{ $telegramHasSubs ? 'true' : 'false' }} }"
+                 class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3"
+                 :class="{ 'opacity-50': !hasSubs }">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center {{ $telegramAllActive ? 'bg-secondary-500/20' : 'bg-neutral-200' }}">
-                        <svg class="w-4.5 h-4.5 {{ $telegramAllActive ? 'text-primary-500' : 'text-neutral-400' }}" fill="currentColor" viewBox="0 0 24 24">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200"
+                         :class="active ? 'bg-secondary-500/20' : 'bg-neutral-200'">
+                        <svg class="w-4.5 h-4.5 transition-colors duration-200" :class="active ? 'text-primary-500' : 'text-neutral-400'" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.68c.223-.198-.054-.308-.346-.11l-6.4 4.03-2.76-.918c-.6-.183-.612-.6.125-.89l10.782-4.156c.5-.18.943.11.78.89z"/>
                         </svg>
                     </div>
@@ -299,24 +303,30 @@
                     </div>
                 </div>
                 @if($telegramHasSubs)
-                    <button wire:click="toggleTelegramNotificaciones"
-                            class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none {{ $telegramAllActive ? 'bg-secondary-500' : 'bg-neutral-300' }}">
-                        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 {{ $telegramAllActive ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                    <button @click="active = !active; $wire.toggleTelegramNotificaciones()"
+                            class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none"
+                            :class="active ? 'bg-secondary-500' : 'bg-neutral-300'">
+                        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                              :class="active ? 'translate-x-5' : 'translate-x-0'"></span>
                     </button>
                 @else
                     <span class="text-[11px] text-neutral-400 italic">Agrega un Chat ID primero</span>
                 @endif
             </div>
 
-            {{-- Toggle WhatsApp --}}
+            {{-- Toggle WhatsApp (optimistic UI con Alpine) --}}
             @php
                 $waExists = $whatsappSubscription !== null;
                 $waActive = $waExists && $whatsappSubscription->activo;
             @endphp
-            <div wire:key="wa-toggle" class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$waExists ? 'opacity-50' : '' }}">
+            <div wire:key="wa-toggle-{{ $waActive ? '1' : '0' }}"
+                 x-data="{ active: {{ $waActive ? 'true' : 'false' }}, exists: {{ $waExists ? 'true' : 'false' }} }"
+                 class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3"
+                 :class="{ 'opacity-50': !exists }">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center {{ $waActive ? 'bg-secondary-500/20' : 'bg-neutral-200' }}">
-                        <svg class="w-4.5 h-4.5 {{ $waActive ? 'text-primary-500' : 'text-neutral-400' }}" fill="currentColor" viewBox="0 0 24 24">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200"
+                         :class="active ? 'bg-secondary-500/20' : 'bg-neutral-200'">
+                        <svg class="w-4.5 h-4.5 transition-colors duration-200" :class="active ? 'text-primary-500' : 'text-neutral-400'" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                         </svg>
                     </div>
@@ -332,24 +342,30 @@
                     </div>
                 </div>
                 @if($waExists)
-                    <button wire:click="toggleWhatsAppActivo"
-                            class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none {{ $waActive ? 'bg-secondary-500' : 'bg-neutral-300' }}">
-                        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 {{ $waActive ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                    <button @click="active = !active; $wire.toggleWhatsAppActivo()"
+                            class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none"
+                            :class="active ? 'bg-secondary-500' : 'bg-neutral-300'">
+                        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                              :class="active ? 'translate-x-5' : 'translate-x-0'"></span>
                     </button>
                 @else
                     <span class="text-[11px] text-neutral-400 italic">Configura un numero primero</span>
                 @endif
             </div>
 
-            {{-- Toggle Email --}}
+            {{-- Toggle Email (optimistic UI con Alpine) --}}
             @php
                 $emailExists = $emailSubscription !== null;
                 $emailActive = $emailExists && $emailSubscription->activo;
             @endphp
-            <div wire:key="email-toggle" class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3 {{ !$emailExists ? 'opacity-50' : '' }}">
+            <div wire:key="email-toggle-{{ $emailActive ? '1' : '0' }}"
+                 x-data="{ active: {{ $emailActive ? 'true' : 'false' }}, exists: {{ $emailExists ? 'true' : 'false' }} }"
+                 class="flex items-center justify-between bg-neutral-50 rounded-2xl px-4 py-3"
+                 :class="{ 'opacity-50': !exists }">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center {{ $emailActive ? 'bg-secondary-500/20' : 'bg-neutral-200' }}">
-                        <svg class="w-4.5 h-4.5 {{ $emailActive ? 'text-primary-500' : 'text-neutral-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200"
+                         :class="active ? 'bg-secondary-500/20' : 'bg-neutral-200'">
+                        <svg class="w-4.5 h-4.5 transition-colors duration-200" :class="active ? 'text-primary-500' : 'text-neutral-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
                     </div>
@@ -370,9 +386,11 @@
                     </div>
                 </div>
                 @if($emailExists)
-                    <button wire:click="toggleEmailActivo"
-                            class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none {{ $emailActive ? 'bg-secondary-500' : 'bg-neutral-300' }}">
-                        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 {{ $emailActive ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                    <button @click="active = !active; $wire.toggleEmailActivo()"
+                            class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none"
+                            :class="active ? 'bg-secondary-500' : 'bg-neutral-300'">
+                        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                              :class="active ? 'translate-x-5' : 'translate-x-0'"></span>
                     </button>
                 @else
                     <span class="text-[11px] text-neutral-400 italic">Configura un correo primero</span>
@@ -398,12 +416,16 @@
                     Puedes registrar hasta {{ $maxSuscriptores }} suscriptores por cuenta. Cada uno recibira alertas en su chat de Telegram.
                 </p>
             </div>
-            @if($canAddMore)
+            @if($canAddTelegram && $canAddMore)
                 <button wire:click="toggleTelegramModal"
                         class="flex-shrink-0 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-full font-medium text-sm hover:opacity-90 transition-all shadow-md flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Agregar suscriptor
                 </button>
+            @elseif(!$canAddTelegram)
+                <span class="flex-shrink-0 px-4 py-2 bg-neutral-100 text-neutral-400 rounded-full text-xs font-medium italic">
+                    Sin permiso para agregar
+                </span>
             @else
                 <span class="flex-shrink-0 px-4 py-2 bg-neutral-100 text-neutral-500 rounded-full text-xs font-medium">
                     Limite alcanzado ({{ $maxSuscriptores }}/{{ $maxSuscriptores }})
@@ -558,12 +580,16 @@
                     Recibe alertas de nuevos procesos SEACE en tu WhatsApp con botones interactivos. Solo se permite 1 numero por usuario.
                 </p>
             </div>
-            @if(!$whatsappSubscription && !$showWhatsAppModal)
+            @if($canAddWhatsApp && !$whatsappSubscription && !$showWhatsAppModal)
                 <button wire:click="toggleWhatsAppModal"
                         class="flex-shrink-0 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-full font-medium text-sm hover:opacity-90 transition-all shadow-md flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Activar WhatsApp
+                    Agregar WhatsApp
                 </button>
+            @elseif(!$canAddWhatsApp && !$whatsappSubscription)
+                <span class="flex-shrink-0 px-4 py-2 bg-neutral-100 text-neutral-400 rounded-full text-xs font-medium italic">
+                    Sin permiso para agregar
+                </span>
             @endif
         </div>
 
@@ -700,12 +726,16 @@
                     Recibe alertas de nuevos procesos SEACE directamente en tu correo electronico. Solo se permite 1 correo por usuario.
                 </p>
             </div>
-            @if(!$emailSubscription && !$showEmailModal)
+            @if($canAddEmail && !$emailSubscription && !$showEmailModal)
                 <button wire:click="toggleEmailModal"
                         class="flex-shrink-0 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-full font-medium text-sm hover:opacity-90 transition-all shadow-md flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Activar notificaciones
+                    Agregar correo
                 </button>
+            @elseif(!$canAddEmail && !$emailSubscription)
+                <span class="flex-shrink-0 px-4 py-2 bg-neutral-100 text-neutral-400 rounded-full text-xs font-medium italic">
+                    Sin permiso para agregar
+                </span>
             @endif
         </div>
 

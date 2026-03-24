@@ -24,6 +24,11 @@ class Suscriptores extends Component
     public bool $whatsappEnabled = false;
     public bool $isAdmin = false;
 
+    // ── Permisos de agregar canal ─────────────────────────────────
+    public bool $canAddTelegram = false;
+    public bool $canAddWhatsApp = false;
+    public bool $canAddEmail = false;
+
     // ── Perfil unificado (company_copy + keywords) ────────────────
     public string $profile_company_copy = '';
     public array $profile_keywords = [];
@@ -61,6 +66,11 @@ class Suscriptores extends Component
         $this->whatsappEnabled = !empty(config('services.whatsapp.token'))
             && !empty(config('services.whatsapp.phone_number_id'));
         $this->isAdmin = auth()->user()?->hasRole('admin') ?? false;
+
+        $user = auth()->user();
+        $this->canAddTelegram = $this->isAdmin || ($user && $user->hasPermission('add-telegram-subscription'));
+        $this->canAddWhatsApp = $this->isAdmin || ($user && $user->hasPermission('add-whatsapp-subscription'));
+        $this->canAddEmail = $this->isAdmin || ($user && $user->hasPermission('add-email-subscription'));
 
         $this->loadKeywords();
         $this->loadProfile();
@@ -205,6 +215,11 @@ class Suscriptores extends Component
 
     public function agregarSuscriptor(): void
     {
+        if (!$this->canAddTelegram) {
+            session()->flash('error', 'No tienes permiso para agregar suscriptores de Telegram.');
+            return;
+        }
+
         if (!$this->isAdmin && !$this->editando_suscripcion_id) {
             $count = TelegramSubscription::where('user_id', auth()->id())->count();
             if ($count >= self::MAX_SUSCRIPTORES_POR_USUARIO) {
@@ -377,6 +392,11 @@ class Suscriptores extends Component
 
     public function guardarEmailSubscription(): void
     {
+        if (!$this->canAddEmail) {
+            session()->flash('email_error', 'No tienes permiso para agregar suscripcion de Email.');
+            return;
+        }
+
         $this->validate([
             'email_notificacion' => 'required|email|max:255',
         ], [
@@ -504,6 +524,11 @@ class Suscriptores extends Component
 
     public function guardarWhatsAppSubscription(): void
     {
+        if (!$this->canAddWhatsApp) {
+            session()->flash('wa_error', 'No tienes permiso para agregar suscripcion de WhatsApp.');
+            return;
+        }
+
         $this->validate([
             'wa_phone_number' => 'required|string|min:10|max:15|regex:/^\d+$/',
             'wa_nombre' => 'nullable|string|max:255',
@@ -638,6 +663,9 @@ class Suscriptores extends Component
             'emailSubscription' => $emailSubscription,
             'whatsappSubscription' => $whatsappSubscription,
             'subscriberProfile' => $subscriberProfile,
+            'canAddTelegram' => $this->canAddTelegram,
+            'canAddWhatsApp' => $this->canAddWhatsApp,
+            'canAddEmail' => $this->canAddEmail,
         ]);
     }
 
