@@ -99,8 +99,8 @@
      HERO — Keyword: software licitaciones perú, alertas SEACE
 ═══════════════════════════════════════════════════════════════ --}}
 <section class="relative bg-gradient-to-br from-brand-900 via-brand-800 to-brand-600 overflow-hidden">
-    <div class="absolute inset-0 opacity-10">
-        <svg class="w-full h-full" viewBox="0 0 1200 600" fill="none">
+    <div class="absolute inset-0 opacity-10" aria-hidden="true">
+        <svg class="w-full h-full" viewBox="0 0 1200 600" fill="none" width="1200" height="600">
             <circle cx="1000" cy="100" r="350" fill="white"/>
             <circle cx="200" cy="500" r="250" fill="white"/>
             <circle cx="600" cy="300" r="100" fill="white"/>
@@ -115,7 +115,7 @@
             Software de licitaciones<br>
             <span class="text-secondary-400">para MYPEs en Perú</span>
         </h1>
-        <p class="text-primary-200 text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
+        <p class="text-white/70 text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
             Monitorea licitaciones del SEACE con inteligencia artificial. Recibe <strong class="text-white">alertas automáticas por Telegram y WhatsApp</strong>, analiza TDR en segundos y encuentra contrataciones menores hasta 8 UIT compatibles con tu empresa.
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -414,7 +414,7 @@
         <div class="grid sm:grid-cols-2 gap-8">
             <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
                 <div class="flex items-center gap-3 mb-4">
-                    <span class="bg-secondary-100 text-secondary-500 text-xs font-bold px-3 py-1 rounded-full">Ideal para MYPEs</span>
+                    <span class="bg-secondary-100 text-secondary-600 text-xs font-bold px-3 py-1 rounded-full">Ideal para MYPEs</span>
                 </div>
                 <h3 class="text-base font-bold text-neutral-900 mb-3">Contrataciones menores a 8 UIT</h3>
                 <p class="text-sm text-neutral-600 leading-relaxed mb-4">
@@ -497,7 +497,7 @@
             <div class="bg-white rounded-3xl shadow-soft border-2 border-brand-800 p-8 relative">
                 <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-800 text-white text-xs font-bold px-4 py-1 rounded-full">Recomendado</span>
                 <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-2">Premium</p>
-                <p class="text-4xl font-extrabold text-neutral-900 mb-1">S/ 49<span class="text-lg text-neutral-400 font-normal">/mes</span></p>
+                <p class="text-4xl font-extrabold text-neutral-900 mb-1">S/ 49<span class="text-lg text-neutral-500 font-normal">/mes</span></p>
                 <p class="text-sm text-neutral-600 mb-6">15 días de prueba al registrarte</p>
                 <ul class="text-sm text-neutral-600 space-y-3 mb-8">
                     <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Todo lo del plan gratuito</li>
@@ -589,7 +589,7 @@
         <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">
             Empieza a ganar licitaciones del Estado hoy
         </h2>
-        <p class="text-primary-200 text-base sm:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
+        <p class="text-white/70 text-base sm:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
             Únete a las MYPEs que ya usan inteligencia artificial para encontrar contrataciones menores, analizar TDR y cotizar más rápido en el SEACE.
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
