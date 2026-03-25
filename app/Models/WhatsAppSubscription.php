@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\ChannelSubscriptionContract;
+use App\Models\Concerns\HasKeywordMatching;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +22,7 @@ use Illuminate\Support\Str;
  */
 class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
 {
-    use HasFactory;
+    use HasFactory, HasKeywordMatching;
 
     protected $table = 'whatsapp_subscriptions';
 
@@ -103,41 +104,9 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
         return $this->getCompanyCopy();
     }
 
-    public function resolverCoincidenciasContrato(array $contratoData): array
-    {
-        $resultado = [
-            'pasa' => false,
-            'keywords' => [],
-        ];
-
-        if (!$this->pasaFiltrosBasicos($contratoData)) {
-            return $resultado;
-        }
-
-        $keywords = $this->obtenerKeywordsNormalizados();
-
-        if ($keywords->isEmpty()) {
-            $resultado['pasa'] = true;
-            return $resultado;
-        }
-
-        $haystack = $this->buildContratoHaystack($contratoData);
-
-        if ($haystack === '') {
-            return $resultado;
-        }
-
-        foreach ($keywords as $keyword) {
-            if ($keyword !== '' && str_contains($haystack, $keyword)) {
-                $resultado['keywords'][] = $keyword;
-            }
-        }
-
-        $resultado['pasa'] = !empty($resultado['keywords']);
-        $resultado['keywords'] = array_values(array_unique($resultado['keywords']));
-
-        return $resultado;
-    }
+    // resolverCoincidenciasContrato(), coincideConFiltros(), obtenerKeywordsNormalizados(),
+    // buildContratoHaystack(), normalizarTexto(), pasaFiltrosBasicos()
+    // → provistos por HasKeywordMatching trait
 
     public function registrarNotificacion(): void
     {
@@ -150,60 +119,6 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
     public function scopeActivas($query)
     {
         return $query->where('activo', true);
-    }
-
-    // ─── Helpers (reutilizados de TelegramSubscription) ─────────────
-
-    public function coincideConFiltros(array $contratoData): bool
-    {
-        return $this->resolverCoincidenciasContrato($contratoData)['pasa'];
-    }
-
-    protected function obtenerKeywordsNormalizados(): Collection
-    {
-        $this->loadMissing('keywords');
-
-        return $this->keywords
-            ->pluck('nombre')
-            ->filter()
-            ->map(fn ($keyword) => $this->normalizarTexto($keyword))
-            ->filter()
-            ->values();
-    }
-
-    protected function buildContratoHaystack(array $contratoData): string
-    {
-        $fragmentos = array_filter([
-            $contratoData['nomEntidad'] ?? '',
-            $contratoData['desContratacion'] ?? '',
-            $contratoData['desObjetoContrato'] ?? '',
-            $contratoData['nomObjetoContrato'] ?? '',
-        ]);
-
-        if (empty($fragmentos)) {
-            return '';
-        }
-
-        return $this->normalizarTexto(implode(' ', $fragmentos));
-    }
-
-    protected function normalizarTexto(?string $valor): string
-    {
-        if ($valor === null) {
-            return '';
-        }
-
-        return Str::of($valor)
-            ->lower()
-            ->ascii()
-            ->replaceMatches('/\s+/', ' ')
-            ->trim()
-            ->value();
-    }
-
-    protected function pasaFiltrosBasicos(array $contratoData): bool
-    {
-        return true;
     }
 
     // ─── Accessors ──────────────────────────────────────────────────

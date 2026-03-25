@@ -19,25 +19,31 @@ class RolesPermisos extends Component
 
     public array $roles = [];
     public array $permissions = [];
+    public array $permissionGroups = [];
     public array $rolePermissions = [];
     public array $userRoles = [];
     public ?string $errorMessage = null;
-    public int $perPage = 12;
+    public int $perPage = 8;
 
     public function mount(): void
     {
         $this->loadRolesAndPermissions();
     }
 
-    public function guardarPermisos(int $roleId): void
+    public function togglePermiso(int $roleId, int $permissionId): void
     {
+        $current = array_map('intval', $this->rolePermissions[$roleId] ?? []);
+
+        if (in_array($permissionId, $current, true)) {
+            $this->rolePermissions[$roleId] = array_values(array_diff($current, [$permissionId]));
+        } else {
+            $current[] = $permissionId;
+            $this->rolePermissions[$roleId] = $current;
+        }
+
+        // Persistir inmediatamente en BD
         $role = Role::findOrFail($roleId);
-        $permissionIds = $this->rolePermissions[$roleId] ?? [];
-
-        $role->permissions()->sync($permissionIds);
-
-        session()->flash('success', "✅ Permisos guardados para {$role->name}");
-        $this->loadRolesAndPermissions();
+        $role->permissions()->sync($this->rolePermissions[$roleId]);
     }
 
     public function guardarRolUsuario(int $userId): void
@@ -146,8 +152,40 @@ class RolesPermisos extends Component
             'description' => $permission->description,
         ])->toArray();
 
+        // Agrupar permisos por concepto/vista
+        $groupMap = [
+            'Vistas del sistema' => ['view-tdr-repository', 'view-configuracion', 'view-buscador-publico', 'view-cuentas', 'view-prueba-endpoints', 'view-suscriptores', 'view-mis-procesos'],
+            'Suscripciones' => ['add-telegram-subscription', 'add-whatsapp-subscription', 'add-email-subscription', 'manage-subscriptions'],
+            'TDR y procesos' => ['import-tdr', 'analyze-tdr', 'follow-contracts', 'cotizar-seace'],
+            'Administración' => ['manage-roles-permissions'],
+        ];
+
+        $grouped = [];
+        $assigned = [];
+
+        foreach ($groupMap as $groupName => $slugs) {
+            $items = [];
+            foreach ($this->permissions as $perm) {
+                if (in_array($perm['slug'], $slugs, true)) {
+                    $items[] = $perm;
+                    $assigned[] = $perm['slug'];
+                }
+            }
+            if (!empty($items)) {
+                $grouped[] = ['name' => $groupName, 'permissions' => $items];
+            }
+        }
+
+        // Permisos no agrupados
+        $unassigned = array_filter($this->permissions, fn ($p) => !in_array($p['slug'], $assigned, true));
+        if (!empty($unassigned)) {
+            $grouped[] = ['name' => 'Otros', 'permissions' => array_values($unassigned)];
+        }
+
+        $this->permissionGroups = $grouped;
+
         $this->rolePermissions = $roles->mapWithKeys(function ($role) {
-            return [$role->id => $role->permissions->pluck('id')->values()->all()];
+            return [$role->id => $role->permissions->pluck('id')->map(fn ($id) => (int) $id)->values()->all()];
         })->toArray();
     }
 

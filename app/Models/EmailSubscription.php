@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasKeywordMatching;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Support\Str;
 
 class EmailSubscription extends Model
 {
-    use HasFactory;
+    use HasFactory, HasKeywordMatching;
 
     protected $fillable = [
         'user_id',
@@ -87,28 +88,17 @@ class EmailSubscription extends Model
         $this->update(['ultima_notificacion_at' => now()]);
     }
 
-    // ── Lógica de matching (misma que TelegramSubscription) ───────
-
-    /**
-     * Verificar si un contrato coincide con los filtros de esta suscripción.
-     */
-    public function coincideConFiltros(array $contratoData): bool
-    {
-        return $this->resolverCoincidenciasContrato($contratoData)['pasa'];
-    }
+    // ── Keyword matching: provistos por HasKeywordMatching trait ───
+    // Override: Email tiene lógica especial con notificar_todo
 
     public function resolverCoincidenciasContrato(array $contratoData): array
     {
-        $resultado = [
-            'pasa' => false,
-            'keywords' => [],
-        ];
-
-        // Si notificar_todo está activado, siempre pasa
+        // Si notificar_todo está activado, siempre pasa (sin filtrar por keywords)
         if ($this->notificar_todo) {
-            $resultado['pasa'] = true;
-            return $resultado;
+            return ['pasa' => true, 'keywords' => []];
         }
+
+        $resultado = ['pasa' => false, 'keywords' => []];
 
         $keywords = $this->obtenerKeywordsNormalizados();
 
@@ -133,48 +123,6 @@ class EmailSubscription extends Model
         $resultado['keywords'] = array_values(array_unique($resultado['keywords']));
 
         return $resultado;
-    }
-
-    protected function obtenerKeywordsNormalizados(): Collection
-    {
-        $this->loadMissing('keywords');
-
-        return $this->keywords
-            ->pluck('nombre')
-            ->filter()
-            ->map(fn ($keyword) => $this->normalizarTexto($keyword))
-            ->filter()
-            ->values();
-    }
-
-    protected function buildContratoHaystack(array $contratoData): string
-    {
-        $fragmentos = array_filter([
-            $contratoData['nomEntidad'] ?? '',
-            $contratoData['desContratacion'] ?? '',
-            $contratoData['desObjetoContrato'] ?? '',
-            $contratoData['nomObjetoContrato'] ?? '',
-        ]);
-
-        if (empty($fragmentos)) {
-            return '';
-        }
-
-        return $this->normalizarTexto(implode(' ', $fragmentos));
-    }
-
-    protected function normalizarTexto(?string $valor): string
-    {
-        if ($valor === null) {
-            return '';
-        }
-
-        return Str::of($valor)
-            ->lower()
-            ->ascii()
-            ->replaceMatches('/\s+/', ' ')
-            ->trim()
-            ->value();
     }
 
     public function getEstadoTextAttribute(): string
