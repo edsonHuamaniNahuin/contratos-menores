@@ -12,8 +12,13 @@
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="canonical" href="{{ url()->current() }}">
+    {{-- Google Fonts: preconnect + preload para evitar render-blocking --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <!-- Google Analytics — Consent Mode v2 -->
+    <!-- Google Analytics — Consent Mode v2 (carga diferida post-LCP) -->
     @if(app()->environment('production'))
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -28,10 +33,22 @@
             gtag('consent', 'update', { 'analytics_storage': 'granted' });
         }
     </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4PRW1QCW48"></script>
     <script>
-        gtag('js', new Date());
-        gtag('config', 'G-4PRW1QCW48');
+        // Defer GTM load to avoid blocking LCP
+        (function(){
+            function loadGTM(){
+                var s=document.createElement('script');
+                s.async=true;
+                s.src='https://www.googletagmanager.com/gtag/js?id=G-4PRW1QCW48';
+                document.head.appendChild(s);
+                s.onload=function(){
+                    gtag('js', new Date());
+                    gtag('config', 'G-4PRW1QCW48');
+                };
+            }
+            if('requestIdleCallback' in window){requestIdleCallback(loadGTM);}
+            else{setTimeout(loadGTM,2000);}
+        })();
     </script>
     @endif
     @stack('head')
@@ -49,7 +66,7 @@
                 </div>
                 <div>
                     <span class="text-lg font-bold text-neutral-900 block leading-tight">Licitaciones MYPe</span>
-                    <span class="text-[10px] text-neutral-400 font-medium tracking-wider uppercase">Vigilante SEACE</span>
+                    <span class="text-[10px] text-neutral-500 font-medium tracking-wider uppercase">Vigilante SEACE</span>
                 </div>
             </a>
 
@@ -89,8 +106,8 @@
             </div>
 
             {{-- Mobile hamburger --}}
-            <button @click="mobileMenu = !mobileMenu" class="md:hidden p-2 rounded-lg text-neutral-600 hover:bg-neutral-50">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button @click="mobileMenu = !mobileMenu" class="md:hidden p-2 rounded-lg text-neutral-600 hover:bg-neutral-50" aria-label="Abrir menú de navegación">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path x-show="!mobileMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     <path x-show="mobileMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -136,7 +153,7 @@
                         </div>
                         <div>
                             <span class="font-bold block leading-tight">Licitaciones MYPe</span>
-                            <span class="text-[10px] text-neutral-500 font-medium tracking-wider uppercase">Vigilante SEACE</span>
+                            <span class="text-[10px] text-neutral-400 font-medium tracking-wider uppercase">Vigilante SEACE</span>
                         </div>
                     </div>
                     <p class="text-sm text-neutral-400 leading-relaxed">
@@ -146,7 +163,7 @@
 
                 {{-- Plataforma --}}
                 <div class="space-y-4">
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Plataforma</h4>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Plataforma</p>
                     <ul class="space-y-2.5 text-sm text-neutral-400">
                         <li><a href="{{ route('buscador.publico') }}" class="hover:text-white transition-colors">Buscador público</a></li>
                         <li><a href="{{ route('planes') }}" class="hover:text-white transition-colors">Planes y precios</a></li>
@@ -156,7 +173,7 @@
 
                 {{-- Empresa --}}
                 <div class="space-y-4">
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Empresa</h4>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Empresa</p>
                     <ul class="space-y-2.5 text-sm text-neutral-400">
                         <li><a href="{{ route('contacto') }}" class="hover:text-white transition-colors">Contacto</a></li>
                         <li><a href="{{ route('legal.politica-privacidad') }}" class="hover:text-white transition-colors">Política de privacidad</a></li>
@@ -171,7 +188,7 @@
 
                 {{-- Contacto --}}
                 <div class="space-y-4">
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Contacto</h4>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Contacto</p>
                     <ul class="space-y-2.5 text-sm text-neutral-400">
                         <li class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-neutral-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
@@ -186,8 +203,8 @@
             </div>
 
             <div class="border-t border-neutral-800 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p class="text-xs text-neutral-500">&copy; {{ date('Y') }} Sunqupacha S.A.C. Todos los derechos reservados.</p>
-                <p class="text-xs text-neutral-600">Licitaciones MYPe es un producto de <a href="https://sunqupacha.com" target="_blank" class="text-neutral-400 hover:text-white">Sunqupacha</a></p>
+                <p class="text-xs text-neutral-400">&copy; {{ date('Y') }} Sunqupacha S.A.C. Todos los derechos reservados.</p>
+                <p class="text-xs text-neutral-400">Licitaciones MYPe es un producto de <a href="https://sunqupacha.com" target="_blank" rel="noopener" class="text-neutral-300 hover:text-white underline underline-offset-2">Sunqupacha</a></p>
             </div>
         </div>
     </footer>
