@@ -56,172 +56,116 @@
         </div>
     </div>
 
-    {{-- Calendar + Sidebar --}}
-    <div class="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6">
+    {{-- Calendar (full width) --}}
+    <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-3 sm:p-6">
+        <div id="fc-seguimientos" wire:ignore class="fc-sequence"></div>
 
-        {{-- FullCalendar --}}
-        <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-3 sm:p-6">
-            <div id="fc-seguimientos" wire:ignore class="fc-sequence"></div>
+        {{-- Leyenda --}}
+        <div class="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-neutral-100 text-xs text-neutral-600">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full semaforo-dot-red"></span>
+                Vence en &le;2 dias
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full semaforo-dot-orange"></span>
+                Vence en 3-5 dias
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full semaforo-dot-yellow"></span>
+                Vence esta semana
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full semaforo-dot-green"></span>
+                Fecha estable
+            </div>
+        </div>
+    </div>
 
-            {{-- Leyenda --}}
-            <div class="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-neutral-100 text-xs text-neutral-600">
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full semaforo-dot-red"></span>
-                    Vence en &le;2 dias
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full semaforo-dot-orange"></span>
-                    Vence en 3-5 dias
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full semaforo-dot-yellow"></span>
-                    Vence esta semana
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full semaforo-dot-green"></span>
-                    Fecha estable
+    {{-- Modal Detalle de Proceso --}}
+    @if($detalleSeguimiento)
+        <div
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            x-data
+            x-on:keydown.escape.window="$wire.cerrarDetalle()"
+        >
+            {{-- Overlay --}}
+            <div
+                class="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm"
+                wire:click="cerrarDetalle"
+            ></div>
+
+            {{-- Panel --}}
+            <div class="relative bg-white rounded-3xl shadow-soft border border-neutral-100 w-full max-w-md p-6 sm:p-8 z-10">
+                {{-- Cerrar --}}
+                <button
+                    type="button"
+                    wire:click="cerrarDetalle"
+                    class="absolute top-4 right-4 w-8 h-8 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+
+                @php
+                    $urgLabel = match($detalleSeguimiento['urgencia'] ?? 'estable') {
+                        'critico' => ['Critico', 'semaforo-card-red'],
+                        'alto'    => ['Urgente', 'semaforo-card-orange'],
+                        'medio'   => ['Medio', 'semaforo-card-yellow'],
+                        default   => ['Estable', 'semaforo-card-green'],
+                    };
+                @endphp
+
+                <div class="space-y-4">
+                    <div class="inline-flex px-3 py-1 rounded-full border text-xs font-semibold {{ $urgLabel[1] }}">
+                        {{ $urgLabel[0] }}
+                    </div>
+
+                    <div>
+                        <p class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Proceso</p>
+                        <p class="text-lg font-bold text-neutral-900 mt-0.5">{{ $detalleSeguimiento['codigo'] }}</p>
+                    </div>
+
+                    <div>
+                        <p class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Entidad</p>
+                        <p class="text-sm text-neutral-700 mt-0.5">{{ $detalleSeguimiento['entidad'] ?? 'No disponible' }}</p>
+                    </div>
+
+                    <div>
+                        <p class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Objeto</p>
+                        <p class="text-sm text-neutral-700 mt-0.5">{{ $detalleSeguimiento['objeto'] ?? 'No disponible' }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-neutral-50 border border-neutral-100 rounded-2xl p-3">
+                            <p class="text-[10px] font-semibold text-neutral-400 uppercase">Inicio</p>
+                            <p class="text-sm font-semibold text-neutral-900 mt-1">{{ $detalleSeguimiento['inicio_label'] ?? 'N/D' }}</p>
+                        </div>
+                        <div class="bg-neutral-50 border border-neutral-100 rounded-2xl p-3">
+                            <p class="text-[10px] font-semibold text-neutral-400 uppercase">Fin</p>
+                            <p class="text-sm font-semibold text-neutral-900 mt-1">{{ $detalleSeguimiento['fin_label'] ?? 'N/D' }}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Estado</p>
+                        <p class="text-sm text-neutral-700 mt-0.5">{{ $detalleSeguimiento['estado'] ?? 'No disponible' }}</p>
+                    </div>
+
+                    <div class="pt-3 border-t border-neutral-100">
+                        <button
+                            type="button"
+                            wire:click="eliminarSeguimiento({{ $detalleSeguimiento['id'] }})"
+                            wire:confirm="Seguro que deseas dejar de seguir este proceso?"
+                            class="w-full px-4 py-2.5 rounded-full border border-neutral-200 text-xs font-medium text-neutral-500 hover:border-red-300 hover:text-red-600 transition-colors"
+                        >
+                            Dejar de seguir
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-
-        {{-- Sidebar --}}
-        <aside class="space-y-6">
-
-            {{-- Lista de seguimientos --}}
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-4 sm:p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold text-neutral-900">Procesos en seguimiento</h2>
-                        <p class="text-xs text-neutral-400 mt-1">{{ count($seguimientos) }} proceso(s) activo(s)</p>
-                    </div>
-                </div>
-
-                @if(empty($seguimientos))
-                    <div class="bg-neutral-50 border border-neutral-200 rounded-2xl p-8 text-center">
-                        <div class="text-4xl mb-3">📅</div>
-                        <p class="text-sm font-medium text-neutral-700">Sin seguimientos activos</p>
-                        <p class="text-xs text-neutral-400 mt-2">
-                            Agrega procesos desde el
-                            <a href="{{ route('buscador.publico') }}" class="text-primary-500 hover:underline">buscador publico</a>.
-                        </p>
-                    </div>
-                @else
-                    <div class="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
-                        @foreach($seguimientos as $seguimiento)
-                            @php
-                                $dotClass = match($seguimiento['urgencia']) {
-                                    'critico' => 'semaforo-dot-red',
-                                    'alto' => 'semaforo-dot-orange',
-                                    'medio' => 'semaforo-dot-yellow',
-                                    default => 'semaforo-dot-green',
-                                };
-                                $cardClass = match($seguimiento['urgencia']) {
-                                    'critico' => 'semaforo-card-red',
-                                    'alto' => 'semaforo-card-orange',
-                                    'medio' => 'semaforo-card-yellow',
-                                    default => 'semaforo-card-green',
-                                };
-                                $isActive = $detalleId === $seguimiento['id'];
-                            @endphp
-                            <button
-                                type="button"
-                                wire:click="verDetalle({{ $seguimiento['id'] }})"
-                                class="w-full text-left rounded-2xl border p-3.5 transition-all {{ $cardClass }} {{ $isActive ? 'ring-2 ring-primary-400 border-primary-400' : 'hover:border-primary-400' }}"
-                            >
-                                <div class="flex items-start gap-2.5">
-                                    <span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 {{ $dotClass }}"></span>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-bold text-neutral-900 truncate">{{ $seguimiento['codigo'] }}</p>
-                                        <p class="text-xs text-neutral-500 mt-0.5 truncate">{{ $seguimiento['entidad'] ?? 'Entidad no disponible' }}</p>
-                                        <div class="mt-2 flex items-center gap-3 text-[11px] text-neutral-400">
-                                            <span>{{ $seguimiento['inicio_label'] ?? 'N/D' }}</span>
-                                            <svg class="w-3 h-3 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                                            <span>{{ $seguimiento['fin_label'] ?? 'N/D' }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </button>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-
-            {{-- Detalle rapido --}}
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-4 sm:p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-base sm:text-lg font-bold text-neutral-900">Detalle rapido</h2>
-                    @if($detalleSeguimiento)
-                        <button
-                            type="button"
-                            wire:click="cerrarDetalle"
-                            class="w-8 h-8 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    @endif
-                </div>
-
-                @if(!$detalleSeguimiento)
-                    <div class="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 text-center">
-                        <p class="text-sm text-neutral-500">Selecciona un proceso del calendario o la lista para ver el detalle.</p>
-                    </div>
-                @else
-                    @php
-                        $urgLabel = match($detalleSeguimiento['urgencia'] ?? 'estable') {
-                            'critico' => ['Critico', 'semaforo-card-red'],
-                            'alto'    => ['Urgente', 'semaforo-card-orange'],
-                            'medio'   => ['Medio', 'semaforo-card-yellow'],
-                            default   => ['Estable', 'semaforo-card-green'],
-                        };
-                    @endphp
-                    <div class="space-y-3">
-                        <div class="inline-flex px-3 py-1 rounded-full border text-xs font-semibold {{ $urgLabel[1] }}">
-                            {{ $urgLabel[0] }}
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Proceso</p>
-                            <p class="text-base font-bold text-neutral-900 mt-0.5">{{ $detalleSeguimiento['codigo'] }}</p>
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Entidad</p>
-                            <p class="text-sm text-neutral-700 mt-0.5">{{ $detalleSeguimiento['entidad'] ?? 'No disponible' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Objeto</p>
-                            <p class="text-sm text-neutral-700 mt-0.5">{{ $detalleSeguimiento['objeto'] ?? 'No disponible' }}</p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-neutral-50 border border-neutral-100 rounded-2xl p-3">
-                                <p class="text-[10px] font-semibold text-neutral-400 uppercase">Inicio</p>
-                                <p class="text-sm font-semibold text-neutral-900 mt-1">{{ $detalleSeguimiento['inicio_label'] ?? 'N/D' }}</p>
-                            </div>
-                            <div class="bg-neutral-50 border border-neutral-100 rounded-2xl p-3">
-                                <p class="text-[10px] font-semibold text-neutral-400 uppercase">Fin</p>
-                                <p class="text-sm font-semibold text-neutral-900 mt-1">{{ $detalleSeguimiento['fin_label'] ?? 'N/D' }}</p>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Estado</p>
-                            <p class="text-sm text-neutral-700 mt-0.5">{{ $detalleSeguimiento['estado'] ?? 'No disponible' }}</p>
-                        </div>
-                        <div class="pt-3 border-t border-neutral-100">
-                            <button
-                                type="button"
-                                wire:click="eliminarSeguimiento({{ $detalleSeguimiento['id'] }})"
-                                wire:confirm="Seguro que deseas dejar de seguir este proceso?"
-                                class="w-full px-4 py-2.5 rounded-full border border-neutral-200 text-xs font-medium text-neutral-500 hover:border-red-300 hover:text-red-600 transition-colors"
-                            >
-                                Dejar de seguir
-                            </button>
-                        </div>
-                    </div>
-                @endif
-            </div>
-
-        </aside>
-    </div>
+    @endif
 
     {{-- FullCalendar: Sequence Dashboard Theme --}}
     <style>

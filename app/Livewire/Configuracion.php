@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\SystemSetting;
 use App\Services\Payments\PaymentGatewayManager;
 use Livewire\Component;
 use Illuminate\Support\Facades\Http;
@@ -51,34 +52,30 @@ class Configuracion extends Component
 
     public function mount()
     {
-        // Cargar configuración actual desde config (usar ?? '' para evitar null en propiedades string)
-        $this->telegram_bot_token = config('services.telegram.bot_token') ?? '';
-        $this->telegram_chat_id = config('services.telegram.chat_id') ?? '';
+        // Leer desde BD (system_settings), con fallback a config/.env
+        $this->telegram_bot_token = SystemSetting::getValue('telegram_bot_token', config('services.telegram.bot_token') ?? '') ?? '';
+        $this->telegram_chat_id = SystemSetting::getValue('telegram_chat_id', config('services.telegram.chat_id') ?? '') ?? '';
         $this->telegram_enabled = !empty($this->telegram_bot_token) && !empty($this->telegram_chat_id);
 
-        // Cargar configuración del bot admin de Telegram
-        $this->telegram_admin_bot_token = config('services.telegram_admin.bot_token') ?? '';
-        $this->telegram_admin_chat_id = config('services.telegram_admin.chat_id') ?? '';
+        $this->telegram_admin_bot_token = SystemSetting::getValue('telegram_admin_bot_token', config('services.telegram_admin.bot_token') ?? '') ?? '';
+        $this->telegram_admin_chat_id = SystemSetting::getValue('telegram_admin_chat_id', config('services.telegram_admin.chat_id') ?? '') ?? '';
         $this->telegram_admin_enabled = !empty($this->telegram_admin_bot_token) && !empty($this->telegram_admin_chat_id);
 
-        // Cargar configuración del analizador
-        $this->analizador_url = config('services.analizador_tdr.url') ?? 'http://127.0.0.1:8001';
-        $this->analizador_enabled = (bool) (config('services.analizador_tdr.enabled') ?? false);
+        $this->analizador_url = SystemSetting::getValue('analizador_tdr_url', config('services.analizador_tdr.url') ?? 'http://127.0.0.1:8001') ?? 'http://127.0.0.1:8001';
+        $this->analizador_enabled = (bool) SystemSetting::getValue('analizador_tdr_enabled', config('services.analizador_tdr.enabled') ? '1' : '0');
 
-        // Cargar configuración WhatsApp
-        $this->whatsapp_bot_token = config('services.whatsapp.bot_token') ?? '';
-        $this->whatsapp_group_id = config('services.whatsapp.group_id') ?? '';
+        $this->whatsapp_bot_token = SystemSetting::getValue('whatsapp_bot_token', config('services.whatsapp.bot_token') ?? '') ?? '';
+        $this->whatsapp_group_id = SystemSetting::getValue('whatsapp_group_id', config('services.whatsapp.group_id') ?? '') ?? '';
         $this->whatsapp_enabled = !empty($this->whatsapp_bot_token) && !empty($this->whatsapp_group_id);
 
-        // Cargar configuración de pasarela de pago
-        $this->payment_gateway = config('services.payment_gateway') ?? 'mercadopago';
-        $this->mercadopago_access_token = config('services.mercadopago.access_token') ?? '';
-        $this->mercadopago_public_key = config('services.mercadopago.public_key') ?? '';
-        $this->mercadopago_webhook_secret = config('services.mercadopago.webhook_secret') ?? '';
-        $this->openpay_merchant_id = config('services.openpay.merchant_id') ?? '';
-        $this->openpay_private_key = config('services.openpay.private_key') ?? '';
-        $this->openpay_public_key = config('services.openpay.public_key') ?? '';
-        $this->openpay_production = (bool) (config('services.openpay.production') ?? false);
+        $this->payment_gateway = SystemSetting::getValue('payment_gateway', config('services.payment_gateway') ?? 'mercadopago') ?? 'mercadopago';
+        $this->mercadopago_access_token = SystemSetting::getValue('mercadopago_access_token', config('services.mercadopago.access_token') ?? '') ?? '';
+        $this->mercadopago_public_key = SystemSetting::getValue('mercadopago_public_key', config('services.mercadopago.public_key') ?? '') ?? '';
+        $this->mercadopago_webhook_secret = SystemSetting::getValue('mercadopago_webhook_secret', config('services.mercadopago.webhook_secret') ?? '') ?? '';
+        $this->openpay_merchant_id = SystemSetting::getValue('openpay_merchant_id', config('services.openpay.merchant_id') ?? '') ?? '';
+        $this->openpay_private_key = SystemSetting::getValue('openpay_private_key', config('services.openpay.private_key') ?? '') ?? '';
+        $this->openpay_public_key = SystemSetting::getValue('openpay_public_key', config('services.openpay.public_key') ?? '') ?? '';
+        $this->openpay_production = (bool) SystemSetting::getValue('openpay_production', config('services.openpay.production') ? '1' : '0');
     }
 
     public function guardarConfiguracion()
@@ -123,34 +120,27 @@ class Configuracion extends Component
                 }
             }
 
-            // Actualizar archivo .env
-            $this->updateEnvFile([
-                'TELEGRAM_BOT_TOKEN' => $this->telegram_bot_token,
-                'TELEGRAM_CHAT_ID' => $this->telegram_chat_id,
-                'TELEGRAM_ADMIN_BOT_TOKEN' => $this->telegram_admin_bot_token,
-                'TELEGRAM_ADMIN_CHAT_ID' => $this->telegram_admin_chat_id,
-                'ANALIZADOR_TDR_URL' => $this->analizador_url,
-                'ANALIZADOR_TDR_ENABLED' => $this->analizador_enabled ? 'true' : 'false',
-                'PAYMENT_GATEWAY' => $this->payment_gateway,
-                'MERCADOPAGO_ACCESS_TOKEN' => $this->mercadopago_access_token,
-                'MERCADOPAGO_PUBLIC_KEY' => $this->mercadopago_public_key,
-                'MERCADOPAGO_WEBHOOK_SECRET' => $this->mercadopago_webhook_secret,
-                'OPENPAY_MERCHANT_ID' => $this->openpay_merchant_id,
-                'OPENPAY_PRIVATE_KEY' => $this->openpay_private_key,
-                'OPENPAY_PUBLIC_KEY' => $this->openpay_public_key,
-                'OPENPAY_PRODUCTION' => $this->openpay_production ? 'true' : 'false',
+            // Guardar en base de datos (system_settings)
+            SystemSetting::setMany([
+                'telegram_bot_token' => $this->telegram_bot_token,
+                'telegram_chat_id' => $this->telegram_chat_id,
+                'telegram_admin_bot_token' => $this->telegram_admin_bot_token,
+                'telegram_admin_chat_id' => $this->telegram_admin_chat_id,
+                'analizador_tdr_url' => $this->analizador_url,
+                'analizador_tdr_enabled' => $this->analizador_enabled ? '1' : '0',
+                'whatsapp_bot_token' => $this->whatsapp_bot_token,
+                'whatsapp_group_id' => $this->whatsapp_group_id,
+                'payment_gateway' => $this->payment_gateway,
+                'mercadopago_access_token' => $this->mercadopago_access_token,
+                'mercadopago_public_key' => $this->mercadopago_public_key,
+                'mercadopago_webhook_secret' => $this->mercadopago_webhook_secret,
+                'openpay_merchant_id' => $this->openpay_merchant_id,
+                'openpay_private_key' => $this->openpay_private_key,
+                'openpay_public_key' => $this->openpay_public_key,
+                'openpay_production' => $this->openpay_production ? '1' : '0',
             ]);
 
-            // Limpiar cache de config para que relea el .env
-            if (file_exists(base_path('bootstrap/cache/config.php'))) {
-                @unlink(base_path('bootstrap/cache/config.php'));
-            }
-            \Artisan::call('config:clear');
-
             session()->flash('success', '✓ Configuración guardada correctamente.');
-
-            // Recargar valores desde el .env actualizado
-            $this->refreshConfigFromEnv();
 
         } catch (\Exception $e) {
             Log::error('Error al guardar configuración', [
@@ -348,72 +338,8 @@ class Configuracion extends Component
         }
     }
 
-    private function updateEnvFile(array $data)
-    {
-        $envFile = base_path('.env');
-
-        if (!file_exists($envFile)) {
-            throw new \Exception('Archivo .env no encontrado');
-        }
-
-        $envContent = file_get_contents($envFile);
-
-        foreach ($data as $key => $value) {
-            // Asegurar que el valor sea string
-            $value = (string) $value;
-
-            // Escapar comillas dobles dentro del valor
-            $escapedValue = str_replace('"', '\"', $value);
-
-            // Si el valor contiene espacios o caracteres especiales, envolver en comillas
-            $needsQuotes = preg_match('/[\s#"\'\\\\]/', $value) || $value === '';
-            $replacement = $needsQuotes ? "{$key}=\"{$escapedValue}\"" : "{$key}={$escapedValue}";
-
-            $pattern = "/^" . preg_quote($key, '/') . "=.*/m";
-
-            if (preg_match($pattern, $envContent)) {
-                $envContent = preg_replace($pattern, $replacement, $envContent);
-            } else {
-                $envContent = rtrim($envContent) . "\n{$replacement}\n";
-            }
-        }
-
-        file_put_contents($envFile, $envContent);
-    }
-
     public function render()
     {
         return view('livewire.configuracion');
-    }
-
-    /**
-     * Recarga los valores del componente desde el .env actualizado.
-     */
-    private function refreshConfigFromEnv(): void
-    {
-        // Forzar re-lectura del .env (Dotenv)
-        $dotenv = \Dotenv\Dotenv::createImmutable(base_path());
-        $dotenv->safeLoad();
-
-        $this->analizador_url = env('ANALIZADOR_TDR_URL', 'http://127.0.0.1:8001');
-        $this->analizador_enabled = filter_var(env('ANALIZADOR_TDR_ENABLED', false), FILTER_VALIDATE_BOOLEAN);
-        $this->telegram_bot_token = env('TELEGRAM_BOT_TOKEN', '');
-        $this->telegram_chat_id = env('TELEGRAM_CHAT_ID', '');
-        $this->telegram_enabled = !empty($this->telegram_bot_token) && !empty($this->telegram_chat_id);
-
-        // Admin bot
-        $this->telegram_admin_bot_token = env('TELEGRAM_ADMIN_BOT_TOKEN', '');
-        $this->telegram_admin_chat_id = env('TELEGRAM_ADMIN_CHAT_ID', '');
-        $this->telegram_admin_enabled = !empty($this->telegram_admin_bot_token) && !empty($this->telegram_admin_chat_id);
-
-        // Pasarela de pago
-        $this->payment_gateway = env('PAYMENT_GATEWAY', 'mercadopago');
-        $this->mercadopago_access_token = env('MERCADOPAGO_ACCESS_TOKEN', '');
-        $this->mercadopago_public_key = env('MERCADOPAGO_PUBLIC_KEY', '');
-        $this->mercadopago_webhook_secret = env('MERCADOPAGO_WEBHOOK_SECRET', '');
-        $this->openpay_merchant_id = env('OPENPAY_MERCHANT_ID', '');
-        $this->openpay_private_key = env('OPENPAY_PRIVATE_KEY', '');
-        $this->openpay_public_key = env('OPENPAY_PUBLIC_KEY', '');
-        $this->openpay_production = filter_var(env('OPENPAY_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN);
     }
 }

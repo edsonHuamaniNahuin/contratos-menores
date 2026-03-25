@@ -26,53 +26,62 @@
             </div>
         </div>
 
-        <div class="space-y-3">
-            @foreach($users as $user)
-                <div class="bg-neutral-50 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div>
-                        <p class="text-sm font-bold text-neutral-900">{{ $user->name }}</p>
-                        <p class="text-xs text-neutral-500">{{ $user->email }}</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <select
-                            class="px-4 py-2 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none text-sm"
-                            wire:model="userRoles.{{ $user->id }}"
-                            wire:change="guardarRolUsuario({{ $user->id }})"
-                        >
-                            <option value="">Selecciona rol</option>
-                            @foreach($roles as $role)
-                                <option value="{{ $role['id'] }}">{{ $role['name'] }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-            @endforeach
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-neutral-200">
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Usuario</th>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Email</th>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Rol</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-100">
+                    @foreach($users as $user)
+                        <tr class="hover:bg-neutral-50 transition-colors">
+                            <td class="py-3 px-4">
+                                <p class="font-semibold text-neutral-900">{{ $user->name }}</p>
+                            </td>
+                            <td class="py-3 px-4 text-neutral-500 text-xs">{{ $user->email }}</td>
+                            <td class="py-3 px-4">
+                                <select
+                                    class="px-3 py-1.5 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none text-xs"
+                                    wire:model="userRoles.{{ $user->id }}"
+                                    wire:change="guardarRolUsuario({{ $user->id }})"
+                                >
+                                    <option value="">Selecciona rol</option>
+                                    @foreach($roles as $role)
+                                        <option value="{{ $role['id'] }}">{{ $role['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
 
-        @if($users->hasPages())
-            <div class="mt-6 bg-white rounded-2xl border border-neutral-200 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div class="text-xs text-neutral-500">
-                    Mostrando <span class="font-semibold text-neutral-900">{{ $users->firstItem() }}</span> a <span class="font-semibold text-neutral-900">{{ $users->lastItem() }}</span> de <span class="font-semibold text-neutral-900">{{ $users->total() }}</span> usuarios
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <button
-                        wire:click="previousPage"
-                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50"
-                        @if($users->onFirstPage()) disabled @endif
-                    >
-                        Anterior
-                    </button>
-                    <span class="text-xs text-neutral-500">Pagina {{ $users->currentPage() }} de {{ $users->lastPage() }}</span>
-                    <button
-                        wire:click="nextPage"
-                        class="px-3 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50"
-                        @if(! $users->hasMorePages()) disabled @endif
-                    >
-                        Siguiente
-                    </button>
-                </div>
+        <div class="mt-4 bg-neutral-50 rounded-2xl border border-neutral-200 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="text-xs text-neutral-500">
+                Mostrando <span class="font-semibold text-neutral-900">{{ $users->firstItem() }}</span> a <span class="font-semibold text-neutral-900">{{ $users->lastItem() }}</span> de <span class="font-semibold text-neutral-900">{{ $users->total() }}</span> usuarios
             </div>
-        @endif
+            <div class="flex items-center gap-2">
+                <button
+                    wire:click="previousPage"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:border-primary-400 transition-colors disabled:opacity-40"
+                    @if($users->onFirstPage()) disabled @endif
+                >
+                    ← Anterior
+                </button>
+                <span class="text-xs text-neutral-500 font-medium">{{ $users->currentPage() }} / {{ $users->lastPage() }}</span>
+                <button
+                    wire:click="nextPage"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:border-primary-400 transition-colors disabled:opacity-40"
+                    @if(! $users->hasMorePages()) disabled @endif
+                >
+                    Siguiente →
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
@@ -91,28 +100,35 @@
                             <p class="text-sm font-bold text-neutral-900">{{ $role['name'] }}</p>
                             <p class="text-xs text-neutral-500">{{ $role['description'] }}</p>
                         </div>
-                        <button
-                            wire:click="guardarPermisos({{ $role['id'] }})"
-                            class="px-4 py-2 bg-primary-500 text-white rounded-full text-xs font-semibold hover:bg-primary-400 transition-colors"
-                        >
-                            Guardar permisos
-                        </button>
                     </div>
 
-                    <div class="space-y-2">
-                        @foreach($permissions as $permission)
-                            <label class="flex items-center justify-between gap-3 bg-white rounded-2xl border border-neutral-200 px-4 py-2">
-                                <div>
-                                    <p class="text-xs font-semibold text-neutral-900">{{ $permission['name'] }}</p>
-                                    <p class="text-[11px] text-neutral-500">{{ $permission['slug'] }}</p>
+                    <div class="space-y-4">
+                        @foreach($permissionGroups as $group)
+                            <div>
+                                <p class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">{{ $group['name'] }}</p>
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach($group['permissions'] as $permission)
+                                        @php
+                                            $isChecked = collect($rolePermissions[$role['id']] ?? [])->contains($permission['id']);
+                                        @endphp
+                                        <button
+                                            type="button"
+                                            wire:click="togglePermiso({{ $role['id'] }}, {{ $permission['id'] }})"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer
+                                                {{ $isChecked
+                                                    ? 'bg-secondary-500 text-white border-secondary-500 shadow'
+                                                    : 'bg-white text-neutral-600 border-neutral-200 hover:border-primary-400' }}"
+                                        >
+                                            @if($isChecked)
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            @endif
+                                            {{ $permission['name'] }}
+                                        </button>
+                                    @endforeach
                                 </div>
-                                <input
-                                    type="checkbox"
-                                    class="h-4 w-4 rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
-                                    wire:model="rolePermissions.{{ $role['id'] }}"
-                                    value="{{ $permission['id'] }}"
-                                >
-                            </label>
+                            </div>
                         @endforeach
                     </div>
                 </div>
