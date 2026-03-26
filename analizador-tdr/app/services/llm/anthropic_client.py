@@ -128,3 +128,51 @@ Devuelve SOLO el objeto JSON sin texto adicional.
         except Exception as e:
             self.logger.error(f"❌ Error en direccionamiento Anthropic: {str(e)}")
             raise ValueError(f"Error al analizar direccionamiento: {str(e)}")
+
+    async def generate_proforma(
+        self,
+        context: str,
+        company_name: str,
+        company_copy: str,
+        contrato_contexto=None,
+    ) -> dict:
+        """Genera proforma técnica de cotización para un proceso SEACE usando Claude."""
+        try:
+            self.logger.info(f"📋 Generando proforma técnica con Anthropic ({self.model_name})")
+            nombre_empresa = company_name.strip() or "Mi Empresa"
+            entidad = contrato_contexto.get("nomEntidad", "") if contrato_contexto else ""
+            objeto = (
+                contrato_contexto.get("desObjetoContrato") or
+                contrato_contexto.get("nomObjetoContrato", "")
+            ) if contrato_contexto else ""
+
+            user_prompt = f"""Actúa como Director de Operaciones de "{nombre_empresa}".
+Especialidad: "{company_copy}"
+{('Entidad: ' + entidad) if entidad else ''}
+{('Objeto: ' + objeto) if objeto else ''}
+
+Genera una PROFORMA TÉCNICA de cotización basada en el siguiente TDR.
+Devuelve ÚNICAMENTE este JSON:
+{{
+  "titulo_proceso": "...",
+  "empresa_nombre": "{nombre_empresa}",
+  "empresa_rubro": "...",
+  "items": [{{"item": 1, "descripcion": "...", "unidad": "...", "cantidad": 1, "precio_unitario": 0.0, "subtotal": 0.0}}],
+  "total_estimado": "S/ X,XXX.XX",
+  "analisis_viabilidad": "...",
+  "condiciones": ["..."]
+}}
+
+TDR:\n{context}\n\nDevuelve SOLO el JSON sin texto adicional."""
+
+            response = await self.client.messages.create(
+                model=self.model_name,
+                max_tokens=4096,
+                temperature=0.3,
+                system=self.SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            return self._parse_json_response(response.content[0].text)
+        except Exception as e:
+            self.logger.error(f"❌ Error en proforma Anthropic: {str(e)}")
+            raise ValueError(f"Error al generar proforma: {str(e)}")

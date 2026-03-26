@@ -17,6 +17,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Isolatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -332,6 +333,23 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
 
                 $this->answerCallbackQuery($callbackId, '⏳ Analizando direccionamiento...', $token);
                 $this->analizarDireccionamientoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+
+            } elseif (strpos($data, 'proforma_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
+                $this->info("📋 Usuario {$chatId} solicitó proforma del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+
+                $this->answerCallbackQuery($callbackId, '📋 Generando proforma técnica...', $token);
+                $this->generarProformaParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
 
             } else {
                 $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
@@ -1276,6 +1294,143 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
     {
         $nombre = $this->sanitizeCallbackFilename($nombreArchivo);
         return sprintf('%s_%d_%d_%s', $action, $idContrato, $idArchivo, $nombre);
+    }
+
+    /**
+     * Generar proforma técnica con IA y enviar enlace al usuario.
+     */
+    protected function generarProformaParaUsuario(
+        string $chatId,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        string $token
+    ): void {
+        $loadingMsgId = null;
+
+        try {
+            if ($idContratoArchivo === 0) {
+                $this->enviarMensaje($chatId, '❌ ID de archivo inválido. Por favor, intenta de nuevo.', $token);
+                return;
+            }
+
+            // ── Resolver suscripción y perfil de empresa ──────────────────
+            $subscription = TelegramSubscription::with('user.subscriberProfile')
+                ->where('chat_id', $chatId)
+                ->first();
+
+            if (!$subscription || !$subscription->user) {
+                $this->enviarMensaje($chatId, '❌ No encontramos tu cuenta. Usa /start en el bot para registrarte.', $token);
+                return;
+            }
+
+            $profile = $subscription->user->subscriberProfile;
+
+            if (!$profile || blank($profile->company_copy)) {
+                $this->enviarMensaje(
+                    $chatId,
+                    "✍️ <b>Configura el perfil de tu empresa antes de generar la proforma.</b>\n\n"
+                    . "Ve a <b>Configuración de Alertas</b> en el panel web y completa:\n"
+                    . "• Nombre de empresa\n"
+                    . "• Descripción de tu empresa\n\n"
+                    . "🔗 " . config('app.url') . "/configurar-alertas",
+                    $token
+                );
+                return;
+            }
+
+            $companyName = $profile->company_name ?? '';
+            $companyCopy = $profile->company_copy;
+
+            // ── Feedback visible ──────────────────────────────────────────
+            $this->sendChatAction($chatId, 'typing', $token);
+            $loadingMsgId = $this->enviarMensajeProcesando(
+                $chatId,
+                "📋 <b>Generando proforma técnica con IA...</b>\n📄 {$nombreArchivo}\n\n💼 Empresa: {$companyName}\n\n⏳ Esto puede tomar unos segundos, por favor espera.",
+                $token
+            );
+
+            // ── Generar proforma via TdrAnalysisService ───────────────────
+            $tdrService = new TdrAnalysisService();
+            $cachedContrato = $this->getCachedContratoPayload($idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            $resultado = $tdrService->generarProformaDesdeArchivo(
+                $idContratoArchivo,
+                $nombreArchivo,
+                $contratoData,
+                $companyName,
+                $companyCopy
+            );
+
+            // Eliminar loading
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+                $loadingMsgId = null;
+            }
+
+            if (!($resultado['success'] ?? false)) {
+                $errorMsg = $resultado['error'] ?? 'No se pudo generar la proforma.';
+                $this->enviarMensaje($chatId, "❌ {$errorMsg}", $token);
+                return;
+            }
+
+            // ── Cachear proforma con token UUID ───────────────────────────
+            $proformaToken = Str::uuid()->toString();
+            Cache::put("proforma:{$proformaToken}", $resultado['data'] ?? [], now()->addHours(2));
+
+            $appUrl = rtrim(config('app.url', ''), '/');
+            $wordUrl  = "{$appUrl}/proforma/{$proformaToken}/word";
+            $printUrl = "{$appUrl}/proforma/{$proformaToken}/print";
+            $excelUrl = "{$appUrl}/proforma/{$proformaToken}/excel";
+
+            $proformaData = $resultado['data'] ?? [];
+            $proformaItems_ = $proformaData['items'] ?? [];
+            $totalCalc = array_sum(array_map(fn($i) => (float)($i['subtotal'] ?? 0), $proformaItems_));
+            $totalFb = (float) preg_replace('/[^0-9.]/', '', $proformaData['total_estimado'] ?? '');
+            $total = 'S/ ' . number_format($totalCalc > 0 ? $totalCalc : $totalFb, 2);
+            $itemsCount = count($proformaItems_);
+            $viabilidad = $proformaData['analisis_viabilidad'] ?? '';
+            $viabilidadResumen = mb_strlen($viabilidad) > 200
+                ? mb_substr($viabilidad, 0, 200) . '...'
+                : $viabilidad;
+
+            $mensaje = "📋 <b>Proforma Técnica lista</b>\n\n"
+                . "💼 <b>{$companyName}</b>\n"
+                . "📦 Ítems: {$itemsCount}\n"
+                . "💰 <b>Total estimado: {$total}</b>\n\n"
+                . ($viabilidadResumen ? "📊 <i>{$viabilidadResumen}</i>\n\n" : '')
+                . "⏱ Los enlaces expiran en 2 horas.";
+
+            $keyboard = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '📄 Descargar Word', 'url' => $wordUrl],
+                    ],
+                    [
+                        ['text' => '🖨 Ver / Imprimir PDF', 'url' => $printUrl],
+                    ],
+                    [
+                        ['text' => '📊 Descargar Excel', 'url' => $excelUrl],
+                    ],
+                ],
+            ];
+
+            $this->enviarMensajeConBotones($chatId, $mensaje, $keyboard, $token);
+            $this->info("📋 Proforma generada y enviada a usuario {$chatId} para contrato {$idContrato}");
+
+        } catch (\Exception $e) {
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
+
+            Log::error('TelegramBotListener: Error al generar proforma', [
+                'chat_id' => $chatId,
+                'id_contrato' => $idContrato,
+                'exception' => $e->getMessage(),
+            ]);
+            $this->enviarMensaje($chatId, '❌ Error al generar la proforma: ' . $e->getMessage(), $token);
+        }
     }
 
     protected function sanitizeCallbackFilename(string $nombre): string

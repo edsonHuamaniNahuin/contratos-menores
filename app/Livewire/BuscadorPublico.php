@@ -12,8 +12,11 @@ use App\Services\Tdr\PublicTdrDocumentService;
 use App\Services\TdrAnalysisService;
 use Carbon\Carbon;
 use Exception;
+use App\Models\SubscriberProfile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
@@ -131,6 +134,11 @@ class BuscadorPublico extends Component
     public array $suscriptoresUsuario = [];
     public array $compatibilidadPorSuscriptor = [];
     public ?int $compatibilidadEnCurso = null;
+
+    // Proforma técnica
+    public ?array $resultadoProforma = null;
+    public ?string $proformaToken = null;
+    public ?int $proformaContratoId = null;
 
     public function boot(
         SeaceBuscadorPublicoService $buscadorService,
@@ -1042,6 +1050,9 @@ class BuscadorPublico extends Component
         $this->suscriptoresUsuario = [];
         $this->compatibilidadPorSuscriptor = [];
         $this->compatibilidadEnCurso = null;
+        $this->resultadoProforma = null;
+        $this->proformaToken = null;
+        $this->proformaContratoId = null;
     }
 
     public function calcularCompatibilidad(int $subscriptionId): void
@@ -1101,6 +1112,73 @@ class BuscadorPublico extends Component
             $this->notify('No se pudo evaluar la compatibilidad: ' . $e->getMessage(), 'error');
         } finally {
             $this->compatibilidadEnCurso = null;
+        }
+    }
+
+    public function generarProformaTecnica(int $idContrato): void
+    {
+        if (!$this->ensurePermission(
+            'analyze-tdr',
+            'Inicia sesión para generar la proforma técnica.',
+            'Tu cuenta no tiene acceso a la proforma IA. Solicita Proveedor Premium.'
+        )) {
+            return;
+        }
+
+        $this->resultadoProforma = null;
+        $this->proformaToken = null;
+        $this->proformaContratoId = null;
+
+        try {
+            $user = Auth::user();
+            $profile = SubscriberProfile::where('user_id', $user->id)->first();
+
+            if (!$profile || blank($profile->company_copy)) {
+                $this->notify('Configura el perfil de tu empresa antes de generar la proforma.', 'warning');
+                return;
+            }
+
+            $archivoMeta = $this->resolveArchivoMeta($idContrato);
+            if (!$archivoMeta) {
+                $this->notify('No hay archivos disponibles para generar la proforma.', 'warning');
+                return;
+            }
+
+            $contratoSnapshot = $this->resolveContrato($idContrato);
+            $archivoPersistido = $this->publicTdrService->ensureLocalArchivo($idContrato, $archivoMeta, $contratoSnapshot);
+
+            $resultado = $this->tdrAnalysisService->generarProforma(
+                $archivoPersistido,
+                $contratoSnapshot,
+                $profile->company_name ?? '',
+                $profile->company_copy
+            );
+
+            if (!($resultado['success'] ?? false)) {
+                $this->notify($resultado['error'] ?? 'No se pudo generar la proforma.', 'error');
+                return;
+            }
+
+            $proformaData = $resultado['data'] ?? [];
+            $token = Str::uuid()->toString();
+
+            Cache::put(
+                "proforma:{$token}",
+                $proformaData,
+                now()->addHours(2)
+            );
+
+            $this->resultadoProforma = $proformaData;
+            $this->proformaToken = $token;
+            $this->proformaContratoId = $idContrato;
+
+            $this->notify('Proforma técnica generada exitosamente.', 'success');
+        } catch (\Throwable $e) {
+            Log::error('BuscadorPublico:generarProforma', [
+                'id_contrato' => $idContrato,
+                'error' => $e->getMessage(),
+            ]);
+            $this->notify('No se pudo generar la proforma: ' . $e->getMessage(), 'error');
         }
     }
 

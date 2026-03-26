@@ -270,6 +270,11 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                                 'title' => '🔍 Direccionamiento',
                                 'description' => 'Detectar indicios de corrupción',
                             ],
+                            [
+                                'id' => $this->buildCallbackData('proforma', $idContrato, $idContratoArchivo, $nombreArchivo),
+                                'title' => '📋 Crear Proforma',
+                                'description' => 'Generar cotización en Word/PDF',
+                            ],
                         ],
                     ],
                 ],

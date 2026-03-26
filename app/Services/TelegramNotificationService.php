@@ -312,6 +312,12 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
                         'callback_data' => $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo),
                     ],
                 ],
+                [
+                    [
+                        'text' => '📋 Crear Proforma',
+                        'callback_data' => $this->buildCallbackData('proforma', $idContrato, $idContratoArchivo, $nombreArchivo),
+                    ],
+                ],
             ],
         ];
 

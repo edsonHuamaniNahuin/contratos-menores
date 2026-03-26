@@ -139,6 +139,12 @@
                         <svg class="w-5 h-5 text-neutral-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
+                        <span class="text-sm text-neutral-400">Alertas por WhatsApp</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-neutral-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
                         <span class="text-sm text-neutral-400">Notificaciones por correo</span>
                     </li>
                     <li class="flex items-start gap-3">
@@ -158,6 +164,12 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                         <span class="text-sm text-neutral-400">Score de compatibilidad con tu empresa</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-neutral-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        <span class="text-sm text-neutral-400">Generar cotización y proforma</span>
                     </li>
                 </ul>
 
@@ -229,6 +241,15 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                         <span class="text-sm text-neutral-600">
+                            <strong class="text-neutral-900">Alertas por WhatsApp</strong><br>
+                            Recibe alertas directamente en tu WhatsApp con botones interactivos para ver el proceso y hacer seguimiento desde tu celular.
+                        </span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-secondary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-sm text-neutral-600">
                             <strong class="text-neutral-900">Notificaciones por correo</strong><br>
                             Recibe un email por cada nuevo proceso que coincida con tus intereses. Incluye resumen del contrato y botón directo para hacer seguimiento.
                         </span>
@@ -267,6 +288,15 @@
                         <span class="text-sm text-neutral-600">
                             <strong class="text-neutral-900">Alertas inteligentes con IA</strong><br>
                             Las notificaciones incluyen el análisis IA y el score de compatibilidad, para que desde tu celular o correo sepas si vale la pena cotizar.
+                        </span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-secondary-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-sm text-neutral-600">
+                            <strong class="text-neutral-900">Generar cotización y proforma</strong><br>
+                            Genera un borrador de proforma de cotización en Word basado en los requisitos del TDR. Úsalo como punto de partida y adáptalo antes de presentarlo.
                         </span>
                     </li>
                 </ul>

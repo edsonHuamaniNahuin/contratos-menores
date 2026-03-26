@@ -414,6 +414,11 @@
                             <td class="py-3.5 px-6 text-center text-neutral-600">No disponible</td>
                         </tr>
                         <tr>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Proforma de cotización en Word</td>
+                            <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Borrador listo para adaptar</span></td>
+                            <td class="py-3.5 px-6 text-center text-neutral-600">No disponible</td>
+                        </tr>
+                        <tr>
                             <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Cobertura nacional</td>
                             <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> 25 departamentos</span></td>
                             <td class="py-3.5 px-6 text-center text-neutral-600">1-3 departamentos</td>
@@ -568,6 +573,7 @@
                     <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Alertas Telegram + WhatsApp + Email</li>
                     <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Detección de direccionamiento</li>
                     <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Seguimiento y calendario</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Proforma de cotización en Word</li>
                 </ul>
                 <a href="{{ route('planes') }}" class="block w-full text-center py-3 text-sm font-bold bg-brand-800 text-white rounded-full hover:bg-brand-900 transition-colors">
                     Ver Todos los Planes →
@@ -613,7 +619,7 @@
                 ],
                 [
                     'q' => '¿Qué diferencia hay entre el buscador gratuito y el plan Premium?',
-                    'a' => 'El <strong>buscador gratuito</strong> te permite buscar licitaciones del SEACE sin límite y ver el detalle de cada proceso. El plan <strong>Premium</strong> (S/ 49/mes) agrega: análisis automático de TDR con IA, alertas por Telegram/WhatsApp/Email, score de compatibilidad, detección de direccionamiento y calendario de seguimientos.',
+                    'a' => 'El <strong>buscador gratuito</strong> te permite buscar licitaciones del SEACE sin límite y ver el detalle de cada proceso. El plan <strong>Premium</strong> (S/ 49/mes) agrega: análisis automático de TDR con IA, alertas por Telegram/WhatsApp/Email, score de compatibilidad, detección de direccionamiento, calendario de seguimientos y generación de proforma de cotización en Word.',
                 ],
             ] as $i => $faq)
             <div class="bg-white rounded-2xl border border-neutral-100 shadow-soft overflow-hidden">

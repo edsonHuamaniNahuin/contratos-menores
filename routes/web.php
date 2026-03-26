@@ -226,7 +226,7 @@ Disallow: /cuentas
 Disallow: /prueba-endpoints
 Disallow: /configuracion
 Disallow: /tdr-repository
-Disallow: /suscriptores
+Disallow: /configuracion-alertas
 Disallow: /roles-permisos
 Disallow: /seguimientos
 Disallow: /perfil
@@ -323,9 +323,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('direccionamiento');
     })->name('direccionamiento')->middleware('can:view-tdr-repository');
 
-    Route::get('/suscriptores', function () {
-        return view('suscriptores');
-    })->name('suscriptores')->middleware('can:view-suscriptores');
+    Route::get('/configuracion-alertas', function () {
+        return view('configuracion-alertas');
+    })->name('configuracion-alertas')->middleware('can:view-configuracion-alertas');
 
     Route::get('/roles-permisos', function () {
         return view('roles-permisos');
@@ -363,5 +363,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('suscripciones-premium');
     })->name('suscripciones.premium')->middleware('can:manage-subscriptions');
 
+    // ─── Proforma técnica ─────────────────────────────────────────────
+    // (Intencionalmente dentro del grupo auth — se acceden via enlace desde bots)
+
 });
+
+// ─── Proforma técnica (rutas públicas por token UUID) ──────────────────────
+// El token UUID de 2h actúa como clave de acceso opaca — no requiere sesión.
+// Esto permite que los bots (Telegram, WhatsApp) envíen los enlaces directamente.
+Route::get('/proforma/{token}/word', [\App\Http\Controllers\ProformaController::class, 'downloadWord'])
+    ->name('proforma.word');
+Route::get('/proforma/{token}/print', [\App\Http\Controllers\ProformaController::class, 'viewPrint'])
+    ->name('proforma.print');
+Route::get('/proforma/{token}/excel', [\App\Http\Controllers\ProformaController::class, 'downloadExcel'])
+    ->name('proforma.excel');
+
 

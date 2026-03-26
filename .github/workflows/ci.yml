@@ -131,6 +131,9 @@ jobs:
           python -c "from app.services.analyzer_service import TDRAnalyzerService; print('Imports OK')"
           python -c "from app.services.pdf_reader import SmartPDFReaderPipeline; print('PDF Reader OK')"
           python -c "from app.services.pdf_reader.ocr_processor import TesseractOCRProcessor; p = TesseractOCRProcessor(); assert p.is_available(), 'Tesseract not found'; print('OCR OK')"
+          python -c "from app.models.schemas import ProformaRequest, ProformaItem, ProformaResponse; print('Proforma schemas OK')"
+          python -c "from app.services.analyzer_service import TDRAnalyzerService; s = TDRAnalyzerService.__new__(TDRAnalyzerService); assert hasattr(s, 'generate_proforma_document'), 'generate_proforma_document missing'; print('Proforma service method OK')"
+          python -c "import main; assert any(r.path == '/generate-proforma' for r in main.app.routes), '/generate-proforma route missing'; print('Proforma endpoint OK')"
 
       - name: Check config loads
         working-directory: analizador-tdr

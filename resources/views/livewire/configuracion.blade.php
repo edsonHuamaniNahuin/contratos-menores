@@ -57,6 +57,18 @@
 
                 <div>
                     <label class="block text-sm font-medium text-neutral-600 mb-2">
+                        URL pública del bot <span class="text-neutral-400 font-normal text-xs">(opcional)</span>
+                    </label>
+                    <input type="text" wire:model="telegram_bot_url"
+                           class="w-full px-4 py-3 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
+                           placeholder="https://t.me/MiBotAlertas">
+                    <p class="text-xs text-neutral-400 mt-1">
+                        Enlace público del bot (Ej: <code class="text-primary-500">https://t.me/NombreDelBot</code>). Los suscriptores verán este enlace para obtener su Chat ID.
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-neutral-600 mb-2">
                         Chat ID <span class="text-primary-500">*</span>
                     </label>
                     <input type="text" wire:model="telegram_chat_id"

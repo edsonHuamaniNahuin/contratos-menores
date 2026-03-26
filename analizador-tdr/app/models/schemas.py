@@ -162,3 +162,47 @@ class ErrorResponse(BaseModel):
     error: str
     detail: str
     timestamp: datetime
+
+
+class ProformaRequest(BaseModel):
+    """Request para generación de proforma técnica"""
+    company_name: str = Field(
+        default='',
+        max_length=150,
+        description="Nombre de la empresa proveedora"
+    )
+    company_copy: str = Field(
+        ...,
+        min_length=20,
+        max_length=4000,
+        description="Descripción del rubro y experiencia de la empresa"
+    )
+    analisis_tdr: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Análisis TDR existente (si no se envía PDF)"
+    )
+    contrato_contexto: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Metadata del contrato (entidad, objeto, fechas)"
+    )
+
+
+class ProformaItem(BaseModel):
+    """Ítem de la tabla de proforma técnica"""
+    item: int
+    descripcion: str
+    unidad: str
+    cantidad: float
+    precio_unitario: float
+    subtotal: float
+
+
+class ProformaResponse(BaseModel):
+    """Respuesta de generación de proforma técnica"""
+    titulo_proceso: str = Field(default='', description="Nombre/descripción del proceso licitatorio")
+    empresa_nombre: str = Field(default='', description="Nombre de la empresa")
+    empresa_rubro: str = Field(default='', description="Rubro resumido de la empresa")
+    items: List[ProformaItem] = Field(default_factory=list, description="Ítems de la tabla de cotización")
+    total_estimado: str = Field(default='', description="Total estimado en soles (texto)")
+    analisis_viabilidad: str = Field(default='', description="Análisis de viabilidad operativa")
+    condiciones: List[str] = Field(default_factory=list, description="Condiciones y supuestos del presupuesto")

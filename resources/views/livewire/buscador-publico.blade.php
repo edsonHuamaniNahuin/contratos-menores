@@ -1187,6 +1187,23 @@
                                 <span wire:loading.remove wire:target="analizarTdr({{ $det['idContrato'] }})">Analizar con IA</span>
                                 <span wire:loading wire:target="analizarTdr({{ $det['idContrato'] }})">Analizando...</span>
                             </button>
+                            @auth
+                                @can('create-proforma')
+                                    <button
+                                        wire:click="cerrarDetalle(); generarProformaTecnica({{ $det['idContrato'] }})"
+                                        wire:loading.attr="disabled"
+                                        wire:target="generarProformaTecnica({{ $det['idContrato'] }})"
+                                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-amber-500 text-white text-sm font-semibold hover:bg-amber-400 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
+                                    >
+                                        <svg wire:loading.remove wire:target="generarProformaTecnica({{ $det['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <svg wire:loading wire:target="generarProformaTecnica({{ $det['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                        <span wire:loading.remove wire:target="generarProformaTecnica({{ $det['idContrato'] }})">📋 Crear Proforma</span>
+                                        <span wire:loading wire:target="generarProformaTecnica({{ $det['idContrato'] }})">Generando...</span>
+                                    </button>
+                                @endcan
+                            @endauth
                             @if($puedeCotizar)
                                 <button
                                     wire:click="cerrarDetalle(); cotizarEnSeace({{ $det['idContrato'] }})"
@@ -1527,6 +1544,186 @@
                 </div>
             </div>
         @endif
+
+    {{-- Panel: Proforma Técnica --}}
+    @if($resultadoProforma)
+        @php
+            $proformaItems = $resultadoProforma['items'] ?? [];
+            $proformaTotal = array_sum(array_map(fn($i) => (float)($i['subtotal'] ?? 0), $proformaItems));
+            if ($proformaTotal <= 0) {
+                $proformaTotal = (float) preg_replace('/[^0-9.]/', '', $resultadoProforma['total_estimado'] ?? '');
+            }
+            $proformaViabilidad = $resultadoProforma['analisis_viabilidad'] ?? '';
+            $proformaCondiciones = $resultadoProforma['condiciones'] ?? [];
+            $proformaTitulo = $resultadoProforma['titulo_proceso'] ?? 'Proceso';
+            $proformaEmpresa = $resultadoProforma['empresa_nombre'] ?? '';
+        @endphp
+        <div
+            class="fixed inset-0 z-[125] flex items-center justify-center px-4 py-8"
+            x-data
+            x-on:keydown.escape.window="$wire.set('resultadoProforma', null)"
+        >
+            <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" wire:click="$set('resultadoProforma', null)"></div>
+
+            <div class="relative w-full max-w-5xl bg-white rounded-[2rem] shadow-soft border border-neutral-200 flex flex-col max-h-[92vh]">
+                {{-- Header --}}
+                <div class="sticky top-0 z-10 bg-white border-b border-neutral-100 rounded-t-[2rem]">
+                    <div class="w-full border-t-4 border-amber-400 rounded-t-[2rem]"></div>
+                    <div class="p-6 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-amber-400/15 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-amber-500 tracking-[0.2em]">Proforma Técnica Generada con IA</p>
+                                <h3 class="text-xl lg:text-2xl font-bold text-neutral-900">{{ Str::limit($proformaTitulo, 70) }}</h3>
+                                @if($proformaEmpresa)
+                                    <p class="text-sm text-neutral-500 mt-0.5">{{ $proformaEmpresa }}</p>
+                                @endif
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            wire:click="$set('resultadoProforma', null)"
+                            class="flex-shrink-0 w-10 h-10 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Body --}}
+                <div class="overflow-y-auto flex-1 p-6 lg:p-8 space-y-6">
+                    {{-- Tabla de ítems --}}
+                    @if(count($proformaItems) > 0)
+                        <div>
+                            <h4 class="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
+                                <span class="w-5 h-5 rounded-md bg-amber-100 flex items-center justify-center text-amber-600 text-xs font-bold">$</span>
+                                Tabla de Precios Referenciales
+                            </h4>
+                            <div class="overflow-x-auto rounded-2xl border border-neutral-200">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-neutral-50 border-b border-neutral-200">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-neutral-500 uppercase tracking-wider w-8">#</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-neutral-500 uppercase tracking-wider">Descripción</th>
+                                            <th class="px-4 py-3 text-center text-xs font-bold text-neutral-500 uppercase tracking-wider w-20">Unidad</th>
+                                            <th class="px-4 py-3 text-center text-xs font-bold text-neutral-500 uppercase tracking-wider w-20">Cant.</th>
+                                            <th class="px-4 py-3 text-right text-xs font-bold text-neutral-500 uppercase tracking-wider w-32">P. Unit.</th>
+                                            <th class="px-4 py-3 text-right text-xs font-bold text-neutral-500 uppercase tracking-wider w-32">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-neutral-100">
+                                        @foreach($proformaItems as $idx => $pitem)
+                                            <tr class="{{ $idx % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50' }} hover:bg-amber-50/40 transition-colors">
+                                                <td class="px-4 py-3 text-neutral-400 text-xs">{{ $pitem['item'] ?? ($idx + 1) }}</td>
+                                                <td class="px-4 py-3 text-neutral-700">{{ $pitem['descripcion'] ?? '-' }}</td>
+                                                <td class="px-4 py-3 text-center text-neutral-600">{{ $pitem['unidad'] ?? '-' }}</td>
+                                                <td class="px-4 py-3 text-center text-neutral-600">{{ $pitem['cantidad'] ?? '-' }}</td>
+                                                <td class="px-4 py-3 text-right text-neutral-700 font-mono">S/ {{ number_format((float)($pitem['precio_unitario'] ?? 0), 2) }}</td>
+                                                <td class="px-4 py-3 text-right text-neutral-800 font-semibold font-mono">S/ {{ number_format((float)($pitem['subtotal'] ?? 0), 2) }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot class="bg-amber-50 border-t-2 border-amber-200">
+                                        <tr>
+                                            <td colspan="5" class="px-4 py-3 text-right text-sm font-bold text-amber-800">TOTAL ESTIMADO</td>
+                                            <td class="px-4 py-3 text-right text-base font-bold text-amber-700 font-mono">S/ {{ number_format((float)$proformaTotal, 2) }}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Viabilidad --}}
+                    @if($proformaViabilidad)
+                        <div class="bg-primary-50 border border-primary-200 rounded-2xl p-5">
+                            <h4 class="text-sm font-bold text-primary-700 mb-2 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Análisis de Viabilidad
+                            </h4>
+                            <p class="text-sm text-primary-800 leading-relaxed">{{ $proformaViabilidad }}</p>
+                        </div>
+                    @endif
+
+                    {{-- Condiciones --}}
+                    @if(count($proformaCondiciones) > 0)
+                        <div class="border border-neutral-200 rounded-2xl p-5">
+                            <h4 class="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Condiciones y Supuestos
+                            </h4>
+                            <ul class="space-y-2">
+                                @foreach($proformaCondiciones as $cond)
+                                    <li class="flex gap-2.5 text-sm text-neutral-600">
+                                        <span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                                        {{ $cond }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    {{-- Aviso importante --}}
+                    <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4">
+                        <p class="text-[11px] text-neutral-400 text-center">
+                            ⚠️ Esta proforma es estimativa y generada con inteligencia artificial. Los precios son referenciales y deben validarse con cotizaciones formales antes de presentar oferta.
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Footer: botones de descarga --}}
+                <div class="sticky bottom-0 z-10 bg-white border-t border-neutral-100 rounded-b-[2rem] p-4 lg:p-6 flex flex-wrap items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        wire:click="$set('resultadoProforma', null)"
+                        class="text-sm text-neutral-500 hover:text-neutral-700 transition-colors px-4 py-2"
+                    >
+                        ← Nueva Proforma
+                    </button>
+                    <div class="flex flex-wrap gap-3">
+                        @if($proformaToken)
+                            {{-- Botón Word oculto — disponible via enlace directo si se necesita:
+                            <a href="{{ route('proforma.word', $proformaToken) }}" target="_blank">
+                                Descargar Word
+                            </a>
+                            --}}
+                            <a
+                                href="{{ route('proforma.excel', $proformaToken) }}"
+                                target="_blank"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors shadow-sm"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 3v18M6 3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z"/>
+                                </svg>
+                                Descargar Excel
+                            </a>
+                            <a
+                                href="{{ route('proforma.print', $proformaToken) }}"
+                                target="_blank"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-neutral-800 text-white text-sm font-semibold hover:bg-neutral-700 transition-colors shadow-sm"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                </svg>
+                                Ver / Imprimir PDF
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @elseif(!$buscando && $this->tieneFiltrosActivos())
         <!-- Sin resultados -->
         <div class="bg-gradient-to-br from-white to-neutral-50 rounded-3xl shadow-soft p-12 text-center border-2 border-neutral-200">
@@ -1620,7 +1817,7 @@
         </div>
     @endif
 
-    {{-- Modal: Acceso restringido --}}
+    {{-- Modal: Funcionalidad Premium --}}
     @if($mostrarAccesoRestringido)
         <div
             class="fixed inset-0 z-[130] flex items-center justify-center px-4 py-8"
@@ -1629,31 +1826,76 @@
         >
             <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" wire:click="cerrarAccesoRestringido"></div>
 
-            <div class="relative w-full max-w-md bg-white rounded-[2rem] shadow-soft border border-neutral-200 p-6 lg:p-7">
-                <div class="flex items-start justify-between gap-4 mb-2">
-                    <div>
-                        <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em]">Acceso restringido</p>
-                        <h3 class="text-xl font-bold text-neutral-900 mt-1">Permiso requerido</h3>
+            <div class="relative w-full max-w-md bg-white rounded-[2rem] shadow-soft border border-neutral-200 overflow-hidden">
+                {{-- Franja superior decorativa --}}
+                <div class="h-1.5 w-full bg-gradient-to-r from-secondary-500 via-secondary-400 to-secondary-200"></div>
+
+                {{-- Contenido --}}
+                <div class="p-6 lg:p-8">
+                    {{-- Ícono + cerrar --}}
+                    <div class="flex items-start justify-between gap-4 mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-secondary-500/10 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-7 h-7 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/>
+                            </svg>
+                        </div>
+                        <button
+                            type="button"
+                            wire:click="cerrarAccesoRestringido"
+                            class="w-9 h-9 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center flex-shrink-0"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        wire:click="cerrarAccesoRestringido"
-                        class="w-9 h-9 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-                <p class="text-sm text-neutral-500">{{ $accesoRestringidoMensaje }}</p>
-                <div class="mt-5 flex justify-end">
-                    <button
-                        type="button"
-                        wire:click="cerrarAccesoRestringido"
-                        class="px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-neutral-900 hover:border-neutral-400 transition-colors"
-                    >
-                        Entendido
-                    </button>
+
+                    {{-- Texto principal --}}
+                    <p class="text-xs font-bold uppercase text-secondary-500 tracking-[0.18em] mb-1">Función Premium</p>
+                    <h3 class="text-xl font-bold text-neutral-900 leading-snug mb-3">
+                        ¡Encontraste una funcionalidad exclusiva!
+                    </h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">
+                        {{ $accesoRestringidoMensaje }}
+                    </p>
+
+                    {{-- Beneficios rápidos --}}
+                    <ul class="mt-5 space-y-2">
+                        @foreach([
+                            'Análisis de TDR con inteligencia artificial',
+                            'Generación automática de proformas técnicas',
+                            'Seguimiento personalizado de procesos',
+                        ] as $benefit)
+                            <li class="flex items-center gap-2.5 text-sm text-neutral-600">
+                                <span class="w-5 h-5 rounded-full bg-secondary-500/10 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3 h-3 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </span>
+                                {{ $benefit }}
+                            </li>
+                        @endforeach
+                    </ul>
+
+                    {{-- CTAs --}}
+                    <div class="mt-7 flex flex-col sm:flex-row items-center gap-3">
+                        <a
+                            href="{{ route('planes') }}"
+                            class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-secondary-500 text-white text-sm font-bold hover:bg-secondary-400 transition-colors shadow-sm"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            Quiero ser Premium
+                        </a>
+                        <button
+                            type="button"
+                            wire:click="cerrarAccesoRestringido"
+                            class="w-full sm:w-auto px-6 py-3 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-500 hover:text-neutral-900 hover:border-neutral-400 transition-colors"
+                        >
+                            Ahora no
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

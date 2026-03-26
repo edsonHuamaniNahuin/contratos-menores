@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
 
@@ -364,6 +365,22 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $this->info("🔍 Usuario {$phoneNumber} solicitó direccionamiento del contrato {$idContrato}");
                 $this->whatsapp->enviarMensaje($phoneNumber, '⏳ Analizando direccionamiento...');
                 $this->analizarDireccionamientoParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo);
+
+            } elseif (str_starts_with($data, 'proforma_')) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
+                $this->info("📋 Usuario {$phoneNumber} solicitó proforma del contrato {$idContrato}");
+                $this->whatsapp->enviarMensaje($phoneNumber, '📋 Generando proforma técnica...');
+                $this->generarProformaParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo);
 
             } else {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida');
@@ -1008,6 +1025,113 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $nombre = $this->sanitizeCallbackFilename($nombreArchivo);
         return sprintf('%s_%d_%d_%s', $action, $idContrato, $idArchivo, $nombre);
     }
+
+    /**
+     * Generar proforma técnica con IA y enviar enlace al usuario por WhatsApp.
+     */
+    protected function generarProformaParaUsuario(
+        string $phoneNumber,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo
+    ): void {
+        try {
+            if ($idContratoArchivo === 0) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ ID de archivo inválido. Por favor, intenta de nuevo.');
+                return;
+            }
+
+            // ── Resolver suscripción y perfil de empresa ──────────────────
+            $subscription = WhatsAppSubscription::with('user.subscriberProfile')
+                ->where('phone_number', $phoneNumber)
+                ->first();
+
+            if (!$subscription || !$subscription->user) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ No encontramos tu cuenta. Regístrate en el panel web.');
+                return;
+            }
+
+            $profile = $subscription->user->subscriberProfile;
+
+            if (!$profile || blank($profile->company_copy)) {
+                $appUrl = rtrim(config('app.url', ''), '/');
+                $this->whatsapp->enviarMensaje(
+                    $phoneNumber,
+                    "✍️ *Configura el perfil de tu empresa antes de generar la proforma.*\n\n"
+                    . "Ve a *Configuración de Alertas* en el panel web y completa:\n"
+                    . "• Nombre de empresa\n"
+                    . "• Descripción de tu empresa\n\n"
+                    . "🔗 {$appUrl}/configurar-alertas"
+                );
+                return;
+            }
+
+            $companyName = $profile->company_name ?? '';
+            $companyCopy = $profile->company_copy;
+
+            // ── Generar proforma via TdrAnalysisService ───────────────────
+            $tdrService = new TdrAnalysisService();
+            $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            $this->whatsapp->enviarMensaje($phoneNumber, "📋 Generando proforma técnica con IA...\n📄 {$nombreArchivo}\n💼 Empresa: {$companyName}\n\nEsto puede tomar unos segundos, por favor espera.");
+
+            $resultado = $tdrService->generarProformaDesdeArchivo(
+                $idContratoArchivo,
+                $nombreArchivo,
+                $contratoData,
+                $companyName,
+                $companyCopy
+            );
+
+            if (!($resultado['success'] ?? false)) {
+                $errorMsg = $resultado['error'] ?? 'No se pudo generar la proforma.';
+                $this->whatsapp->enviarMensaje($phoneNumber, "❌ {$errorMsg}");
+                return;
+            }
+
+            // ── Cachear proforma con token UUID ───────────────────────────
+            $proformaToken = Str::uuid()->toString();
+            Cache::put("proforma:{$proformaToken}", $resultado['data'] ?? [], now()->addHours(2));
+
+            $appUrl = rtrim(config('app.url', ''), '/');
+            $wordUrl  = "{$appUrl}/proforma/{$proformaToken}/word";
+            $printUrl = "{$appUrl}/proforma/{$proformaToken}/print";
+            $excelUrl = "{$appUrl}/proforma/{$proformaToken}/excel";
+
+            $proformaData = $resultado['data'] ?? [];
+            $proformaItems_ = $proformaData['items'] ?? [];
+            $totalCalc = array_sum(array_map(fn($i) => (float)($i['subtotal'] ?? 0), $proformaItems_));
+            $totalFb = (float) preg_replace('/[^0-9.]/', '', $proformaData['total_estimado'] ?? '');
+            $total = 'S/ ' . number_format($totalCalc > 0 ? $totalCalc : $totalFb, 2);
+            $itemsCount = count($proformaItems_);
+
+            $mensaje = "📋 *Proforma Técnica lista*\n\n"
+                . "💼 *{$companyName}*\n"
+                . "📦 Ítems: {$itemsCount}\n"
+                . "💰 *Total estimado: {$total}*\n\n"
+                . "📄 Descargar Word:\n{$wordUrl}\n\n"
+                . "🖨 Ver/Imprimir PDF:\n{$printUrl}\n\n"
+                . "📊 Descargar Excel:\n{$excelUrl}\n\n"
+                . "_Los enlaces expiran en 2 horas._";
+
+            $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
+            $this->info("📋 Proforma generada y enviada a usuario {$phoneNumber} para contrato {$idContrato}");
+
+        } catch (\Exception $e) {
+            Log::error('WhatsAppBotListener: Error al generar proforma', [
+                'phone' => $phoneNumber,
+                'id_contrato' => $idContrato,
+                'exception' => $e->getMessage(),
+            ]);
+            try {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error al generar la proforma: ' . $e->getMessage());
+            } catch (\Throwable $sendError) {
+                // Ignorar error de envío en catch
+            }
+        }
+    }
+
 
     /**
      * Resolver archivo dinámicamente cuando el callback tiene idContratoArchivo=0.

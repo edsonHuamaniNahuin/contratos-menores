@@ -449,5 +449,121 @@ class TdrAnalysisService
 
         Log::debug('TDR: ' . $message, $context);
     }
+
+    /**
+     * Generar proforma directamente desde idContratoArchivo (para uso en bots).
+     * Resuelve el archivo y delega a generarProforma().
+     */
+    public function generarProformaDesdeArchivo(
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        ?array $contratoData,
+        string $companyName,
+        string $companyCopy
+    ): array {
+        if (!config('services.analizador_tdr.enabled', false)) {
+            return [
+                'success' => false,
+                'error' => 'El servicio de Análisis TDR no está habilitado.',
+            ];
+        }
+
+        $contratoSeaceId = $contratoData['idContrato'] ?? $contratoData['id_contrato_seace'] ?? null;
+        $archivoPersistido = $this->persistence->resolveArchivo(
+            $idContratoArchivo,
+            $nombreArchivo,
+            $contratoSeaceId,
+            $contratoData
+        );
+
+        return $this->generarProforma($archivoPersistido, $contratoData, $companyName, $companyCopy);
+    }
+
+    /**
+     * Generar proforma técnica de cotización usando el PDF ya persistido.
+     * Si existe un análisis previo en cache, lo usa para enriquecer el contexto.
+     *
+     * @param ContratoArchivo $archivoPersistido Archivo del contrato ya descargado
+     * @param array|null $contratoData Datos adicionales del contrato
+     * @param string $companyName Nombre de la empresa proveedora
+     * @param string $companyCopy Descripción del rubro/experiencia
+     * @return array ['success' => bool, 'data' => proforma array, 'error' => string|null]
+     */
+    public function generarProforma(
+        ContratoArchivo $archivoPersistido,
+        ?array $contratoData,
+        string $companyName,
+        string $companyCopy
+    ): array {
+        try {
+            if (!config('services.analizador_tdr.enabled', false)) {
+                return [
+                    'success' => false,
+                    'error' => 'El servicio de Análisis TDR no está habilitado. Habilítalo en Configuración.',
+                ];
+            }
+
+            // Si el archivo no existe localmente, descargarlo via endpoint público
+            // (mismo patrón que executeAnalysis cuando no hay cuenta SEACE)
+            $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
+
+            if (!$filePath || !is_file($filePath)) {
+                $publicService = new PublicTdrDocumentService(
+                    $this->persistence,
+                    new SeacePublicArchivoService()
+                );
+                $idContrato = (int) ($contratoData['idContrato'] ?? $archivoPersistido->id_contrato_seace ?? 0);
+                $idContratoArchivo = (int) ($archivoPersistido->id_archivo_seace ?? 0);
+                $nombreArchivo = $archivoPersistido->nombre_original ?? 'tdr.pdf';
+
+                $archivoPersistido = $publicService->ensureLocalArchivo(
+                    $idContrato,
+                    ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
+                    $contratoData
+                );
+                $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
+
+                if (!$filePath || !is_file($filePath)) {
+                    return [
+                        'success' => false,
+                        'error' => 'No se pudo descargar el archivo TDR desde el endpoint público.',
+                    ];
+                }
+            }
+
+            $analizador = new AnalizadorTDRService();
+            $resultado = $analizador->analyzeProforma($filePath, $companyName, $companyCopy);
+
+            if (!($resultado['success'] ?? false)) {
+                return [
+                    'success' => false,
+                    'error' => $resultado['error'] ?? 'Error al generar la proforma',
+                ];
+            }
+
+            $proformaData = $resultado['data'] ?? [];
+
+            // Enriquecer con contexto del contrato
+            if ($contratoData) {
+                $proformaData['contexto_contrato'] = $this->buildContextoContrato($contratoData, $archivoPersistido);
+            }
+
+            return [
+                'success' => true,
+                'data' => $proformaData,
+            ];
+
+        } catch (Exception $e) {
+            Log::error('TDR: Error al generar proforma', [
+                'contrato_archivo_id' => $archivoPersistido->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }
 

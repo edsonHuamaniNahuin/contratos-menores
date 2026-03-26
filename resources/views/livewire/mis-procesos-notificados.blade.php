@@ -119,7 +119,7 @@
                     No se encontraron procesos con los filtros aplicados.
                 @else
                     Aún no has recibido notificaciones de procesos SEACE.
-                    <br>Configura tus palabras clave en <a href="{{ route('suscriptores') }}" class="text-primary-500 hover:underline">Suscriptores</a>.
+                    <br>Configura tus palabras clave en <a href="{{ route('configuracion-alertas') }}" class="text-primary-500 hover:underline">Configurar alertas</a>.
                 @endif
             </p>
         </div>
