@@ -67,7 +67,7 @@ class BuscadorPublico extends Component
     public int $pagina = 1;
 
     #[Url(as: 'porPagina')]
-    public int $registrosPorPagina = 20;
+    public int $registrosPorPagina = 5;
 
     // El año se envía automáticamente como el año actual (no es filtro)
 

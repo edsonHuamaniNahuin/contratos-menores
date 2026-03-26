@@ -172,9 +172,10 @@
 
             <!-- Objeto -->
             <div class="lg:col-span-2">
-                <label class="block text-xs font-medium mb-1.5 {{ $objetoContrato > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Objeto</label>
+                <label for="select-objeto" class="block text-xs font-medium mb-1.5 {{ $objetoContrato > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Objeto</label>
                 <div class="relative">
                     <select
+                        id="select-objeto"
                         wire:model.live="objetoContrato"
                         class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $objetoContrato > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}"
                     >
@@ -198,9 +199,10 @@
 
             <!-- Estado -->
             <div class="lg:col-span-2">
-                <label class="block text-xs font-medium mb-1.5 {{ $estadoContrato > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Estado</label>
+                <label for="select-estado" class="block text-xs font-medium mb-1.5 {{ $estadoContrato > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Estado</label>
                 <div class="relative">
                     <select
+                        id="select-estado"
                         wire:model.live="estadoContrato"
                         class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $estadoContrato > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}"
                     >
@@ -595,8 +597,9 @@
             <!-- Header Compacto -->
             <div class="px-4 lg:px-6 py-4 border-b border-neutral-100 flex items-center justify-end gap-3">
                 <div class="flex items-center gap-2">
-                    <label class="text-xs text-neutral-600 hidden sm:inline">Mostrar:</label>
+                    <label for="select-por-pagina" class="text-xs text-neutral-600 hidden sm:inline">Mostrar:</label>
                     <select
+                        id="select-por-pagina"
                         wire:model.live="registrosPorPagina"
                         class="px-2.5 py-1.5 bg-neutral-50 border border-neutral-100 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
@@ -709,10 +712,10 @@
                                     @php
                                         $estado = strtolower($contrato['nomEstadoContrato'] ?? '');
                                         $badgeClass = match(true) {
-                                            str_contains($estado, 'vigente') => 'bg-secondary-500/10 text-secondary-500 border-secondary-200',
-                                            str_contains($estado, 'evaluación') => 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                            str_contains($estado, 'culminado') => 'bg-neutral-100 text-neutral-700 border-neutral-200',
-                                            default => 'bg-neutral-100 text-neutral-700 border-neutral-200',
+                                            str_contains($estado, 'vigente') => 'bg-secondary-500/10 border-secondary-500/40 text-primary-500',
+                                            str_contains($estado, 'evaluación') => 'bg-yellow-50/80 border-yellow-400/40 text-yellow-800',
+                                            str_contains($estado, 'culminado') => 'bg-neutral-100/80 border-neutral-400/40 text-neutral-600',
+                                            default => 'bg-neutral-100/80 border-neutral-400/40 text-neutral-600',
                                         };
                                     @endphp
                                     <span class="inline-flex px-3 py-1.5 text-xs font-semibold rounded-full border {{ $badgeClass }}">
@@ -750,7 +753,7 @@
                                             wire:click="verContrato({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="verContrato({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-secondary-200 text-xs font-semibold text-secondary-500 bg-secondary-50 hover:bg-secondary-100 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-primary-500 hover:bg-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
                                             title="Ver detalle del proceso"
                                         >
                                             <svg wire:loading.remove wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -780,7 +783,7 @@
                                             wire:click="analizarTdr({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="analizarTdr({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 text-xs font-semibold text-brand-600 bg-primary-50 hover:bg-primary-100 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeAnalizar ? '' : 'opacity-70' }}"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-500/40 text-xs font-semibold text-primary-500 bg-primary-500/10 hover:bg-primary-500/20 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeAnalizar ? '' : 'opacity-70' }}"
                                             title="Analizar con IA"
                                         >
                                             <svg wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -833,10 +836,10 @@
                             @php
                                 $estadoMobile = strtolower($contrato['nomEstadoContrato'] ?? '');
                                 $badgeMobileClass = match(true) {
-                                    str_contains($estadoMobile, 'vigente') => 'bg-secondary-500/10 text-secondary-500 border-secondary-200',
-                                    str_contains($estadoMobile, 'evaluación') => 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                    str_contains($estadoMobile, 'culminado') => 'bg-neutral-100 text-neutral-700 border-neutral-200',
-                                    default => 'bg-neutral-100 text-neutral-700 border-neutral-200',
+                                    str_contains($estadoMobile, 'vigente') => 'bg-secondary-500/10 border-secondary-500/40 text-primary-500',
+                                    str_contains($estadoMobile, 'evaluación') => 'bg-yellow-50/80 border-yellow-400/40 text-yellow-800',
+                                    str_contains($estadoMobile, 'culminado') => 'bg-neutral-100/80 border-neutral-400/40 text-neutral-600',
+                                    default => 'bg-neutral-100/80 border-neutral-400/40 text-neutral-600',
                                 };
                             @endphp
                             <span class="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full border shrink-0 {{ $badgeMobileClass }}">
@@ -846,13 +849,13 @@
 
                         {{-- Entidad --}}
                         <div>
-                            <p class="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider">Entidad</p>
+                            <p class="text-[11px] text-neutral-500 font-semibold uppercase tracking-wider">Entidad</p>
                             <p class="text-sm text-neutral-900 font-medium leading-snug">{{ $contrato['nomEntidad'] ?? 'N/A' }}</p>
                         </div>
 
                         {{-- Objeto --}}
                         <div>
-                            <p class="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider">Objeto</p>
+                            <p class="text-[11px] text-neutral-500 font-semibold uppercase tracking-wider">Objeto</p>
                             <p class="text-sm text-neutral-900 leading-snug">
                                 <span class="font-medium">{{ $contrato['nomObjetoContrato'] ?? 'N/A' }}</span>
                                 <span class="text-neutral-500"> — {{ \Illuminate\Support\Str::limit($contrato['desObjetoContrato'] ?? '-', 120) }}</span>
@@ -887,7 +890,7 @@
                                 wire:click="verContrato({{ $contrato['idContrato'] }})"
                                 wire:loading.attr="disabled"
                                 wire:target="verContrato({{ $contrato['idContrato'] }})"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-secondary-200 text-xs font-semibold text-secondary-500 bg-secondary-50 hover:bg-secondary-100 transition-colors disabled:opacity-50"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-primary-500 hover:bg-primary-400 transition-colors disabled:opacity-50"
                                 title="Ver detalle"
                             >
                                 <svg wire:loading.remove wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -917,7 +920,7 @@
                                 wire:click="analizarTdr({{ $contrato['idContrato'] }})"
                                 wire:loading.attr="disabled"
                                 wire:target="analizarTdr({{ $contrato['idContrato'] }})"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 text-xs font-semibold text-brand-600 bg-primary-50 hover:bg-primary-100 transition-colors disabled:opacity-50 {{ $puedeAnalizar ? '' : 'opacity-70' }}"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-500/40 text-xs font-semibold text-primary-500 bg-primary-500/10 hover:bg-primary-500/20 transition-colors disabled:opacity-50 {{ $puedeAnalizar ? '' : 'opacity-70' }}"
                                 title="Analizar con IA"
                             >
                                 <svg wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -951,6 +954,7 @@
                                 wire:click="irAPagina(1)"
                                 class="w-10 h-10 flex items-center justify-center text-sm font-semibold rounded-xl transition-all {{ $pagina === 1 ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md' }}"
                                 {{ $pagina === 1 ? 'disabled' : '' }}
+                                aria-label="Primera página"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
@@ -962,6 +966,7 @@
                                 wire:click="irAPagina({{ $pagina - 1 }})"
                                 class="px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $pagina === 1 ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md' }}"
                                 {{ $pagina === 1 ? 'disabled' : '' }}
+                                aria-label="Página anterior"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -991,6 +996,7 @@
                                 wire:click="irAPagina({{ $pagina + 1 }})"
                                 class="px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $pagina === $totalPages ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md' }}"
                                 {{ $pagina === $totalPages ? 'disabled' : '' }}
+                                aria-label="Página siguiente"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -1002,6 +1008,7 @@
                                 wire:click="irAPagina({{ $totalPages }})"
                                 class="w-10 h-10 flex items-center justify-center text-sm font-semibold rounded-xl transition-all {{ $pagina === $totalPages ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md' }}"
                                 {{ $pagina === $totalPages ? 'disabled' : '' }}
+                                aria-label="Última página"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
@@ -1019,7 +1026,7 @@
                 $det = $contratoDetalle;
                 $estadoDet = strtolower($det['nomEstadoContrato'] ?? '');
                 $badgeDetalle = match(true) {
-                    str_contains($estadoDet, 'vigente') => 'bg-secondary-500/10 text-secondary-500 border-secondary-200',
+                    str_contains($estadoDet, 'vigente') => 'bg-secondary-500/10 border-secondary-500/40 text-primary-500',
                     str_contains($estadoDet, 'evaluación') => 'bg-yellow-50 text-yellow-700 border-yellow-200',
                     str_contains($estadoDet, 'culminado') => 'bg-neutral-100 text-neutral-700 border-neutral-200',
                     default => 'bg-neutral-100 text-neutral-700 border-neutral-200',

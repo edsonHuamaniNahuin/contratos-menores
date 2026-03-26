@@ -4,6 +4,68 @@
 @section('meta_description', 'Software de monitoreo de licitaciones del SEACE para MYPEs en Perú. Alertas automáticas por Telegram y WhatsApp, análisis de TDR con inteligencia artificial, score de compatibilidad. Contrataciones menores hasta 8 UIT — Ley 32069.')
 
 @push('head')
+{{-- Schema.org WebSite with SearchAction (habilita sitelinks searchbox en Google) --}}
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "WebSite",
+    "name": "Licitaciones MYPe",
+    "alternateName": "Vigilante SEACE",
+    "url": "{{ config('app.url') }}",
+    "potentialAction": {
+        "@@type": "SearchAction",
+        "target": {
+            "@@type": "EntryPoint",
+            "urlTemplate": "{{ config('app.url') }}/buscador-publico?palabraClave={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+    }
+}
+</script>
+{{-- Schema.org SiteNavigationElement (estructura sitelinks en Google) --}}
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@graph": [
+        {
+            "@@type": "SiteNavigationElement",
+            "name": "Buscador de Licitaciones",
+            "description": "Busca y filtra licitaciones del Estado peruano publicadas en el SEACE por entidad, departamento y objeto.",
+            "url": "{{ config('app.url') }}/buscador-publico"
+        },
+        {
+            "@@type": "SiteNavigationElement",
+            "name": "Planes y Precios",
+            "description": "Planes gratuito y premium para MYPEs. Alertas, análisis TDR con IA y score de compatibilidad.",
+            "url": "{{ config('app.url') }}/planes"
+        },
+        {
+            "@@type": "SiteNavigationElement",
+            "name": "Manual de Uso",
+            "description": "Guía paso a paso para usar el buscador, configurar alertas y analizar TDR con inteligencia artificial.",
+            "url": "{{ config('app.url') }}/manual"
+        },
+        {
+            "@@type": "SiteNavigationElement",
+            "name": "Contacto",
+            "description": "Contacta al equipo de soporte de Licitaciones MYPe por email, teléfono o WhatsApp.",
+            "url": "{{ config('app.url') }}/contacto"
+        },
+        {
+            "@@type": "SiteNavigationElement",
+            "name": "Iniciar Sesión",
+            "description": "Accede a tu cuenta de Licitaciones MYPe para gestionar alertas y análisis.",
+            "url": "{{ config('app.url') }}/login"
+        },
+        {
+            "@@type": "SiteNavigationElement",
+            "name": "Registrarse",
+            "description": "Crea una cuenta gratuita en Licitaciones MYPe para monitorear licitaciones del SEACE.",
+            "url": "{{ config('app.url') }}/register"
+        }
+    ]
+}
+</script>
 {{-- Schema.org SoftwareApplication --}}
 <script type="application/ld+json">
 {
