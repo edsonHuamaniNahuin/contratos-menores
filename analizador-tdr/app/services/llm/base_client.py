@@ -122,6 +122,29 @@ VALORES PERMITIDOS (OBLIGATORIO respetar exactamente):
         """
         pass
 
+    @abstractmethod
+    async def generate_proforma(
+        self,
+        context: str,
+        company_name: str,
+        company_copy: str,
+        contrato_contexto: Optional[Dict] = None,
+    ) -> Dict:
+        """
+        Genera proforma técnica de cotización para un proceso SEACE.
+
+        Args:
+            context: Texto extraído del TDR
+            company_name: Nombre de la empresa proveedora
+            company_copy: Descripción del rubro y experiencia
+            contrato_contexto: Metadata del contrato (entidad, objeto, fechas)
+
+        Returns:
+            Dict con titulo_proceso, empresa_nombre, empresa_rubro, items[], total_estimado,
+            analisis_viabilidad, condiciones[]
+        """
+        pass
+
     def _repair_truncated_json(self, text: str) -> str:
         """
         Intenta reparar un JSON truncado cerrando strings, arrays y objetos abiertos.

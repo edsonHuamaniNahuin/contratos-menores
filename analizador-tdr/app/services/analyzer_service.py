@@ -11,6 +11,8 @@ from app.models.schemas import (
     CompatibilityScoreRequest,
     CompatibilityScoreResponse,
     DireccionamientoAnalysisResponse,
+    ProformaResponse,
+    ProformaItem,
 )
 from datetime import datetime
 import logging
@@ -310,5 +312,141 @@ class TDRAnalyzerService:
         arg = payload.get("argumento_para_observacion", "")
         if len(arg) > 2000:
             payload["argumento_para_observacion"] = arg[:1997] + "..."
+
+        return payload
+
+    async def generate_proforma_document(
+        self,
+        pdf_bytes: bytes,
+        company_name: str,
+        company_copy: str,
+        contrato_contexto: Optional[Dict] = None,
+        llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None,
+    ) -> ProformaResponse:
+        """
+        Pipeline de generación de proforma técnica de cotización.
+        Reutiliza la extracción de texto y construye el prompt con el perfil de empresa.
+        """
+        self.logger.info("=== INICIANDO PIPELINE DE PROFORMA TÉCNICA ===")
+
+        llm_client = LLMFactory.create_client(llm_provider)
+
+        # Paso 1: Extraer texto del PDF
+        self.logger.info("📄 Extrayendo contenido del PDF para proforma...")
+        full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
+
+        if len(full_text) < 50:
+            raise ValueError("El PDF contiene muy poco texto para generar la proforma")
+
+        self.logger.info(f"✓ Texto extraído: {len(full_text)} caracteres")
+
+        # Paso 2-3: Construir contexto (mismo pipeline que análisis general)
+        if len(full_text) < 5000:
+            context = f"DOCUMENTO COMPLETO DEL TDR:\n\n{full_text}\n\n===== FIN DEL DOCUMENTO ====="
+        else:
+            fragments = self.rag_extractor.extract_relevant_fragments(full_text)
+            context = self.rag_extractor.build_context_for_llm(fragments)
+
+        self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
+
+        # Paso 4: Generar proforma con LLM
+        self.logger.info("📋 Generando proforma técnica con LLM...")
+        raw = await llm_client.generate_proforma(
+            context,
+            company_name,
+            company_copy,
+            contrato_contexto,
+        )
+        sanitized = self._sanitize_proforma_payload(raw)
+
+        try:
+            validated = ProformaResponse(**sanitized)
+            self.logger.info(f"✅ Proforma generada — {len(validated.items)} ítems")
+            return validated
+        except Exception as e:
+            self.logger.error(f"Error al validar respuesta de proforma: {str(e)}")
+            raise ValueError(f"Respuesta del LLM no cumple esquema de proforma: {str(e)}")
+
+    async def generate_proforma_from_analysis(
+        self,
+        analisis_tdr: Dict,
+        company_name: str,
+        company_copy: str,
+        contrato_contexto: Optional[Dict] = None,
+        llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None,
+    ) -> ProformaResponse:
+        """
+        Genera proforma a partir de un análisis TDR ya existente (sin re-procesar PDF).
+        Usa el resumen ejecutivo + requisitos como contexto.
+        """
+        self.logger.info("=== PROFORMA DESDE ANÁLISIS EXISTENTE ===")
+
+        llm_client = LLMFactory.create_client(llm_provider)
+
+        # Construir contexto resumido desde el análisis
+        partes = []
+        if analisis_tdr.get("resumen_ejecutivo"):
+            partes.append(f"RESUMEN EJECUTIVO:\n{analisis_tdr['resumen_ejecutivo']}")
+        if analisis_tdr.get("requisitos_tecnicos"):
+            partes.append("REQUISITOS TÉCNICOS:\n- " + "\n- ".join(analisis_tdr["requisitos_tecnicos"]))
+        if analisis_tdr.get("reglas_de_negocio"):
+            partes.append("REGLAS DE NEGOCIO:\n- " + "\n- ".join(analisis_tdr["reglas_de_negocio"]))
+        if analisis_tdr.get("presupuesto_referencial"):
+            partes.append(f"PRESUPUESTO REFERENCIAL: {analisis_tdr['presupuesto_referencial']}")
+
+        context = "\n\n".join(partes) if partes else "Sin información del TDR disponible"
+
+        raw = await llm_client.generate_proforma(
+            context,
+            company_name,
+            company_copy,
+            contrato_contexto,
+        )
+        sanitized = self._sanitize_proforma_payload(raw)
+
+        try:
+            validated = ProformaResponse(**sanitized)
+            self.logger.info(f"✅ Proforma desde análisis generada — {len(validated.items)} ítems")
+            return validated
+        except Exception as e:
+            raise ValueError(f"Respuesta del LLM no cumple esquema de proforma: {str(e)}")
+
+    def _sanitize_proforma_payload(self, payload: Dict) -> Dict:
+        """Normaliza el payload de proforma para cumplir con el esquema."""
+        for key in ("titulo_proceso", "empresa_nombre", "empresa_rubro", "total_estimado", "analisis_viabilidad"):
+            if not isinstance(payload.get(key), str):
+                payload[key] = ""
+
+        if not isinstance(payload.get("items"), list):
+            payload["items"] = []
+
+        if not isinstance(payload.get("condiciones"), list):
+            payload["condiciones"] = []
+
+        sanitized_items = []
+        for idx, item in enumerate(payload["items"][:20], start=1):
+            if not isinstance(item, dict):
+                continue
+            try:
+                precio = float(item.get("precio_unitario", 0) or 0)
+                cantidad = float(item.get("cantidad", 1) or 1)
+                subtotal = float(item.get("subtotal", precio * cantidad) or precio * cantidad)
+                sanitized_items.append({
+                    "item": int(item.get("item", idx)),
+                    "descripcion": str(item.get("descripcion", ""))[:300],
+                    "unidad": str(item.get("unidad", "Und"))[:50],
+                    "cantidad": round(cantidad, 2),
+                    "precio_unitario": round(precio, 2),
+                    "subtotal": round(subtotal, 2),
+                })
+            except (TypeError, ValueError):
+                continue
+
+        payload["items"] = sanitized_items
+
+        # Truncar analisis_viabilidad
+        viab = payload.get("analisis_viabilidad", "")
+        if len(viab) > 3000:
+            payload["analisis_viabilidad"] = viab[:2997] + "..."
 
         return payload

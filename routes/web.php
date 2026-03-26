@@ -226,7 +226,7 @@ Disallow: /cuentas
 Disallow: /prueba-endpoints
 Disallow: /configuracion
 Disallow: /tdr-repository
-Disallow: /suscriptores
+Disallow: /configuracion-alertas
 Disallow: /roles-permisos
 Disallow: /seguimientos
 Disallow: /perfil
@@ -323,9 +323,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('direccionamiento');
     })->name('direccionamiento')->middleware('can:view-tdr-repository');
 
-    Route::get('/suscriptores', function () {
-        return view('suscriptores');
-    })->name('suscriptores')->middleware('can:view-suscriptores');
+    Route::get('/configuracion-alertas', function () {
+        return view('configuracion-alertas');
+    })->name('configuracion-alertas')->middleware('can:view-configuracion-alertas');
 
     Route::get('/roles-permisos', function () {
         return view('roles-permisos');
@@ -362,6 +362,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/suscripciones-premium', function () {
         return view('suscripciones-premium');
     })->name('suscripciones.premium')->middleware('can:manage-subscriptions');
+
+    // ─── Proforma técnica ─────────────────────────────────────────────
+    Route::get('/proforma/{token}/word', [\App\Http\Controllers\ProformaController::class, 'downloadWord'])
+        ->name('proforma.word');
+    Route::get('/proforma/{token}/print', [\App\Http\Controllers\ProformaController::class, 'viewPrint'])
+        ->name('proforma.print');
 
 });
 

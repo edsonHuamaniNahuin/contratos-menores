@@ -278,3 +278,109 @@ TDR:
                 "hallazgos_criticos": [],
                 "argumento_para_observacion": f"Error al analizar: {str(e)}",
             }
+
+    async def generate_proforma(
+        self,
+        context: str,
+        company_name: str,
+        company_copy: str,
+        contrato_contexto=None,
+    ) -> dict:
+        """Genera proforma técnica de cotización para un proceso SEACE usando Gemini."""
+        try:
+            self.logger.info(f"📋 Generando proforma técnica con Gemini ({self.model_name})")
+
+            nombre_empresa = company_name.strip() or "Mi Empresa"
+            entidad = ""
+            objeto = ""
+            if contrato_contexto:
+                entidad = contrato_contexto.get("nomEntidad") or contrato_contexto.get("entidad") or ""
+                objeto = (
+                    contrato_contexto.get("desObjetoContrato")
+                    or contrato_contexto.get("nomObjetoContrato")
+                    or contrato_contexto.get("objeto")
+                    or ""
+                )
+
+            proforma_config = types.GenerateContentConfig(
+                temperature=0.3,
+                top_p=0.95,
+                max_output_tokens=8192,
+                response_mime_type="application/json",
+                safety_settings=self.generation_config.safety_settings,
+            )
+
+            user_prompt = f"""
+### ROLE: SENIOR PRICING ANALYST & BID MANAGER (PERUVIAN GOV SPECIALIST)
+Actúa como Director de Operaciones de "{nombre_empresa}".
+Especialidad de la empresa: "{company_copy}"
+{"Entidad convocante: " + entidad if entidad else ""}
+{"Objeto del proceso: " + objeto if objeto else ""}
+
+Basándote en el siguiente TDR, genera una PROFORMA TÉCNICA DE COTIZACIÓN con:
+1. Una tabla de ítems con cantidades, unidades y precios estimados en soles peruanos (S/)
+2. Un análisis de viabilidad operativa breve
+3. Condiciones y supuestos del presupuesto
+
+REGLAS:
+- Los precios deben ser realistas para el mercado peruano de contrataciones públicas
+- Si el TDR no especifica cantidades exactas, estímalas razonablemente
+- El total debe ser coherente con el presupuesto referencial si se menciona en el TDR
+- Devuelve ÚNICAMENTE este JSON (sin texto adicional, sin markdown):
+
+{{
+  "titulo_proceso": "Descripción corta del proceso (máx 80 chars)",
+  "empresa_nombre": "{nombre_empresa}",
+  "empresa_rubro": "Rubro resumido en 1 línea",
+  "items": [
+    {{
+      "item": 1,
+      "descripcion": "Descripción del ítem",
+      "unidad": "Unidad (Und/Servicio/Mes/etc)",
+      "cantidad": 1,
+      "precio_unitario": 1000.00,
+      "subtotal": 1000.00
+    }}
+  ],
+  "total_estimado": "S/ X,XXX.XX",
+  "analisis_viabilidad": "Análisis de viabilidad operativa (2-3 párrafos)",
+  "condiciones": ["Condición o supuesto 1", "Condición o supuesto 2"]
+}}
+
+TDR:
+{context}
+"""
+
+            if hasattr(self.client, "aio"):
+                response = await self.client.aio.models.generate_content(
+                    model=self.model_name,
+                    contents=user_prompt,
+                    config=proforma_config,
+                )
+            else:
+                import asyncio
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model=self.model_name,
+                    contents=user_prompt,
+                    config=proforma_config,
+                )
+
+            response_text = self._extract_text(response).strip()
+            self.logger.debug(f"Proforma Gemini (primeros 500 chars): {response_text[:500]}")
+
+            result = self._parse_json_response(response_text)
+            self.logger.info("✅ Proforma técnica generada con Gemini")
+            return result
+
+        except Exception as e:
+            self.logger.error(f"❌ Error en proforma Gemini: {str(e)}")
+            return {
+                "titulo_proceso": "Error al generar proforma",
+                "empresa_nombre": company_name or "Mi Empresa",
+                "empresa_rubro": "",
+                "items": [],
+                "total_estimado": "S/ 0.00",
+                "analisis_viabilidad": f"Error al generar proforma: {str(e)}",
+                "condiciones": [],
+            }

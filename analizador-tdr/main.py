@@ -18,6 +18,8 @@ from app.models.schemas import (
     ErrorResponse,
     CompatibilityScoreRequest,
     DireccionamientoAnalysisResponse,
+    ProformaRequest,
+    ProformaResponse,
 )
 from app.services.analyzer_service import TDRAnalyzerService
 
@@ -263,6 +265,79 @@ async def compatibility_score(request: CompatibilityScoreRequest):
     except Exception as e:
         logger.error(f"Error interno en compatibilidad: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post(
+    "/generate-proforma",
+    tags=["Proforma"],
+    summary="Genera proforma técnica de cotización a partir de un TDR"
+)
+async def generate_proforma(
+    file: UploadFile = File(None, description="Archivo PDF del TDR (opcional si se enviaron datos JSON)"),
+    company_name: str = "",
+    company_copy: str = "",
+):
+    """
+    **Generación de Proforma Técnica de Cotización.**
+
+    Recibe un PDF del TDR y el perfil de la empresa, y genera una proforma con:
+    - Tabla de ítems (descripción, unidad, cantidad, precio unitario, subtotal)
+    - Total estimado en soles
+    - Análisis de viabilidad operativa
+    - Condiciones y supuestos del presupuesto
+
+    **Parámetros (form data):**
+    - `file`: PDF del TDR
+    - `company_name`: Nombre de la empresa proveedora
+    - `company_copy`: Descripción del rubro/experiencia de la empresa
+    """
+    try:
+        if not company_copy or len(company_copy.strip()) < 20:
+            raise HTTPException(
+                status_code=400,
+                detail="El campo company_copy es obligatorio (mínimo 20 caracteres)"
+            )
+
+        if file is None:
+            raise HTTPException(status_code=400, detail="Se requiere el archivo PDF del TDR")
+
+        if not file.filename.endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
+
+        pdf_bytes = await file.read()
+        file_size_mb = len(pdf_bytes) / (1024 * 1024)
+
+        if file_size_mb > settings.max_file_size_mb:
+            raise HTTPException(
+                status_code=413,
+                detail=f"El archivo excede el tamaño máximo permitido ({settings.max_file_size_mb}MB)"
+            )
+
+        logger.info(f"📋 Proforma: {file.filename} ({file_size_mb:.2f} MB) — empresa: {company_name or '(sin nombre)'}")
+
+        result = await analyzer_service.generate_proforma_document(
+            pdf_bytes=pdf_bytes,
+            company_name=company_name.strip(),
+            company_copy=company_copy.strip(),
+        )
+
+        logger.info(f"✅ Proforma generada: {len(result.items)} ítems — {result.total_estimado}")
+
+        return {
+            "success": True,
+            "data": result.model_dump(),
+            "timestamp": datetime.now().isoformat(),
+            "filename": file.filename,
+        }
+
+    except ValueError as e:
+        logger.error(f"Error de validación en proforma: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error inesperado en proforma: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error interno al generar proforma: {str(e)}")
 
 
 @app.exception_handler(Exception)

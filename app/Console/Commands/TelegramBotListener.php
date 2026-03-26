@@ -333,6 +333,23 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $this->answerCallbackQuery($callbackId, '⏳ Analizando direccionamiento...', $token);
                 $this->analizarDireccionamientoParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
 
+            } elseif (strpos($data, 'proforma_') === 0) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
+                $this->info("📋 Usuario {$chatId} solicitó proforma del contrato {$idContrato} (Archivo ID: {$idContratoArchivo})");
+
+                $this->answerCallbackQuery($callbackId, '📋 Generando proforma técnica...', $token);
+                $this->generarProformaParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
+
             } else {
                 $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
             }
@@ -1276,6 +1293,44 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
     {
         $nombre = $this->sanitizeCallbackFilename($nombreArchivo);
         return sprintf('%s_%d_%d_%s', $action, $idContrato, $idArchivo, $nombre);
+    }
+
+    /**
+     * Generar proforma técnica con IA y enviar enlace al usuario.
+     */
+    protected function generarProformaParaUsuario(
+        string $chatId,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        string $token
+    ): void {
+        $loadingMsgId = null;
+
+        try {
+            if ($idContratoArchivo === 0) {
+                $this->enviarMensaje($chatId, '❌ ID de archivo inválido. Por favor, intenta de nuevo.', $token);
+                return;
+            }
+
+            $appUrl = config('app.url', 'https://vigilanteseace.com');
+            $mensaje = "📋 <b>Proforma Técnica</b>\n\n"
+                . "Para generar la proforma técnica personalizada de este proceso, accede desde el panel web:\n\n"
+                . "🔗 {$appUrl}/buscador-publico\n\n"
+                . "Busca el contrato y pulsa el botón <b>📋 Crear Proforma</b>.\n\n"
+                . "<i>La proforma se genera con IA usando el perfil de tu empresa y puede descargarse en Word o PDF.</i>";
+
+            $this->enviarMensaje($chatId, $mensaje, $token);
+            $this->info("📋 Proforma: enlace enviado a usuario {$chatId} para contrato {$idContrato}");
+
+        } catch (\Exception $e) {
+            Log::error('TelegramBotListener: Error al enviar proforma', [
+                'chat_id' => $chatId,
+                'id_contrato' => $idContrato,
+                'exception' => $e->getMessage(),
+            ]);
+            $this->enviarMensaje($chatId, '❌ Error al procesar la solicitud de proforma.', $token);
+        }
     }
 
     protected function sanitizeCallbackFilename(string $nombre): string

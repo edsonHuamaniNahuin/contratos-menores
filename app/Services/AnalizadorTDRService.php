@@ -316,6 +316,70 @@ class AnalizadorTDRService
         }
     }
 
+    /**
+     * Generar proforma técnica de cotización a partir de un PDF de TDR.
+     *
+     * @param string $filePath Ruta al archivo PDF
+     * @param string $companyName Nombre de la empresa proveedora
+     * @param string $companyCopy Descripción del rubro/experiencia de la empresa
+     * @return array Respuesta con 'success', 'data' (proforma items + análisis)
+     */
+    public function analyzeProforma(string $filePath, string $companyName, string $companyCopy): array
+    {
+        if (!$this->enabled) {
+            throw new Exception('Servicio AnalizadorTDR deshabilitado');
+        }
+
+        if (!file_exists($filePath)) {
+            throw new Exception("Archivo no encontrado: {$filePath}");
+        }
+
+        try {
+            $fileName = basename($filePath);
+            $fullUrl = "{$this->baseUrl}/generate-proforma";
+
+            $this->debug('Inicio generación proforma técnica', [
+                'file_path' => $filePath,
+                'file_name' => $fileName,
+                'company_name' => $companyName,
+                'full_url' => $fullUrl,
+            ]);
+
+            $response = Http::timeout($this->timeout)
+                ->attach('file', file_get_contents($filePath), $fileName)
+                ->post($fullUrl, [
+                    'company_name' => $companyName,
+                    'company_copy' => $companyCopy,
+                ]);
+
+            if (!$response->successful()) {
+                Log::error('AnalizadorTDR: Error HTTP en proforma', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                throw new Exception('Error HTTP ' . $response->status() . ': ' . $response->body());
+            }
+
+            $data = $response->json();
+
+            Log::info('AnalizadorTDR: proforma completada', [
+                'success' => $data['success'] ?? false,
+                'file' => $fileName,
+                'items_count' => count($data['data']['items'] ?? []),
+                'total' => $data['data']['total_estimado'] ?? null,
+            ]);
+
+            return $data;
+
+        } catch (Exception $e) {
+            Log::error('AnalizadorTDR: Error en proforma', [
+                'file' => basename($filePath),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
     protected function debug(string $message, array $context = []): void
     {
         if (!$this->debugLogging) {

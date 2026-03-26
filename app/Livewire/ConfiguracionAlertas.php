@@ -30,7 +30,8 @@ class ConfiguracionAlertas extends Component
     public bool $canAddWhatsApp = false;
     public bool $canAddEmail = false;
 
-    // ── Perfil unificado (company_copy + keywords) ────────────────
+    // ── Perfil unificado (company_name + company_copy + keywords) ────────────────
+    public string $profile_company_name = '';
     public string $profile_company_copy = '';
     public array $profile_keywords = [];
     public string $profile_keyword_search = '';
@@ -90,6 +91,7 @@ class ConfiguracionAlertas extends Component
             ->first();
 
         if ($profile) {
+            $this->profile_company_name = $profile->company_name ?? '';
             $this->profile_company_copy = $profile->company_copy ?? '';
             $this->profile_keywords = $profile->keywords
                 ->pluck('id')
@@ -108,7 +110,7 @@ class ConfiguracionAlertas extends Component
             $this->loadProfile();
             $this->profile_keyword_search = '';
             $this->profile_keyword_manual = '';
-            $this->resetValidation(['profile_company_copy', 'profile_keyword_manual']);
+            $this->resetValidation(['profile_company_name', 'profile_company_copy', 'profile_keyword_manual']);
         }
     }
 
@@ -117,6 +119,7 @@ class ConfiguracionAlertas extends Component
         $this->profile_keywords = $this->sanitizeKeywordSelection($this->profile_keywords);
 
         $this->validate([
+            'profile_company_name' => 'required|string|min:30|max:1000',
             'profile_company_copy' => 'required|string|min:30',
             'profile_keywords' => 'array|max:' . self::MAX_KEYWORDS,
             'profile_keywords.*' => 'integer|exists:notification_keywords,id',
@@ -129,7 +132,10 @@ class ConfiguracionAlertas extends Component
         try {
             $profile = SubscriberProfile::updateOrCreate(
                 ['user_id' => auth()->id()],
-                ['company_copy' => $this->profile_company_copy]
+                [
+                    'company_name' => $this->profile_company_name,
+                    'company_copy' => $this->profile_company_copy,
+                ]
             );
 
             $profile->keywords()->sync($this->profile_keywords);

@@ -365,6 +365,22 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $this->whatsapp->enviarMensaje($phoneNumber, '⏳ Analizando direccionamiento...');
                 $this->analizarDireccionamientoParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo);
 
+            } elseif (str_starts_with($data, 'proforma_')) {
+                $parts = explode('_', $data, 4);
+                $idContrato = (int) ($parts[1] ?? 0);
+                $idContratoArchivo = (int) ($parts[2] ?? 0);
+                $nombreArchivo = $parts[3] ?? 'archivo.pdf';
+
+                if ($idContratoArchivo === 0 && $idContrato > 0) {
+                    $resolved = $this->resolveArchivoFromCallback($idContrato, $idContratoArchivo, $nombreArchivo);
+                    $idContratoArchivo = $resolved['idContratoArchivo'];
+                    $nombreArchivo = $resolved['nombreArchivo'];
+                }
+
+                $this->info("📋 Usuario {$phoneNumber} solicitó proforma del contrato {$idContrato}");
+                $this->whatsapp->enviarMensaje($phoneNumber, '📋 Generando proforma técnica...');
+                $this->generarProformaParaUsuario($phoneNumber, $idContrato, $idContratoArchivo, $nombreArchivo);
+
             } else {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida');
             }
@@ -1008,6 +1024,41 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $nombre = $this->sanitizeCallbackFilename($nombreArchivo);
         return sprintf('%s_%d_%d_%s', $action, $idContrato, $idArchivo, $nombre);
     }
+
+    /**
+     * Generar proforma técnica con IA y enviar enlace al usuario por WhatsApp.
+     */
+    protected function generarProformaParaUsuario(
+        string $phoneNumber,
+        int $idContrato,
+        int $idContratoArchivo,
+        string $nombreArchivo
+    ): void {
+        try {
+            $appUrl = config('app.url', 'https://vigilanteseace.com');
+            $mensaje = "📋 *Proforma Técnica*\n\n"
+                . "Para generar la proforma técnica personalizada de este proceso, accede desde el panel web:\n\n"
+                . "🔗 {$appUrl}/buscador-publico\n\n"
+                . "Busca el contrato y pulsa el botón *📋 Crear Proforma*.\n\n"
+                . "_La proforma se genera con IA usando el perfil de tu empresa y puede descargarse en Word o PDF._";
+
+            $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
+            $this->info("📋 Proforma: enlace enviado a usuario {$phoneNumber} para contrato {$idContrato}");
+
+        } catch (\Exception $e) {
+            Log::error('WhatsAppBotListener: Error al enviar proforma', [
+                'phone' => $phoneNumber,
+                'id_contrato' => $idContrato,
+                'exception' => $e->getMessage(),
+            ]);
+            try {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error al procesar la solicitud de proforma.');
+            } catch (\Throwable $sendError) {
+                // Ignorar error de envío en catch
+            }
+        }
+    }
+
 
     /**
      * Resolver archivo dinámicamente cuando el callback tiene idContratoArchivo=0.

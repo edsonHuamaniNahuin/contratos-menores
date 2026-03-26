@@ -154,8 +154,8 @@ class RolesPermisos extends Component
 
         // Agrupar permisos por concepto/vista
         $groupMap = [
-            'Vistas del sistema' => ['view-tdr-repository', 'view-configuracion', 'view-buscador-publico', 'view-cuentas', 'view-prueba-endpoints', 'view-suscriptores', 'view-mis-procesos'],
-            'Suscripciones' => ['add-telegram-subscription', 'add-whatsapp-subscription', 'add-email-subscription', 'manage-subscriptions'],
+            'Vistas del sistema' => ['view-tdr-repository', 'view-configuracion', 'view-buscador-publico', 'view-cuentas', 'view-prueba-endpoints', 'view-configuracion-alertas', 'view-mis-procesos'],
+            'Configurar alertas' => ['add-telegram-subscription', 'add-whatsapp-subscription', 'add-email-subscription', 'manage-subscriptions'],
             'TDR y procesos' => ['import-tdr', 'analyze-tdr', 'follow-contracts', 'cotizar-seace'],
             'Administración' => ['manage-roles-permissions'],
         ];

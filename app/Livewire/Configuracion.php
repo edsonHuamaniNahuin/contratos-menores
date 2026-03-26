@@ -12,6 +12,7 @@ class Configuracion extends Component
 {
     // Configuración Telegram Bot (Procesos SEACE)
     public string $telegram_bot_token = '';
+    public string $telegram_bot_url = '';
     public string $telegram_chat_id = '';
     public bool $telegram_enabled = false;
 
@@ -54,6 +55,7 @@ class Configuracion extends Component
     {
         // Leer desde BD (system_settings), con fallback a config/.env
         $this->telegram_bot_token = SystemSetting::getValue('telegram_bot_token', config('services.telegram.bot_token') ?? '') ?? '';
+        $this->telegram_bot_url = SystemSetting::getValue('telegram_bot_url', '') ?? '';
         $this->telegram_chat_id = SystemSetting::getValue('telegram_chat_id', config('services.telegram.chat_id') ?? '') ?? '';
         $this->telegram_enabled = !empty($this->telegram_bot_token) && !empty($this->telegram_chat_id);
 
@@ -123,6 +125,7 @@ class Configuracion extends Component
             // Guardar en base de datos (system_settings)
             SystemSetting::setMany([
                 'telegram_bot_token' => $this->telegram_bot_token,
+                'telegram_bot_url' => $this->telegram_bot_url,
                 'telegram_chat_id' => $this->telegram_chat_id,
                 'telegram_admin_bot_token' => $this->telegram_admin_bot_token,
                 'telegram_admin_chat_id' => $this->telegram_admin_chat_id,

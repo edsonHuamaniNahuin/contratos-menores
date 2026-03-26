@@ -95,6 +95,22 @@
                 </button>
             </div>
 
+            {{-- Company Name --}}
+            <div class="mb-4">
+                <label class="block text-xs font-medium text-neutral-600 mb-2">
+                    Nombre de empresa <span class="text-red-500">*</span>
+                </label>
+                <input type="text" wire:model="profile_company_name"
+                    class="w-full px-4 py-2.5 rounded-2xl border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all text-sm @error('profile_company_name') border-red-400 @enderror"
+                    placeholder="Ej: Consultora Tech SAC — Especialistas en TI para el sector público"
+                    minlength="30"
+                    maxlength="1000">
+                @error('profile_company_name')
+                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+                <p class="text-[11px] text-neutral-400 mt-1">Obligatorio. Mínimo 30 caracteres, máximo 1000. Se usará en los documentos de proforma técnica generados con IA.</p>
+            </div>
+
             {{-- Company Copy --}}
             <div class="mb-5">
                 <label class="block text-xs font-medium text-neutral-600 mb-2">
@@ -416,6 +432,14 @@
                     Puedes registrar hasta {{ $maxSuscriptores }} suscriptores por cuenta. Cada uno recibira alertas en su chat de Telegram.
                 </p>
             </div>
+            <div class="flex items-center gap-2 flex-wrap justify-end">
+            @if($telegramBotUrl && $suscripciones->isNotEmpty())
+                <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener noreferrer"
+                   class="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500/10 border border-primary-500/30 text-primary-600 rounded-full text-xs font-medium hover:bg-primary-500 hover:text-white transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
+                    Abrir bot de alertas
+                </a>
+            @endif
             @if($canAddTelegram && $canAddMore)
                 <button wire:click="toggleTelegramModal"
                         class="flex-shrink-0 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-full font-medium text-sm hover:opacity-90 transition-all shadow-md flex items-center gap-2">
@@ -431,6 +455,7 @@
                     Limite alcanzado ({{ $maxSuscriptores }}/{{ $maxSuscriptores }})
                 </span>
             @endif
+            </div>
         </div>
 
         @if($suscripciones->isEmpty())
@@ -526,20 +551,30 @@
 
             <div class="space-y-4">
                 @if(!$editando_suscripcion_id)
-                <div class="{{ $telegramBotUrl ? 'bg-primary-50 border-primary-200' : 'bg-neutral-50 border-neutral-200' }} border rounded-2xl p-4">
-                    <p class="text-xs font-semibold {{ $telegramBotUrl ? 'text-primary-700' : 'text-neutral-700' }} mb-2">¿Cómo obtener tu Chat ID?</p>
-                    <ol class="text-xs text-neutral-600 space-y-1 {{ $telegramBotUrl ? 'mb-3' : '' }}">
-                        <li><span class="font-semibold {{ $telegramBotUrl ? 'text-primary-600' : 'text-neutral-500' }}">1.</span> Abre el bot de Telegram</li>
-                        <li><span class="font-semibold {{ $telegramBotUrl ? 'text-primary-600' : 'text-neutral-500' }}">2.</span> Envíale el comando <code class="bg-white border border-neutral-200 px-1 py-0.5 rounded text-neutral-700">/start</code></li>
-                        <li><span class="font-semibold {{ $telegramBotUrl ? 'text-primary-600' : 'text-neutral-500' }}">3.</span> El bot responderá con tu Chat ID — cópialo aquí abajo</li>
+                <div class="bg-primary-50 border border-primary-200 rounded-2xl p-4">
+                    <p class="text-xs font-bold text-primary-700 mb-3 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        ¿Cómo obtener tu Chat ID de Telegram?
+                    </p>
+                    <ol class="text-xs text-neutral-700 space-y-2 mb-3">
+                        <li class="flex items-start gap-2">
+                            <span class="flex-shrink-0 w-5 h-5 bg-primary-500 text-white rounded-full flex items-center justify-center font-bold text-[10px] mt-0.5">1</span>
+                            <span>Haz clic en el botón de abajo para abrir <strong class="text-neutral-900">@userinfobot</strong> — un bot de Telegram que te dice tu ID en segundos.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="flex-shrink-0 w-5 h-5 bg-primary-500 text-white rounded-full flex items-center justify-center font-bold text-[10px] mt-0.5">2</span>
+                            <span>Envíale cualquier mensaje o el comando <code class="bg-white border border-primary-200 px-1 py-0.5 rounded text-primary-700 font-mono">/start</code>. El bot responderá con tu información.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="flex-shrink-0 w-5 h-5 bg-primary-500 text-white rounded-full flex items-center justify-center font-bold text-[10px] mt-0.5">3</span>
+                            <span>Copia el número que aparece en el campo <strong class="text-neutral-900">Id</strong> de la respuesta y pégalo en el campo de abajo.</span>
+                        </li>
                     </ol>
-                    @if($telegramBotUrl)
-                    <a href="{{ $telegramBotUrl }}" target="_blank" rel="noopener noreferrer"
-                       class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 text-white rounded-full text-xs font-medium hover:bg-primary-400 transition-colors">
+                    <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 text-white rounded-full text-xs font-semibold hover:bg-primary-400 transition-colors shadow-sm">
                         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
-                        Abrir el bot en Telegram →
+                        Obtener mi Chat ID con @userinfobot →
                     </a>
-                    @endif
                 </div>
                 @endif
                 <div>

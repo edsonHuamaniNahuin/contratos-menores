@@ -47,7 +47,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('view-buscador-publico', fn ($user) => $user->hasPermission('view-buscador-publico'));
         Gate::define('view-cuentas', fn ($user) => $user->hasPermission('view-cuentas'));
         Gate::define('view-prueba-endpoints', fn ($user) => $user->hasPermission('view-prueba-endpoints'));
-        Gate::define('view-suscriptores', fn ($user) => $user->hasPermission('view-suscriptores'));
+        Gate::define('view-configuracion-alertas', fn ($user) => $user->hasPermission('view-configuracion-alertas'));
         Gate::define('manage-roles-permissions', fn ($user) => $user->hasPermission('manage-roles-permissions'));
         Gate::define('import-tdr', fn ($user) => $user->hasPermission('import-tdr'));
         Gate::define('analyze-tdr', fn ($user) => $user->hasPermission('analyze-tdr'));
