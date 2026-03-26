@@ -375,5 +375,7 @@ Route::get('/proforma/{token}/word', [\App\Http\Controllers\ProformaController::
     ->name('proforma.word');
 Route::get('/proforma/{token}/print', [\App\Http\Controllers\ProformaController::class, 'viewPrint'])
     ->name('proforma.print');
+Route::get('/proforma/{token}/excel', [\App\Http\Controllers\ProformaController::class, 'downloadExcel'])
+    ->name('proforma.excel');
 
 

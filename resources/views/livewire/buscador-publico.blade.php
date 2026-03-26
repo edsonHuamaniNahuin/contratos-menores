@@ -1549,7 +1549,10 @@
     @if($resultadoProforma)
         @php
             $proformaItems = $resultadoProforma['items'] ?? [];
-            $proformaTotal = $resultadoProforma['total_estimado'] ?? 0;
+            $proformaTotal = array_sum(array_map(fn($i) => (float)($i['subtotal'] ?? 0), $proformaItems));
+            if ($proformaTotal <= 0) {
+                $proformaTotal = (float) preg_replace('/[^0-9.]/', '', $resultadoProforma['total_estimado'] ?? '');
+            }
             $proformaViabilidad = $resultadoProforma['analisis_viabilidad'] ?? '';
             $proformaCondiciones = $resultadoProforma['condiciones'] ?? [];
             $proformaTitulo = $resultadoProforma['titulo_proceso'] ?? 'Proceso';
@@ -1698,6 +1701,16 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
                                 Descargar Word
+                            </a>
+                            <a
+                                href="{{ route('proforma.excel', $proformaToken) }}"
+                                target="_blank"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors shadow-sm"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 3v18M6 3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z"/>
+                                </svg>
+                                Descargar Excel
                             </a>
                             <a
                                 href="{{ route('proforma.print', $proformaToken) }}"

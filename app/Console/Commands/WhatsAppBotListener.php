@@ -1095,12 +1095,16 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             Cache::put("proforma:{$proformaToken}", $resultado['data'] ?? [], now()->addHours(2));
 
             $appUrl = rtrim(config('app.url', ''), '/');
-            $wordUrl = "{$appUrl}/proforma/{$proformaToken}/word";
+            $wordUrl  = "{$appUrl}/proforma/{$proformaToken}/word";
             $printUrl = "{$appUrl}/proforma/{$proformaToken}/print";
+            $excelUrl = "{$appUrl}/proforma/{$proformaToken}/excel";
 
             $proformaData = $resultado['data'] ?? [];
-            $total = 'S/ ' . number_format((float) ($proformaData['total_estimado'] ?? 0), 2);
-            $itemsCount = count($proformaData['items'] ?? []);
+            $proformaItems_ = $proformaData['items'] ?? [];
+            $totalCalc = array_sum(array_map(fn($i) => (float)($i['subtotal'] ?? 0), $proformaItems_));
+            $totalFb = (float) preg_replace('/[^0-9.]/', '', $proformaData['total_estimado'] ?? '');
+            $total = 'S/ ' . number_format($totalCalc > 0 ? $totalCalc : $totalFb, 2);
+            $itemsCount = count($proformaItems_);
 
             $mensaje = "📋 *Proforma Técnica lista*\n\n"
                 . "💼 *{$companyName}*\n"
@@ -1108,6 +1112,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 . "💰 *Total estimado: {$total}*\n\n"
                 . "📄 Descargar Word:\n{$wordUrl}\n\n"
                 . "🖨 Ver/Imprimir PDF:\n{$printUrl}\n\n"
+                . "📊 Descargar Excel:\n{$excelUrl}\n\n"
                 . "_Los enlaces expiran en 2 horas._";
 
             $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);

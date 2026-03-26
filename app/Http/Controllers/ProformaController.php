@@ -48,6 +48,26 @@ class ProformaController extends Controller
         ]);
     }
 
+    /**
+     * Descargar proforma como hoja de cálculo Excel (SpreadsheetML, sin librería externa).
+     */
+    public function downloadExcel(Request $request, string $token): Response
+    {
+        $proforma = $this->resolveProforma($token);
+
+        if (!$proforma) {
+            abort(404, 'Proforma no encontrada o expirada.');
+        }
+
+        $xml = $this->buildSpreadsheetML($proforma);
+
+        return response($xml, 200, [
+            'Content-Type'        => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="proforma-tecnica.xls"',
+            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+        ]);
+    }
+
     // ─── Private helpers ──────────────────────────────────────────
 
     private function resolveProforma(string $token): ?array
@@ -68,7 +88,9 @@ class ProformaController extends Controller
         $empresa   = e($proforma['empresa_nombre'] ?? '');
         $rubro     = e($proforma['empresa_rubro'] ?? '');
         $items     = $proforma['items'] ?? [];
-        $total     = 'S/ ' . number_format((float) ($proforma['total_estimado'] ?? 0), 2);
+        $totalCalc = array_sum(array_map(fn($i) => (float)($i['subtotal'] ?? 0), $items));
+        $totalFb   = (float) preg_replace('/[^0-9.]/', '', $proforma['total_estimado'] ?? '');
+        $total     = 'S/ ' . number_format($totalCalc > 0 ? $totalCalc : $totalFb, 2);
         $viabilidad = $proforma['analisis_viabilidad'] ?? '';
         $condiciones = $proforma['condiciones'] ?? [];
         $entidad   = e($proforma['contexto_contrato']['entidad'] ?? '');
@@ -197,5 +219,112 @@ class ProformaController extends Controller
 </body>
 </html>
 HTML;
+    }
+
+    private function buildSpreadsheetML(array $proforma): string
+    {
+        $titulo     = $proforma['titulo_proceso'] ?? 'Proforma Técnica';
+        $empresa    = $proforma['empresa_nombre'] ?? '';
+        $rubro      = $proforma['empresa_rubro'] ?? '';
+        $items      = $proforma['items'] ?? [];
+        $totalCalc  = array_sum(array_map(fn($i) => (float)($i['subtotal'] ?? 0), $items));
+        $totalFb    = (float) preg_replace('/[^0-9.]/', '', $proforma['total_estimado'] ?? '');
+        $total      = $totalCalc > 0 ? $totalCalc : $totalFb;
+        $viabilidad = $proforma['analisis_viabilidad'] ?? '';
+        $condiciones = $proforma['condiciones'] ?? [];
+        $entidad    = $proforma['contexto_contrato']['entidad'] ?? '';
+        $fecha      = now()->format('d/m/Y');
+
+        // Helpers para generar XML seguro
+        $esc  = fn(string $v) => htmlspecialchars($v, ENT_XML1, 'UTF-8');
+        $cell = function (mixed $v, string $t = 'String', string $style = '') use ($esc): string {
+            $sa = $style !== '' ? " ss:StyleID=\"{$style}\"" : '';
+            return "<Cell{$sa}><Data ss:Type=\"{$t}\">" . $esc((string) $v) . "</Data></Cell>";
+        };
+        $row   = fn(array $cells) => "<Row>" . implode('', $cells) . "</Row>\n";
+        $empty = "<Row/>\n";
+
+        // ── Encabezado informativo ──────────────────────────────────
+        $rows = '';
+        $rows .= $row([$cell('Proforma Técnica de Cotización', 'String', 'title')]);
+        $rows .= $empty;
+        $rows .= $row([$cell('Empresa:', 'String', 'label'), $cell($empresa), $cell('Fecha:', 'String', 'label'), $cell($fecha)]);
+        $rows .= $row([$cell('Rubro:', 'String', 'label'), $cell($rubro), $cell('Entidad:', 'String', 'label'), $cell($entidad)]);
+        $rows .= $row([$cell('Proceso:', 'String', 'label'), $cell($titulo)]);
+        $rows .= $empty;
+
+        // ── Cabeceras de tabla ──────────────────────────────────────
+        $rows .= $row([
+            $cell('Ítem', 'String', 'header'),
+            $cell('Descripción', 'String', 'header'),
+            $cell('Unidad', 'String', 'header'),
+            $cell('Cantidad', 'String', 'header'),
+            $cell('Precio Unit. (S/)', 'String', 'header'),
+            $cell('Subtotal (S/)', 'String', 'header'),
+        ]);
+
+        // ── Filas de ítems ──────────────────────────────────────────
+        foreach ($items as $idx => $item) {
+            $st = ($idx % 2 === 1) ? 'alt' : '';
+            $rows .= $row([
+                $cell((int) ($item['item'] ?? ($idx + 1)), 'Number', $st),
+                $cell($item['descripcion'] ?? '', 'String', $st),
+                $cell($item['unidad'] ?? '', 'String', $st),
+                $cell((float) ($item['cantidad'] ?? 0), 'Number', $st),
+                $cell((float) ($item['precio_unitario'] ?? 0), 'Number', $st),
+                $cell((float) ($item['subtotal'] ?? 0), 'Number', $st),
+            ]);
+        }
+
+        // ── Fila TOTAL ──────────────────────────────────────────────
+        $rows .= $row([
+            $cell('', 'String', 'total'), $cell('', 'String', 'total'),
+            $cell('', 'String', 'total'), $cell('', 'String', 'total'),
+            $cell('TOTAL ESTIMADO:', 'String', 'total'),
+            $cell('S/ ' . number_format($total, 2), 'String', 'total'),
+        ]);
+        $rows .= $empty;
+
+        // ── Viabilidad ──────────────────────────────────────────────
+        if ($viabilidad !== '') {
+            $rows .= $row([$cell('Análisis de Viabilidad Operativa', 'String', 'section')]);
+            $rows .= $row([$cell($viabilidad)]);
+            $rows .= $empty;
+        }
+
+        // ── Condiciones ─────────────────────────────────────────────
+        if (!empty($condiciones)) {
+            $rows .= $row([$cell('Condiciones y Supuestos', 'String', 'section')]);
+            foreach ($condiciones as $cond) {
+                $rows .= $row([$cell('• ' . $cond)]);
+            }
+            $rows .= $empty;
+        }
+
+        // ── Pie ─────────────────────────────────────────────────────
+        $rows .= $row([$cell("Generado con la inteligencia de LicitacionesMYPE.pe — {$fecha}", 'String', 'footer')]);
+        $rows .= $row([$cell('Este documento es un borrador de cotización con fines orientativos. Los precios son referenciales.', 'String', 'footer')]);
+
+        return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+            . '<?mso-application progid="Excel.Sheet"?>' . "\n"
+            . '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n"
+            . '  xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n"
+            . '  xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n"
+            . '  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' . "\n"
+            . '  <Styles>' . "\n"
+            . '    <Style ss:ID="title"><Font ss:Bold="1" ss:Size="14" ss:Color="#1A3A5C"/></Style>' . "\n"
+            . '    <Style ss:ID="header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1A3A5C" ss:Pattern="Solid"/></Style>' . "\n"
+            . '    <Style ss:ID="total"><Font ss:Bold="1" ss:Color="#7D5800"/><Interior ss:Color="#FEF9E7" ss:Pattern="Solid"/></Style>' . "\n"
+            . '    <Style ss:ID="label"><Font ss:Bold="1" ss:Color="#444444"/></Style>' . "\n"
+            . '    <Style ss:ID="alt"><Interior ss:Color="#F5F8FC" ss:Pattern="Solid"/></Style>' . "\n"
+            . '    <Style ss:ID="section"><Font ss:Bold="1" ss:Size="11" ss:Color="#1A3A5C"/></Style>' . "\n"
+            . '    <Style ss:ID="footer"><Font ss:Italic="1" ss:Color="#999999" ss:Size="8"/></Style>' . "\n"
+            . '  </Styles>' . "\n"
+            . '  <Worksheet ss:Name="Proforma Técnica">' . "\n"
+            . '    <Table ss:DefaultColumnWidth="120">' . "\n"
+            . $rows
+            . '    </Table>' . "\n"
+            . '  </Worksheet>' . "\n"
+            . '</Workbook>';
     }
 }

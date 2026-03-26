@@ -1380,12 +1380,16 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             Cache::put("proforma:{$proformaToken}", $resultado['data'] ?? [], now()->addHours(2));
 
             $appUrl = rtrim(config('app.url', ''), '/');
-            $wordUrl = "{$appUrl}/proforma/{$proformaToken}/word";
+            $wordUrl  = "{$appUrl}/proforma/{$proformaToken}/word";
             $printUrl = "{$appUrl}/proforma/{$proformaToken}/print";
+            $excelUrl = "{$appUrl}/proforma/{$proformaToken}/excel";
 
             $proformaData = $resultado['data'] ?? [];
-            $total = 'S/ ' . number_format((float) ($proformaData['total_estimado'] ?? 0), 2);
-            $itemsCount = count($proformaData['items'] ?? []);
+            $proformaItems_ = $proformaData['items'] ?? [];
+            $totalCalc = array_sum(array_map(fn($i) => (float)($i['subtotal'] ?? 0), $proformaItems_));
+            $totalFb = (float) preg_replace('/[^0-9.]/', '', $proformaData['total_estimado'] ?? '');
+            $total = 'S/ ' . number_format($totalCalc > 0 ? $totalCalc : $totalFb, 2);
+            $itemsCount = count($proformaItems_);
             $viabilidad = $proformaData['analisis_viabilidad'] ?? '';
             $viabilidadResumen = mb_strlen($viabilidad) > 200
                 ? mb_substr($viabilidad, 0, 200) . '...'
@@ -1405,6 +1409,9 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                     ],
                     [
                         ['text' => '🖨 Ver / Imprimir PDF', 'url' => $printUrl],
+                    ],
+                    [
+                        ['text' => '📊 Descargar Excel', 'url' => $excelUrl],
                     ],
                 ],
             ];
