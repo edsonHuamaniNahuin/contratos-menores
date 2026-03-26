@@ -27,10 +27,17 @@
             gtag('consent', 'update', { 'analytics_storage': 'granted' });
         }
     </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4PRW1QCW48"></script>
     <script>
-        gtag('js', new Date());
-        gtag('config', 'G-4PRW1QCW48');
+        requestIdleCallback(function() {
+            var s = document.createElement('script');
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=G-4PRW1QCW48';
+            s.async = true;
+            document.head.appendChild(s);
+            s.onload = function() {
+                gtag('js', new Date());
+                gtag('config', 'G-4PRW1QCW48');
+            };
+        });
     </script>
     @endif
 </head>
@@ -62,7 +69,7 @@
                     <h1 class="text-xl font-bold text-neutral-900">Vigilante SEACE</h1>
                 </div>
                 <!-- Botón cerrar en mobile -->
-                <button @click="sidebarOpen = false" class="lg:hidden text-neutral-400 hover:text-neutral-600">
+                <button @click="sidebarOpen = false" class="lg:hidden text-neutral-400 hover:text-neutral-600" aria-label="Cerrar menú">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -210,6 +217,7 @@
                     <button
                         @click="sidebarOpen = !sidebarOpen"
                         class="lg:hidden p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
+                        aria-label="Abrir menú de navegación"
                     >
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -341,7 +349,7 @@
 
                         {{-- Contacto --}}
                         <div class="space-y-3">
-                            <h4 class="text-xs font-semibold text-neutral-900 uppercase tracking-wider">Contacto</h4>
+                            <h3 class="text-xs font-semibold text-neutral-900 uppercase tracking-wider">Contacto</h3>
                             <ul class="space-y-2 text-xs text-neutral-600">
                                 <li class="flex items-center gap-2">
                                     <svg class="w-4 h-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
@@ -360,7 +368,7 @@
 
                         {{-- Enlaces --}}
                         <div class="space-y-3">
-                            <h4 class="text-xs font-semibold text-neutral-900 uppercase tracking-wider">Enlaces</h4>
+                            <h3 class="text-xs font-semibold text-neutral-900 uppercase tracking-wider">Enlaces</h3>
                             <ul class="space-y-2 text-xs text-neutral-600">
                                 <li><a href="{{ route('buscador.publico') }}" class="hover:text-primary-500 transition-colors">Buscador público</a></li>
                                 <li><a href="{{ route('contacto') }}" class="hover:text-primary-500 transition-colors">Contacto</a></li>
