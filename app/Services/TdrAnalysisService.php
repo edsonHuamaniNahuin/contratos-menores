@@ -503,13 +503,32 @@ class TdrAnalysisService
                 ];
             }
 
+            // Si el archivo no existe localmente, descargarlo via endpoint público
+            // (mismo patrón que executeAnalysis cuando no hay cuenta SEACE)
             $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
 
             if (!$filePath || !is_file($filePath)) {
-                return [
-                    'success' => false,
-                    'error' => 'El archivo TDR no está disponible en el repositorio local.',
-                ];
+                $publicService = new PublicTdrDocumentService(
+                    $this->persistence,
+                    new SeacePublicArchivoService()
+                );
+                $idContrato = (int) ($contratoData['idContrato'] ?? $archivoPersistido->id_contrato_seace ?? 0);
+                $idContratoArchivo = (int) ($archivoPersistido->id_archivo_seace ?? 0);
+                $nombreArchivo = $archivoPersistido->nombre_original ?? 'tdr.pdf';
+
+                $archivoPersistido = $publicService->ensureLocalArchivo(
+                    $idContrato,
+                    ['idContratoArchivo' => $idContratoArchivo, 'nombre' => $nombreArchivo],
+                    $contratoData
+                );
+                $filePath = $this->persistence->getAbsolutePath($archivoPersistido);
+
+                if (!$filePath || !is_file($filePath)) {
+                    return [
+                        'success' => false,
+                        'error' => 'No se pudo descargar el archivo TDR desde el endpoint público.',
+                    ];
+                }
             }
 
             $analizador = new AnalizadorTDRService();
