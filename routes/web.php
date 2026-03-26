@@ -364,10 +364,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('suscripciones.premium')->middleware('can:manage-subscriptions');
 
     // ─── Proforma técnica ─────────────────────────────────────────────
-    Route::get('/proforma/{token}/word', [\App\Http\Controllers\ProformaController::class, 'downloadWord'])
-        ->name('proforma.word');
-    Route::get('/proforma/{token}/print', [\App\Http\Controllers\ProformaController::class, 'viewPrint'])
-        ->name('proforma.print');
+    // (Intencionalmente dentro del grupo auth — se acceden via enlace desde bots)
 
 });
+
+// ─── Proforma técnica (rutas públicas por token UUID) ──────────────────────
+// El token UUID de 2h actúa como clave de acceso opaca — no requiere sesión.
+// Esto permite que los bots (Telegram, WhatsApp) envíen los enlaces directamente.
+Route::get('/proforma/{token}/word', [\App\Http\Controllers\ProformaController::class, 'downloadWord'])
+    ->name('proforma.word');
+Route::get('/proforma/{token}/print', [\App\Http\Controllers\ProformaController::class, 'viewPrint'])
+    ->name('proforma.print');
+
 

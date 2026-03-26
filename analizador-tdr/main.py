@@ -3,7 +3,7 @@ FastAPI Main Application - Microservicio de Análisis de TDRs SEACE (2026)
 Pipeline RAG de Extracción (NO chatbot)
 Optimizado para Gemini 2.5/3 Flash con procesamiento asíncrono.
 """
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
@@ -274,8 +274,8 @@ async def compatibility_score(request: CompatibilityScoreRequest):
 )
 async def generate_proforma(
     file: UploadFile = File(None, description="Archivo PDF del TDR (opcional si se enviaron datos JSON)"),
-    company_name: str = "",
-    company_copy: str = "",
+    company_name: str = Form(""),
+    company_copy: str = Form(""),
 ):
     """
     **Generación de Proforma Técnica de Cotización.**

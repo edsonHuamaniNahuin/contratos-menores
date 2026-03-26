@@ -102,13 +102,13 @@
                 </label>
                 <input type="text" wire:model="profile_company_name"
                     class="w-full px-4 py-2.5 rounded-2xl border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all text-sm @error('profile_company_name') border-red-400 @enderror"
-                    placeholder="Ej: Consultora Tech SAC — Especialistas en TI para el sector público"
-                    minlength="30"
-                    maxlength="1000">
+                    placeholder="Ej: SunquPACHA SAC - SOCIOS LIMA"
+                    minlength="15"
+                    maxlength="50">
                 @error('profile_company_name')
                     <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                 @enderror
-                <p class="text-[11px] text-neutral-400 mt-1">Obligatorio. Mínimo 30 caracteres, máximo 1000. Se usará en los documentos de proforma técnica generados con IA.</p>
+                <p class="text-[11px] text-neutral-400 mt-1">Obligatorio. Mínimo 15 caracteres, máximo 50. Se usará en los documentos de proforma técnica generados con IA.</p>
             </div>
 
             {{-- Company Copy --}}

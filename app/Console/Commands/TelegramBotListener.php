@@ -17,6 +17,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Isolatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -1313,23 +1314,115 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $appUrl = config('app.url', 'https://vigilanteseace.com');
-            $mensaje = "📋 <b>Proforma Técnica</b>\n\n"
-                . "Para generar la proforma técnica personalizada de este proceso, accede desde el panel web:\n\n"
-                . "🔗 {$appUrl}/buscador-publico\n\n"
-                . "Busca el contrato y pulsa el botón <b>📋 Crear Proforma</b>.\n\n"
-                . "<i>La proforma se genera con IA usando el perfil de tu empresa y puede descargarse en Word o PDF.</i>";
+            // ── Resolver suscripción y perfil de empresa ──────────────────
+            $subscription = TelegramSubscription::with('user.subscriberProfile')
+                ->where('chat_id', $chatId)
+                ->first();
 
-            $this->enviarMensaje($chatId, $mensaje, $token);
-            $this->info("📋 Proforma: enlace enviado a usuario {$chatId} para contrato {$idContrato}");
+            if (!$subscription || !$subscription->user) {
+                $this->enviarMensaje($chatId, '❌ No encontramos tu cuenta. Usa /start en el bot para registrarte.', $token);
+                return;
+            }
+
+            $profile = $subscription->user->subscriberProfile;
+
+            if (!$profile || blank($profile->company_copy)) {
+                $this->enviarMensaje(
+                    $chatId,
+                    "✍️ <b>Configura el perfil de tu empresa antes de generar la proforma.</b>\n\n"
+                    . "Ve a <b>Configuración de Alertas</b> en el panel web y completa:\n"
+                    . "• Nombre de empresa\n"
+                    . "• Descripción de tu empresa\n\n"
+                    . "🔗 " . config('app.url') . "/configurar-alertas",
+                    $token
+                );
+                return;
+            }
+
+            $companyName = $profile->company_name ?? '';
+            $companyCopy = $profile->company_copy;
+
+            // ── Feedback visible ──────────────────────────────────────────
+            $this->sendChatAction($chatId, 'typing', $token);
+            $loadingMsgId = $this->enviarMensajeProcesando(
+                $chatId,
+                "📋 <b>Generando proforma técnica con IA...</b>\n📄 {$nombreArchivo}\n\n💼 Empresa: {$companyName}\n\n⏳ Esto puede tomar unos segundos, por favor espera.",
+                $token
+            );
+
+            // ── Generar proforma via TdrAnalysisService ───────────────────
+            $tdrService = new TdrAnalysisService();
+            $cachedContrato = $this->getCachedContratoPayload($idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            $resultado = $tdrService->generarProformaDesdeArchivo(
+                $idContratoArchivo,
+                $nombreArchivo,
+                $contratoData,
+                $companyName,
+                $companyCopy
+            );
+
+            // Eliminar loading
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+                $loadingMsgId = null;
+            }
+
+            if (!($resultado['success'] ?? false)) {
+                $errorMsg = $resultado['error'] ?? 'No se pudo generar la proforma.';
+                $this->enviarMensaje($chatId, "❌ {$errorMsg}", $token);
+                return;
+            }
+
+            // ── Cachear proforma con token UUID ───────────────────────────
+            $proformaToken = Str::uuid()->toString();
+            Cache::put("proforma:{$proformaToken}", $resultado['data'] ?? [], now()->addHours(2));
+
+            $appUrl = rtrim(config('app.url', ''), '/');
+            $wordUrl = "{$appUrl}/proforma/{$proformaToken}/word";
+            $printUrl = "{$appUrl}/proforma/{$proformaToken}/print";
+
+            $proformaData = $resultado['data'] ?? [];
+            $total = 'S/ ' . number_format((float) ($proformaData['total_estimado'] ?? 0), 2);
+            $itemsCount = count($proformaData['items'] ?? []);
+            $viabilidad = $proformaData['analisis_viabilidad'] ?? '';
+            $viabilidadResumen = mb_strlen($viabilidad) > 200
+                ? mb_substr($viabilidad, 0, 200) . '...'
+                : $viabilidad;
+
+            $mensaje = "📋 <b>Proforma Técnica lista</b>\n\n"
+                . "💼 <b>{$companyName}</b>\n"
+                . "📦 Ítems: {$itemsCount}\n"
+                . "💰 <b>Total estimado: {$total}</b>\n\n"
+                . ($viabilidadResumen ? "📊 <i>{$viabilidadResumen}</i>\n\n" : '')
+                . "⏱ Los enlaces expiran en 2 horas.";
+
+            $keyboard = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '📄 Descargar Word', 'url' => $wordUrl],
+                    ],
+                    [
+                        ['text' => '🖨 Ver / Imprimir PDF', 'url' => $printUrl],
+                    ],
+                ],
+            ];
+
+            $this->enviarMensajeConBotones($chatId, $mensaje, $keyboard, $token);
+            $this->info("📋 Proforma generada y enviada a usuario {$chatId} para contrato {$idContrato}");
 
         } catch (\Exception $e) {
-            Log::error('TelegramBotListener: Error al enviar proforma', [
+            if ($loadingMsgId) {
+                $this->eliminarMensaje($chatId, $loadingMsgId, $token);
+            }
+
+            Log::error('TelegramBotListener: Error al generar proforma', [
                 'chat_id' => $chatId,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
             ]);
-            $this->enviarMensaje($chatId, '❌ Error al procesar la solicitud de proforma.', $token);
+            $this->enviarMensaje($chatId, '❌ Error al generar la proforma: ' . $e->getMessage(), $token);
         }
     }
 

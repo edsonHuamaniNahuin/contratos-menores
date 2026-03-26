@@ -451,6 +451,35 @@ class TdrAnalysisService
     }
 
     /**
+     * Generar proforma directamente desde idContratoArchivo (para uso en bots).
+     * Resuelve el archivo y delega a generarProforma().
+     */
+    public function generarProformaDesdeArchivo(
+        int $idContratoArchivo,
+        string $nombreArchivo,
+        ?array $contratoData,
+        string $companyName,
+        string $companyCopy
+    ): array {
+        if (!config('services.analizador_tdr.enabled', false)) {
+            return [
+                'success' => false,
+                'error' => 'El servicio de Análisis TDR no está habilitado.',
+            ];
+        }
+
+        $contratoSeaceId = $contratoData['idContrato'] ?? $contratoData['id_contrato_seace'] ?? null;
+        $archivoPersistido = $this->persistence->resolveArchivo(
+            $idContratoArchivo,
+            $nombreArchivo,
+            $contratoSeaceId,
+            $contratoData
+        );
+
+        return $this->generarProforma($archivoPersistido, $contratoData, $companyName, $companyCopy);
+    }
+
+    /**
      * Generar proforma técnica de cotización usando el PDF ya persistido.
      * Si existe un análisis previo en cache, lo usa para enriquecer el contexto.
      *

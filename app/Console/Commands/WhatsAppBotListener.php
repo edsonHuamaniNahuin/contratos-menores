@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
 
@@ -1035,24 +1036,91 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         string $nombreArchivo
     ): void {
         try {
-            $appUrl = config('app.url', 'https://vigilanteseace.com');
-            $mensaje = "📋 *Proforma Técnica*\n\n"
-                . "Para generar la proforma técnica personalizada de este proceso, accede desde el panel web:\n\n"
-                . "🔗 {$appUrl}/buscador-publico\n\n"
-                . "Busca el contrato y pulsa el botón *📋 Crear Proforma*.\n\n"
-                . "_La proforma se genera con IA usando el perfil de tu empresa y puede descargarse en Word o PDF._";
+            if ($idContratoArchivo === 0) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ ID de archivo inválido. Por favor, intenta de nuevo.');
+                return;
+            }
+
+            // ── Resolver suscripción y perfil de empresa ──────────────────
+            $subscription = WhatsAppSubscription::with('user.subscriberProfile')
+                ->where('phone_number', $phoneNumber)
+                ->first();
+
+            if (!$subscription || !$subscription->user) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ No encontramos tu cuenta. Regístrate en el panel web.');
+                return;
+            }
+
+            $profile = $subscription->user->subscriberProfile;
+
+            if (!$profile || blank($profile->company_copy)) {
+                $appUrl = rtrim(config('app.url', ''), '/');
+                $this->whatsapp->enviarMensaje(
+                    $phoneNumber,
+                    "✍️ *Configura el perfil de tu empresa antes de generar la proforma.*\n\n"
+                    . "Ve a *Configuración de Alertas* en el panel web y completa:\n"
+                    . "• Nombre de empresa\n"
+                    . "• Descripción de tu empresa\n\n"
+                    . "🔗 {$appUrl}/configurar-alertas"
+                );
+                return;
+            }
+
+            $companyName = $profile->company_name ?? '';
+            $companyCopy = $profile->company_copy;
+
+            // ── Generar proforma via TdrAnalysisService ───────────────────
+            $tdrService = new TdrAnalysisService();
+            $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
+            $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
+
+            $this->whatsapp->enviarMensaje($phoneNumber, "📋 Generando proforma técnica con IA...\n📄 {$nombreArchivo}\n💼 Empresa: {$companyName}\n\nEsto puede tomar unos segundos, por favor espera.");
+
+            $resultado = $tdrService->generarProformaDesdeArchivo(
+                $idContratoArchivo,
+                $nombreArchivo,
+                $contratoData,
+                $companyName,
+                $companyCopy
+            );
+
+            if (!($resultado['success'] ?? false)) {
+                $errorMsg = $resultado['error'] ?? 'No se pudo generar la proforma.';
+                $this->whatsapp->enviarMensaje($phoneNumber, "❌ {$errorMsg}");
+                return;
+            }
+
+            // ── Cachear proforma con token UUID ───────────────────────────
+            $proformaToken = Str::uuid()->toString();
+            Cache::put("proforma:{$proformaToken}", $resultado['data'] ?? [], now()->addHours(2));
+
+            $appUrl = rtrim(config('app.url', ''), '/');
+            $wordUrl = "{$appUrl}/proforma/{$proformaToken}/word";
+            $printUrl = "{$appUrl}/proforma/{$proformaToken}/print";
+
+            $proformaData = $resultado['data'] ?? [];
+            $total = 'S/ ' . number_format((float) ($proformaData['total_estimado'] ?? 0), 2);
+            $itemsCount = count($proformaData['items'] ?? []);
+
+            $mensaje = "📋 *Proforma Técnica lista*\n\n"
+                . "💼 *{$companyName}*\n"
+                . "📦 Ítems: {$itemsCount}\n"
+                . "💰 *Total estimado: {$total}*\n\n"
+                . "📄 Descargar Word:\n{$wordUrl}\n\n"
+                . "🖨 Ver/Imprimir PDF:\n{$printUrl}\n\n"
+                . "_Los enlaces expiran en 2 horas._";
 
             $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
-            $this->info("📋 Proforma: enlace enviado a usuario {$phoneNumber} para contrato {$idContrato}");
+            $this->info("📋 Proforma generada y enviada a usuario {$phoneNumber} para contrato {$idContrato}");
 
         } catch (\Exception $e) {
-            Log::error('WhatsAppBotListener: Error al enviar proforma', [
+            Log::error('WhatsAppBotListener: Error al generar proforma', [
                 'phone' => $phoneNumber,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
             ]);
             try {
-                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error al procesar la solicitud de proforma.');
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error al generar la proforma: ' . $e->getMessage());
             } catch (\Throwable $sendError) {
                 // Ignorar error de envío en catch
             }

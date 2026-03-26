@@ -119,11 +119,13 @@ class ConfiguracionAlertas extends Component
         $this->profile_keywords = $this->sanitizeKeywordSelection($this->profile_keywords);
 
         $this->validate([
-            'profile_company_name' => 'required|string|min:30|max:1000',
+            'profile_company_name' => 'required|string|min:15|max:50',
             'profile_company_copy' => 'required|string|min:30',
             'profile_keywords' => 'array|max:' . self::MAX_KEYWORDS,
             'profile_keywords.*' => 'integer|exists:notification_keywords,id',
         ], [
+            'profile_company_name.min' => 'El nombre de empresa debe tener al menos 15 caracteres.',
+            'profile_company_name.max' => 'El nombre de empresa no puede superar 50 caracteres.',
             'profile_company_copy.required' => 'Describe brevemente el rubro de tu empresa.',
             'profile_company_copy.min' => 'La descripcion debe tener al menos 30 caracteres.',
             'profile_keywords.max' => 'Maximo ' . self::MAX_KEYWORDS . ' palabras clave.',

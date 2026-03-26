@@ -16,7 +16,7 @@ Disallow: /cuentas
 Disallow: /prueba-endpoints
 Disallow: /configuracion
 Disallow: /tdr-repository
-Disallow: /suscriptores
+Disallow: /configurar-alertas
 Disallow: /roles-permisos
 Disallow: /seguimientos
 Disallow: /perfil
