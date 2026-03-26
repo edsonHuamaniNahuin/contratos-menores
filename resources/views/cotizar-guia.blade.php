@@ -1,7 +1,8 @@
 @extends('layouts.public')
 
-@section('title', 'Cotizar en SEACE — Licitaciones MYPe')
-@section('meta_description', 'Guía paso a paso para cotizar en el portal SEACE. Aprende cómo enviar tu oferta de manera segura.')
+@section('title', 'Guía para Cotizar en SEACE — Licitaciones MYPe')
+@section('meta_description', 'Guía informativa paso a paso para enviar una cotización en el portal oficial SEACE del OSCE. Licitaciones MYPe es un servicio independiente, no afiliado al gobierno.')
+@section('noindex', true)
 
 @php
     $codigoProceso = request('proceso', '');
@@ -14,6 +15,18 @@
 @section('content')
 <section class="bg-neutral-50 py-12 sm:py-16" x-data="cotizarGuia()">
     <div class="max-w-2xl mx-auto px-4 sm:px-6">
+
+        {{-- Banner: Sitio independiente --}}
+        <div class="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 mb-8">
+            <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-xs text-amber-800 leading-relaxed">
+                <strong>Licitaciones MYPe es un servicio privado e independiente.</strong>
+                No somos el SEACE ni el OSCE. No recopilamos tus credenciales del portal del Estado.
+                Esta página es solo una guía informativa.
+            </p>
+        </div>
 
         {{-- Cabecera --}}
         <div class="text-center mb-8">
@@ -71,8 +84,8 @@
                 <div class="flex items-start gap-4">
                     <span class="w-8 h-8 rounded-full bg-secondary-500 text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
                     <div class="flex-1">
-                        <p class="text-sm font-bold text-neutral-900">Ingresa al portal SEACE</p>
-                        <p class="text-xs text-neutral-400 mt-0.5">Haz clic en el botón de abajo para abrir el portal. Inicia sesión con tu RUC y contraseña de proveedor.</p>
+                        <p class="text-sm font-bold text-neutral-900">Abre el portal oficial del SEACE</p>
+                        <p class="text-xs text-neutral-400 mt-0.5">Haz clic en el botón de abajo. El portal oficial del SEACE (seace.gob.pe) te pedirá ingresar con las credenciales de tu cuenta de proveedor — <strong class="text-neutral-600">Licitaciones MYPe nunca solicita ni almacena esas credenciales.</strong></p>
                     </div>
                 </div>
 
@@ -94,9 +107,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
                 <div>
-                    <p class="text-sm font-bold text-primary-800 mb-1">¿Por qué no te llevamos directo a cotizar?</p>
+                    <p class="text-sm font-bold text-primary-800 mb-1">Tu contraseña del SEACE es solo tuya</p>
                     <p class="text-xs text-primary-700">
-                        El portal SEACE protege cada sesión de usuario de forma individual. Las cotizaciones solo pueden enviarse navegando dentro de su plataforma — esto garantiza la seguridad de tu cuenta y la validez de tu oferta. Ningún sistema externo puede cotizar por ti.
+                        El portal oficial del SEACE (seace.gob.pe) protege cada sesión de forma individual.
+                        Nunca compartas tus credenciales con ningún servicio externo — ningún sistema puede cotizar válidamente en tu nombre.
+                        <strong>Licitaciones MYPe no solicita, no almacena ni tiene acceso a tus credenciales del Estado.</strong>
                     </p>
                 </div>
             </div>
