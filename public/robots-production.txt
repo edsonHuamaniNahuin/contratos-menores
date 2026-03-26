@@ -4,7 +4,6 @@ Allow: /buscador-publico
 Allow: /planes
 Allow: /manual
 Allow: /contacto
-Allow: /cotizar-guia
 Allow: /analisis/
 Allow: /politica-de-privacidad
 Allow: /eliminacion-de-datos
@@ -28,6 +27,7 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /logout
+Disallow: /cotizar-guia
 Disallow: /seace/
 Disallow: /tdr/
 Disallow: /livewire/
