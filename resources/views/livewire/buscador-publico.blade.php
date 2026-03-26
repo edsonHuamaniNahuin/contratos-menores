@@ -1817,7 +1817,7 @@
         </div>
     @endif
 
-    {{-- Modal: Acceso restringido --}}
+    {{-- Modal: Funcionalidad Premium --}}
     @if($mostrarAccesoRestringido)
         <div
             class="fixed inset-0 z-[130] flex items-center justify-center px-4 py-8"
@@ -1826,31 +1826,76 @@
         >
             <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" wire:click="cerrarAccesoRestringido"></div>
 
-            <div class="relative w-full max-w-md bg-white rounded-[2rem] shadow-soft border border-neutral-200 p-6 lg:p-7">
-                <div class="flex items-start justify-between gap-4 mb-2">
-                    <div>
-                        <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em]">Acceso restringido</p>
-                        <h3 class="text-xl font-bold text-neutral-900 mt-1">Permiso requerido</h3>
+            <div class="relative w-full max-w-md bg-white rounded-[2rem] shadow-soft border border-neutral-200 overflow-hidden">
+                {{-- Franja superior decorativa --}}
+                <div class="h-1.5 w-full bg-gradient-to-r from-secondary-500 via-secondary-400 to-secondary-200"></div>
+
+                {{-- Contenido --}}
+                <div class="p-6 lg:p-8">
+                    {{-- Ícono + cerrar --}}
+                    <div class="flex items-start justify-between gap-4 mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-secondary-500/10 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-7 h-7 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/>
+                            </svg>
+                        </div>
+                        <button
+                            type="button"
+                            wire:click="cerrarAccesoRestringido"
+                            class="w-9 h-9 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center flex-shrink-0"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        wire:click="cerrarAccesoRestringido"
-                        class="w-9 h-9 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-                <p class="text-sm text-neutral-500">{{ $accesoRestringidoMensaje }}</p>
-                <div class="mt-5 flex justify-end">
-                    <button
-                        type="button"
-                        wire:click="cerrarAccesoRestringido"
-                        class="px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-700 hover:text-neutral-900 hover:border-neutral-400 transition-colors"
-                    >
-                        Entendido
-                    </button>
+
+                    {{-- Texto principal --}}
+                    <p class="text-xs font-bold uppercase text-secondary-500 tracking-[0.18em] mb-1">Función Premium</p>
+                    <h3 class="text-xl font-bold text-neutral-900 leading-snug mb-3">
+                        ¡Encontraste una funcionalidad exclusiva!
+                    </h3>
+                    <p class="text-sm text-neutral-500 leading-relaxed">
+                        {{ $accesoRestringidoMensaje }}
+                    </p>
+
+                    {{-- Beneficios rápidos --}}
+                    <ul class="mt-5 space-y-2">
+                        @foreach([
+                            'Análisis de TDR con inteligencia artificial',
+                            'Generación automática de proformas técnicas',
+                            'Seguimiento personalizado de procesos',
+                        ] as $benefit)
+                            <li class="flex items-center gap-2.5 text-sm text-neutral-600">
+                                <span class="w-5 h-5 rounded-full bg-secondary-500/10 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3 h-3 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </span>
+                                {{ $benefit }}
+                            </li>
+                        @endforeach
+                    </ul>
+
+                    {{-- CTAs --}}
+                    <div class="mt-7 flex flex-col sm:flex-row items-center gap-3">
+                        <a
+                            href="{{ route('planes') }}"
+                            class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-secondary-500 text-white text-sm font-bold hover:bg-secondary-400 transition-colors shadow-sm"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            Quiero ser Premium
+                        </a>
+                        <button
+                            type="button"
+                            wire:click="cerrarAccesoRestringido"
+                            class="w-full sm:w-auto px-6 py-3 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-500 hover:text-neutral-900 hover:border-neutral-400 transition-colors"
+                        >
+                            Ahora no
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
