@@ -85,7 +85,7 @@
                     <span class="w-8 h-8 rounded-full bg-secondary-500 text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
                     <div class="flex-1">
                         <p class="text-sm font-bold text-neutral-900">Abre el portal oficial del SEACE</p>
-                        <p class="text-xs text-neutral-400 mt-0.5">Haz clic en el botón de abajo. El portal oficial del SEACE (seace.gob.pe) te pedirá ingresar con las credenciales de tu cuenta de proveedor — <strong class="text-neutral-600">Licitaciones MYPe nunca solicita ni almacena esas credenciales.</strong></p>
+                        <p class="text-xs text-neutral-400 mt-0.5">Haz clic en el botón de abajo. Se abrirá el portal oficial seace.gob.pe en una nueva pestaña — la autenticación se realiza directamente allí. <strong class="text-neutral-600">Licitaciones MYPe nunca solicita ni almacena tus datos de acceso al Estado.</strong></p>
                     </div>
                 </div>
 

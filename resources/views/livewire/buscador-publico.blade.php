@@ -1959,6 +1959,18 @@
             {{-- Body --}}
             <div class="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto">
 
+                {{-- Banner independencia --}}
+                <div class="bg-blue-50 border border-blue-200/60 rounded-2xl px-4 py-3">
+                    <div class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-xs text-blue-800 leading-relaxed">
+                            <strong>Somos un servicio independiente.</strong> No somos el SEACE ni el OSCE. No recopilamos tus credenciales del portal del Estado.
+                        </p>
+                    </div>
+                </div>
+
                 {{-- Banner explicativo amigable --}}
                 <div class="bg-gradient-to-r from-secondary-500/10 to-secondary-500/5 border border-secondary-200/40 rounded-2xl px-4 py-3">
                     <div class="flex items-start gap-3">
@@ -2020,8 +2032,8 @@
                     <div class="flex items-start gap-3">
                         <span class="w-7 h-7 rounded-full bg-secondary-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
                         <div class="flex-1">
-                            <p class="text-sm text-neutral-900 font-semibold">Ingresa al portal SEACE</p>
-                            <p class="text-xs text-neutral-400 mt-0.5">Se abrirá en una nueva pestaña. Inicia sesión con tu cuenta de proveedor.</p>
+                            <p class="text-sm text-neutral-900 font-semibold">Abre el portal oficial SEACE</p>
+                            <p class="text-xs text-neutral-400 mt-0.5">Se abrirá en una nueva pestaña. El portal SEACE (seace.gob.pe) gestionará tu sesión de forma segura en su propia plataforma.</p>
                         </div>
                     </div>
 
