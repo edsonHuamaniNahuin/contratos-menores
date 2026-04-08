@@ -1,8 +1,9 @@
 # 📋 DOCUMENTO DE CERTIFICACIÓN QA — VIGILANTE SEACE
 
 > **Proyecto:** Vigilante SEACE — Sistema de Monitoreo Automatizado de Contratos SEACE (Perú)  
-> **Versión:** 1.0  
-> **Fecha de generación:** 7 de marzo de 2026  
+> **Versión:** 2.0  
+> **Fecha de generación:** 28 de marzo de 2026  
+> **Versión anterior:** 1.0 (7 de marzo de 2026)  
 > **Stack:** Laravel 12 + Blade + Livewire 4.1 + Alpine.js 3.x + MySQL  
 > **Entorno de desarrollo:** XAMPP (Apache + PHP 8.2.12 + MySQL)  
 > **URL base desarrollo:** `http://127.0.0.1:8000`
@@ -22,7 +23,7 @@
 9. [Módulo: Prueba de Endpoints SEACE](#9-módulo-prueba-de-endpoints-seace)
 10. [Módulo: Repositorio TDR](#10-módulo-repositorio-tdr)
 11. [Módulo: Análisis de TDR con IA](#11-módulo-análisis-de-tdr-con-ia)
-12. [Módulo: Suscriptores y Notificaciones](#12-módulo-suscriptores-y-notificaciones)
+12. [Módulo: Configuración de Alertas (Suscripciones)](#12-módulo-configuración-de-alertas-suscripciones)
 13. [Módulo: Seguimientos de Contratos](#13-módulo-seguimientos-de-contratos)
 14. [Módulo: Mis Procesos Notificados](#14-módulo-mis-procesos-notificados)
 15. [Módulo: Suscripciones Premium y Pagos](#15-módulo-suscripciones-premium-y-pagos)
@@ -40,6 +41,8 @@
 27. [Modelo de Datos (Esquema BD)](#27-modelo-de-datos-esquema-bd)
 28. [Matriz de Permisos por Ruta](#28-matriz-de-permisos-por-ruta)
 29. [Checklist de Regresión](#29-checklist-de-regresión)
+30. [Módulo: Proforma Técnica IA](#30-módulo-proforma-técnica-ia)
+31. [Módulo: Análisis de Direccionamiento](#31-módulo-análisis-de-direccionamiento)
 
 ---
 
@@ -49,12 +52,15 @@
 
 - **Scraping automatizado** de contratos desde la API del SEACE con manejo de tokens JWT
 - **Análisis inteligente de TDR** (Términos de Referencia) mediante IA (Gemini 2.5 Flash)
+- **Análisis de Direccionamiento** para detectar indicios de corrupción/favoritismo en contratos
+- **Generación de Proforma Técnica IA** — cotizaciones Word/Excel/impresión desde análisis TDR
+- **Compartir análisis** — URLs públicas con share tokens para resultados de análisis IA
 - **Notificaciones multi-canal:** Telegram, WhatsApp Business y Email
 - **Sistema de suscripciones Premium** con pasarelas de pago (Openpay y MercadoPago)
-- **RBAC** (Control de acceso basado en roles) con 3 roles y 13 permisos
-- **Dashboard analítico** con gráficos de distribución de contratos
-- **Buscador público** accesible sin autenticación
-- **Bots interactivos** en Telegram y WhatsApp con botones inline
+- **RBAC** (Control de acceso basado en roles) con 3 roles y 15 permisos
+- **Dashboard analítico** con gráficos de distribución de contratos y estadísticas de direccionamiento
+- **Buscador público** accesible sin autenticación con URLs SEO-friendly por departamento/objeto
+- **Bots interactivos** en Telegram y WhatsApp con botones inline, menús de lista y links compartibles
 
 ---
 
@@ -87,16 +93,17 @@
 | Proveedor | `proveedor` | Usuario registrado con acceso básico |
 | Proveedor Premium | `proveedor-premium` | Proveedor con funcionalidades avanzadas |
 
-### 3.2 Permisos Registrados (13)
+### 3.2 Permisos Registrados (15)
 
 | Permiso | Slug | Asignado a |
 |---|---|---|
 | Ver Buscador Público | `view-buscador-publico` | admin, proveedor, proveedor-premium |
-| Ver Suscriptores | `view-suscriptores` | admin, proveedor, proveedor-premium |
+| Ver Configuración de Alertas | `view-configuracion-alertas` | admin, proveedor, proveedor-premium |
 | Ver Mis Procesos | `view-mis-procesos` | admin, proveedor, proveedor-premium |
 | Analizar TDR con IA | `analyze-tdr` | admin, proveedor-premium |
 | Seguir Contratos | `follow-contracts` | admin, proveedor-premium |
 | Cotizar en SEACE | `cotizar-seace` | admin, proveedor-premium |
+| Crear Proforma Técnica | `create-proforma` | admin, proveedor-premium |
 | Ver Cuentas SEACE | `view-cuentas` | admin |
 | Ver Prueba Endpoints | `view-prueba-endpoints` | admin |
 | Ver Configuración | `view-configuracion` | admin |
@@ -105,7 +112,7 @@
 | Importar TDR | `import-tdr` | admin |
 | Gestionar Suscripciones | `manage-subscriptions` | admin |
 
-### 3.3 Gates Registrados (13)
+### 3.3 Gates Registrados (14)
 
 Todos los gates se definen en `AppServiceProvider::boot()` y verifican si el usuario tiene el permiso correspondiente vía `$user->hasPermission($slug)`.
 
@@ -414,7 +421,20 @@ Todos los gates se definen en `AppServiceProvider::boot()` y verifican si el usu
 | IA-ANA-006 | Persistencia del análisis | Análisis exitoso | 1. Verificar BD | Registro en `tdr_analisis` con estado `exitoso`, proveedor, modelo, duración, tokens, costo estimado |
 | IA-ANA-007 | Análisis fallido | PDF corrupto o error de IA | 1. Enviar PDF inválido | Registro en `tdr_analisis` con estado `fallido` y campo `error` |
 
-### 11.2 Compatibilidad Empresa-Contrato
+### 11.2 Compartir Análisis (Share Token)
+
+**Columna:** `tdr_analisis.share_token` (UUID, migración `2026_03_21_000001_add_share_token_to_tdr_analisis.php`)  
+**Ruta pública:** `GET /analisis/{token}` → vista `analisis-compartido` (Name: `analisis.compartido`)
+
+| ID | Caso de Prueba | Precondición | Pasos | Resultado Esperado |
+|---|---|---|---|---|
+| IA-SHA-001 | Generar share token | Análisis exitoso | 1. Solicitar compartir análisis | Se genera UUID único en `share_token`, link público disponible |
+| IA-SHA-002 | Acceder a análisis compartido | Token válido | 1. Abrir URL `/analisis/{token}` sin autenticación | Vista pública con resultado del análisis IA |
+| IA-SHA-003 | Token inválido | Token inexistente o análisis no exitoso | 1. Abrir URL con token inválido | 404 Not Found |
+| IA-SHA-004 | Token copiable desde bot | Análisis realizado desde Telegram/WhatsApp | 1. Bot genera y envía link compartible | Link funcional recibido en chat |
+| IA-SHA-005 | Análisis en sitemap | Share tokens existentes | 1. GET `/sitemap.xml` | URLs `/analisis/{share_token}` incluidas en sitemap |
+
+### 11.3 Compatibilidad Empresa-Contrato
 
 | ID | Caso de Prueba | Precondición | Pasos | Resultado Esperado |
 |---|---|---|---|---|
@@ -424,10 +444,11 @@ Todos los gates se definen en `AppServiceProvider::boot()` y verifican si el usu
 
 ---
 
-## 12. MÓDULO: SUSCRIPTORES Y NOTIFICACIONES
+## 12. MÓDULO: CONFIGURACIÓN DE ALERTAS (SUSCRIPCIONES)
 
-**Componente Livewire:** `Suscriptores` (~830 líneas)  
-**Ruta:** `/suscriptores` (middleware: `auth`, `verified`, `can:view-suscriptores`)
+**Componente Livewire:** `ConfiguracionAlertas` (~renombrado desde `Suscriptores`)  
+**Ruta:** `/configuracion-alertas` (middleware: `auth`, `verified`, `can:view-configuracion-alertas`)  
+**Nota v2.0:** Módulo renombrado de `/suscriptores` a `/configuracion-alertas`. El componente incluye ahora campo `nombre_empresa` en el perfil del suscriptor.
 
 ### 12.1 Suscriptores Telegram
 
@@ -684,10 +705,14 @@ Todos los gates se definen en `AppServiceProvider::boot()` y verifican si el usu
 | BOT-TEL-002 | Callback: Descargar TDR | Bot activo, archivo disponible | 1. Click botón "📄 Descargar TDR" | Bot envía PDF como documento al chat |
 | BOT-TEL-003 | Callback: Ver Compatibilidad | Bot activo, suscriptor con company_copy | 1. Click botón "📊 Compatibilidad" | Bot calcula y envía score de compatibilidad |
 | BOT-TEL-004 | Callback: Cotizar | Bot activo | 1. Click botón "💰 Cotizar" | Bot envía link de cotización al portal SEACE |
-| BOT-TEL-005 | Dedup de callbacks | Mismo callback recibido 2 veces | 1. Doble-click rápido en botón | Solo se procesa una vez (dedup atómico por callback_id) |
-| BOT-TEL-006 | Lock anti doble-click | Análisis en progreso | 1. Click en analizar mientras otro análisis corre | Mensaje: "Análisis en progreso, espere..." |
-| BOT-TEL-007 | Señales SIGINT/SIGTERM | Bot corriendo | 1. Enviar señal de terminación | Bot se detiene limpiamente |
-| BOT-TEL-008 | Instancia única (Isolatable) | Bot ya corriendo | 1. Ejecutar segundo `telegram:listen` | Se impide ejecución duplicada |
+| BOT-TEL-005 | Callback: Análisis Direccionamiento | Bot activo, contrato en caché | 1. Click botón "🔍 Direccionamiento" | Bot ejecuta análisis de direccionamiento e indica si hay indicios de sesgo |
+| BOT-TEL-006 | Callback: Crear Proforma | Bot activo | 1. Click botón "📋 Crear Proforma" | Bot genera proforma técnica y envía link Word/Excel/impresión |
+| BOT-TEL-007 | Botón "Compartir análisis" | Análisis exitoso | 1. Click botón "🔗 Compartir" | Bot envía URL pública `/analisis/{share_token}` |
+| BOT-TEL-008 | Botón "Guía Cotizar SEACE" | N/A | 1. Click botón "📖 Guía Cotizar" | Bot envía link a la guía pública de cotización |
+| BOT-TEL-009 | Dedup de callbacks | Mismo callback recibido 2 veces | 1. Doble-click rápido en botón | Solo se procesa una vez (dedup atómico por callback_id) |
+| BOT-TEL-010 | Lock anti doble-click | Análisis en progreso | 1. Click en analizar mientras otro análisis corre | Mensaje: "Análisis en progreso, espere..." |
+| BOT-TEL-011 | Señales SIGINT/SIGTERM | Bot corriendo | 1. Enviar señal de terminación | Bot se detiene limpiamente |
+| BOT-TEL-012 | Instancia única (Isolatable) | Bot ya corriendo | 1. Ejecutar segundo `telegram:listen` | Se impide ejecución duplicada |
 
 ### 20.2 WhatsApp Bot Listener
 
@@ -699,7 +724,12 @@ Todos los gates se definen en `AppServiceProvider::boot()` y verifican si el usu
 | BOT-WA-001 | Callback: Analizar TDR | Bot activo, payload en cache | 1. Responder "analizar_{id}" en WhatsApp | Bot ejecuta análisis IA y envía resultado |
 | BOT-WA-002 | Callback: Descargar TDR | Bot activo | 1. Responder "descargar_{id}" | Bot envía PDF como documento |
 | BOT-WA-003 | Callback: Compatibilidad | Bot activo | 1. Responder "compatibilidad_{id}" | Score de compatibilidad enviado |
-| BOT-WA-004 | Instancia única | Bot ya corriendo | 1. Ejecutar segundo `whatsapp:listen` | Ejecución bloqueada (Isolatable) |
+| BOT-WA-004 | Callback: Direccionamiento | Bot activo | 1. Seleccionar "🔍 Direccionamiento" en menú lista | Bot ejecuta análisis de direccionamiento |
+| BOT-WA-005 | Callback: Crear Proforma | Bot activo | 1. Seleccionar "📋 Crear Proforma" en menú lista | Bot genera proforma técnica y envía link |
+| BOT-WA-006 | Interactive List Message | Bot activo, contrato notificado | 1. Mensaje recibido en WhatsApp | Menú de lista con 5 acciones: Analizar TDR, Descargar TDR, Compatibilidad, Direccionamiento, Crear Proforma |
+| BOT-WA-007 | list_reply processing | Usuario selecciona opción del menú | 1. Tap en opción del menú | `list_reply.id` procesado y acción ejecutada |
+| BOT-WA-008 | Link compartible análisis | Análisis exitoso | 1. Análisis completado | Bot incluye link `/analisis/{share_token}` en respuesta |
+| BOT-WA-009 | Instancia única | Bot ya corriendo | 1. Ejecutar segundo `whatsapp:listen` | Ejecución bloqueada (Isolatable) |
 
 ---
 
@@ -896,11 +926,12 @@ CuentaSeace (standalone — credenciales para API SEACE)
 | `/perfil` | GET | Sí | Sí | — | Todos verificados |
 | `/seguimientos` | GET | Sí | Sí | `follow-contracts` | admin, proveedor-premium |
 | `/mis-procesos` | GET | Sí | Sí | `view-mis-procesos` | admin, proveedor, proveedor-premium |
-| `/suscriptores` | GET | Sí | Sí | `view-suscriptores` | admin, proveedor, proveedor-premium |
+| `/configuracion-alertas` | GET | Sí | Sí | `view-configuracion-alertas` | admin, proveedor, proveedor-premium |
 | `/cuentas` | RESOURCE | Sí | Sí | `view-cuentas` | admin |
 | `/prueba-endpoints` | GET | Sí | Sí | `view-prueba-endpoints` | admin |
 | `/configuracion` | GET | Sí | Sí | `view-configuracion` | admin |
 | `/tdr-repository` | GET | Sí | Sí | `view-tdr-repository` | admin |
+| `/direccionamiento` | GET | Sí | Sí | `view-tdr-repository` | admin |
 | `/roles-permisos` | GET | Sí | Sí | `manage-roles-permissions` | admin |
 | `/suscripciones-premium` | GET | Sí | Sí | `manage-subscriptions` | admin |
 | `/planes/checkout/{plan}` | GET | Sí | Sí | — | Todos verificados |
@@ -908,6 +939,10 @@ CuentaSeace (standalone — credenciales para API SEACE)
 | `/planes/callback` | GET | Sí | Sí | — | Todos verificados |
 | `/tdr/archivos/{archivo}/descargar` | GET | No | No | — | Todos |
 | `/seace/download/{filename}` | GET | No | No | — | Todos |
+| `/analisis/{token}` | GET | No | No | — | Todos (URL compartible) |
+| `/proforma/{token}/print` | GET | No | No | — | Token válido en caché |
+| `/proforma/{token}/word` | GET | No | No | — | Token válido en caché |
+| `/proforma/{token}/excel` | GET | No | No | — | Token válido en caché |
 | `/api/auth/token` | POST | No | No | — | Todos |
 | `/api/auth/token` | DELETE | Sanctum | No | — | Token válido |
 | `/api/user` | GET | Sanctum | No | — | Token válido |
@@ -929,6 +964,8 @@ CuentaSeace (standalone — credenciales para API SEACE)
 - [ ] Notificaciones Telegram se envían a suscriptores
 - [ ] Jobs programados se ejecutan en horario correcto
 - [ ] Pasarelas de pago procesan cobros
+- [ ] Proforma técnica IA genera documento descargable
+- [ ] Análisis de direccionamiento retorna veredicto y hallazgos
 
 ### 29.2 Funcionalidades Importantes (P1 — Degradación)
 
@@ -941,6 +978,10 @@ CuentaSeace (standalone — credenciales para API SEACE)
 - [ ] Mis Procesos muestra historial de notificaciones
 - [ ] Re-notificación por canal funciona
 - [ ] Renovación automática cobra y extiende
+- [ ] Share token genera URL pública de análisis funcional
+- [ ] WhatsApp Interactive List Message muestra las 5 acciones
+- [ ] Bots Telegram/WhatsApp generan proforma directamente
+- [ ] Dashboard de direccionamiento carga gráficos correctamente
 
 ### 29.3 Funcionalidades Secundarias (P2 — Cosmético)
 
@@ -952,6 +993,11 @@ CuentaSeace (standalone — credenciales para API SEACE)
 - [ ] Query string refleja estado de filtros en URL
 - [ ] Cookie consent se muestra
 - [ ] Admin bot responde a comandos
+- [ ] URLs SEO-friendly del buscador público funcionan con slugs de departamento/objeto
+- [ ] Proforma descargable en formato Word, Excel e impresión
+- [ ] Página dedicada de direccionamiento con filtros por departamento/entidad/fecha
+- [ ] Sitemap incluye URLs de análisis compartidos y buscador por departamento
+- [ ] Entorno QA no indexado (robots.txt con noindex)
 
 ### 29.4 Pruebas de Seguridad
 
@@ -996,6 +1042,84 @@ CuentaSeace (standalone — credenciales para API SEACE)
 
 ---
 
-**Fecha:** 7 de marzo de 2026  
-**Total de casos de prueba:** 168+  
+## 30. MÓDULO: PROFORMA TÉCNICA IA
+
+**Componente Livewire:** `BuscadorPublico` (método `generarProformaTecnica`)  
+**Controlador:** `ProformaController`  
+**Servicio:** `TdrAnalysisService::generarProforma()` → Python FastAPI (`analizador-tdr`)  
+**Rutas de descarga:**
+- `GET /proforma/{token}/print` → Vista HTML con formato de impresión (Name: `proforma.print`)
+- `GET /proforma/{token}/word` → Descarga documento Word/DOC (Name: `proforma.word`)
+- `GET /proforma/{token}/excel` → Descarga hoja de cálculo Excel/SpreadsheetML (Name: `proforma.excel`)
+- **Permiso requerido:** `create-proforma` (admin, proveedor-premium)
+
+### 30.1 Generación de Proforma
+
+| ID | Caso de Prueba | Precondición | Pasos | Resultado Esperado |
+|---|---|---|---|---|
+| PRO-GEN-001 | Generar proforma exitosa | Análisis TDR exitoso, permiso `create-proforma` | 1. Click "Crear Proforma" en resultado de análisis | Proforma generada con: título, empresa, ítems, total S/, viabilidad, condiciones |
+| PRO-GEN-002 | Proforma sin permiso | Sin permiso `create-proforma` | 1. Click "Crear Proforma" | Modal de acceso restringido (upsell Premium) |
+| PRO-GEN-003 | Proforma desde bot Telegram | Bot activo, permiso válido | 1. Click "📋 Crear Proforma" en bot | Bot genera proforma y envía links de descarga |
+| PRO-GEN-004 | Proforma desde bot WhatsApp | Bot activo, permiso válido | 1. Seleccionar "Crear Proforma" en menú lista | Bot genera proforma y envía links |
+| PRO-GEN-005 | TDR no descargado localmente | Archivo no en storage local | 1. Solicitar proforma | Sistema descarga el TDR automáticamente antes de generar |
+| PRO-GEN-006 | Caché de proforma | Token en caché (`proforma:{token}`) | 1. Acceder nuevamente a link | Proforma servida desde caché sin llamar a IA |
+
+### 30.2 Formatos de Descarga
+
+| ID | Caso de Prueba | Precondición | Pasos | Resultado Esperado |
+|---|---|---|---|---|
+| PRO-DES-001 | Descargar como Word | Proforma en caché | 1. GET `/proforma/{token}/word` | Descarga `.doc` con formato tabla de ítems |
+| PRO-DES-002 | Descargar como Excel | Proforma en caché | 1. GET `/proforma/{token}/excel` | Descarga `.xls` (SpreadsheetML) con subtotales y total |
+| PRO-DES-003 | Vista de impresión | Proforma en caché | 1. GET `/proforma/{token}/print` | Página HTML optimizada para imprimir con logo y datos |
+| PRO-DES-004 | Token inválido | Token no en caché | 1. Acceder a URL inválida | Error 404 o mensaje informativo |
+| PRO-DES-005 | Total S/ correcto | Ítems con subtotales | 1. Ver total en proforma | Total es suma correcta de todos los subtotales |
+
+### 30.3 Permisos
+
+| ID | Caso de Prueba | Precondición | Pasos | Resultado Esperado |
+|---|---|---|---|---|
+| PRO-PER-001 | Botón visible para Premium | Rol proveedor-premium | 1. Ver resultado de análisis | Botón "Crear Proforma" visible |
+| PRO-PER-002 | Botón oculto para Proveedor | Rol proveedor sin permiso | 1. Ver resultado de análisis | Botón "Crear Proforma" oculto/bloqueado |
+| PRO-PER-003 | Botón Word oculto | Usuario sin permiso Word | 1. Ver opciones de descarga | Botón Word oculto (`@can('create-proforma')`) |
+
+---
+
+## 31. MÓDULO: ANÁLISIS DE DIRECCIONAMIENTO
+
+**Componente Livewire:** `DireccionamientoDashboard`  
+**Ruta:** `/direccionamiento` (middleware: `auth`, `verified`, `can:view-tdr-repository`)  
+**Servicio:** `ContratoAnalyticsService` (métodos `tdrVeredictos`, `tdrScoreRanges`, `tdrHallazgosCategoria`, `tdrGravedadHallazgos`, `tdrScorePorMes`, `tdrTopEntidades`)  
+**Tipo de análisis en BD:** campo `tipo_analisis = 'direccionamiento'` en `tdr_analisis`
+
+### 31.1 Dashboard de Direccionamiento
+
+| ID | Caso de Prueba | Precondición | Pasos | Resultado Esperado |
+|---|---|---|---|---|
+| DIR-DSH-001 | Carga del dashboard | Análisis de tipo `direccionamiento` en BD | 1. Acceder a `/direccionamiento` | Gráficos: veredictos, scores, hallazgos, gravedad, tendencia mensual, top entidades |
+| DIR-DSH-002 | Filtro por departamento | Análisis con departamentos variados | 1. Seleccionar departamento | Gráficos recalculados solo para ese departamento |
+| DIR-DSH-003 | Filtro por entidad | Análisis con múltiples entidades | 1. Escribir nombre de entidad | Gráficos filtrados por entidad |
+| DIR-DSH-004 | Filtro por rango de fechas | Análisis en distintas fechas | 1. Seleccionar fecha desde/hasta | Gráficos del período seleccionado |
+| DIR-DSH-005 | Gráfico de veredictos | Análisis con distintos veredictos | 1. Ver gráfico | Distribución: riesgo alto / medio / bajo / sin evidencia |
+| DIR-DSH-006 | Gráfico de score ranges | Análisis con scores variados | 1. Ver gráfico | Distribución de scores en rangos (0-20, 21-40, 41-60, 61-80, 81-100) |
+| DIR-DSH-007 | Gráfico hallazgos por categoría | Análisis con hallazgos | 1. Ver gráfico | Barras por categoría de hallazgo |
+| DIR-DSH-008 | Gráfico gravedad de hallazgos | Análisis con hallazgos | 1. Ver gráfico | Distribución: crítica / alta / media / baja |
+| DIR-DSH-009 | Score por mes (tendencia 6 meses) | Historial de análisis | 1. Ver gráfico de tendencia | Línea de score promedio mensual últimos 6 meses |
+| DIR-DSH-010 | Top entidades contratantes | Análisis con múltiples entidades | 1. Ver gráfico top 10 | Las 10 entidades con más análisis de direccionamiento |
+| DIR-DSH-011 | Dashboard integrado en gráfico principal | Análisis en dashboard principal | 1. Ver sección de análisis en `/dashboard` | Mini-gráfico de veredictos de direccionamiento visible |
+
+### 31.2 Análisis Individual de Direccionamiento
+
+| ID | Caso de Prueba | Precondición | Pasos | Resultado Esperado |
+|---|---|---|---|---|
+| DIR-IND-001 | Analizar direccionamiento desde buscador | Permiso `analyze-tdr`, archivo TDR disponible | 1. Click "Análisis de Direccionamiento" en contrato | Análisis ejecutado, veredicto con score e indicios detallados |
+| DIR-IND-002 | Analizar desde bot Telegram | Bot activo, contrato en caché | 1. Click "🔍 Direccionamiento" | Bot envía resultado con veredicto y hallazgos |
+| DIR-IND-003 | Analizar desde bot WhatsApp | Bot activo, menú lista | 1. Seleccionar "Direccionamiento" en menú | Resultado enviado por WhatsApp |
+| DIR-IND-004 | Resultado en página compartida | Token generado para análisis de direccionamiento | 1. Abrir URL `/analisis/{token}` | Página pública muestra: veredicto, score, hallazgos e indicios |
+| DIR-IND-005 | Caché de análisis previo | Mismo archivo ya analizado | 1. Solicitar nuevo análisis | Se retorna resultado cacheado |
+
+---
+
+**Fecha:** 28 de marzo de 2026  
+**Total de casos de prueba:** 210+  
+**Versión:** 2.0 — Actualización post-commits 8 marzo → 28 marzo 2026
 **Total de módulos documentados:** 26

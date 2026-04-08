@@ -930,11 +930,13 @@ class BuscadorPublico extends Component
 
             $this->notify($mensaje, 'success');
         } catch (Exception $e) {
-            Log::error('BuscadorPublico:analizarTdr', [
+            $ref = 'TDR-' . strtoupper(\Illuminate\Support\Str::random(6));
+            Log::error("BuscadorPublico:analizarTdr [{$ref}]", [
+                'ref' => $ref,
                 'id_contrato' => $idContrato,
                 'error' => $e->getMessage(),
             ]);
-            $this->notify('No se pudo completar el análisis IA: ' . $e->getMessage(), 'error');
+            $this->notify(TdrAnalysisService::humanizeError($e->getMessage(), $ref), 'error');
         } finally {
             $this->analizandoTdr = false;
         }
@@ -1104,12 +1106,14 @@ class BuscadorPublico extends Component
 
             $this->notify('Compatibilidad actualizada para ' . $this->formatSubscriptionLabel($subscription) . '.', 'success');
         } catch (\Throwable $e) {
-            Log::error('BuscadorPublico:compatibilidad', [
+            $ref = 'TDR-' . strtoupper(\Illuminate\Support\Str::random(6));
+            Log::error("BuscadorPublico:compatibilidad [{$ref}]", [
+                'ref' => $ref,
                 'subscription_id' => $subscriptionId,
                 'contrato' => $this->analisisContratoId,
                 'error' => $e->getMessage(),
             ]);
-            $this->notify('No se pudo evaluar la compatibilidad: ' . $e->getMessage(), 'error');
+            $this->notify(TdrAnalysisService::humanizeError($e->getMessage(), $ref), 'error');
         } finally {
             $this->compatibilidadEnCurso = null;
         }
@@ -1174,11 +1178,13 @@ class BuscadorPublico extends Component
 
             $this->notify('Proforma técnica generada exitosamente.', 'success');
         } catch (\Throwable $e) {
-            Log::error('BuscadorPublico:generarProforma', [
+            $ref = 'TDR-' . strtoupper(\Illuminate\Support\Str::random(6));
+            Log::error("BuscadorPublico:generarProforma [{$ref}]", [
+                'ref' => $ref,
                 'id_contrato' => $idContrato,
                 'error' => $e->getMessage(),
             ]);
-            $this->notify('No se pudo generar la proforma: ' . $e->getMessage(), 'error');
+            $this->notify(TdrAnalysisService::humanizeError($e->getMessage(), $ref), 'error');
         }
     }
 

@@ -2146,6 +2146,76 @@
         }
     </script>
 
+    {{-- ============================================================
+         Overlay de carga – Análisis TDR con IA
+         Muestra mensajes progresivos según el tiempo transcurrido
+         para que el usuario sepa que el sistema sigue trabajando.
+         ============================================================ --}}
+    <div
+        wire:loading.flex
+        wire:target="analizarTdr"
+        class="fixed inset-0 z-[200] items-center justify-center px-4"
+        style="display: none"
+        x-data="{
+            seconds: 0,
+            timer: null,
+            init() {
+                new MutationObserver(() => {
+                    if (this.$el.style.display !== 'none') {
+                        this.seconds = 0;
+                        if (this.timer) clearInterval(this.timer);
+                        this.timer = setInterval(() => this.seconds++, 1000);
+                    } else if (this.timer) {
+                        clearInterval(this.timer);
+                        this.timer = null;
+                    }
+                }).observe(this.$el, { attributes: true, attributeFilter: ['style'] });
+            },
+            get message() {
+                if (this.seconds >= 45) return 'El análisis está tomando más de lo esperado. Por favor no cierre esta página.';
+                if (this.seconds >= 20) return 'Procesando documento extenso… Esto puede tardar hasta 2 minutos.';
+                if (this.seconds >= 8)  return 'Extrayendo y analizando el contenido del documento…';
+                return 'Preparando análisis con IA…';
+            },
+            get sub() {
+                if (this.seconds >= 20) return 'Los documentos con muchas páginas o imágenes requieren más tiempo de procesamiento.';
+                if (this.seconds >= 8)  return 'Estamos leyendo cada sección del TDR para darte un resumen preciso.';
+                return 'Conectando con el servicio de inteligencia artificial…';
+            }
+        }"
+    >
+        {{-- Backdrop --}}
+        <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"></div>
+
+        {{-- Panel --}}
+        <div class="relative bg-white rounded-[2rem] shadow-soft p-8 max-w-sm w-full text-center">
+            {{-- Icono animado --}}
+            <div class="mx-auto w-16 h-16 rounded-full bg-primary-500/10 flex items-center justify-center mb-5">
+                <svg class="w-8 h-8 text-primary-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+            </div>
+
+            {{-- Mensaje principal --}}
+            <p class="text-base font-semibold text-neutral-900" x-text="message"></p>
+
+            {{-- Submensaje explicativo --}}
+            <p class="text-sm text-neutral-400 mt-2 leading-relaxed" x-text="sub"></p>
+
+            {{-- Tiempo transcurrido --}}
+            <p class="text-xs text-neutral-400/70 mt-4">
+                Tiempo: <span x-text="seconds + 's'"></span>
+            </p>
+
+            {{-- Puntos animados --}}
+            <div class="flex justify-center gap-1.5 mt-4">
+                <span class="w-2 h-2 rounded-full bg-primary-500 animate-bounce" style="animation-delay: 0s"></span>
+                <span class="w-2 h-2 rounded-full bg-primary-500 animate-bounce" style="animation-delay: 0.15s"></span>
+                <span class="w-2 h-2 rounded-full bg-primary-500 animate-bounce" style="animation-delay: 0.3s"></span>
+            </div>
+        </div>
+    </div>
 
 </div>
 

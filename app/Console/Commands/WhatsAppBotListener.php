@@ -433,18 +433,20 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $this->enviarMensajeErrorConReintento($phoneNumber, $errorMsg, 'analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
             }
         } catch (\Throwable $e) {
-            Log::error('WhatsApp: Error al analizar proceso', [
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            Log::error("WhatsApp:analizarTdr [{$ref}]", [
+                'ref' => $ref,
                 'phone' => $phoneNumber,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
                 'trace_preview' => substr($e->getTraceAsString(), 0, 300),
             ]);
             try {
-                $this->enviarMensajeErrorConReintento($phoneNumber, $e->getMessage(), 'analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
+                $this->enviarMensajeErrorConReintento($phoneNumber, TdrAnalysisService::humanizeError($e->getMessage(), $ref), 'analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
             } catch (\Throwable $sendError) {
                 Log::error('WhatsApp: No se pudo enviar mensaje de error al usuario', [
                     'phone' => $phoneNumber,
-                    'original_error' => $e->getMessage(),
+                    'ref' => $ref,
                     'send_error' => $sendError->getMessage(),
                 ]);
             }
@@ -576,18 +578,20 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $this->enviarMensajeErrorConReintento($phoneNumber, $errorMsg, 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
             }
         } catch (\Throwable $e) {
-            Log::error('WhatsApp: Error al analizar direccionamiento', [
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            Log::error("WhatsApp:direccionamiento [{$ref}]", [
+                'ref' => $ref,
                 'phone' => $phoneNumber,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
                 'trace_preview' => substr($e->getTraceAsString(), 0, 300),
             ]);
             try {
-                $this->enviarMensajeErrorConReintento($phoneNumber, $e->getMessage(), 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+                $this->enviarMensajeErrorConReintento($phoneNumber, TdrAnalysisService::humanizeError($e->getMessage(), $ref), 'direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
             } catch (\Throwable $sendError) {
                 Log::error('WhatsApp: No se pudo enviar mensaje de error al usuario', [
                     'phone' => $phoneNumber,
-                    'original_error' => $e->getMessage(),
+                    'ref' => $ref,
                     'send_error' => $sendError->getMessage(),
                 ]);
             }
@@ -867,12 +871,14 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $forceRefresh
             );
         } catch (\Throwable $e) {
-            Log::error('WhatsApp Compatibilidad IA: excepción', [
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            Log::error("WhatsApp:compatibilidad [{$ref}]", [
+                'ref' => $ref,
                 'phone' => $phoneNumber,
                 'contrato' => $idContrato,
                 'error' => $e->getMessage(),
             ]);
-            $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error al evaluar compatibilidad: ' . $e->getMessage());
+            $this->whatsapp->enviarMensaje($phoneNumber, '❌ ' . TdrAnalysisService::humanizeError($e->getMessage(), $ref));
             return;
         }
 
@@ -1119,13 +1125,15 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             $this->info("📋 Proforma generada y enviada a usuario {$phoneNumber} para contrato {$idContrato}");
 
         } catch (\Exception $e) {
-            Log::error('WhatsAppBotListener: Error al generar proforma', [
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            Log::error("WhatsApp:proforma [{$ref}]", [
+                'ref' => $ref,
                 'phone' => $phoneNumber,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
             ]);
             try {
-                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error al generar la proforma: ' . $e->getMessage());
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ ' . TdrAnalysisService::humanizeError($e->getMessage(), $ref));
             } catch (\Throwable $sendError) {
                 // Ignorar error de envío en catch
             }

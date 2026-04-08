@@ -33,6 +33,8 @@ class ImageBlockExtractor(BlockExtractorContract):
 
     # Tamaño mínimo en bytes para considerar una imagen relevante
     DEFAULT_MIN_IMAGE_SIZE = 5_000         # ~5 KB
+    # Tamaño máximo en bytes — imágenes más grandes se omiten (fotos, escaneos)
+    DEFAULT_MAX_IMAGE_SIZE = 500_000       # ~500 KB
     # Mínimo de caracteres OCR para considerar que la imagen tiene texto útil
     MIN_OCR_CHARS = 20
 
@@ -40,14 +42,17 @@ class ImageBlockExtractor(BlockExtractorContract):
         self,
         ocr_processor: Optional[OCRProcessorContract] = None,
         min_image_size: int = DEFAULT_MIN_IMAGE_SIZE,
+        max_image_size: int = DEFAULT_MAX_IMAGE_SIZE,
     ):
         """
         Args:
             ocr_processor: Procesador OCR inyectado (puede ser None/NullOCR).
             min_image_size: Bytes mínimos para considerar una imagen relevante.
+            max_image_size: Bytes máximos — imágenes más grandes se omiten del OCR.
         """
         self._ocr = ocr_processor
         self._min_image_size = min_image_size
+        self._max_image_size = max_image_size
 
     def extract(self, page, page_number: int) -> List[ContentBlock]:
         """Detecta y procesa imágenes de una página PDF."""
@@ -82,6 +87,14 @@ class ImageBlockExtractor(BlockExtractorContract):
 
             # Filtrar imágenes decorativas (íconos, bullets, logos pequeños)
             if image_size < self._min_image_size:
+                return None
+
+            # Filtrar imágenes demasiado grandes (fotos, escaneos completos)
+            if image_size > self._max_image_size:
+                logger.debug(
+                    f"Imagen omitida (muy grande): {image_size} bytes > "
+                    f"{self._max_image_size} bytes en página {page_number}"
+                )
                 return None
 
             # Intentar OCR si el procesador está disponible

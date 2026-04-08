@@ -456,35 +456,23 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $this->eliminarMensaje($chatId, $loadingMsgId, $token);
             }
 
-            Log::error('Error al analizar proceso para usuario', [
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            Log::error("TelegramBot:analizarTdr [{$ref}]", [
+                'ref' => $ref,
                 'chat_id' => $chatId,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage()
             ]);
 
-            // Determinar si es un error temporal o permanente
-            $errorMsg = $e->getMessage();
-            $esErrorTemporal = strpos($errorMsg, 'temporalmente') !== false
-                            || strpos($errorMsg, 'intenta') !== false
-                            || strpos($errorMsg, 'HTTP 500') !== false
-                            || strpos($errorMsg, 'saturado') !== false;
+            $errorMsg = TdrAnalysisService::humanizeError($e->getMessage(), $ref);
 
-            if ($esErrorTemporal) {
-                $retryCallback = $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
-                $keyboard = [
-                    'inline_keyboard' => [
-                        [
-                            [
-                                'text' => '🔄 Reintentar Análisis',
-                                'callback_data' => $retryCallback,
-                            ]
-                        ]
-                    ]
-                ];
-                $this->enviarMensajeConBotones($chatId, "❌ {$errorMsg}", $keyboard, $token);
-            } else {
-                $this->enviarMensaje($chatId, "❌ Error al procesar: {$errorMsg}", $token);
-            }
+            $retryCallback = $this->buildCallbackData('analizar', $idContrato, $idContratoArchivo, $nombreArchivo);
+            $keyboard = [
+                'inline_keyboard' => [
+                    [['text' => '🔄 Reintentar Análisis', 'callback_data' => $retryCallback]]
+                ]
+            ];
+            $this->enviarMensajeConBotones($chatId, "❌ {$errorMsg}", $keyboard, $token);
         }
     }
 
@@ -558,13 +546,22 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $this->eliminarMensaje($chatId, $loadingMsgId, $token);
             }
 
-            Log::error('Error al analizar direccionamiento para usuario', [
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            Log::error("TelegramBot:direccionamiento [{$ref}]", [
+                'ref' => $ref,
                 'chat_id' => $chatId,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
             ]);
 
-            $this->enviarMensaje($chatId, "❌ Error al procesar: {$e->getMessage()}", $token);
+            $errorMsg = TdrAnalysisService::humanizeError($e->getMessage(), $ref);
+            $retryCallback = $this->buildCallbackData('direcc', $idContrato, $idContratoArchivo, $nombreArchivo);
+            $keyboard = [
+                'inline_keyboard' => [
+                    [['text' => '🔄 Reintentar Direccionamiento', 'callback_data' => $retryCallback]]
+                ]
+            ];
+            $this->enviarMensajeConBotones($chatId, "❌ {$errorMsg}", $keyboard, $token);
         }
     }
 
@@ -1049,13 +1046,15 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             if ($loadingMsgId) {
                 $this->eliminarMensaje($chatId, $loadingMsgId, $token);
             }
-            Log::error('Compatibilidad IA: excepción', [
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            Log::error("TelegramBot:compatibilidad [{$ref}]", [
+                'ref' => $ref,
                 'chat_id' => $chatId,
                 'contrato' => $idContrato,
                 'error' => $e->getMessage(),
             ]);
 
-            $this->enviarMensaje($chatId, '❌ Error al evaluar compatibilidad: ' . $e->getMessage(), $token);
+            $this->enviarMensaje($chatId, '❌ ' . TdrAnalysisService::humanizeError($e->getMessage(), $ref), $token);
             return;
         }
 
@@ -1424,12 +1423,14 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $this->eliminarMensaje($chatId, $loadingMsgId, $token);
             }
 
-            Log::error('TelegramBotListener: Error al generar proforma', [
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            Log::error("TelegramBot:proforma [{$ref}]", [
+                'ref' => $ref,
                 'chat_id' => $chatId,
                 'id_contrato' => $idContrato,
                 'exception' => $e->getMessage(),
             ]);
-            $this->enviarMensaje($chatId, '❌ Error al generar la proforma: ' . $e->getMessage(), $token);
+            $this->enviarMensaje($chatId, '❌ ' . TdrAnalysisService::humanizeError($e->getMessage(), $ref), $token);
         }
     }
 

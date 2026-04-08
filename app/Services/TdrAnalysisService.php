@@ -11,6 +11,7 @@ use App\Services\Tdr\TdrPersistenceService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Exception;
 
 /**
@@ -129,15 +130,10 @@ class TdrAnalysisService
             }
 
         } catch (Exception $e) {
-            Log::error('TDR: Error en análisis', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            return $this->failWithRef('Error en análisis SEACE', $e, [
+                'idContratoArchivo' => $idContratoArchivo,
+                'tipo_analisis' => $tipoAnalisis,
             ]);
-
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
         }
     }
 
@@ -145,6 +141,7 @@ class TdrAnalysisService
      * Ejecuta el análisis real: descarga + LLM + persistencia.
      * SOLO se invoca cuando el lock fue adquirido y no hay cache.
      */
+
     protected function executeAnalysis(
         ContratoArchivo $archivoPersistido,
         int $idContratoArchivo,
@@ -315,21 +312,17 @@ class TdrAnalysisService
             }
 
         } catch (Exception $e) {
-            Log::error('TDR: Error en análisis local', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            return $this->failWithRef('Error en análisis local', $e, [
+                'contrato_archivo_id' => $archivoPersistido->id ?? null,
+                'tipo_analisis' => $tipoAnalisis,
             ]);
-
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
         }
     }
 
     /**
      * Intentar obtener un análisis previamente cacheado sin invocar al LLM.
      */
+
     public function obtenerAnalisisDesdeCache(int $idContratoArchivo, string $target = 'dashboard'): ?array
     {
         $archivoPersistido = ContratoArchivo::where('id_archivo_seace', $idContratoArchivo)->first();
@@ -450,6 +443,78 @@ class TdrAnalysisService
         Log::debug('TDR: ' . $message, $context);
     }
 
+    // ── Error humanizado con código de referencia ─────────────────────────
+
+    /**
+     * Genera un error amigable para el usuario con código de referencia.
+     * El detalle técnico queda en el log; al usuario le llega un mensaje limpio + ref.
+     */
+    protected function failWithRef(string $operacion, Exception $e, array $extra = []): array
+    {
+        $ref = 'TDR-' . strtoupper(Str::random(6));
+
+        Log::error("TDR [{$ref}]: {$operacion}", array_merge([
+            'ref'   => $ref,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], $extra));
+
+        return [
+            'success' => false,
+            'error'   => self::humanizeError($e->getMessage(), $ref),
+            'ref'     => $ref,
+        ];
+    }
+
+    /**
+     * Convierte un mensaje técnico de excepción en un mensaje amigable.
+     * Incluye un código de referencia para que el usuario lo comparta con soporte.
+     */
+    public static function humanizeError(string $technicalMessage, string $ref): string
+    {
+        $msg = strtolower($technicalMessage);
+
+        // Timeout — el análisis tardó demasiado
+        if (str_contains($msg, 'curl error 28') || str_contains($msg, 'timed out') || str_contains($msg, 'timeout')) {
+            return "El documento es muy extenso y el análisis tardó más de lo esperado. "
+                 . "Intenta nuevamente en unos minutos. (Ref: {$ref})";
+        }
+
+        // Servicio caído / conexión rechazada
+        if (str_contains($msg, 'curl error 7') || str_contains($msg, 'connection refused') || str_contains($msg, 'could not resolve')) {
+            return "El servicio de análisis no está disponible en este momento. "
+                 . "Por favor intenta más tarde. (Ref: {$ref})";
+        }
+
+        // Error HTTP 5xx del microservicio
+        if (preg_match('/error http 5\d{2}/i', $technicalMessage)) {
+            return "Ocurrió un error interno en el servicio de análisis. "
+                 . "Nuestro equipo fue notificado. (Ref: {$ref})";
+        }
+
+        // Error HTTP 429 — rate limit
+        if (str_contains($msg, 'error http 429') || str_contains($msg, 'rate limit') || str_contains($msg, 'too many requests')) {
+            return "Se alcanzó el límite de solicitudes al servicio de IA. "
+                 . "Intenta nuevamente en unos minutos. (Ref: {$ref})";
+        }
+
+        // Error HTTP 413 — archivo muy grande
+        if (str_contains($msg, 'error http 413') || str_contains($msg, 'payload too large')) {
+            return "El documento es demasiado grande para ser procesado. "
+                 . "El tamaño máximo permitido es 10 MB. (Ref: {$ref})";
+        }
+
+        // PDF corrupto / sin texto
+        if (str_contains($msg, 'poco texto') || str_contains($msg, 'corrupto') || str_contains($msg, 'no contiene')) {
+            return "El documento PDF no contiene texto suficiente para analizar. "
+                 . "Es posible que sea un escaneo sin texto digital. (Ref: {$ref})";
+        }
+
+        // Genérico — cualquier otro error
+        return "No se pudo completar el análisis en este momento. "
+             . "Intenta nuevamente o contacta a soporte. (Ref: {$ref})";
+    }
+
     /**
      * Generar proforma directamente desde idContratoArchivo (para uso en bots).
      * Resuelve el archivo y delega a generarProforma().
@@ -554,15 +619,9 @@ class TdrAnalysisService
             ];
 
         } catch (Exception $e) {
-            Log::error('TDR: Error al generar proforma', [
+            return $this->failWithRef('Error al generar proforma', $e, [
                 'contrato_archivo_id' => $archivoPersistido->id,
-                'error' => $e->getMessage(),
             ]);
-
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
         }
     }
 }

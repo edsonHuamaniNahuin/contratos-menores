@@ -19,12 +19,17 @@ class TesseractOCRProcessor(OCRProcessorContract):
     is_available() retorna False y el sistema degrada elegantemente.
     """
 
-    def __init__(self, lang: str = "spa"):
+    # Timeout en segundos por imagen para evitar que Tesseract se cuelgue
+    DEFAULT_TIMEOUT = 10
+
+    def __init__(self, lang: str = "spa", timeout: int = DEFAULT_TIMEOUT):
         """
         Args:
             lang: Idioma para OCR (default: español).
+            timeout: Segundos máximos por imagen (default: 10).
         """
         self._lang = lang
+        self._timeout = timeout
         self._available: Optional[bool] = None
 
     def is_available(self) -> bool:
@@ -44,7 +49,7 @@ class TesseractOCRProcessor(OCRProcessorContract):
         return self._available
 
     def extract_text(self, image_bytes: bytes) -> Optional[str]:
-        """Extrae texto de una imagen usando Tesseract OCR."""
+        """Extrae texto de una imagen usando Tesseract OCR con timeout."""
         if not self.is_available():
             return None
 
@@ -58,8 +63,15 @@ class TesseractOCRProcessor(OCRProcessorContract):
             if img.mode not in ("RGB", "L"):
                 img = img.convert("RGB")
 
-            text = pytesseract.image_to_string(img, lang=self._lang)
+            text = pytesseract.image_to_string(
+                img, lang=self._lang, timeout=self._timeout
+            )
             return text.strip() if text else None
+
+        except RuntimeError:
+            # pytesseract lanza RuntimeError cuando se excede el timeout
+            logger.warning(f"OCR timeout ({self._timeout}s) — imagen omitida")
+            return None
 
         except Exception as e:
             logger.warning(f"Error en OCR: {e}")
