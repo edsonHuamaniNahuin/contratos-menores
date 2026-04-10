@@ -12,8 +12,8 @@ class TDRAnalysisResponse(BaseModel):
     Esquema de salida del análisis de TDR (OBLIGATORIO).
     El LLM DEBE devolver un JSON que cumpla exactamente esta estructura.
     """
-    resumen_ejecutivo: str = Field(
-        ...,
+    resumen_ejecutivo: Optional[str] = Field(
+        None,
         description="Resumen técnico ejecutivo del TDR en 2-3 párrafos",
         min_length=50,
         max_length=1000
@@ -32,7 +32,7 @@ class TDRAnalysisResponse(BaseModel):
     )
 
     politicas_y_penalidades: List[str] = Field(
-        ...,
+        default_factory=list,
         description="Políticas de incumplimiento, penalidades, multas y garantías",
         min_items=0
     )

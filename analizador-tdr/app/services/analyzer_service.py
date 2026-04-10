@@ -104,6 +104,25 @@ class TDRAnalyzerService:
         # Asegurar que el payload cumpla con límites antes de validar
         analysis_dict = self._sanitize_llm_payload(analysis_dict)
 
+        # Detectar respuesta vacía: el LLM no encontró contenido analizable
+        # (PDF de solo imágenes sin OCR, documento corrupto, etc.)
+        resumen = analysis_dict.get('resumen_ejecutivo')
+        requisitos = analysis_dict.get('requisitos_tecnicos', [])
+        reglas = analysis_dict.get('reglas_de_negocio', [])
+        penalidades = analysis_dict.get('politicas_y_penalidades', [])
+        is_empty_response = (
+            not resumen
+            and not requisitos
+            and not reglas
+            and not penalidades
+        )
+        if is_empty_response:
+            self.logger.error("El LLM no pudo extraer contenido — PDF posiblemente escaneado sin OCR disponible")
+            raise ValueError(
+                "poco texto extraíble: el documento parece ser un PDF de imágenes escaneadas. "
+                "No se pudo extraer contenido analizable. Intente con un PDF que contenga texto digital."
+            )
+
         # Paso 5: Validar con Pydantic
         try:
             validated_response = TDRAnalysisResponse(**analysis_dict)
