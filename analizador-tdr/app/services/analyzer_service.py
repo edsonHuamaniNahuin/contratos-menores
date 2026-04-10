@@ -64,21 +64,21 @@ class TDRAnalyzerService:
 
         llm_client = LLMFactory.create_client(llm_provider)
 
-        # Paso 1: Extraer texto nativo del PDF (rápido, sin OCR)
-        self.logger.info("Paso 1/4: Extrayendo texto nativo del PDF...")
-        full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
+        # Paso 1: Detección ultrarrápida — PyMuPDF directo, cero OCR (~0.3s)
+        self.logger.info("Paso 1/4: Detectando tipo de PDF (nativo vs escaneado)...")
+        detect_text = self._extract_native_text(pdf_bytes)
         num_pages = self._get_page_count(pdf_bytes)
-        chars_per_page = len(full_text) / max(num_pages, 1)
+        chars_per_page = len(detect_text) / max(num_pages, 1)
 
         self.logger.info(
-            f"✓ Texto extraído: {len(full_text)} chars, "
+            f"✓ Detección: {len(detect_text)} chars, "
             f"{num_pages} págs, {chars_per_page:.0f} chars/pág"
         )
 
         # ── Estrategia híbrida ─────────────────────────────────────────────
-        # PDF nativo (texto seleccionable): texto → RAG → LLM (barato, rápido)
-        # PDF escaneado (imágenes):         PDF directo → Gemini multimodal
-        #   Elimina Tesseract del camino crítico: más rápido y mejor calidad.
+        # PDF nativo (≥200 chars/pág): texto + tablas → RAG → LLM
+        # PDF escaneado (<200 chars/pág): PDF directo → Gemini multimodal
+        #   Salta extract_text_from_pdf y Tesseract por completo.
         use_multimodal = (
             chars_per_page < MIN_CHARS_PER_PAGE
             and hasattr(llm_client, 'analyze_tdr_from_pdf')
@@ -86,8 +86,8 @@ class TDRAnalyzerService:
 
         if use_multimodal:
             self.logger.info(
-                f"📸 PDF escaneado detectado ({chars_per_page:.0f} chars/pág < {MIN_CHARS_PER_PAGE}) "
-                f"— enviando PDF directo a LLM multimodal (sin Tesseract)..."
+                f"📸 PDF escaneado ({chars_per_page:.0f} chars/pág) "
+                f"— multimodal directo, sin OCR, sin Tesseract..."
             )
             analysis_dict = await llm_client.analyze_tdr_from_pdf(pdf_bytes, "document.pdf")
             self.last_token_usage = analysis_dict.pop('_token_usage', {})
@@ -95,10 +95,15 @@ class TDRAnalyzerService:
             return self._validate_response(analysis_dict)
 
         # ── Camino texto nativo ────────────────────────────────────────────
+        # Solo llegamos aquí si el PDF tiene texto seleccionable.
+        # Ejecutar pipeline completo (texto + tablas). OCR desactivado via env.
+        self.logger.info("📄 PDF nativo — extrayendo texto + tablas (sin OCR)...")
+        full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
+
         if len(full_text) < 100:
             raise ValueError("El PDF contiene muy poco texto para analizar")
 
-        self.logger.info(f"📄 PDF nativo — usando pipeline texto → RAG → LLM")
+        self.logger.info(f"✓ Texto completo: {len(full_text)} chars")
 
         # Paso 2 y 3: Construir contexto para el LLM
         if len(full_text) < 5000:
@@ -214,6 +219,19 @@ class TDRAnalyzerService:
             self.logger.error(f"Error al validar respuesta del LLM: {str(e)}")
             self.logger.error(f"Respuesta recibida: {analysis_dict}")
             raise ValueError(f"La respuesta del LLM no cumple con el esquema esperado: {str(e)}")
+
+    @staticmethod
+    def _extract_native_text(pdf_bytes: bytes) -> str:
+        """Extrae solo texto nativo del PDF via PyMuPDF (cero OCR, ~0.3s).
+        Usado para detectar si el PDF es escaneado sin invocar Tesseract.
+        """
+        try:
+            doc = fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf")
+            text = "\n".join(page.get_text() for page in doc)
+            doc.close()
+            return text
+        except Exception:
+            return ""
 
     @staticmethod
     def _get_page_count(pdf_bytes: bytes) -> int:
