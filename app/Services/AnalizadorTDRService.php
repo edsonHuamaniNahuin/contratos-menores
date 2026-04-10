@@ -151,7 +151,7 @@ class AnalizadorTDRService
 
             $this->debug('Enviando petición HTTP');
 
-            $response = Http::timeout($this->timeout)
+            $response = Http::timeout($this->timeout * 2) // ×2 para PDFs (OCR puede demorar más del timeout base)
                 ->withHeaders($this->authHeaders('analyze-tdr'))
                 ->attach(
                     'file',
