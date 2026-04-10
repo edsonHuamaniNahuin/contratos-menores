@@ -3,7 +3,7 @@ Modelos Pydantic para entrada/salida del microservicio.
 Define el esquema estructurado del análisis de TDR.
 """
 from pydantic import BaseModel, Field, field_validator
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Dict, List, Optional, Literal, Union
 from datetime import datetime
 
 
@@ -42,11 +42,33 @@ class TDRAnalysisResponse(BaseModel):
         description="Presupuesto referencial o monto estimado (puede ser null si no se especifica)"
     )
 
-    @field_validator('requisitos_tecnicos', 'reglas_de_negocio')
+    @field_validator('requisitos_tecnicos', 'reglas_de_negocio', 'politicas_y_penalidades', mode='before')
     @classmethod
-    def validar_lista_no_vacia(cls, v):
-        # Permitir arrays vacíos cuando no hay información en el TDR
-        return v
+    def normalizar_items_a_strings(cls, v):
+        """
+        Gemini a veces devuelve arrays de dicts {tipo, detalle} en lugar de strings.
+        Normaliza ambos formatos a List[str] para que el schema sea resiliente.
+        """
+        if not isinstance(v, list):
+            return v
+        resultado = []
+        for item in v:
+            if isinstance(item, str):
+                resultado.append(item)
+            elif isinstance(item, dict):
+                tipo = item.get('tipo', '')
+                detalle = item.get('detalle', item.get('descripcion', ''))
+                if tipo and detalle:
+                    resultado.append(f"{tipo}: {detalle}")
+                elif detalle:
+                    resultado.append(str(detalle))
+                elif tipo:
+                    resultado.append(str(tipo))
+                else:
+                    resultado.append(str(item))
+            else:
+                resultado.append(str(item))
+        return resultado
 
 
 class TDRAnalysisRequest(BaseModel):

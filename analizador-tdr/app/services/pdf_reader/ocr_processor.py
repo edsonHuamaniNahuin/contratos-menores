@@ -39,6 +39,7 @@ class TesseractOCRProcessor(OCRProcessorContract):
 
         try:
             import pytesseract
+
             pytesseract.get_tesseract_version()
             self._available = True
             logger.info("✅ Tesseract OCR disponible")
