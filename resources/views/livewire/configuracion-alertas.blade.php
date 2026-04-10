@@ -293,8 +293,9 @@
         <div class="space-y-3">
             {{-- Toggle Telegram (optimistic UI con Alpine) --}}
             @php
-                $telegramHasSubs = $suscripciones->isNotEmpty();
-                $telegramAllActive = $telegramHasSubs && $suscripciones->every(fn($s) => $s->activo);
+                $mySubs = $suscripciones->where('user_id', auth()->id());
+                $telegramHasSubs = $mySubs->isNotEmpty();
+                $telegramAllActive = $telegramHasSubs && $mySubs->every(fn($s) => $s->activo);
             @endphp
             <div wire:key="tg-toggle-{{ $telegramAllActive ? '1' : '0' }}"
                  x-data="{ active: {{ $telegramAllActive ? 'true' : 'false' }}, hasSubs: {{ $telegramHasSubs ? 'true' : 'false' }} }"
@@ -311,7 +312,7 @@
                         <p class="text-sm font-semibold text-neutral-900">Telegram</p>
                         <p class="text-[11px] text-neutral-400">
                             @if($telegramHasSubs)
-                                {{ $suscripciones->count() }} suscriptor{{ $suscripciones->count() > 1 ? 'es' : '' }} registrado{{ $suscripciones->count() > 1 ? 's' : '' }}
+                                {{ $mySubs->count() }} suscriptor{{ $mySubs->count() > 1 ? 'es' : '' }} registrado{{ $mySubs->count() > 1 ? 's' : '' }}
                             @else
                                 Sin suscriptores registrados
                             @endif

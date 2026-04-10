@@ -71,6 +71,9 @@ TELEGRAM_ADMIN_CHAT_ID=<TU_CHAT_ID>
 # Analizador en puerto 8002 (producción usa 8001)
 ANALIZADOR_TDR_URL=http://127.0.0.1:8002
 ANALIZADOR_TDR_ENABLED=true
+
+# En QA/Producción: 0 = SIEMPRE usar Job async (vigilante-queue siempre activo)
+TDR_ASYNC_MIN_SIZE_BYTES=0
 ```
 
 Generar key:

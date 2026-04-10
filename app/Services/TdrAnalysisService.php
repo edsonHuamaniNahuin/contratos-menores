@@ -30,6 +30,10 @@ class TdrAnalysisService
     protected TdrPersistenceService $persistence;
     protected TdrDocumentService $documentService;
     protected bool $debugLogging;
+    /** Origen del llamador para claim JWT: web | telegram | whatsapp | job | cli. */
+    protected string $origin = 'web';
+    /** ID del usuario que solicitó el análisis (null = anónimo / no autenticado). */
+    protected ?int $requestedByUserId = null;
 
     public function __construct(?TdrAnalysisFormatter $formatter = null)
     {
@@ -38,6 +42,50 @@ class TdrAnalysisService
         $this->persistence = new TdrPersistenceService();
         $this->documentService = new TdrDocumentService($this->persistence);
         $this->debugLogging = (bool) config('tdr.debug_logs', config('services.analizador_tdr.debug_logs', false));
+    }
+
+    /**
+     * Establece el origen del servicio para el claim JWT (auditoría inter-servicio).
+     *
+     * Uso: (new TdrAnalysisService())->withOrigin('telegram')->analizarDesdeSeace(...)
+     */
+    public function withOrigin(string $origin): static
+    {
+        $this->origin = $origin;
+        return $this;
+    }
+
+    /**
+     * Establece el usuario que solicita el análisis (para tracking de uso).
+     */
+    public function withUserId(?int $userId): static
+    {
+        $this->requestedByUserId = $userId;
+        return $this;
+    }
+
+    /** Crea una instancia de AnalizadorTDRService con el origen correcto. */
+    protected function makeAnalizador(): AnalizadorTDRService
+    {
+        return (new AnalizadorTDRService())->withOrigin($this->origin);
+    }
+
+    /**
+     * Construye el array de metadatos para persistir, incluyendo tokens y user_id.
+     */
+    protected function buildAnalysisMeta(array $resultado, string $tipoAnalisis = 'general'): array
+    {
+        $tokenUsage = $resultado['token_usage'] ?? [];
+
+        return [
+            'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
+            'modelo' => config('services.analizador_tdr.model'),
+            'tipo_analisis' => $tipoAnalisis,
+            'tokens_prompt' => $tokenUsage['prompt_tokens'] ?? null,
+            'tokens_respuesta' => $tokenUsage['completion_tokens'] ?? null,
+            'requested_by_user_id' => $this->requestedByUserId,
+            'origin' => $this->origin,
+        ];
     }
 
     /**
@@ -172,7 +220,7 @@ class TdrAnalysisService
             }
         }
 
-        $analizador = new AnalizadorTDRService();
+        $analizador = $this->makeAnalizador();
 
         if ($tipoAnalisis === 'direccionamiento') {
             $resultado = $analizador->analyzeDireccionamiento($filePath);
@@ -195,11 +243,7 @@ class TdrAnalysisService
             $analisisData,
             $resultado,
             $contextoContrato,
-            [
-                'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
-                'modelo' => config('services.analizador_tdr.model'),
-                'tipo_analisis' => $tipoAnalisis,
-            ]
+            $this->buildAnalysisMeta($resultado, $tipoAnalisis)
         );
 
         $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
@@ -275,7 +319,7 @@ class TdrAnalysisService
                     ];
                 }
 
-                $analizador = new AnalizadorTDRService();
+                $analizador = $this->makeAnalizador();
 
                 if ($tipoAnalisis === 'direccionamiento') {
                     $resultado = $analizador->analyzeDireccionamiento($filePath);
@@ -297,11 +341,7 @@ class TdrAnalysisService
                     $analisisData,
                     $resultado,
                     $contextoContrato,
-                    [
-                        'proveedor' => config('services.analizador_tdr.provider', 'gemini'),
-                        'modelo' => config('services.analizador_tdr.model'),
-                        'tipo_analisis' => $tipoAnalisis,
-                    ]
+                    $this->buildAnalysisMeta($resultado, $tipoAnalisis)
                 );
 
                 $payload = $this->persistence->buildPayloadFromAnalysis($analisisModel, false);
@@ -596,7 +636,7 @@ class TdrAnalysisService
                 }
             }
 
-            $analizador = new AnalizadorTDRService();
+            $analizador = $this->makeAnalizador();
             $resultado = $analizador->analyzeProforma($filePath, $companyName, $companyCopy);
 
             if (!($resultado['success'] ?? false)) {

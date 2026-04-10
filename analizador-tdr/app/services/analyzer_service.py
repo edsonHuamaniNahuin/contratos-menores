@@ -30,6 +30,7 @@ class TDRAnalyzerService:
         self.pdf_processor = PDFProcessorService()
         self.rag_extractor = RAGExtractionService()
         self.logger = logger
+        self.last_token_usage: Dict = {}
 
     async def analyze_tdr_document(
         self,
@@ -101,22 +102,32 @@ class TDRAnalyzerService:
         self.logger.info(f"Paso 4/4: Analizando con LLM (provider: {llm_provider or 'default'})...")
         analysis_dict = await llm_client.analyze_tdr(context)
 
+        # Extraer token usage antes de validar con Pydantic
+        self.last_token_usage = analysis_dict.pop('_token_usage', {})
+
         # Asegurar que el payload cumpla con límites antes de validar
         analysis_dict = self._sanitize_llm_payload(analysis_dict)
 
-        # Paso 5: Validar con Pydantic
-        try:
-            validated_response = TDRAnalysisResponse(**analysis_dict)
-            self.logger.info("✓ Análisis completado y validado exitosamente")
-            self.logger.info(f"  - Requisitos técnicos: {len(validated_response.requisitos_tecnicos)}")
-            self.logger.info(f"  - Reglas de negocio: {len(validated_response.reglas_de_negocio)}")
+        # Detectar respuesta vacía: el LLM no encontró contenido analizable
+        # (PDF de solo imágenes sin OCR, documento corrupto, etc.)
+        resumen = analysis_dict.get('resumen_ejecutivo')
+        requisitos = analysis_dict.get('requisitos_tecnicos', [])
+        reglas = analysis_dict.get('reglas_de_negocio', [])
+        penalidades = analysis_dict.get('politicas_y_penalidades', [])
+        is_empty_response = (
+            not resumen
+            and not requisitos
+            and not reglas
+            and not penalidades
+        )
+        if is_empty_response:
+            self.logger.error("El LLM no pudo extraer contenido — PDF posiblemente escaneado sin OCR disponible")
+            raise ValueError(
+                "poco texto extraíble: el documento parece ser un PDF de imágenes escaneadas. "
+                "No se pudo extraer contenido analizable. Intente con un PDF que contenga texto digital."
+            )
 
-            return validated_response
-
-        except Exception as e:
-            self.logger.error(f"Error al validar respuesta del LLM: {str(e)}")
-            self.logger.error(f"Respuesta recibida: {analysis_dict}")
-            raise ValueError(f"La respuesta del LLM no cumple con el esquema esperado: {str(e)}")
+        return self._validate_response(analysis_dict)
 
     async def evaluate_compatibility(
         self,
@@ -155,6 +166,19 @@ class TDRAnalyzerService:
             analysis["resumen_ejecutivo"] = resumen_limpio
 
         return analysis
+
+    def _validate_response(self, analysis_dict: Dict) -> TDRAnalysisResponse:
+        """Valida la respuesta del LLM con Pydantic."""
+        try:
+            validated = TDRAnalysisResponse(**analysis_dict)
+            self.logger.info("✓ Análisis completado y validado exitosamente")
+            self.logger.info(f"  - Requisitos técnicos: {len(validated.requisitos_tecnicos)}")
+            self.logger.info(f"  - Reglas de negocio: {len(validated.reglas_de_negocio)}")
+            return validated
+        except Exception as e:
+            self.logger.error(f"Error al validar respuesta del LLM: {str(e)}")
+            self.logger.error(f"Respuesta recibida: {analysis_dict}")
+            raise ValueError(f"La respuesta del LLM no cumple con el esquema esperado: {str(e)}")
 
     def _sanitize_compatibility_payload(self, payload: Dict) -> Dict:
         score = payload.get("score")
@@ -221,6 +245,7 @@ class TDRAnalyzerService:
         # Paso 4: Analizar con prompt forense
         self.logger.info("🔍 Analizando direccionamiento con LLM...")
         analysis_dict = await llm_client.analyze_direccionamiento(context)
+        self.last_token_usage = analysis_dict.pop('_token_usage', {})
         analysis_dict = self._sanitize_direccionamiento_payload(analysis_dict)
 
         # Paso 5: Validar con Pydantic
@@ -357,6 +382,7 @@ class TDRAnalyzerService:
             company_copy,
             contrato_contexto,
         )
+        self.last_token_usage = raw.pop('_token_usage', {})
         sanitized = self._sanitize_proforma_payload(raw)
 
         try:

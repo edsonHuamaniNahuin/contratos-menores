@@ -157,7 +157,7 @@ class RolesPermisos extends Component
             'Vistas del sistema' => ['view-tdr-repository', 'view-configuracion', 'view-buscador-publico', 'view-cuentas', 'view-prueba-endpoints', 'view-configuracion-alertas', 'view-mis-procesos'],
             'Configurar alertas' => ['add-telegram-subscription', 'add-whatsapp-subscription', 'add-email-subscription', 'manage-subscriptions'],
             'TDR y procesos' => ['import-tdr', 'analyze-tdr', 'follow-contracts', 'cotizar-seace', 'create-proforma'],
-            'Administración' => ['manage-roles-permissions'],
+            'Administración' => ['manage-roles-permissions', 'view-consumo-ia'],
         ];
 
         $grouped = [];
@@ -212,5 +212,31 @@ class RolesPermisos extends Component
 
         $adminCount = User::whereHas('roles', fn ($q) => $q->where('roles.id', $adminRole->id))->count();
         return $adminCount <= 1;
+    }
+
+    public function darDeBaja(int $userId): void
+    {
+        // No puede darse de baja a sí mismo
+        if ($userId === Auth::id()) {
+            $this->errorMessage = 'No puedes darte de baja a ti mismo.';
+            return;
+        }
+
+        $user = User::findOrFail($userId);
+
+        // Proteger al último administrador
+        $adminRole = Role::where('slug', 'admin')->first();
+        if ($adminRole && $user->hasRole('admin')) {
+            $adminCount = User::whereHas('roles', fn ($q) => $q->where('roles.id', $adminRole->id))->count();
+            if ($adminCount <= 1) {
+                $this->errorMessage = 'No puedes dar de baja al único administrador del sistema.';
+                return;
+            }
+        }
+
+        $user->delete(); // Soft delete — preserva datos históricos
+
+        session()->flash('success', "✅ Usuario \"{$user->name}\" dado de baja correctamente.");
+        $this->loadRolesAndPermissions();
     }
 }

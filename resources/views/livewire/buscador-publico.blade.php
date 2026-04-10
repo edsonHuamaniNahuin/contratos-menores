@@ -2217,6 +2217,56 @@
         </div>
     </div>
 
+    {{-- ============================================================
+         Overlay de carga – Modo Job Async (PDF pesado / escaneado)
+         Se activa cuando el análisis se delegó a un Queue Worker.
+         wire:poll llama a checkAnalisisJob cada 3 segundos.
+         ============================================================ --}}
+    @if($analisisJobArchivoId)
+    <div
+        wire:poll.3000ms="checkAnalisisJob"
+        class="fixed inset-0 z-[200] flex items-center justify-center px-4"
+        x-data="{
+            seconds: 0,
+            timer: null,
+            init() {
+                this.timer = setInterval(() => this.seconds++, 1000);
+            },
+            get message() {
+                if (this.seconds >= 120) return 'El análisis está tomando más de lo esperado. Por favor espera.';
+                if (this.seconds >= 45)  return 'Procesando imágenes con OCR… Esto puede tardar varios minutos.';
+                if (this.seconds >= 15)  return 'Analizando el documento extenso en segundo plano…';
+                return 'El análisis IA está en cola de procesamiento…';
+            },
+            get sub() {
+                if (this.seconds >= 45)  return 'Los PDFs escaneados con muchas páginas requieren OCR. Tu resultado aparecerá al terminar.';
+                if (this.seconds >= 15)  return 'Un servicio IA dedicado está procesando este documento por ti.';
+                return 'La página se actualizará automáticamente cuando el análisis esté listo.';
+            }
+        }"
+    >
+        <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-[2rem] shadow-soft p-8 max-w-sm w-full text-center">
+            <div class="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-5">
+                <svg class="w-8 h-8 text-amber-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+            </div>
+            <p class="text-base font-semibold text-neutral-900" x-text="message"></p>
+            <p class="text-sm text-neutral-400 mt-2 leading-relaxed" x-text="sub"></p>
+            <p class="text-xs text-neutral-400/70 mt-4">
+                Tiempo: <span x-text="seconds + 's'"></span>
+            </p>
+            <div class="flex justify-center gap-1.5 mt-4">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0s"></span>
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0.15s"></span>
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0.3s"></span>
+            </div>
+        </div>
+    </div>
+    @endif
+
 </div>
 
 @script

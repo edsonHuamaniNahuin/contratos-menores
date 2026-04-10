@@ -331,6 +331,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('roles-permisos');
     })->name('roles.permisos')->middleware('can:manage-roles-permissions');
 
+    Route::get('/consumo-ia', function () {
+        return view('consumo-ia');
+    })->name('consumo.ia')->middleware('can:view-consumo-ia');
+
     Route::get('/seguimientos', function () {
         return view('seguimientos');
     })->name('seguimientos')->middleware('can:follow-contracts');

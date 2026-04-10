@@ -23,6 +23,7 @@ class TdrAnalisis extends Model
     protected $fillable = [
         'contrato_archivo_id',
         'requested_by_user_id',
+        'origin',
         'tipo_analisis',
         'share_token',
         'estado',

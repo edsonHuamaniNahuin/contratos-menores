@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +14,9 @@ class AnalizadorTDRService
     protected int $timeout;
     protected bool $enabled;
     protected bool $debugLogging;
+    protected InterServiceJwt $jwt;
+    /** Origen de la petición para el claim JWT (web | telegram | whatsapp | job | cli). */
+    protected string $origin = 'web';
 
     public function __construct()
     {
@@ -20,6 +24,40 @@ class AnalizadorTDRService
         $this->timeout = config('services.analizador_tdr.timeout', 60);
         $this->enabled = config('services.analizador_tdr.enabled', false);
         $this->debugLogging = (bool) config('tdr.debug_logs', config('services.analizador_tdr.debug_logs', false));
+        $this->jwt = new InterServiceJwt();
+
+        // Auto-detectar origen cuando corre desde CLI (bots, queue workers).
+        if (app()->runningInConsole()) {
+            $this->origin = 'cli';
+        }
+    }
+
+    /**
+     * Establece el origen de la petición para el claim JWT.
+     * Permite distinguir web | telegram | whatsapp | job | cli en auditoría.
+     *
+     * Uso: (new AnalizadorTDRService())->withOrigin('telegram')->analyzeSingle(...)
+     */
+    public function withOrigin(string $origin): static
+    {
+        $this->origin = $origin;
+        return $this;
+    }
+
+    /**
+     * Genera los headers de autenticación JWT para cada llamada al microservicio.
+     *
+     * @param string $action  Acción que identifica el endpoint destino
+     */
+    protected function authHeaders(string $action = 'analyze-tdr'): array
+    {
+        $userId = Auth::id() ?? 0;
+        $token = $this->jwt->sign($userId, $action, $this->origin);
+
+        return [
+            'Authorization' => "Bearer {$token}",
+            'X-Service-Origin' => 'vigilante-seace-laravel',
+        ];
     }
 
     /**
@@ -114,6 +152,7 @@ class AnalizadorTDRService
             $this->debug('Enviando petición HTTP');
 
             $response = Http::timeout($this->timeout)
+                ->withHeaders($this->authHeaders('analyze-tdr'))
                 ->attach(
                     'file',
                     $fileContents,
@@ -190,7 +229,8 @@ class AnalizadorTDRService
                 'count' => count($filePaths)
             ]);
 
-            $httpClient = Http::timeout($this->timeout * 2); // Más tiempo para batch
+            $httpClient = Http::timeout($this->timeout * 2)
+                ->withHeaders($this->authHeaders('batch')); // Más tiempo para batch
 
             foreach ($filePaths as $index => $filePath) {
                 if (!file_exists($filePath)) {
@@ -286,6 +326,7 @@ class AnalizadorTDRService
             ]);
 
             $response = Http::timeout($this->timeout)
+                ->withHeaders($this->authHeaders('analyze-direccionamiento'))
                 ->attach('file', file_get_contents($filePath), $fileName)
                 ->post($fullUrl);
 
@@ -346,6 +387,7 @@ class AnalizadorTDRService
             ]);
 
             $response = Http::timeout($this->timeout)
+                ->withHeaders($this->authHeaders('generate-proforma'))
                 ->attach('file', file_get_contents($filePath), $fileName)
                 ->post($fullUrl, [
                     'company_name' => $companyName,
