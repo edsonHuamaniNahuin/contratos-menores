@@ -151,7 +151,7 @@ class AnalizadorTDRService
 
             $this->debug('Enviando petición HTTP');
 
-            $response = Http::timeout($this->timeout)
+            $response = Http::timeout($this->timeout * 2)
                 ->withHeaders($this->authHeaders('analyze-tdr'))
                 ->attach(
                     'file',
@@ -325,7 +325,7 @@ class AnalizadorTDRService
                 'full_url' => $fullUrl,
             ]);
 
-            $response = Http::timeout($this->timeout)
+            $response = Http::timeout($this->timeout * 2)
                 ->withHeaders($this->authHeaders('analyze-direccionamiento'))
                 ->attach('file', file_get_contents($filePath), $fileName)
                 ->post($fullUrl);
@@ -386,7 +386,7 @@ class AnalizadorTDRService
                 'full_url' => $fullUrl,
             ]);
 
-            $response = Http::timeout($this->timeout)
+            $response = Http::timeout($this->timeout * 2)
                 ->withHeaders($this->authHeaders('generate-proforma'))
                 ->attach('file', file_get_contents($filePath), $fileName)
                 ->post($fullUrl, [
