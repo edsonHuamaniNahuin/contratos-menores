@@ -2,7 +2,7 @@
 Endpoint optimizado para procesamiento por lotes (batch).
 Diseñado para el scraper que envía 3-10 documentos cada 40 minutos.
 """
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
 from typing import List
 import asyncio
 import logging
@@ -10,6 +10,7 @@ from datetime import datetime
 
 from app.models.schemas import TDRAnalysisResponse, ErrorResponse
 from app.services.analyzer_service import TDRAnalyzerService
+from app.middleware import require_auth, AuthContext
 from config import settings
 
 router = APIRouter(prefix="/batch", tags=["Batch Processing"])
@@ -24,7 +25,8 @@ analyzer_service = TDRAnalyzerService()
     summary="Analiza múltiples TDRs en paralelo (optimizado para scraper)"
 )
 async def analyze_batch_tdrs(
-    files: List[UploadFile] = File(..., description="Lista de archivos PDF")
+    files: List[UploadFile] = File(..., description="Lista de archivos PDF"),
+    auth: AuthContext = Depends(require_auth),
 ):
     """
     **Endpoint optimizado para procesamiento por lotes.**

@@ -2,6 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Jobs\AnalizarTdrJob;
+use App\Models\TdrAnalisis;
 use App\Models\TelegramSubscription;
 use App\Models\SubscriptionContractMatch;
 use App\Models\ContratoSeguimiento;
@@ -114,6 +116,10 @@ class BuscadorPublico extends Component
     public bool $analizandoTdr = false;
     public ?array $resultadoAnalisis = null;
     public ?array $analisisContrato = null;
+
+    // Job async para PDFs pesados (≥500 KB sin análisis en caché).
+    // Null = modo síncrono activo. Con valor = polling activo.
+    public ?int $analisisJobArchivoId = null;
 
     public ?int $seguimientoEnCurso = null;
     public ?int $cotizandoEnCurso = null;
@@ -891,7 +897,12 @@ class BuscadorPublico extends Component
             return;
         }
 
+        // Eliminar el límite de ejecución PHP para esta petición pesada.
+        // Los PDFs escaneados (OCR) pueden tardar varios minutos.
+        set_time_limit(0);
+
         $this->analizandoTdr = true;
+        $this->analisisJobArchivoId = null;
         $this->resultadoAnalisis = null;
         $this->analisisContrato = null;
         $this->analisisContratoId = null;
@@ -909,28 +920,48 @@ class BuscadorPublico extends Component
             $contratoSnapshot = $this->resolveContrato($idContrato);
             $archivoPersistido = $this->publicTdrService->ensureLocalArchivo($idContrato, $archivoMeta, $contratoSnapshot);
 
-            $analisis = $this->tdrAnalysisService->analizarArchivoLocal($archivoPersistido, $contratoSnapshot);
+            // ── Fast-path: ya hay análisis en DB ──────────────────────────────
+            $analisisCacheado = TdrAnalisis::where('contrato_archivo_id', $archivoPersistido->id)
+                ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
+                ->where('tipo_analisis', TdrAnalisis::TIPO_GENERAL)
+                ->latest('analizado_en')
+                ->first();
 
-            if (!($analisis['success'] ?? false)) {
-                $this->notify($analisis['error'] ?? 'No se pudo completar el análisis IA.', 'error');
+            if ($analisisCacheado) {
+                // Resultado ya existe → renderizar inmediatamente sin llamar al LLM.
+                $analisis = $this->tdrAnalysisService->analizarArchivoLocal($archivoPersistido, $contratoSnapshot);
+                $this->_mostrarResultadoAnalisis($analisis, $idContrato, $archivoMeta, $contratoSnapshot);
                 return;
             }
 
-            $payload = $analisis['data'] ?? [];
-            $this->resultadoAnalisis = $payload;
-            $this->analisisContrato = $this->buildAnalisisContext($idContrato, $archivoMeta);
-            $this->analisisContratoId = $idContrato;
-            $this->analisisContratoSnapshot = $contratoSnapshot;
+            // ── PDF pesado (≥500 KB sin caché) → Job async ───────────────────
+            // Evita que la petición Livewire quede bloqueada durante el OCR.
+            $tamano = $archivoPersistido->tamano_bytes ?? 0;
+            $usarJob = $tamano >= 500_000 && config('queue.default') !== 'sync';
 
-            $this->loadUserCompatibility($contratoSnapshot);
+            if ($usarJob) {
+                $this->analisisJobArchivoId = $archivoPersistido->id;
+                // Guardamos el contexto para reconstruirlo al completar el poll.
+                $this->analisisContratoId = $idContrato;
+                $this->analisisContratoSnapshot = $contratoSnapshot;
+                $this->analisisContrato = $this->buildAnalisisContext($idContrato, $archivoMeta);
 
-            $mensaje = ($payload['cache'] ?? false)
-                ? 'Mostrando el análisis IA almacenado previamente.'
-                : 'Análisis IA completado exitosamente.';
+                AnalizarTdrJob::dispatch($archivoPersistido, $contratoSnapshot, Auth::id() ?? 0);
 
-            $this->notify($mensaje, 'success');
+                $this->notify(
+                    '🔄 El documento es extenso. El análisis IA está en proceso en segundo plano. La página se actualizará automáticamente al terminar.',
+                    'info'
+                );
+                // analizandoTdr permanece true → el overlay sigue visible + wire:poll activo.
+                return;
+            }
+
+            // ── PDF pequeño → análisis síncrono ──────────────────────────────
+            $analisis = $this->tdrAnalysisService->analizarArchivoLocal($archivoPersistido, $contratoSnapshot);
+            $this->_mostrarResultadoAnalisis($analisis, $idContrato, $archivoMeta, $contratoSnapshot);
+
         } catch (Exception $e) {
-            $ref = 'TDR-' . strtoupper(\Illuminate\Support\Str::random(6));
+            $ref = 'TDR-' . strtoupper(Str::random(6));
             Log::error("BuscadorPublico:analizarTdr [{$ref}]", [
                 'ref' => $ref,
                 'id_contrato' => $idContrato,
@@ -938,8 +969,78 @@ class BuscadorPublico extends Component
             ]);
             $this->notify(TdrAnalysisService::humanizeError($e->getMessage(), $ref), 'error');
         } finally {
-            $this->analizandoTdr = false;
+            // Solo reseteamos si NO estamos esperando por un job async.
+            if (!$this->analisisJobArchivoId) {
+                $this->analizandoTdr = false;
+            }
         }
+    }
+
+    /**
+     * Extrae y muestra el resultado del análisis en el componente.
+     * Usado tanto en modo síncrono como al resolver el poll del job.
+     */
+    private function _mostrarResultadoAnalisis(array $analisis, int $idContrato, array $archivoMeta, ?array $contratoSnapshot): void
+    {
+        if (!($analisis['success'] ?? false)) {
+            $this->notify($analisis['error'] ?? 'No se pudo completar el análisis IA.', 'error');
+            return;
+        }
+
+        $payload = $analisis['data'] ?? [];
+        $this->resultadoAnalisis = $payload;
+        $this->analisisContrato = $this->buildAnalisisContext($idContrato, $archivoMeta);
+        $this->analisisContratoId = $idContrato;
+        $this->analisisContratoSnapshot = $contratoSnapshot;
+
+        $this->loadUserCompatibility($contratoSnapshot);
+
+        $mensaje = ($payload['cache'] ?? false)
+            ? 'Mostrando el análisis IA almacenado previamente.'
+            : 'Análisis IA completado exitosamente.';
+
+        $this->notify($mensaje, 'success');
+    }
+
+    /**
+     * Polling del resultado del Job async.
+     * Livewire llama a este método cada 3s mientras analisisJobArchivoId esté seteado.
+     */
+    public function checkAnalisisJob(): void
+    {
+        if (!$this->analisisJobArchivoId) {
+            return;
+        }
+
+        $terminado = TdrAnalisis::where('contrato_archivo_id', $this->analisisJobArchivoId)
+            ->whereIn('estado', [TdrAnalisis::ESTADO_EXITOSO, TdrAnalisis::ESTADO_FALLIDO])
+            ->where('tipo_analisis', TdrAnalisis::TIPO_GENERAL)
+            ->latest('analizado_en')
+            ->first();
+
+        if (!$terminado) {
+            return; // Job aún en proceso, seguir esperando.
+        }
+
+        $archivoId = $this->analisisJobArchivoId;
+        $this->analisisJobArchivoId = null;
+        $this->analizandoTdr = false;
+
+        if ($terminado->estado === TdrAnalisis::ESTADO_FALLIDO) {
+            $ref = 'TDR-' . strtoupper(Str::random(6));
+            $this->notify(TdrAnalysisService::humanizeError($terminado->error ?? 'error desconocido', $ref), 'error');
+            return;
+        }
+
+        // Exitoso → cargar el payload en el componente.
+        $archivoPersistido = \App\Models\ContratoArchivo::find($archivoId);
+        if (!$archivoPersistido) {
+            return;
+        }
+
+        $analisis = $this->tdrAnalysisService->analizarArchivoLocal($archivoPersistido, $this->analisisContratoSnapshot);
+        $archivoMeta = $this->resolveArchivoMeta($this->analisisContratoId ?? 0);
+        $this->_mostrarResultadoAnalisis($analisis, $this->analisisContratoId ?? 0, $archivoMeta ?? [], $this->analisisContratoSnapshot);
     }
 
     public function hacerSeguimiento(int $idContrato): void

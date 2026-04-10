@@ -153,6 +153,9 @@ return [
         'provider' => env('ANALIZADOR_TDR_PROVIDER', 'gemini'),
         'model' => env('ANALIZADOR_TDR_MODEL', 'gemini-2.5-flash'),
         'debug_logs' => env('ANALIZADOR_TDR_DEBUG_LOGS', false),
+        // JWT HMAC-SHA256 para autenticación inter-servicio Laravel↔Python.
+        // Compartido entre .env de Laravel y .env del microservicio Python.
+        'secret' => env('ANALIZADOR_TDR_SECRET', ''),
     ],
 
     // ─── Pasarela de pago activa ────────────────────────

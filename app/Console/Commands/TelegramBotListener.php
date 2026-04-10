@@ -389,7 +389,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $tdrService = new TdrAnalysisService();
+            $tdrService = (new TdrAnalysisService())->withOrigin('telegram');
 
             // Recuperar contexto completo del contrato (cacheado al enviar la notificación)
             $cachedContrato = $this->getCachedContratoPayload($idContrato);
@@ -496,7 +496,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $tdrService = new TdrAnalysisService();
+            $tdrService = (new TdrAnalysisService())->withOrigin('telegram');
             $cachedContrato = $this->getCachedContratoPayload($idContrato);
             $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 
@@ -1093,7 +1093,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         string $nombreArchivo,
         ?array $contratoCache = null
     ): array {
-        $tdrService = new TdrAnalysisService();
+        $tdrService = (new TdrAnalysisService())->withOrigin('telegram');
         $cuenta = CuentaSeace::activa()->first();
         $contextoContrato = array_merge(['idContrato' => $idContrato], $contratoCache ?? []);
 

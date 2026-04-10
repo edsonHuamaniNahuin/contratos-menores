@@ -406,7 +406,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $tdrService = new TdrAnalysisService();
+            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp');
 
             // Recuperar contexto completo del contrato (cacheado al enviar la notificación)
             $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
@@ -549,7 +549,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $tdrService = new TdrAnalysisService();
+            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp');
             $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
             $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 
@@ -843,7 +843,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         );
 
         // Obtener análisis IA
-        $tdrService = new TdrAnalysisService();
+        $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp');
         $cuenta = CuentaSeace::activa()->first();
         $contextoContrato = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 
@@ -1076,7 +1076,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             $companyCopy = $profile->company_copy;
 
             // ── Generar proforma via TdrAnalysisService ───────────────────
-            $tdrService = new TdrAnalysisService();
+            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp');
             $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
             $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 

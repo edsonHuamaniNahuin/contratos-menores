@@ -16,6 +16,18 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8001
 
+    # ── Seguridad inter-servicio ──────────────────────────────────
+    # Secreto compartido con Laravel para JWT HMAC-SHA256.
+    # DEBE ser idéntico al ANALIZADOR_TDR_SECRET del .env de Laravel.
+    analizador_tdr_secret: str = ""
+
+    # Orígenes permitidos para CORS (separados por coma).
+    # En producción: "https://licitacionesmype.pe"
+    allowed_origins: str = "http://127.0.0.1:8000,http://localhost:8000"
+
+    # Rate-limit: máximo de peticiones de análisis por usuario por minuto
+    rate_limit_per_user: int = 5
+
     # LLM Provider
     default_llm_provider: Literal["gemini", "openai", "anthropic"] = "gemini"
 

@@ -30,6 +30,8 @@ class TdrAnalysisService
     protected TdrPersistenceService $persistence;
     protected TdrDocumentService $documentService;
     protected bool $debugLogging;
+    /** Origen del llamador para claim JWT: web | telegram | whatsapp | job | cli. */
+    protected string $origin = 'web';
 
     public function __construct(?TdrAnalysisFormatter $formatter = null)
     {
@@ -38,6 +40,23 @@ class TdrAnalysisService
         $this->persistence = new TdrPersistenceService();
         $this->documentService = new TdrDocumentService($this->persistence);
         $this->debugLogging = (bool) config('tdr.debug_logs', config('services.analizador_tdr.debug_logs', false));
+    }
+
+    /**
+     * Establece el origen del servicio para el claim JWT (auditoría inter-servicio).
+     *
+     * Uso: (new TdrAnalysisService())->withOrigin('telegram')->analizarDesdeSeace(...)
+     */
+    public function withOrigin(string $origin): static
+    {
+        $this->origin = $origin;
+        return $this;
+    }
+
+    /** Crea una instancia de AnalizadorTDRService con el origen correcto. */
+    protected function makeAnalizador(): AnalizadorTDRService
+    {
+        return (new AnalizadorTDRService())->withOrigin($this->origin);
     }
 
     /**
@@ -172,7 +191,7 @@ class TdrAnalysisService
             }
         }
 
-        $analizador = new AnalizadorTDRService();
+        $analizador = $this->makeAnalizador();
 
         if ($tipoAnalisis === 'direccionamiento') {
             $resultado = $analizador->analyzeDireccionamiento($filePath);
@@ -275,7 +294,7 @@ class TdrAnalysisService
                     ];
                 }
 
-                $analizador = new AnalizadorTDRService();
+                $analizador = $this->makeAnalizador();
 
                 if ($tipoAnalisis === 'direccionamiento') {
                     $resultado = $analizador->analyzeDireccionamiento($filePath);
@@ -596,7 +615,7 @@ class TdrAnalysisService
                 }
             }
 
-            $analizador = new AnalizadorTDRService();
+            $analizador = $this->makeAnalizador();
             $resultado = $analizador->analyzeProforma($filePath, $companyName, $companyCopy);
 
             if (!($resultado['success'] ?? false)) {

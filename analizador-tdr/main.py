@@ -22,6 +22,7 @@ from app.models.schemas import (
     ProformaResponse,
 )
 from app.services.analyzer_service import TDRAnalyzerService
+from app.middleware import require_auth, AuthContext
 
 # Importar router de batch processing
 from app.routes.batch import router as batch_router
@@ -58,13 +59,14 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Middleware CORS (para integraciones con frontend)
+# Middleware CORS — orígenes restringidos por configuración
+_allowed_origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, especifica dominios permitidos
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Incluir router de batch processing
@@ -112,7 +114,8 @@ async def health_check():
 )
 async def analyze_tdr(
     file: UploadFile = File(..., description="Archivo PDF del TDR"),
-    llm_provider: str = None
+    llm_provider: str = None,
+    auth: AuthContext = Depends(require_auth),
 ):
     """
     **Endpoint principal de análisis de TDR.**
@@ -195,7 +198,8 @@ async def analyze_tdr(
 )
 async def analyze_direccionamiento(
     file: UploadFile = File(..., description="Archivo PDF del TDR"),
-    llm_provider: str = None
+    llm_provider: str = None,
+    auth: AuthContext = Depends(require_auth),
 ):
     """
     **Análisis forense de direccionamiento en TDR.**
@@ -251,7 +255,10 @@ async def analyze_direccionamiento(
     tags=["Compatibility"],
     summary="Evalúa compatibilidad del TDR con el perfil de un suscriptor"
 )
-async def compatibility_score(request: CompatibilityScoreRequest):
+async def compatibility_score(
+    request: CompatibilityScoreRequest,
+    auth: AuthContext = Depends(require_auth),
+):
     try:
         result = await analyzer_service.evaluate_compatibility(request)
         return {
@@ -276,6 +283,7 @@ async def generate_proforma(
     file: UploadFile = File(None, description="Archivo PDF del TDR (opcional si se enviaron datos JSON)"),
     company_name: str = Form(""),
     company_copy: str = Form(""),
+    auth: AuthContext = Depends(require_auth),
 ):
     """
     **Generación de Proforma Técnica de Cotización.**
