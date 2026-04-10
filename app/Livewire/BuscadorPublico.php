@@ -120,6 +120,10 @@ class BuscadorPublico extends Component
     // Job async para PDFs pesados (≥500 KB sin análisis en caché).
     // Null = modo síncrono activo. Con valor = polling activo.
     public ?int $analisisJobArchivoId = null;
+    /** Timestamp Unix en que se despachó el Job (para timeout de seguridad). */
+    public ?int $analisisJobInicio = null;
+    /** Timeout máximo de polling en segundos (5 minutos). */
+    private const JOB_POLL_TIMEOUT = 300;
 
     public ?int $seguimientoEnCurso = null;
     public ?int $cotizandoEnCurso = null;
@@ -903,6 +907,7 @@ class BuscadorPublico extends Component
 
         $this->analizandoTdr = true;
         $this->analisisJobArchivoId = null;
+        $this->analisisJobInicio = null;
         $this->resultadoAnalisis = null;
         $this->analisisContrato = null;
         $this->analisisContratoId = null;
@@ -941,6 +946,7 @@ class BuscadorPublico extends Component
 
             if ($usarJob) {
                 $this->analisisJobArchivoId = $archivoPersistido->id;
+                $this->analisisJobInicio = time();
                 // Guardamos el contexto para reconstruirlo al completar el poll.
                 $this->analisisContratoId = $idContrato;
                 $this->analisisContratoSnapshot = $contratoSnapshot;
@@ -1012,6 +1018,22 @@ class BuscadorPublico extends Component
             return;
         }
 
+        // ── Safety timeout: si pasan 5 min sin resultado, abortar el poll ──
+        if ($this->analisisJobInicio && (time() - $this->analisisJobInicio) > self::JOB_POLL_TIMEOUT) {
+            Log::warning('BuscadorPublico: Job poll timeout', [
+                'contrato_archivo_id' => $this->analisisJobArchivoId,
+                'elapsed_seconds' => time() - $this->analisisJobInicio,
+            ]);
+            $this->analisisJobArchivoId = null;
+            $this->analisisJobInicio = null;
+            $this->analizandoTdr = false;
+            $this->notify(
+                'El análisis tardó demasiado. Verifica que el servicio de cola esté activo (queue:work) e intenta nuevamente.',
+                'error'
+            );
+            return;
+        }
+
         $terminado = TdrAnalisis::where('contrato_archivo_id', $this->analisisJobArchivoId)
             ->whereIn('estado', [TdrAnalisis::ESTADO_EXITOSO, TdrAnalisis::ESTADO_FALLIDO])
             ->where('tipo_analisis', TdrAnalisis::TIPO_GENERAL)
@@ -1024,6 +1046,7 @@ class BuscadorPublico extends Component
 
         $archivoId = $this->analisisJobArchivoId;
         $this->analisisJobArchivoId = null;
+        $this->analisisJobInicio = null;
         $this->analizandoTdr = false;
 
         if ($terminado->estado === TdrAnalisis::ESTADO_FALLIDO) {
