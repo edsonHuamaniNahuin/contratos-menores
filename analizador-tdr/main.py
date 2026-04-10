@@ -266,6 +266,7 @@ async def compatibility_score(
         return {
             "success": True,
             "data": result.model_dump(),
+            "token_usage": analyzer_service.last_token_usage,
             "timestamp": datetime.now().isoformat(),
         }
     except ValueError as e:
