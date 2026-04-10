@@ -15,13 +15,10 @@ from app.models.schemas import (
     ProformaItem,
 )
 from datetime import datetime
-import fitz
-import io
 import logging
 
 logger = logging.getLogger(__name__)
 MAX_RESUMEN_LENGTH = 1000
-MIN_CHARS_PER_PAGE = 200
 
 
 class TDRAnalyzerService:
@@ -76,19 +73,6 @@ class TDRAnalyzerService:
 
         self.logger.info(f"✓ Texto extraído: {len(full_text)} caracteres")
 
-        # Detectar PDF escaneado: si chars/página es muy bajo, enviar PDF directo al LLM
-        num_pages = self._get_page_count(pdf_bytes)
-        chars_per_page = len(full_text) / max(num_pages, 1)
-
-        if chars_per_page < MIN_CHARS_PER_PAGE and hasattr(llm_client, 'analyze_tdr_from_pdf'):
-            self.logger.warning(
-                f"⚠️ Texto insuficiente ({chars_per_page:.0f} chars/pág, {num_pages} págs) — "
-                f"posible PDF escaneado. Enviando PDF directo a Gemini (multimodal)..."
-            )
-            analysis_dict = await llm_client.analyze_tdr_from_pdf(pdf_bytes, "scanned.pdf")
-            analysis_dict = self._sanitize_llm_payload(analysis_dict)
-            return self._validate_response(analysis_dict)
-
         # Paso 2 y 3: Construir contexto para el LLM
         # Si el documento es pequeño (<5000 caracteres), enviar todo directamente sin RAG
         if len(full_text) < 5000:
@@ -133,13 +117,6 @@ class TDRAnalyzerService:
             and not penalidades
         )
         if is_empty_response:
-            # Fallback: si el LLM textual no extrajo nada, intentar con PDF directo
-            if hasattr(llm_client, 'analyze_tdr_from_pdf'):
-                self.logger.warning("⚠️ Respuesta vacía del LLM textual — reintentando con PDF directo (multimodal)...")
-                analysis_dict = await llm_client.analyze_tdr_from_pdf(pdf_bytes, "fallback.pdf")
-                analysis_dict = self._sanitize_llm_payload(analysis_dict)
-                return self._validate_response(analysis_dict)
-
             self.logger.error("El LLM no pudo extraer contenido — PDF posiblemente escaneado sin OCR disponible")
             raise ValueError(
                 "poco texto extraíble: el documento parece ser un PDF de imágenes escaneadas. "
@@ -198,17 +175,6 @@ class TDRAnalyzerService:
             self.logger.error(f"Error al validar respuesta del LLM: {str(e)}")
             self.logger.error(f"Respuesta recibida: {analysis_dict}")
             raise ValueError(f"La respuesta del LLM no cumple con el esquema esperado: {str(e)}")
-
-    @staticmethod
-    def _get_page_count(pdf_bytes: bytes) -> int:
-        """Obtiene el número de páginas del PDF usando PyMuPDF."""
-        try:
-            doc = fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf")
-            count = len(doc)
-            doc.close()
-            return count
-        except Exception:
-            return 1
 
     def _sanitize_compatibility_payload(self, payload: Dict) -> Dict:
         score = payload.get("score")

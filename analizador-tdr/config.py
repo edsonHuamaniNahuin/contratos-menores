@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     ocr_enabled: bool = True                   # Usa Tesseract OCR para imágenes (si está instalado)
     table_extraction_enabled: bool = True      # Detecta y extrae tablas con PyMuPDF
     min_image_size_bytes: int = 5000           # Bytes mínimos para procesar una imagen (filtra íconos)
+    tesseract_cmd: str = ""                    # Ruta completa a tesseract (si no está en PATH)
 
     # Procesamiento Asíncrono (para scraper: 3-10 docs/40min = 360 docs/día)
     max_concurrent_requests: int = 3

@@ -39,6 +39,11 @@ class TesseractOCRProcessor(OCRProcessorContract):
 
         try:
             import pytesseract
+            from config import settings
+
+            # Usar ruta configurada si existe (para entornos donde Tesseract no está en PATH)
+            if settings.tesseract_cmd:
+                pytesseract.pytesseract.tesseract_cmd = settings.tesseract_cmd
 
             pytesseract.get_tesseract_version()
             self._available = True
