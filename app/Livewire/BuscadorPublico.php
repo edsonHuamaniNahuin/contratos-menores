@@ -945,10 +945,12 @@ class BuscadorPublico extends Component
                 return;
             }
 
-            // ── PDF pesado (≥500 KB sin caché) → Job async ───────────────────
-            // Evita que la petición Livewire quede bloqueada durante el OCR.
+            // ── PDF (≥ umbral configurable sin caché) → Job async ─────────────────
+            // En producción TDR_ASYNC_MIN_SIZE_BYTES=0 → SIEMPRE async.
+            // En local con worker desactivado → solo grandes van al job.
+            $asyncMinSize = (int) config('tdr.async_min_size_bytes', 500_000);
             $tamano = $archivoPersistido->tamano_bytes ?? 0;
-            $usarJob = $tamano >= 500_000 && config('queue.default') !== 'sync';
+            $usarJob = $tamano >= $asyncMinSize && config('queue.default') !== 'sync';
 
             if ($usarJob) {
                 $this->analisisJobArchivoId = $archivoPersistido->id;

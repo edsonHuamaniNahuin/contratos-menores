@@ -184,6 +184,7 @@ nano .env   # Editar con datos de producción
 # TELEGRAM_CHAT_ID=tu_chat_id
 # ANALIZADOR_TDR_URL=http://127.0.0.1:8001
 # ANALIZADOR_TDR_ENABLED=true
+# TDR_ASYNC_MIN_SIZE_BYTES=0   # En producción: 0 = SIEMPRE Job async
 
 # Generar key y migrar
 php artisan key:generate
