@@ -163,6 +163,8 @@ class TdrPersistenceService
 
         $data = [
             'estado' => TdrAnalisis::ESTADO_EXITOSO,
+            'requested_by_user_id' => $meta['requested_by_user_id'] ?? null,
+            'origin' => $meta['origin'] ?? null,
             'contexto_contrato' => $contextoContrato,
             'resumen' => $normalizado,
             'payload' => $payload,

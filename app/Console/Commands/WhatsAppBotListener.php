@@ -392,6 +392,11 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
 
     // ─── Análisis TDR ───────────────────────────────────────────────
 
+    protected function resolveUserIdFromPhone(string $phoneNumber): ?int
+    {
+        return WhatsAppSubscription::where('phone_number', $phoneNumber)->value('user_id');
+    }
+
     protected function analizarProcesoParaUsuario(
         string $phoneNumber,
         int $idContrato,
@@ -406,7 +411,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp');
+            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp')->withUserId($this->resolveUserIdFromPhone($phoneNumber));
 
             // Recuperar contexto completo del contrato (cacheado al enviar la notificación)
             $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
@@ -549,7 +554,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp');
+            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp')->withUserId($this->resolveUserIdFromPhone($phoneNumber));
             $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
             $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 
@@ -843,7 +848,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         );
 
         // Obtener análisis IA
-        $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp');
+        $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp')->withUserId($subscription->user_id);
         $cuenta = CuentaSeace::activa()->first();
         $contextoContrato = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 
@@ -1076,7 +1081,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             $companyCopy = $profile->company_copy;
 
             // ── Generar proforma via TdrAnalysisService ───────────────────
-            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp');
+            $tdrService = (new TdrAnalysisService())->withOrigin('whatsapp')->withUserId($subscription->user_id);
             $cachedContrato = Cache::get($this->contratoCachePrefix . $idContrato);
             $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 

@@ -45,7 +45,7 @@ class AnalizarTdrJob implements ShouldQueue
 
         set_time_limit(0);
 
-        $resultado = $tdrService->withOrigin('job')->analizarArchivoLocal(
+        $resultado = $tdrService->withOrigin('job')->withUserId($this->userId)->analizarArchivoLocal(
             archivoPersistido: $this->archivo,
             contratoData: $this->contratoData,
             target: 'buscador',

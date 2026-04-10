@@ -374,6 +374,11 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
      * Analizar proceso y enviar resultado al usuario
      * OPTIMIZADO: Ya no consulta SEACE para listar archivos - recibe datos directamente del callback
      */
+    protected function resolveUserIdFromChatId(string $chatId): ?int
+    {
+        return TelegramSubscription::where('chat_id', $chatId)->value('user_id');
+    }
+
     protected function analizarProcesoParaUsuario(
         string $chatId,
         int $idContrato,
@@ -389,7 +394,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $tdrService = (new TdrAnalysisService())->withOrigin('telegram');
+            $tdrService = (new TdrAnalysisService())->withOrigin('telegram')->withUserId($this->resolveUserIdFromChatId($chatId));
 
             // Recuperar contexto completo del contrato (cacheado al enviar la notificación)
             $cachedContrato = $this->getCachedContratoPayload($idContrato);
@@ -496,7 +501,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $tdrService = (new TdrAnalysisService())->withOrigin('telegram');
+            $tdrService = (new TdrAnalysisService())->withOrigin('telegram')->withUserId($this->resolveUserIdFromChatId($chatId));
             $cachedContrato = $this->getCachedContratoPayload($idContrato);
             $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 
@@ -1015,7 +1020,8 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             $idContrato,
             $idContratoArchivo,
             $nombreArchivo,
-            $cachedContrato
+            $cachedContrato,
+            $subscription->user_id
         );
 
         if (!($analisis['success'] ?? false)) {
@@ -1091,9 +1097,10 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         int $idContrato,
         int $idContratoArchivo,
         string $nombreArchivo,
-        ?array $contratoCache = null
+        ?array $contratoCache = null,
+        ?int $userId = null
     ): array {
-        $tdrService = (new TdrAnalysisService())->withOrigin('telegram');
+        $tdrService = (new TdrAnalysisService())->withOrigin('telegram')->withUserId($userId);
         $cuenta = CuentaSeace::activa()->first();
         $contextoContrato = array_merge(['idContrato' => $idContrato], $contratoCache ?? []);
 
@@ -1350,7 +1357,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             );
 
             // ── Generar proforma via TdrAnalysisService ───────────────────
-            $tdrService = new TdrAnalysisService();
+            $tdrService = (new TdrAnalysisService())->withOrigin('telegram')->withUserId($subscription->user_id);
             $cachedContrato = $this->getCachedContratoPayload($idContrato);
             $contratoData = array_merge(['idContrato' => $idContrato], $cachedContrato ?? []);
 

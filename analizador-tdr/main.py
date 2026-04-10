@@ -175,6 +175,7 @@ async def analyze_tdr(
         return {
             "success": True,
             "data": result.model_dump(),  # Convertir Pydantic a dict
+            "token_usage": analyzer_service.last_token_usage,
             "timestamp": datetime.now().isoformat(),
             "filename": file.filename
         }
@@ -238,6 +239,7 @@ async def analyze_direccionamiento(
         return {
             "success": True,
             "data": result.model_dump(),
+            "token_usage": analyzer_service.last_token_usage,
             "timestamp": datetime.now().isoformat(),
             "filename": file.filename
         }
@@ -334,6 +336,7 @@ async def generate_proforma(
         return {
             "success": True,
             "data": result.model_dump(),
+            "token_usage": analyzer_service.last_token_usage,
             "timestamp": datetime.now().isoformat(),
             "filename": file.filename,
         }

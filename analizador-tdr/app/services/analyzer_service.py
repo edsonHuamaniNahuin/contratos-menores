@@ -30,6 +30,7 @@ class TDRAnalyzerService:
         self.pdf_processor = PDFProcessorService()
         self.rag_extractor = RAGExtractionService()
         self.logger = logger
+        self.last_token_usage: Dict = {}
 
     async def analyze_tdr_document(
         self,
@@ -100,6 +101,9 @@ class TDRAnalyzerService:
         # Paso 4: Analizar con el LLM usando texto enriquecido
         self.logger.info(f"Paso 4/4: Analizando con LLM (provider: {llm_provider or 'default'})...")
         analysis_dict = await llm_client.analyze_tdr(context)
+
+        # Extraer token usage antes de validar con Pydantic
+        self.last_token_usage = analysis_dict.pop('_token_usage', {})
 
         # Asegurar que el payload cumpla con límites antes de validar
         analysis_dict = self._sanitize_llm_payload(analysis_dict)
@@ -241,6 +245,7 @@ class TDRAnalyzerService:
         # Paso 4: Analizar con prompt forense
         self.logger.info("🔍 Analizando direccionamiento con LLM...")
         analysis_dict = await llm_client.analyze_direccionamiento(context)
+        self.last_token_usage = analysis_dict.pop('_token_usage', {})
         analysis_dict = self._sanitize_direccionamiento_payload(analysis_dict)
 
         # Paso 5: Validar con Pydantic
@@ -377,6 +382,7 @@ class TDRAnalyzerService:
             company_copy,
             contrato_contexto,
         )
+        self.last_token_usage = raw.pop('_token_usage', {})
         sanitized = self._sanitize_proforma_payload(raw)
 
         try:

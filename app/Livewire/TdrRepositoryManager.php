@@ -7,6 +7,7 @@ use App\Models\CuentaSeace;
 use App\Services\Tdr\TdrDocumentService;
 use App\Services\Tdr\TdrPersistenceService;
 use App\Services\TdrAnalysisService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -94,7 +95,7 @@ class TdrRepositoryManager extends Component
                 return;
             }
 
-            $servicio = new TdrAnalysisService();
+            $servicio = (new TdrAnalysisService())->withUserId(Auth::id());
             $resultado = $servicio->analizarDesdeSeace(
                 $archivo->id_archivo_seace,
                 $archivo->nombre_original,

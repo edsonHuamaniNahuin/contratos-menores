@@ -87,6 +87,21 @@ class GeminiClient(BaseLLMClient):
 
         return ""
 
+    @staticmethod
+    def _extract_token_usage(response) -> dict:
+        """Extrae conteo de tokens del usage_metadata de la respuesta de Gemini."""
+        try:
+            meta = getattr(response, "usage_metadata", None)
+            if meta:
+                return {
+                    "prompt_tokens": getattr(meta, "prompt_token_count", 0) or 0,
+                    "completion_tokens": getattr(meta, "candidates_token_count", 0) or 0,
+                    "total_tokens": getattr(meta, "total_token_count", 0) or 0,
+                }
+        except Exception:
+            pass
+        return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
     async def analyze_tdr(self, context: str) -> Dict:
         """
         Analiza el TDR usando Gemini 2.5/3 Flash con JSON Schema enforced.
@@ -119,11 +134,14 @@ TDR:
             # Generar respuesta con JSON Schema enforced
             response = await self._generate_content(user_prompt)
             response_text = self._extract_text(response).strip()
+            token_usage = self._extract_token_usage(response)
 
             self.logger.debug(f"Respuesta del LLM (primeros 500 chars): {response_text[:500]}")
+            self.logger.info(f"📊 Tokens: prompt={token_usage['prompt_tokens']}, respuesta={token_usage['completion_tokens']}, total={token_usage['total_tokens']}")
 
             # Parsear JSON (debe ser válido gracias al schema)
             result = self._parse_json_response(response_text)
+            result["_token_usage"] = token_usage
 
             self.logger.info("✅ Análisis completado exitosamente con Gemini")
 
@@ -187,9 +205,12 @@ Reglas:
 
             # Parsear respuesta
             response_text = self._extract_text(response).strip()
+            token_usage = self._extract_token_usage(response)
             self.logger.debug(f"Respuesta (primeros 500 chars): {response_text[:500]}")
+            self.logger.info(f"📊 Tokens: prompt={token_usage['prompt_tokens']}, respuesta={token_usage['completion_tokens']}, total={token_usage['total_tokens']}")
 
             result = self._parse_json_response(response_text)
+            result["_token_usage"] = token_usage
             self.logger.info("✅ Análisis PDF inline completado exitosamente")
 
             return result
@@ -209,8 +230,11 @@ Reglas:
             prompt = self._build_compatibility_prompt(company_copy, analisis_tdr, contrato_contexto, keywords)
             response = await self._generate_content(prompt)
             response_text = self._extract_text(response).strip()
+            token_usage = self._extract_token_usage(response)
             self.logger.debug(f"Compatibilidad Gemini (primeros 400 chars): {response_text[:400]}")
-            return self._parse_json_response(response_text)
+            result = self._parse_json_response(response_text)
+            result["_token_usage"] = token_usage
+            return result
         except Exception as e:
             self.logger.error(f"❌ Error en compatibilidad Gemini: {str(e)}")
             raise ValueError(f"Error al evaluar compatibilidad: {str(e)}")
@@ -264,9 +288,11 @@ TDR:
                 )
 
             response_text = self._extract_text(response).strip()
+            token_usage = self._extract_token_usage(response)
             self.logger.debug(f"Direccionamiento Gemini (primeros 500 chars): {response_text[:500]}")
 
             result = self._parse_json_response(response_text)
+            result["_token_usage"] = token_usage
             self.logger.info("✅ Análisis de direccionamiento completado con Gemini")
             return result
 
@@ -367,9 +393,11 @@ TDR:
                 )
 
             response_text = self._extract_text(response).strip()
+            token_usage = self._extract_token_usage(response)
             self.logger.debug(f"Proforma Gemini (primeros 500 chars): {response_text[:500]}")
 
             result = self._parse_json_response(response_text)
+            result["_token_usage"] = token_usage
             self.logger.info("✅ Proforma técnica generada con Gemini")
             return result
 

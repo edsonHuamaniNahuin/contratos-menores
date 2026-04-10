@@ -161,6 +161,7 @@ class BuscadorPublico extends Component
         $this->archivoService = $archivoService;
         $this->publicTdrService = $publicTdrService;
         $this->tdrAnalysisService = $tdrAnalysisService;
+        $this->tdrAnalysisService->withUserId(Auth::id());
         $this->compatibilityService = $compatibilityService;
     }
 
