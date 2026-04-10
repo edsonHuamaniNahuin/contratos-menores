@@ -124,6 +124,10 @@ class BuscadorPublico extends Component
     public ?int $analisisJobInicio = null;
     /** Timeout máximo de polling en segundos (5 minutos). */
     private const JOB_POLL_TIMEOUT = 300;
+    /** Segundos antes de avisar que el queue worker puede no estar activo. */
+    private const JOB_WORKER_WARN_SECONDS = 45;
+    /** Evitar mostrar la advertencia de worker más de una vez por análisis. */
+    public bool $workerWarnMostrado = false;
 
     public ?int $seguimientoEnCurso = null;
     public ?int $cotizandoEnCurso = null;
@@ -909,6 +913,7 @@ class BuscadorPublico extends Component
         $this->analizandoTdr = true;
         $this->analisisJobArchivoId = null;
         $this->analisisJobInicio = null;
+        $this->workerWarnMostrado = false;
         $this->resultadoAnalisis = null;
         $this->analisisContrato = null;
         $this->analisisContratoId = null;
@@ -1019,14 +1024,34 @@ class BuscadorPublico extends Component
             return;
         }
 
+        $elapsed = $this->analisisJobInicio ? (time() - $this->analisisJobInicio) : 0;
+
+        // ── Detección temprana: worker no activo (45s sin procesar el job) ──
+        if (!$this->workerWarnMostrado && $elapsed > self::JOB_WORKER_WARN_SECONDS) {
+            $hayJobsPendientes = \DB::table('jobs')->whereNull('reserved_at')->exists();
+            if ($hayJobsPendientes) {
+                $this->workerWarnMostrado = true;
+                Log::warning('BuscadorPublico: posible queue worker inactivo', [
+                    'contrato_archivo_id' => $this->analisisJobArchivoId,
+                    'elapsed_seconds' => $elapsed,
+                ]);
+                $this->notify(
+                    '⚠️ El análisis está en cola pero el queue worker puede no estar activo. Ejecuta: php artisan queue:work',
+                    'warning'
+                );
+                // No abortamos — seguimos esperando por si el usuario lo inicia.
+            }
+        }
+
         // ── Safety timeout: si pasan 5 min sin resultado, abortar el poll ──
-        if ($this->analisisJobInicio && (time() - $this->analisisJobInicio) > self::JOB_POLL_TIMEOUT) {
+        if ($elapsed > self::JOB_POLL_TIMEOUT) {
             Log::warning('BuscadorPublico: Job poll timeout', [
                 'contrato_archivo_id' => $this->analisisJobArchivoId,
-                'elapsed_seconds' => time() - $this->analisisJobInicio,
+                'elapsed_seconds' => $elapsed,
             ]);
             $this->analisisJobArchivoId = null;
             $this->analisisJobInicio = null;
+            $this->workerWarnMostrado = false;
             $this->analizandoTdr = false;
             $this->notify(
                 'El análisis tardó demasiado. Verifica que el servicio de cola esté activo (queue:work) e intenta nuevamente.',
