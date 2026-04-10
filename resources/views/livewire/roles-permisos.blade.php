@@ -33,6 +33,7 @@
                         <th class="text-left py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Usuario</th>
                         <th class="text-left py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Email</th>
                         <th class="text-left py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Rol</th>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
@@ -53,6 +54,23 @@
                                         <option value="{{ $role['id'] }}">{{ $role['name'] }}</option>
                                     @endforeach
                                 </select>
+                            </td>
+                            <td class="py-3 px-4">
+                                @if($user->id !== auth()->id())
+                                    <button
+                                        x-data
+                                        x-on:click="
+                                            if (confirm('¿Seguro que deseas dar de baja a {{ addslashes($user->name) }}? El usuario perderá acceso al sistema.')) {
+                                                $wire.darDeBaja({{ $user->id }})
+                                            }
+                                        "
+                                        class="px-3 py-1.5 rounded-full border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors"
+                                    >
+                                        Dar de baja
+                                    </button>
+                                @else
+                                    <span class="text-xs text-neutral-300 italic">Tú</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

@@ -213,4 +213,30 @@ class RolesPermisos extends Component
         $adminCount = User::whereHas('roles', fn ($q) => $q->where('roles.id', $adminRole->id))->count();
         return $adminCount <= 1;
     }
+
+    public function darDeBaja(int $userId): void
+    {
+        // No puede darse de baja a sí mismo
+        if ($userId === Auth::id()) {
+            $this->errorMessage = 'No puedes darte de baja a ti mismo.';
+            return;
+        }
+
+        $user = User::findOrFail($userId);
+
+        // Proteger al último administrador
+        $adminRole = Role::where('slug', 'admin')->first();
+        if ($adminRole && $user->hasRole('admin')) {
+            $adminCount = User::whereHas('roles', fn ($q) => $q->where('roles.id', $adminRole->id))->count();
+            if ($adminCount <= 1) {
+                $this->errorMessage = 'No puedes dar de baja al único administrador del sistema.';
+                return;
+            }
+        }
+
+        $user->delete(); // Soft delete — preserva datos históricos
+
+        session()->flash('success', "✅ Usuario \"{$user->name}\" dado de baja correctamente.");
+        $this->loadRolesAndPermissions();
+    }
 }
