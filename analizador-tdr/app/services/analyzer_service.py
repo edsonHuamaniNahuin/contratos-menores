@@ -15,10 +15,13 @@ from app.models.schemas import (
     ProformaItem,
 )
 from datetime import datetime
+import fitz
+import io
 import logging
 
 logger = logging.getLogger(__name__)
 MAX_RESUMEN_LENGTH = 1000
+MIN_CHARS_PER_PAGE = 200
 
 
 class TDRAnalyzerService:
@@ -61,21 +64,48 @@ class TDRAnalyzerService:
 
         llm_client = LLMFactory.create_client(llm_provider)
 
-        # ESTRATEGIA: Extracción local inteligente → texto enriquecido → LLM
-        # Evita enviar el PDF completo al LLM (ahorro de tokens a escala)
-        self.logger.info("📄 Extrayendo contenido con SmartPDFReaderPipeline (texto + tablas + OCR)...")
+        # Paso 1: Detección ultrarrápida — PyMuPDF directo, cero OCR (~0.3s)
+        self.logger.info("Paso 1/4: Detectando tipo de PDF (nativo vs escaneado)...")
+        detect_text = self._extract_native_text(pdf_bytes)
+        num_pages = self._get_page_count(pdf_bytes)
+        chars_per_page = len(detect_text) / max(num_pages, 1)
 
-        # Paso 1: Extraer texto con pipeline inteligente (método SÍNCRONO)
-        self.logger.info("Paso 1/4: Extrayendo contenido del PDF...")
+        self.logger.info(
+            f"✓ Detección: {len(detect_text)} chars, "
+            f"{num_pages} págs, {chars_per_page:.0f} chars/pág"
+        )
+
+        # ── Estrategia híbrida ─────────────────────────────────────────────
+        # PDF nativo (≥200 chars/pág): texto + tablas → RAG → LLM
+        # PDF escaneado (<200 chars/pág): PDF directo → Gemini multimodal
+        #   Salta extract_text_from_pdf y Tesseract por completo.
+        use_multimodal = (
+            chars_per_page < MIN_CHARS_PER_PAGE
+            and hasattr(llm_client, 'analyze_tdr_from_pdf')
+        )
+
+        if use_multimodal:
+            self.logger.info(
+                f"📸 PDF escaneado ({chars_per_page:.0f} chars/pág) "
+                f"— multimodal directo, sin OCR, sin Tesseract..."
+            )
+            analysis_dict = await llm_client.analyze_tdr_from_pdf(pdf_bytes, "document.pdf")
+            self.last_token_usage = analysis_dict.pop('_token_usage', {})
+            analysis_dict = self._sanitize_llm_payload(analysis_dict)
+            return self._validate_response(analysis_dict)
+
+        # ── Camino texto nativo ────────────────────────────────────────────
+        # Solo llegamos aquí si el PDF tiene texto seleccionable.
+        # Ejecutar pipeline completo (texto + tablas). OCR desactivado via env.
+        self.logger.info("📄 PDF nativo — extrayendo texto + tablas (sin OCR)...")
         full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
 
         if len(full_text) < 100:
             raise ValueError("El PDF contiene muy poco texto para analizar")
 
-        self.logger.info(f"✓ Texto extraído: {len(full_text)} caracteres")
+        self.logger.info(f"✓ Texto completo: {len(full_text)} chars")
 
         # Paso 2 y 3: Construir contexto para el LLM
-        # Si el documento es pequeño (<5000 caracteres), enviar todo directamente sin RAG
         if len(full_text) < 5000:
             self.logger.info("⚡ Documento pequeño detectado, enviando texto completo al LLM (sin RAG)...")
             context = f"""DOCUMENTO COMPLETO DEL TDR:
@@ -121,6 +151,16 @@ class TDRAnalyzerService:
             and not penalidades
         )
         if is_empty_response:
+            # Fallback: si el LLM textual no extrajo nada, reintentar con multimodal
+            if hasattr(llm_client, 'analyze_tdr_from_pdf'):
+                self.logger.warning(
+                    "⚠️ Respuesta vacía del LLM textual — reintentando con PDF directo (multimodal)..."
+                )
+                analysis_dict = await llm_client.analyze_tdr_from_pdf(pdf_bytes, "fallback.pdf")
+                self.last_token_usage = analysis_dict.pop('_token_usage', {})
+                analysis_dict = self._sanitize_llm_payload(analysis_dict)
+                return self._validate_response(analysis_dict)
+
             self.logger.error("El LLM no pudo extraer contenido — PDF posiblemente escaneado sin OCR disponible")
             raise ValueError(
                 "poco texto extraíble: el documento parece ser un PDF de imágenes escaneadas. "
@@ -180,6 +220,30 @@ class TDRAnalyzerService:
             self.logger.error(f"Respuesta recibida: {analysis_dict}")
             raise ValueError(f"La respuesta del LLM no cumple con el esquema esperado: {str(e)}")
 
+    @staticmethod
+    def _extract_native_text(pdf_bytes: bytes) -> str:
+        """Extrae solo texto nativo del PDF via PyMuPDF (cero OCR, ~0.3s).
+        Usado para detectar si el PDF es escaneado sin invocar Tesseract.
+        """
+        try:
+            doc = fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf")
+            text = "\n".join(page.get_text() for page in doc)
+            doc.close()
+            return text
+        except Exception:
+            return ""
+
+    @staticmethod
+    def _get_page_count(pdf_bytes: bytes) -> int:
+        """Obtiene el número de páginas del PDF usando PyMuPDF."""
+        try:
+            doc = fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf")
+            count = len(doc)
+            doc.close()
+            return count
+        except Exception:
+            return 1
+
     def _sanitize_compatibility_payload(self, payload: Dict) -> Dict:
         score = payload.get("score")
         try:
@@ -217,21 +281,53 @@ class TDRAnalyzerService:
     ) -> DireccionamientoAnalysisResponse:
         """
         Pipeline de análisis forense de direccionamiento.
-        Reutiliza la extracción de texto (SmartPDFReaderPipeline + RAG)
-        pero usa el prompt forense para detectar corrupción.
+        Estrategia híbrida: multimodal para escaneados, texto+RAG para nativos.
         """
         self.logger.info("=== INICIANDO PIPELINE DE DIRECCIONAMIENTO ===")
 
         llm_client = LLMFactory.create_client(llm_provider)
 
-        # Paso 1: Extraer texto (mismo pipeline que análisis general)
-        self.logger.info("📄 Extrayendo contenido con SmartPDFReaderPipeline...")
+        # Paso 1: Detección ultrarrápida — PyMuPDF directo (~0.3s)
+        self.logger.info("Paso 1: Detectando tipo de PDF (nativo vs escaneado)...")
+        detect_text = self._extract_native_text(pdf_bytes)
+        num_pages = self._get_page_count(pdf_bytes)
+        chars_per_page = len(detect_text) / max(num_pages, 1)
+
+        self.logger.info(
+            f"✓ Detección: {len(detect_text)} chars, "
+            f"{num_pages} págs, {chars_per_page:.0f} chars/pág"
+        )
+
+        # ── Estrategia híbrida ─────────────────────────────────────────────
+        use_multimodal = (
+            chars_per_page < MIN_CHARS_PER_PAGE
+            and hasattr(llm_client, 'analyze_direccionamiento_from_pdf')
+        )
+
+        if use_multimodal:
+            self.logger.info(
+                f"📸 PDF escaneado ({chars_per_page:.0f} chars/pág) "
+                f"— direccionamiento multimodal directo, sin OCR..."
+            )
+            analysis_dict = await llm_client.analyze_direccionamiento_from_pdf(pdf_bytes, "document.pdf")
+            self.last_token_usage = analysis_dict.pop('_token_usage', {})
+            analysis_dict = self._sanitize_direccionamiento_payload(analysis_dict)
+            try:
+                validated = DireccionamientoAnalysisResponse(**analysis_dict)
+                self.logger.info(f"✅ Direccionamiento multimodal — Score: {validated.score_riesgo_corrupcion}, Veredicto: {validated.veredicto_flash}")
+                return validated
+            except Exception as e:
+                self.logger.error(f"Error al validar respuesta de direccionamiento: {str(e)}")
+                raise ValueError(f"Respuesta del LLM no cumple esquema: {str(e)}")
+
+        # ── Camino texto nativo ────────────────────────────────────────────
+        self.logger.info("📄 PDF nativo — extrayendo texto + tablas (sin OCR)...")
         full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
 
         if len(full_text) < 100:
             raise ValueError("El PDF contiene muy poco texto para analizar")
 
-        self.logger.info(f"✓ Texto extraído: {len(full_text)} caracteres")
+        self.logger.info(f"✓ Texto completo: {len(full_text)} caracteres")
 
         # Paso 2-3: Construir contexto (mismo que análisis general)
         if len(full_text) < 5000:
@@ -247,6 +343,17 @@ class TDRAnalyzerService:
         analysis_dict = await llm_client.analyze_direccionamiento(context)
         self.last_token_usage = analysis_dict.pop('_token_usage', {})
         analysis_dict = self._sanitize_direccionamiento_payload(analysis_dict)
+
+        # Fallback: si el análisis textual falla, reintentar con multimodal
+        score = analysis_dict.get("score_riesgo_corrupcion", 0)
+        hallazgos = analysis_dict.get("hallazgos_criticos", [])
+        argumento = analysis_dict.get("argumento_para_observacion", "")
+        is_empty = score == 0 and not hallazgos and len(argumento) < 30
+        if is_empty and hasattr(llm_client, 'analyze_direccionamiento_from_pdf'):
+            self.logger.warning("⚠️ Respuesta vacía del LLM textual — reintentando con multimodal...")
+            analysis_dict = await llm_client.analyze_direccionamiento_from_pdf(pdf_bytes, "fallback.pdf")
+            self.last_token_usage = analysis_dict.pop('_token_usage', {})
+            analysis_dict = self._sanitize_direccionamiento_payload(analysis_dict)
 
         # Paso 5: Validar con Pydantic
         try:
@@ -350,20 +457,55 @@ class TDRAnalyzerService:
     ) -> ProformaResponse:
         """
         Pipeline de generación de proforma técnica de cotización.
-        Reutiliza la extracción de texto y construye el prompt con el perfil de empresa.
+        Estrategia híbrida: multimodal para escaneados, texto+RAG para nativos.
         """
         self.logger.info("=== INICIANDO PIPELINE DE PROFORMA TÉCNICA ===")
 
         llm_client = LLMFactory.create_client(llm_provider)
 
-        # Paso 1: Extraer texto del PDF
-        self.logger.info("📄 Extrayendo contenido del PDF para proforma...")
+        # Paso 1: Detección ultrarrápida — PyMuPDF directo (~0.3s)
+        self.logger.info("Paso 1: Detectando tipo de PDF (nativo vs escaneado)...")
+        detect_text = self._extract_native_text(pdf_bytes)
+        num_pages = self._get_page_count(pdf_bytes)
+        chars_per_page = len(detect_text) / max(num_pages, 1)
+
+        self.logger.info(
+            f"✓ Detección: {len(detect_text)} chars, "
+            f"{num_pages} págs, {chars_per_page:.0f} chars/pág"
+        )
+
+        # ── Estrategia híbrida ─────────────────────────────────────────────
+        use_multimodal = (
+            chars_per_page < MIN_CHARS_PER_PAGE
+            and hasattr(llm_client, 'generate_proforma_from_pdf')
+        )
+
+        if use_multimodal:
+            self.logger.info(
+                f"📸 PDF escaneado ({chars_per_page:.0f} chars/pág) "
+                f"— proforma multimodal directo, sin OCR..."
+            )
+            raw = await llm_client.generate_proforma_from_pdf(
+                pdf_bytes, "document.pdf", company_name, company_copy, contrato_contexto
+            )
+            self.last_token_usage = raw.pop('_token_usage', {})
+            sanitized = self._sanitize_proforma_payload(raw)
+            try:
+                validated = ProformaResponse(**sanitized)
+                self.logger.info(f"✅ Proforma multimodal — {len(validated.items)} ítems")
+                return validated
+            except Exception as e:
+                self.logger.error(f"Error al validar proforma multimodal: {str(e)}")
+                raise ValueError(f"Respuesta del LLM no cumple esquema de proforma: {str(e)}")
+
+        # ── Camino texto nativo ────────────────────────────────────────────
+        self.logger.info("📄 PDF nativo — extrayendo texto + tablas (sin OCR)...")
         full_text = self.pdf_processor.extract_text_from_pdf(pdf_bytes)
 
         if len(full_text) < 50:
             raise ValueError("El PDF contiene muy poco texto para generar la proforma")
 
-        self.logger.info(f"✓ Texto extraído: {len(full_text)} caracteres")
+        self.logger.info(f"✓ Texto completo: {len(full_text)} caracteres")
 
         # Paso 2-3: Construir contexto (mismo pipeline que análisis general)
         if len(full_text) < 5000:
@@ -384,6 +526,15 @@ class TDRAnalyzerService:
         )
         self.last_token_usage = raw.pop('_token_usage', {})
         sanitized = self._sanitize_proforma_payload(raw)
+
+        # Fallback: si la proforma textual no tiene ítems, reintentar con multimodal
+        if not sanitized.get("items") and hasattr(llm_client, 'generate_proforma_from_pdf'):
+            self.logger.warning("⚠️ Proforma vacía del LLM textual — reintentando con multimodal...")
+            raw = await llm_client.generate_proforma_from_pdf(
+                pdf_bytes, "fallback.pdf", company_name, company_copy, contrato_contexto
+            )
+            self.last_token_usage = raw.pop('_token_usage', {})
+            sanitized = self._sanitize_proforma_payload(raw)
 
         try:
             validated = ProformaResponse(**sanitized)
