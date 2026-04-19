@@ -412,3 +412,162 @@ TDR:
                 "analisis_viabilidad": f"Error al generar proforma: {str(e)}",
                 "condiciones": [],
             }
+
+    async def analyze_direccionamiento_from_pdf(self, pdf_bytes: bytes, filename: str) -> Dict:
+        """Análisis forense de direccionamiento enviando el PDF directo a Gemini multimodal."""
+        try:
+            self.logger.info(f"🔍📄 Direccionamiento multimodal con Gemini ({self.model_name})")
+
+            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
+
+            forensic_config = types.GenerateContentConfig(
+                temperature=0.15,
+                top_p=0.95,
+                top_k=40,
+                max_output_tokens=16384,
+                response_mime_type="application/json",
+                system_instruction=self.FORENSIC_SYSTEM_PROMPT,
+                safety_settings=self.generation_config.safety_settings,
+            )
+
+            user_prompt = f"""
+Analiza este TDR/ET del SEACE (Perú) buscando indicios de direccionamiento y corrupción.
+Responde ÚNICAMENTE con un JSON que siga este esquema:
+{self.FORENSIC_JSON_TEMPLATE.strip()}
+
+Reglas ESTRICTAS:
+- score_riesgo_corrupcion: entero 0-100. 0=sin indicios, 100=direccionamiento evidente.
+- veredicto_flash: "LIMPIO" si score<30, "SOSPECHOSO" si 30-69, "ALTAMENTE DIRECCIONADO" si >=70.
+- hallazgos_criticos: lista de hallazgos. Puede ser vacía si score<30. Máximo 8 hallazgos.
+- Cada hallazgo DEBE usar EXACTAMENTE estos valores:
+  * categoria: "Técnica" | "Experiencia" | "Personal" | "Puntaje" | "Fraccionamiento" | "Otra"
+  * nivel_de_gravedad: "Alto" | "Medio" | "Bajo"
+- argumento_para_observacion: texto legal/técnico formal para presentar observación ante el Comité de Selección.
+- No incluyas texto fuera del JSON.
+"""
+
+            if hasattr(self.client, "aio"):
+                response = await self.client.aio.models.generate_content(
+                    model=self.model_name,
+                    contents=[user_prompt, pdf_part],
+                    config=forensic_config,
+                )
+            else:
+                import asyncio
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model=self.model_name,
+                    contents=[user_prompt, pdf_part],
+                    config=forensic_config,
+                )
+
+            response_text = self._extract_text(response).strip()
+            token_usage = self._extract_token_usage(response)
+
+            result = self._parse_json_response(response_text)
+            result["_token_usage"] = token_usage
+            self.logger.info("✅ Direccionamiento multimodal completado")
+            return result
+
+        except Exception as e:
+            self.logger.error(f"❌ Error en direccionamiento multimodal: {str(e)}")
+            raise ValueError(f"Error en análisis direccionamiento PDF directo: {str(e)}")
+
+    async def generate_proforma_from_pdf(
+        self,
+        pdf_bytes: bytes,
+        filename: str,
+        company_name: str,
+        company_copy: str,
+        contrato_contexto=None,
+    ) -> Dict:
+        """Genera proforma técnica enviando el PDF directo a Gemini multimodal."""
+        try:
+            self.logger.info(f"📋📄 Proforma multimodal con Gemini ({self.model_name})")
+
+            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
+
+            nombre_empresa = company_name.strip() or "Mi Empresa"
+            entidad = ""
+            objeto = ""
+            if contrato_contexto:
+                entidad = contrato_contexto.get("nomEntidad") or contrato_contexto.get("entidad") or ""
+                objeto = (
+                    contrato_contexto.get("desObjetoContrato")
+                    or contrato_contexto.get("nomObjetoContrato")
+                    or contrato_contexto.get("objeto")
+                    or ""
+                )
+
+            proforma_config = types.GenerateContentConfig(
+                temperature=0.3,
+                top_p=0.95,
+                max_output_tokens=8192,
+                response_mime_type="application/json",
+                safety_settings=self.generation_config.safety_settings,
+            )
+
+            user_prompt = f"""
+### ROLE: SENIOR PRICING ANALYST & BID MANAGER (PERUVIAN GOV SPECIALIST)
+Actúa como Director de Operaciones de "{nombre_empresa}".
+Especialidad de la empresa: "{company_copy}"
+{"Entidad convocante: " + entidad if entidad else ""}
+{"Objeto del proceso: " + objeto if objeto else ""}
+
+Basándote en el TDR adjunto (PDF), genera una PROFORMA TÉCNICA DE COTIZACIÓN con:
+1. Una tabla de ítems con cantidades, unidades y precios estimados en soles peruanos (S/)
+2. Un análisis de viabilidad operativa breve
+3. Condiciones y supuestos del presupuesto
+
+REGLAS:
+- Los precios deben ser realistas para el mercado peruano de contrataciones públicas
+- Si el TDR no especifica cantidades exactas, estímalas razonablemente
+- El total debe ser coherente con el presupuesto referencial si se menciona en el TDR
+- Devuelve ÚNICAMENTE este JSON (sin texto adicional, sin markdown):
+
+{{{{
+  "titulo_proceso": "Descripción corta del proceso (máx 80 chars)",
+  "empresa_nombre": "{nombre_empresa}",
+  "empresa_rubro": "Rubro resumido en 1 línea",
+  "items": [
+    {{{{
+      "item": 1,
+      "descripcion": "Descripción del ítem",
+      "unidad": "Unidad (Und/Servicio/Mes/etc)",
+      "cantidad": 1,
+      "precio_unitario": 1000.00,
+      "subtotal": 1000.00
+    }}}}
+  ],
+  "total_estimado": "S/ X,XXX.XX",
+  "analisis_viabilidad": "Análisis de viabilidad operativa (2-3 párrafos)",
+  "condiciones": ["Condición o supuesto 1", "Condición o supuesto 2"]
+}}}}
+"""
+
+            if hasattr(self.client, "aio"):
+                response = await self.client.aio.models.generate_content(
+                    model=self.model_name,
+                    contents=[user_prompt, pdf_part],
+                    config=proforma_config,
+                )
+            else:
+                import asyncio
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model=self.model_name,
+                    contents=[user_prompt, pdf_part],
+                    config=proforma_config,
+                )
+
+            response_text = self._extract_text(response).strip()
+            token_usage = self._extract_token_usage(response)
+
+            result = self._parse_json_response(response_text)
+            result["_token_usage"] = token_usage
+            self.logger.info("✅ Proforma multimodal generada")
+            return result
+
+        except Exception as e:
+            self.logger.error(f"❌ Error en proforma multimodal: {str(e)}")
+            raise ValueError(f"Error en proforma PDF directo: {str(e)}")

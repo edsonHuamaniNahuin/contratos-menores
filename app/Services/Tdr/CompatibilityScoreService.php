@@ -4,6 +4,7 @@ namespace App\Services\Tdr;
 
 use App\Models\SubscriptionContractMatch;
 use App\Services\AccountCompatibilityService;
+use App\Services\InterServiceJwt;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,7 @@ class CompatibilityScoreService
     protected string $endpoint;
     protected int $timeout;
     protected bool $enabled;
+    protected InterServiceJwt $jwt;
 
     public function __construct(protected AccountCompatibilityService $repository)
     {
@@ -21,6 +23,7 @@ class CompatibilityScoreService
         $this->endpoint = $baseUrl ? $baseUrl . '/compatibility/score' : '';
         $this->timeout = (int) config('services.analizador_tdr.timeout', 60);
         $this->enabled = (bool) config('services.analizador_tdr.enabled', false);
+        $this->jwt = new InterServiceJwt();
     }
 
     /**
@@ -78,7 +81,11 @@ class CompatibilityScoreService
             'keywords' => $subscription->keywords->pluck('nombre')->filter()->values()->all(),
         ];
 
-        $response = Http::timeout($this->timeout)
+        $response = Http::timeout($this->timeout * 2)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $this->jwt->sign(0, 'compatibility-score', 'telegram'),
+                'X-Service-Origin' => 'vigilante-seace-laravel',
+            ])
             ->post($this->endpoint, $requestPayload);
 
         if (!$response->successful()) {
