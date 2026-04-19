@@ -67,6 +67,12 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
 
     /**
      * Enviar notificación de un proceso a un suscriptor de WhatsApp.
+     *
+     * Estrategia resiliente:
+     * 1. Intentar interactive list (funciona si hay ventana de conversación activa 24h).
+     * 2. Si falla por ventana cerrada (error 131047/130472), abrir conversación con
+     *    template message y reintentar el interactive list.
+     * 3. Fallback final: enviar como texto plano.
      */
     public function enviarProcesoASuscriptor(object $suscripcion, array $contratoData, array $matchedKeywords = []): array
     {
@@ -91,15 +97,138 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
 
         $keyboard = $this->buildDefaultKeyboard($contratoData);
 
+        // ── Paso 1: Intentar envío directo (interactive list / texto) ──
         $resultado = $keyboard
             ? $this->enviarMensajeConBotones($recipientId, $mensaje, $keyboard)
             : $this->enviarMensaje($recipientId, $mensaje);
+
+        // ── Paso 2: Si falló por ventana cerrada, abrir con template y reintentar ──
+        if (!$resultado['success'] && $this->isConversationWindowError($resultado['message'] ?? '')) {
+            Log::info('WhatsApp: ventana de conversación cerrada, abriendo con template...', [
+                'to' => $recipientId,
+            ]);
+
+            $resultado = $this->enviarConTemplateFallback($recipientId, $mensaje, $keyboard, $contratoData);
+        }
 
         if ($resultado['success'] && method_exists($suscripcion, 'registrarNotificacion')) {
             $suscripcion->registrarNotificacion();
         }
 
         return $resultado;
+    }
+
+    /**
+     * Detectar si el error indica que la ventana de conversación de 24h está cerrada.
+     *
+     * Meta rechaza mensajes free-form fuera de la ventana con estos códigos:
+     * - 131047: Re-engagement message (necesita template)
+     * - 130472: Expired conversation
+     * - "re-engagement": texto genérico en el mensaje de error
+     */
+    protected function isConversationWindowError(string $errorMessage): bool
+    {
+        $lower = strtolower($errorMessage);
+
+        return str_contains($lower, '131047')
+            || str_contains($lower, '130472')
+            || str_contains($lower, 're-engagement')
+            || str_contains($lower, 'reengagement')
+            || str_contains($lower, 'outside allowed window')
+            || str_contains($lower, 'message failed to send because more than 24 hours');
+    }
+
+    /**
+     * Fallback: abrir conversación con template y enviar notificación como follow-up.
+     *
+     * Si hay un template personalizado configurado (WHATSAPP_NOTIFICATION_TEMPLATE),
+     * envía la notificación directamente como template con parámetros dinámicos.
+     * Si no, usa hello_world para abrir la ventana y luego reintenta el interactive.
+     */
+    protected function enviarConTemplateFallback(string $recipientId, string $mensaje, ?array $keyboard, array $contratoData): array
+    {
+        $templateName = config('services.whatsapp.notification_template', '');
+
+        // ── Opción A: Template personalizado con datos del contrato ──
+        if ($templateName !== '') {
+            $components = $this->buildTemplateComponents($contratoData);
+            $resultado = $this->enviarTemplate($recipientId, $templateName, 'es', $components);
+
+            if ($resultado['success']) {
+                Log::info('WhatsApp: notificación enviada como template personalizado', [
+                    'to' => $recipientId,
+                    'template' => $templateName,
+                ]);
+
+                // Enviar interactive list como follow-up (ventana ahora abierta)
+                if ($keyboard) {
+                    $this->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
+                }
+
+                return $resultado;
+            }
+
+            Log::warning('WhatsApp: template personalizado falló, usando hello_world', [
+                'to' => $recipientId,
+                'error' => $resultado['message'] ?? 'unknown',
+            ]);
+        }
+
+        // ── Opción B: hello_world abre la ventana → reintento con interactive ──
+        $templateResult = $this->enviarTemplate($recipientId, 'hello_world', 'en_US');
+
+        if (!$templateResult['success']) {
+            Log::error('WhatsApp: ni siquiera hello_world funciona', [
+                'to' => $recipientId,
+                'error' => $templateResult['message'] ?? 'unknown',
+            ]);
+
+            // Último recurso: texto plano (por si la ventana se abrió parcialmente)
+            return $this->enviarMensaje($recipientId, $this->stripHtmlToWhatsApp($mensaje));
+        }
+
+        Log::info('WhatsApp: hello_world enviado, reenviando interactive list...', [
+            'to' => $recipientId,
+        ]);
+
+        // La ventana está abierta, reintentar con interactive list
+        if ($keyboard) {
+            $reintento = $this->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
+            if ($reintento['success']) {
+                return $reintento;
+            }
+        }
+
+        // Si interactive falló post-template, enviar texto plano
+        return $this->enviarMensaje($recipientId, $this->stripHtmlToWhatsApp($mensaje));
+    }
+
+    /**
+     * Construir componentes dinámicos para template de notificación.
+     *
+     * Para templates tipo "utility" que aceptan parámetros en el body:
+     * {{1}} = Entidad, {{2}} = Código, {{3}} = Descripción
+     */
+    protected function buildTemplateComponents(array $contratoData): array
+    {
+        $entidad = $contratoData['nomEntidad'] ?? 'N/A';
+        $codigo = $contratoData['desContratacion'] ?? 'N/A';
+        $descripcion = $contratoData['desObjetoContrato'] ?? $contratoData['nomObjetoContrato'] ?? 'N/A';
+
+        if (mb_strlen($descripcion) > 200) {
+            $descripcion = mb_substr($descripcion, 0, 197) . '...';
+        }
+
+        return [
+            [
+                'type' => 'body',
+                'parameters' => [
+                    ['type' => 'text', 'text' => $entidad],
+                    ['type' => 'text', 'text' => $codigo],
+                    ['type' => 'text', 'text' => $descripcion],
+                ],
+            ],
+        ];
     }
 
     /**
