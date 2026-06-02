@@ -33,8 +33,8 @@
         <div class="hidden lg:flex lg:w-1/2 bg-primary-500 text-white items-center justify-center p-12">
             <div class="max-w-md space-y-8">
                 <div class="space-y-3">
-                    <p class="text-sm uppercase tracking-[0.4em] text-secondary-200">Licitaciones MYPe</p>
-                    <h1 class="text-4xl font-bold leading-tight text-white">Vigilante SEACE</h1>
+                    <p class="text-sm uppercase tracking-[0.4em] text-secondary-200">Alertas y seguimiento de procesos</p>
+                    <h1 class="text-4xl font-bold leading-tight text-white">LICITACIONES MYPE</h1>
                 </div>
                 <p class="text-base text-primary-100 leading-relaxed">
                     Encuentra oportunidades de contratación pública antes que tu competencia.
