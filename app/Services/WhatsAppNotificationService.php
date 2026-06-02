@@ -175,7 +175,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         }
 
         // ── Opción B: hello_world abre la ventana → reintento con interactive ──
-        $templateResult = $this->enviarTemplate($recipientId, 'hello_world', 'en_US');
+        $templateResult = $this->enviarTemplate($recipientId, 'hello_world', 'es');
 
         if (!$templateResult['success']) {
             Log::error('WhatsApp: ni siquiera hello_world funciona', [

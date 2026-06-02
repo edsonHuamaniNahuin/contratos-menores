@@ -40,6 +40,7 @@ class Subscription extends Model
         'currency',
         'metadata',
         'cancelled_at',
+        'cancellation_reason',
         'auto_renew',
     ];
 
@@ -126,11 +127,12 @@ class Subscription extends Model
         $this->update(['status' => self::STATUS_EXPIRED]);
     }
 
-    public function cancel(): void
+    public function cancel(?string $reason = null): void
     {
         $this->update([
-            'status'       => self::STATUS_CANCELLED,
-            'cancelled_at' => now(),
+            'status'              => self::STATUS_CANCELLED,
+            'cancelled_at'        => now(),
+            'cancellation_reason' => $reason,
         ]);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Models\Subscription;
+use App\Services\SubscriptionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -23,6 +25,30 @@ class Perfil extends Component
     public string $new_password_confirmation = '';
     public bool $showPasswordSection = false;
 
+    // ── Suscripción ──────────────────────────────────────
+    public ?array $subscriptionData = null;
+    public bool $isPremium = false;
+    public bool $isOnTrial = false;
+    public bool $canStartTrial = false;
+    public bool $autoRenew = true;
+    public int $daysRemaining = 0;
+    public ?string $planLabel = null;
+    public ?string $statusLabel = null;
+    public ?string $endsAt = null;
+
+    // ── Cancelación ──────────────────────────────────────
+    public bool $showCancelModal = false;
+    public string $cancellationReason = '';
+    public array $cancellationReasons = [
+        'Es muy caro' => 'Es muy caro',
+        'No lo uso lo suficiente' => 'No lo uso lo suficiente',
+        'Encontré una alternativa mejor' => 'Encontré una alternativa mejor',
+        'Problemas técnicos' => 'Problemas técnicos',
+        'No entiendo cómo funciona' => 'No entiendo cómo funciona',
+        'Ya no necesito el servicio' => 'Ya no necesito el servicio',
+        'Problemas con el pago' => 'Problemas con el pago',
+    ];
+
     public function mount(): void
     {
         $user = Auth::user();
@@ -31,6 +57,39 @@ class Perfil extends Component
         $this->telefono = $user->telefono ?? '';
         $this->ruc = $user->ruc ?? '';
         $this->razon_social = $user->razon_social ?? '';
+
+        $this->loadSubscriptionData();
+    }
+
+    public function loadSubscriptionData(): void
+    {
+        $user = Auth::user();
+        $activeSub = $user->activeSubscription();
+
+        $this->isPremium     = $user->isPremium();
+        $this->isOnTrial     = $user->isOnTrial();
+        $this->canStartTrial = $user->canStartTrial();
+        $this->daysRemaining = $user->subscriptionDaysLeft();
+
+        if ($activeSub) {
+            $this->subscriptionData = $activeSub->toArray();
+            $this->autoRenew = (bool) $activeSub->auto_renew;
+            $this->endsAt    = $activeSub->ends_at?->format('d/m/Y');
+
+            $this->planLabel = match ($activeSub->plan) {
+                Subscription::PLAN_TRIAL   => 'Prueba gratuita',
+                Subscription::PLAN_MONTHLY => 'Mensual — S/ 49',
+                Subscription::PLAN_YEARLY  => 'Anual — S/ 470',
+                default                    => ucfirst($activeSub->plan),
+            };
+
+            $this->statusLabel = match ($activeSub->status) {
+                Subscription::STATUS_ACTIVE    => 'Activa',
+                Subscription::STATUS_EXPIRED   => 'Expirada',
+                Subscription::STATUS_CANCELLED => 'Cancelada',
+                default                         => ucfirst($activeSub->status),
+            };
+        }
     }
 
     public function togglePasswordSection(): void
@@ -115,6 +174,56 @@ class Perfil extends Component
         $this->new_password = '';
         $this->new_password_confirmation = '';
         $this->resetValidation(['current_password', 'new_password', 'new_password_confirmation']);
+    }
+
+    // ── Suscripción: acciones ───────────────────────────
+
+    public function toggleAutoRenew(): void
+    {
+        $user    = Auth::user();
+        $service = new SubscriptionService();
+
+        $result = $service->toggleAutoRenew($user);
+
+        if ($result) {
+            $this->autoRenew = $result->auto_renew;
+            session()->flash('success', $this->autoRenew
+                ? '✅ Renovación automática activada'
+                : '⚠️ Renovación automática desactivada');
+        } else {
+            session()->flash('error', 'No tienes una suscripción activa.');
+        }
+    }
+
+    public function confirmCancel(): void
+    {
+        $this->showCancelModal = true;
+    }
+
+    public function setCancellationReason(string $reason): void
+    {
+        $this->cancellationReason = $reason;
+    }
+
+    public function cancelSubscription(): void
+    {
+        $user    = Auth::user();
+        $service = new SubscriptionService();
+        $reason  = $this->cancellationReason ?: null;
+
+        if ($service->cancel($user, $reason)) {
+            $this->showCancelModal    = false;
+            $this->cancellationReason = '';
+            $this->loadSubscriptionData();
+            session()->flash('success', '✅ Tu suscripción ha sido cancelada.');
+        } else {
+            session()->flash('error', 'No se pudo cancelar. Contacta soporte.');
+        }
+    }
+
+    public function dismissCancelModal(): void
+    {
+        $this->showCancelModal = false;
     }
 
     public function render()

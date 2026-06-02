@@ -105,6 +105,7 @@ class SubscriptionController extends Controller
         $result = $gateway->processPayment($user, $plan, $isTrial, [
             'token_id'            => $request->input('token_id'),
             'device_session_id'   => $request->input('device_session_id'),
+            'first_six_digits'    => $request->input('first_six_digits'),
             'existing_customer_id' => $user->activeSubscription()?->gateway_customer_id
                                       ?? $user->activeSubscription()?->openpay_customer_id,
         ]);

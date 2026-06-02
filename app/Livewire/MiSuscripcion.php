@@ -11,7 +11,6 @@ use Livewire\Component;
 class MiSuscripcion extends Component
 {
     public ?array $subscription = null;
-    public bool $autoRenew = true;
     public bool $isPremium = false;
     public bool $isOnTrial = false;
     public bool $canStartTrial = false;
@@ -19,7 +18,6 @@ class MiSuscripcion extends Component
     public ?string $planLabel = null;
     public ?string $statusLabel = null;
     public ?string $gatewayLabel = null;
-    public ?string $paymentMethodLabel = null;
     public ?string $endsAt = null;
     public ?string $startsAt = null;
 
@@ -28,6 +26,16 @@ class MiSuscripcion extends Component
 
     // Modal de cancelación
     public bool $showCancelModal = false;
+    public string $cancellationReason = '';
+    public array $cancellationReasons = [
+        'Es muy caro' => 'Es muy caro',
+        'No lo uso lo suficiente' => 'No lo uso lo suficiente',
+        'Encontré una alternativa mejor' => 'Encontré una alternativa mejor',
+        'Problemas técnicos' => 'Problemas técnicos',
+        'No entiendo cómo funciona' => 'No entiendo cómo funciona',
+        'Ya no necesito el servicio' => 'Ya no necesito el servicio',
+        'Problemas con el pago' => 'Problemas con el pago',
+    ];
 
     public function mount(): void
     {
@@ -46,7 +54,6 @@ class MiSuscripcion extends Component
 
         if ($activeSub) {
             $this->subscription = $activeSub->toArray();
-            $this->autoRenew    = (bool) $activeSub->auto_renew;
             $this->startsAt     = $activeSub->starts_at?->format('d/m/Y');
             $this->endsAt       = $activeSub->ends_at?->format('d/m/Y');
 
@@ -70,18 +77,6 @@ class MiSuscripcion extends Component
                 'openpay'     => 'Openpay',
                 default       => $activeSub->gateway_provider ? ucfirst($activeSub->gateway_provider) : 'Sin pasarela',
             };
-
-            $this->paymentMethodLabel = match ($activeSub->payment_method) {
-                'card'              => 'Tarjeta',
-                'tarjeta_credito'   => 'Tarjeta de crédito',
-                'tarjeta_debito'    => 'Tarjeta de débito',
-                'transferencia'     => 'Transferencia bancaria',
-                'efectivo'          => 'PagoEfectivo',
-                'dinero_cuenta'     => 'Dinero en cuenta MP',
-                'mercadopago'       => 'Mercado Pago',
-                'none'              => 'Sin método de pago',
-                default             => $activeSub->payment_method ? ucfirst($activeSub->payment_method) : '—',
-            };
         }
 
         // Cargar historial de auditoría
@@ -102,23 +97,6 @@ class MiSuscripcion extends Component
             ->toArray();
     }
 
-    public function toggleAutoRenew(): void
-    {
-        $user    = auth()->user();
-        $service = new SubscriptionService();
-
-        $result = $service->toggleAutoRenew($user);
-
-        if ($result) {
-            $this->autoRenew = $result->auto_renew;
-            session()->flash('success', $this->autoRenew
-                ? '✅ Renovación automática activada'
-                : '⚠️ Renovación automática desactivada');
-        } else {
-            session()->flash('error', 'No tienes una suscripción activa.');
-        }
-    }
-
     public function confirmCancel(): void
     {
         $this->showCancelModal = true;
@@ -129,13 +107,21 @@ class MiSuscripcion extends Component
         $user    = auth()->user();
         $service = new SubscriptionService();
 
-        if ($service->cancel($user)) {
+        $reason = $this->cancellationReason ?: null;
+
+        if ($service->cancel($user, $reason)) {
             $this->showCancelModal = false;
+            $this->cancellationReason = '';
             $this->loadSubscriptionData();
             session()->flash('success', '✅ Tu suscripción ha sido cancelada.');
         } else {
             session()->flash('error', 'No se pudo cancelar. Contacta soporte.');
         }
+    }
+
+    public function setCancellationReason(string $reason): void
+    {
+        $this->cancellationReason = $reason;
     }
 
     public function dismissCancelModal(): void
