@@ -347,6 +347,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('mi-suscripcion');
     })->name('mi.suscripcion');
 
+    Route::get('/billing', function () {
+        return view('billing');
+    })->name('billing');
+
     Route::get('/mis-procesos', function () {
         return view('mis-procesos');
     })->name('mis.procesos')->middleware('can:view-mis-procesos');
@@ -366,6 +370,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/suscripciones-premium', function () {
         return view('suscripciones-premium');
     })->name('suscripciones.premium')->middleware('can:manage-subscriptions');
+
+    Route::get('/clientes-mercado-pago', function () {
+        return view('clientes-mercado-pago');
+    })->name('clientes.mercadopago')->middleware('can:manage-subscriptions');
 
     // ─── Proforma técnica ─────────────────────────────────────────────
     // (Intencionalmente dentro del grupo auth — se acceden via enlace desde bots)

@@ -227,7 +227,7 @@ class SubscriptionService
     /**
      * Cancela la suscripción activa del usuario.
      */
-    public function cancel(User $user): bool
+    public function cancel(User $user, ?string $reason = null): bool
     {
         $subscription = $user->activeSubscription();
 
@@ -235,19 +235,24 @@ class SubscriptionService
             return false;
         }
 
-        return DB::transaction(function () use ($user, $subscription) {
-            $subscription->cancel();
+        return DB::transaction(function () use ($user, $subscription, $reason) {
+            $subscription->cancel($reason);
             $this->revokePremiumRole($user);
+
+            $auditReason = $reason ? "Cancelación por el usuario: {$reason}" : 'Cancelación por el usuario';
 
             PremiumAuditService::logRevoked(
                 $user,
                 PremiumAuditLog::SOURCE_PURCHASE,
                 $subscription,
                 null,
-                ['reason' => 'Cancelación por el usuario']
+                ['reason' => $auditReason]
             );
 
-            Log::info('Suscripción cancelada', ['user_id' => $user->id]);
+            Log::info('Suscripción cancelada', [
+                'user_id' => $user->id,
+                'reason'  => $reason ?? 'no especificado',
+            ]);
             return true;
         });
     }

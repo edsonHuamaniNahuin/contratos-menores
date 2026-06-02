@@ -428,12 +428,12 @@
                 // Card form fields
                 email: '{{ auth()->user()->email ?? '' }}',
                 cardName: @js(app()->environment('local') ? 'APRO' : (auth()->user()->name ?? '')),
-                cardNumber: '',
-                cardMonth: '',
-                cardYear: '',
-                cardCvv: '',
+                cardNumber: @js(app()->environment('local') ? '4009 1753 3280 6176' : ''),
+                cardMonth: @js(app()->environment('local') ? '11' : ''),
+                cardYear: @js(app()->environment('local') ? '30' : ''),
+                cardCvv: @js(app()->environment('local') ? '123' : ''),
                 docType: 'DNI',
-                docNumber: '',
+                docNumber: @js(app()->environment('local') ? '12345678' : ''),
 
                 // State
                 processing: false,
@@ -488,6 +488,7 @@
                                 token_id: cardToken.id,
                                 device_session_id: 'mp_' + Date.now(),
                                 is_trial: {{ ($isTrial ?? false) ? 'true' : 'false' }},
+                                first_six_digits: cardToken.first_six_digits || '',
                             }),
                         });
 
@@ -504,12 +505,12 @@
                         }
 
                     } catch (err) {
-                        console.error('MercadoPago error:', err);
+                        console.error('MercadoPago error:', JSON.stringify(err));
 
-                        if (err && err.message) {
+                        if (Array.isArray(err)) {
+                            this.errorMessage = err.map(e => e.message || e.cause?.[0]?.description || JSON.stringify(e)).join('; ');
+                        } else if (err && err.message) {
                             this.errorMessage = err.message;
-                        } else if (err && err[0] && err[0].message) {
-                            this.errorMessage = err[0].message;
                         } else {
                             this.errorMessage = 'Error al validar la tarjeta. Revisa los datos e intenta de nuevo.';
                         }

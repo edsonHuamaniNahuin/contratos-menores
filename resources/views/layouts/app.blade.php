@@ -85,6 +85,13 @@
                         </svg>
                         Dashboard
                     </a>
+
+                    <a href="{{ route('billing') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('billing') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                        Facturación
+                    </a>
                 @endauth
 
                 <a href="{{ route('buscador.publico') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('buscador.publico') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">

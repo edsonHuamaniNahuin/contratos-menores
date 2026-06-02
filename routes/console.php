@@ -75,6 +75,20 @@ Schedule::command('subscriptions:renew')
 
 /*
 |--------------------------------------------------------------------------
+| Alertas de Vencimiento de Suscripción (Email)
+|--------------------------------------------------------------------------
+| Todos los días a las 08:00 AM (hora Lima).
+| Envia emails a usuarios cuyo trial/suscripción vence en 1 o 3 días.
+| Avisa del cobro automático inminente si tienen auto_renew activo.
+*/
+Schedule::command('subscriptions:alerts')
+    ->dailyAt('08:00')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/subscriptions-alerts.log'));
+
+/*
+|--------------------------------------------------------------------------
 | Notificaciones por Email (Procesos nuevos del SEACE)
 |--------------------------------------------------------------------------
 | Se ejecuta junto con el importador TDR (L-D, cada 2h, 06:00-20:00).

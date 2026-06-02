@@ -122,7 +122,7 @@
         </div>
 
         {{-- ═══════════════════════════════════════════════════════
-             SIDEBAR: Resumen + Contraseña
+             SIDEBAR: Resumen + Suscripción + Contraseña
              ═══════════════════════════════════════════════════════ --}}
         <div class="space-y-6">
             {{-- Tarjeta resumen --}}
@@ -161,6 +161,85 @@
                         Miembro desde {{ auth()->user()?->created_at?->format('d/m/Y') }}
                     </div>
                 </div>
+            </div>
+
+            {{-- ═══ SECCIÓN SUSCRIPCIÓN ═══ --}}
+            <div class="bg-white rounded-3xl shadow-soft p-6 border border-neutral-100">
+                @if($isPremium && $subscriptionData)
+                    {{-- Suscripción activa --}}
+                    <div class="text-center mb-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold
+                            {{ $isOnTrial ? 'bg-amber-400 text-neutral-900' : 'bg-secondary-500 text-white' }}">
+                            {{ $isOnTrial ? 'TRIAL' : 'PREMIUM' }}
+                        </span>
+                    </div>
+
+                    <h3 class="text-sm font-bold text-neutral-900 text-center">{{ $planLabel }}</h3>
+                    <p class="text-xs text-neutral-400 text-center mt-1">{{ $statusLabel }} — Vence {{ $endsAt }}</p>
+
+                    <div class="mt-3 flex justify-center">
+                        <span class="text-xs font-semibold {{ $daysRemaining <= 3 ? 'text-amber-600' : 'text-secondary-600' }}">
+                            {{ $daysRemaining }} día(s) restante(s)
+                        </span>
+                    </div>
+
+                    {{-- Auto-renew toggle --}}
+                    <div class="mt-4 flex items-center justify-between py-2.5 px-3 bg-neutral-50 rounded-2xl">
+                        <span class="text-xs font-medium text-neutral-600">Renovación auto.</span>
+                        <button wire:click="toggleAutoRenew"
+                                wire:loading.attr="disabled"
+                                class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none
+                                    {{ $autoRenew ? 'bg-secondary-500' : 'bg-neutral-300' }}"
+                                role="switch">
+                            <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
+                                {{ $autoRenew ? 'translate-x-4' : 'translate-x-0' }}">
+                            </span>
+                        </button>
+                    </div>
+
+                    {{-- Acciones --}}
+                    <div class="mt-3 flex flex-col gap-2">
+                        <a href="{{ route('mi.suscripcion') }}"
+                           class="flex items-center justify-center gap-1.5 px-3 py-2 bg-primary-500/10 text-primary-800 rounded-full text-xs font-semibold hover:bg-primary-500/20 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            Gestionar suscripción
+                        </a>
+                        <button wire:click="confirmCancel"
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-full text-xs font-medium hover:bg-red-100 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            Cancelar plan
+                        </button>
+                    </div>
+
+                @elseif($canStartTrial)
+                    {{-- Puede iniciar trial --}}
+                    <div class="text-center">
+                        <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-100 mb-3">
+                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-neutral-900">Prueba gratuita</h3>
+                        <p class="text-xs text-neutral-400 mt-1 mb-3">15 días de acceso Premium</p>
+                        <a href="{{ route('planes.checkout', ['plan' => 'monthly', 'trial' => 1]) }}"
+                           class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white rounded-full text-xs font-semibold hover:bg-amber-600 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                            Activar trial
+                        </a>
+                    </div>
+                @else
+                    {{-- No premium --}}
+                    <div class="text-center">
+                        <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-neutral-100 mb-3">
+                            <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-neutral-900">Plan gratuito</h3>
+                        <p class="text-xs text-neutral-400 mt-1 mb-3">Acceso limitado</p>
+                        <a href="{{ route('planes') }}"
+                           class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 text-white rounded-full text-xs font-semibold hover:bg-primary-600 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                            Ver planes
+                        </a>
+                    </div>
+                @endif
             </div>
 
             {{-- Cambiar contraseña --}}
@@ -237,4 +316,62 @@
             </div>
         </div>
     </div>
+
+    {{-- ═══════════════════════════════════════════════════════
+         MODAL DE CANCELACIÓN
+         ═══════════════════════════════════════════════════════ --}}
+    @if($showCancelModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" wire:click.self="dismissCancelModal">
+            <div class="bg-white rounded-3xl shadow-lg p-6 sm:p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-100 mb-4">
+                        <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-neutral-900">¿Cancelar suscripción?</h3>
+                    <p class="text-sm text-neutral-400 mt-2">
+                        Perderás acceso inmediato a las funcionalidades premium.
+                    </p>
+                </div>
+
+                {{-- Motivo de cancelación --}}
+                <div class="mb-6">
+                    <label class="block text-xs font-semibold text-neutral-600 mb-3">
+                        ¿Por qué cancelas? <span class="text-red-400">(opcional)</span>
+                    </label>
+                    <div class="space-y-2">
+                        @foreach($cancellationReasons as $label)
+                            <button type="button"
+                                    wire:click="setCancellationReason('{{ $label }}')"
+                                    class="w-full text-left px-4 py-2.5 rounded-2xl border text-sm transition-all
+                                        {{ $cancellationReason === $label
+                                            ? 'border-primary-500 bg-primary-500/10 text-primary-800 font-medium'
+                                            : 'border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50' }}">
+                                {{ $label }}
+                            </button>
+                        @endforeach
+                    </div>
+                    <input type="text"
+                           wire:model="cancellationReason"
+                           placeholder="O escribe tu propio motivo..."
+                           class="mt-2 w-full px-4 py-2.5 rounded-2xl border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none text-sm"
+                           maxlength="500">
+                </div>
+
+                <div class="flex gap-3">
+                    <button wire:click="dismissCancelModal"
+                            class="flex-1 py-3 px-4 bg-neutral-100 text-neutral-700 rounded-full text-sm font-semibold hover:bg-neutral-200 transition-colors">
+                        Mantener plan
+                    </button>
+                    <button wire:click="cancelSubscription"
+                            wire:loading.attr="disabled"
+                            class="flex-1 py-3 px-4 bg-red-500 text-white rounded-full text-sm font-semibold hover:bg-red-600 transition-colors">
+                        <span wire:loading.remove wire:target="cancelSubscription">Sí, cancelar</span>
+                        <span wire:loading wire:target="cancelSubscription">Cancelando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
