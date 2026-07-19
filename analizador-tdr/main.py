@@ -113,34 +113,37 @@ async def health_check():
     summary="Analiza un TDR del SEACE y devuelve análisis estructurado"
 )
 async def analyze_tdr(
-    file: UploadFile = File(..., description="Archivo PDF del TDR"),
-    llm_provider: str = None,
+    file: UploadFile = File(..., description="Archivo del TDR (PDF, DOCX, DOC)"),
+    llm_provider: str = Form(None),
+    tipo_contrato: str = Form("menores"),
     auth: AuthContext = Depends(require_auth),
 ):
     """
     **Endpoint principal de análisis de TDR.**
 
-    Recibe un archivo PDF (TDR del SEACE) y devuelve un análisis técnico estructurado en JSON.
+    Recibe un archivo (PDF, DOCX, DOC) y devuelve análisis estructurado en JSON.
 
     **Proceso:**
-    1. Extrae texto del PDF
-    2. Recupera fragmentos relevantes (requisitos, penalidades, plazos, presupuesto)
+    1. Extrae texto del documento
+    2. Recupera fragmentos relevantes (RAG)
     3. Analiza con LLM (Gemini 2.5 Flash por defecto)
     4. Devuelve JSON validado con Pydantic
 
     **Parámetros:**
-    - `file`: Archivo PDF del TDR (max 10MB)
-    - `llm_provider`: (Opcional) Proveedor LLM: "gemini", "openai", "anthropic"
+    - `file`: Archivo del TDR (max 50MB)
+    - `llm_provider`: (Opcional) "gemini", "openai", "anthropic"
+    - `tipo_contrato`: "menores" (≤8 UIT) o "mayores" (>8 UIT)
 
     **Respuesta:**
     - Objeto JSON con análisis estructurado envuelto en {success: true, data: {...}}
     """
     try:
-        # Validar que sea un PDF
-        if not file.filename.endswith('.pdf'):
+        # Validar extensión
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+        if ext not in ('pdf', 'docx', 'doc'):
             raise HTTPException(
                 status_code=400,
-                detail="El archivo debe ser un PDF"
+                detail=f"Formato no soportado: .{ext}. Use PDF, DOCX o DOC"
             )
 
         # Leer contenido del archivo
@@ -154,7 +157,7 @@ async def analyze_tdr(
                 detail=f"El archivo excede el tamaño máximo permitido ({settings.max_file_size_mb}MB)"
             )
 
-        logger.info(f"📄 Recibido: {file.filename} ({file_size_mb:.2f} MB)")
+        logger.info(f"📄 Recibido: {file.filename} ({file_size_mb:.2f} MB) — tipo: {tipo_contrato}")
 
         # Validar proveedor LLM si se especificó
         if llm_provider and llm_provider not in ["gemini", "openai", "anthropic"]:
@@ -166,7 +169,9 @@ async def analyze_tdr(
         # Ejecutar análisis
         result = await analyzer_service.analyze_tdr_document(
             pdf_bytes=pdf_bytes,
-            llm_provider=llm_provider
+            llm_provider=llm_provider,
+            tipo_contrato=tipo_contrato or "menores",
+            filename=file.filename,
         )
 
         logger.info(f"✅ Análisis completado exitosamente para: {file.filename}")
@@ -174,7 +179,7 @@ async def analyze_tdr(
         # Envolver respuesta para Laravel
         return {
             "success": True,
-            "data": result.model_dump(),  # Convertir Pydantic a dict
+            "data": result.model_dump() if hasattr(result, 'model_dump') else result,
             "token_usage": analyzer_service.last_token_usage,
             "timestamp": datetime.now().isoformat(),
             "filename": file.filename
@@ -198,8 +203,9 @@ async def analyze_tdr(
     summary="Detecta indicios de direccionamiento y corrupción en un TDR"
 )
 async def analyze_direccionamiento(
-    file: UploadFile = File(..., description="Archivo PDF del TDR"),
-    llm_provider: str = None,
+    file: UploadFile = File(..., description="Archivo del TDR (PDF, DOCX, DOC)"),
+    llm_provider: str = Form(None),
+    tipo_contrato: str = Form("menores"),
     auth: AuthContext = Depends(require_auth),
 ):
     """
@@ -212,8 +218,9 @@ async def analyze_direccionamiento(
     y argumento legal para presentar observación formal.
     """
     try:
-        if not file.filename.endswith('.pdf'):
-            raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+        if ext not in ('pdf', 'docx', 'doc'):
+            raise HTTPException(status_code=400, detail=f"Formato no soportado: .{ext}")
 
         pdf_bytes = await file.read()
         file_size_mb = len(pdf_bytes) / (1024 * 1024)
@@ -224,14 +231,15 @@ async def analyze_direccionamiento(
                 detail=f"Archivo excede tamaño máximo ({settings.max_file_size_mb}MB)"
             )
 
-        logger.info(f"🔍 Direccionamiento: {file.filename} ({file_size_mb:.2f} MB)")
+        logger.info(f"🔍 Direccionamiento: {file.filename} ({file_size_mb:.2f} MB) — tipo: {tipo_contrato}")
 
         if llm_provider and llm_provider not in ["gemini", "openai", "anthropic"]:
             raise HTTPException(status_code=400, detail=f"Proveedor LLM no válido: {llm_provider}")
 
         result = await analyzer_service.analyze_direccionamiento_document(
             pdf_bytes=pdf_bytes,
-            llm_provider=llm_provider
+            llm_provider=llm_provider,
+            tipo_contrato=tipo_contrato or "menores",
         )
 
         logger.info(f"✅ Direccionamiento completado: {file.filename} — Score: {result.score_riesgo_corrupcion}")
@@ -283,9 +291,10 @@ async def compatibility_score(
     summary="Genera proforma técnica de cotización a partir de un TDR"
 )
 async def generate_proforma(
-    file: UploadFile = File(None, description="Archivo PDF del TDR (opcional si se enviaron datos JSON)"),
+    file: UploadFile = File(None, description="Archivo del TDR (PDF, DOCX, DOC)"),
     company_name: str = Form(""),
     company_copy: str = Form(""),
+    tipo_contrato: str = Form("menores"),
     auth: AuthContext = Depends(require_auth),
 ):
     """
@@ -310,10 +319,11 @@ async def generate_proforma(
             )
 
         if file is None:
-            raise HTTPException(status_code=400, detail="Se requiere el archivo PDF del TDR")
+            raise HTTPException(status_code=400, detail="Se requiere el archivo del TDR")
 
-        if not file.filename.endswith('.pdf'):
-            raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+        if ext not in ('pdf', 'docx', 'doc'):
+            raise HTTPException(status_code=400, detail=f"Formato no soportado: .{ext}")
 
         pdf_bytes = await file.read()
         file_size_mb = len(pdf_bytes) / (1024 * 1024)
@@ -324,12 +334,13 @@ async def generate_proforma(
                 detail=f"El archivo excede el tamaño máximo permitido ({settings.max_file_size_mb}MB)"
             )
 
-        logger.info(f"📋 Proforma: {file.filename} ({file_size_mb:.2f} MB) — empresa: {company_name or '(sin nombre)'}")
+        logger.info(f"📋 Proforma: {file.filename} ({file_size_mb:.2f} MB) — empresa: {company_name or '(sin nombre)'} — tipo: {tipo_contrato}")
 
         result = await analyzer_service.generate_proforma_document(
             pdf_bytes=pdf_bytes,
             company_name=company_name.strip(),
             company_copy=company_copy.strip(),
+            tipo_contrato=tipo_contrato or "menores",
         )
 
         logger.info(f"✅ Proforma generada: {len(result.items)} ítems — {result.total_estimado}")

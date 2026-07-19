@@ -65,7 +65,7 @@
             <!-- Logo -->
             <div class="p-6 border-b border-neutral-100 flex items-center justify-between">
                 <div>
-                    <p class="text-[10px] text-neutral-400 uppercase tracking-widest font-medium">Licitaciones MYPe</p>
+                    <p class="text-[10px] text-neutral-400 uppercase tracking-widest font-medium">Vigilante SEACE</p>
                     <h1 class="text-xl font-bold text-neutral-900">Vigilante SEACE</h1>
                 </div>
                 <!-- Botón cerrar en mobile -->
@@ -94,11 +94,23 @@
                     </a>
                 @endauth
 
+                <div class="pt-2 pb-1">
+                    <p class="px-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Contratos</p>
+                </div>
+
                 <a href="{{ route('buscador.publico') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('buscador.publico') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
-                    Buscador Público
+                    Contratos Menores
+                </a>
+
+                <a href="{{ route('buscador.mayores') }}" class="relative flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('buscador.mayores') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Contratos Mayores
+                    <span class="absolute -top-1 -right-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500 text-white leading-none shadow-sm">NUEVO</span>
                 </a>
 
                 <a href="{{ route('planes') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('planes') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
@@ -241,12 +253,20 @@
                     </button>
 
                     <div class="flex-1 max-w-xl mx-4">
-                        <div class="relative hidden sm:block">
-                            <input type="text" placeholder="Buscar..." class="w-full px-6 py-2.5 pl-12 bg-white border border-neutral-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                            <svg class="w-5 h-5 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </div>
+                        <form action="#" x-data="{ tipo: 'menores' }" @submit.prevent="const q = $el.querySelector('input').value.trim(); if (q) { if (tipo === 'mayores') { window.location = '{{ route('buscador.mayores') }}?descripcionObjeto=' + encodeURIComponent(q); } else { window.location = '{{ route('buscador.publico') }}?palabraClave=' + encodeURIComponent(q); } }" class="relative hidden sm:flex items-center gap-0">
+                            <select x-model="tipo" class="appearance-none bg-neutral-50 border border-neutral-200 border-r-0 rounded-l-full pl-4 pr-8 py-2.5 text-xs font-medium text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                <option value="menores">Contratos Menores</option>
+                                <option value="mayores">Contratos Mayores</option>
+                            </select>
+                            <div class="relative flex-1">
+                                <input type="text" name="q" placeholder="Buscar contrataciones..." class="w-full px-4 py-2.5 pl-4 pr-12 bg-white border border-neutral-200 rounded-r-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" required>
+                                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-neutral-100 transition-colors">
+                                    <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
                     </div>
                     <div class="flex items-center gap-3">
                         @auth
@@ -356,7 +376,7 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <span class="text-sm font-bold text-neutral-900 block leading-tight">Licitaciones MYPe</span>
+                                    <span class="text-sm font-bold text-neutral-900 block leading-tight">Vigilante SEACE</span>
                                     <span class="text-[9px] text-neutral-400 font-medium tracking-wider uppercase">Vigilante SEACE</span>
                                 </div>
                             </div>
@@ -387,6 +407,7 @@
                             <h3 class="text-xs font-semibold text-neutral-900 uppercase tracking-wider">Enlaces</h3>
                             <ul class="space-y-2 text-xs text-neutral-600">
                                 <li><a href="{{ route('buscador.publico') }}" class="hover:text-primary-500 transition-colors">Buscador público</a></li>
+                                <li><a href="{{ route('buscador.mayores') }}" class="hover:text-primary-500 transition-colors">Contratos mayores</a></li>
                                 <li><a href="{{ route('contacto') }}" class="hover:text-primary-500 transition-colors">Contacto</a></li>
                                 @guest
                                     <li><a href="{{ route('login') }}" class="hover:text-primary-500 transition-colors">Iniciar sesión</a></li>

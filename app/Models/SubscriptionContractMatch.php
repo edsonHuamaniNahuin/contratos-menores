@@ -12,7 +12,9 @@ class SubscriptionContractMatch extends Model
 
     protected $fillable = [
         'telegram_subscription_id',
+        'whatsapp_subscription_id',
         'contrato_seace_id',
+        'ocid',
         'contrato_codigo',
         'contrato_entidad',
         'contrato_objeto',

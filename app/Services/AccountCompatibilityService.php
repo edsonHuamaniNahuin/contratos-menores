@@ -24,21 +24,30 @@ class AccountCompatibilityService
      *
      * @param  ChannelSubscriptionContract&\Illuminate\Database\Eloquent\Model  $subscription
      */
-    public function findMatch(object $subscription, int $contratoId): ?SubscriptionContractMatch
+    public function findMatch(object $subscription, ?int $contratoId = null, ?string $ocid = null): ?SubscriptionContractMatch
     {
-        // Polimórfico: usa la relación matches() del modelo (Telegram o WhatsApp)
         if (method_exists($subscription, 'matches')) {
-            return $subscription->matches()
-                ->where('contrato_seace_id', $contratoId)
-                ->first();
+            $query = $subscription->matches();
+
+            if ($ocid) {
+                $query->where('ocid', $ocid);
+            } elseif ($contratoId !== null) {
+                $query->where('contrato_seace_id', $contratoId);
+            }
+
+            return $query->first();
         }
 
-        // Fallback por FK explícito
         $fk = $this->resolveForeignKey($subscription);
+        $query = SubscriptionContractMatch::where($fk, $subscription->id);
 
-        return SubscriptionContractMatch::where($fk, $subscription->id)
-            ->where('contrato_seace_id', $contratoId)
-            ->first();
+        if ($ocid) {
+            $query->where('ocid', $ocid);
+        } elseif ($contratoId !== null) {
+            $query->where('contrato_seace_id', $contratoId);
+        }
+
+        return $query->first();
     }
 
     /**
@@ -78,31 +87,37 @@ class AccountCompatibilityService
         $contratoId = Arr::get($contratoSnapshot, 'idContrato')
             ?? Arr::get($contratoSnapshot, 'id_contrato_seace');
 
+        $ocid = Arr::get($contratoSnapshot, 'ocid');
+
         $timestamp = $this->resolveTimestamp(Arr::get($compatibilityPayload, 'timestamp'));
         $fk = $this->resolveForeignKey($subscription);
 
-        return SubscriptionContractMatch::updateOrCreate(
-            [
-                $fk => $subscription->id,
-                'contrato_seace_id' => $contratoId,
-            ],
-            [
-                'contrato_codigo' => Arr::get($contratoSnapshot, 'desContratacion')
-                    ?? Arr::get($contratoSnapshot, 'codigo_proceso'),
-                'contrato_entidad' => Arr::get($contratoSnapshot, 'nomEntidad')
-                    ?? Arr::get($contratoSnapshot, 'entidad'),
-                'contrato_objeto' => Arr::get($contratoSnapshot, 'nomObjetoContrato')
-                    ?? Arr::get($contratoSnapshot, 'objeto'),
-                'score' => $this->resolveScore($compatibilityPayload),
-                'keywords_snapshot' => $subscription->keywords->pluck('nombre')->filter()->values()->all(),
-                'copy_snapshot' => method_exists($subscription, 'getCompanyCopy')
-                    ? $subscription->getCompanyCopy()
-                    : ($subscription->company_copy ?? null),
-                'analisis_payload' => $compatibilityPayload,
-                'source' => Arr::get($compatibilityPayload, 'source', 'compatibility-service'),
-                'analizado_en' => $timestamp,
-            ]
-        );
+        $attributes = [
+            'contrato_codigo' => Arr::get($contratoSnapshot, 'desContratacion')
+                ?? Arr::get($contratoSnapshot, 'codigo_proceso'),
+            'contrato_entidad' => Arr::get($contratoSnapshot, 'nomEntidad')
+                ?? Arr::get($contratoSnapshot, 'entidad'),
+            'contrato_objeto' => Arr::get($contratoSnapshot, 'nomObjetoContrato')
+                ?? Arr::get($contratoSnapshot, 'objeto'),
+            'score' => $this->resolveScore($compatibilityPayload),
+            'keywords_snapshot' => $subscription->keywords->pluck('nombre')->filter()->values()->all(),
+            'copy_snapshot' => method_exists($subscription, 'getCompanyCopy')
+                ? $subscription->getCompanyCopy()
+                : ($subscription->company_copy ?? null),
+            'analisis_payload' => $compatibilityPayload,
+            'source' => Arr::get($compatibilityPayload, 'source', 'compatibility-service'),
+            'analizado_en' => $timestamp,
+        ];
+
+        $where = [$fk => $subscription->id];
+
+        if ($ocid) {
+            $where['ocid'] = $ocid;
+        } elseif ($contratoId !== null) {
+            $where['contrato_seace_id'] = $contratoId;
+        }
+
+        return SubscriptionContractMatch::updateOrCreate($where, $attributes);
     }
 
     /**

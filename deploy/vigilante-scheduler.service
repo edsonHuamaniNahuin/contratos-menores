@@ -26,7 +26,7 @@ StandardError=append:/var/log/vigilante-seace/scheduler-error.log
 
 # Seguridad
 NoNewPrivileges=true
-ReadWritePaths=/var/www/vigilante-seace/storage /var/log/vigilante-seace /tmp
+ReadWritePaths=/var/www/vigilante-seace/storage /var/log/vigilante-seace /tmp /var/backups/vigilante-seace
 
 [Install]
 WantedBy=multi-user.target

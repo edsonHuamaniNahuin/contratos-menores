@@ -40,6 +40,10 @@ Route::get('/buscador-publico', function () {
     return view('buscador-publico');
 })->name('buscador.publico');
 
+Route::get('/buscador-contratos-mayores', function () {
+    return view('buscador-mayores');
+})->name('buscador.mayores');
+
 Route::get('/planes', function () {
     return view('planes');
 })->name('planes');
@@ -270,6 +274,23 @@ Route::get('/seace/download/{filename}', function ($filename) {
 
 Route::get('/tdr/archivos/{archivo}/descargar', [ContratoArchivoController::class, 'download'])
     ->name('tdr.archivos.download');
+
+Route::get('/tdr/extracted/{tipo}/{ocid}/{filename}', function (string $tipo, string $ocid, string $filename) {
+    if (!in_array($tipo, ['menores', 'mayores'])) {
+        abort(400);
+    }
+
+    $path = storage_path('app/tdr-extracted/' . $tipo . '/' . $ocid . '/' . $filename);
+    $realPath = realpath($path);
+
+    if (!$realPath || !str_starts_with($realPath, realpath(storage_path('app/tdr-extracted')))) {
+        abort(404);
+    }
+
+    return response()->file($realPath, [
+        'Content-Type' => mime_content_type($realPath) ?: 'application/octet-stream',
+    ]);
+})->name('tdr.extracted.view')->where('filename', '.*');
 
 // ─── Verificación de correo electrónico ───────────────────────────────
 Route::middleware('auth')->group(function () {

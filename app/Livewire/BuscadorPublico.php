@@ -7,6 +7,7 @@ use App\Models\TdrAnalisis;
 use App\Models\TelegramSubscription;
 use App\Models\SubscriptionContractMatch;
 use App\Models\ContratoSeguimiento;
+use App\Services\ArchiveExtractorService;
 use App\Services\SeaceBuscadorPublicoService;
 use App\Services\SeacePublicArchivoService;
 use App\Services\Tdr\CompatibilityScoreService;
@@ -153,6 +154,13 @@ class BuscadorPublico extends Component
     public ?array $resultadoProforma = null;
     public ?string $proformaToken = null;
     public ?int $proformaContratoId = null;
+
+    // ─── Extracción ZIP/RAR (selector de documentos) ──────
+    public bool $mostrarSelectorDocumentosMenor = false;
+    public array $documentosExtraidosMenor = [];
+    public ?int $extraccionIdContrato = null;
+    public ?int $extraccionArchivoPersistidoId = null;
+    public ?array $extraccionContratoSnapshot = null;
 
     public function boot(
         SeaceBuscadorPublicoService $buscadorService,
@@ -931,6 +939,38 @@ class BuscadorPublico extends Component
             $contratoSnapshot = $this->resolveContrato($idContrato);
             $archivoPersistido = $this->publicTdrService->ensureLocalArchivo($idContrato, $archivoMeta, $contratoSnapshot);
 
+            // ── Intercept: detectar ZIP/RAR antes de analizar ──
+            $localPath = $archivoPersistido->absolute_path;
+            if ($localPath && is_file($localPath)) {
+                $extractor = new ArchiveExtractorService();
+                $extractResult = $extractor->processLocal($localPath, (string)$idContrato, 'menores');
+
+                if ($extractResult['type'] === 'archive') {
+                    if (count($extractResult['pdfs']) > 1) {
+                        $this->documentosExtraidosMenor = $extractResult['pdfs'];
+                        $this->extraccionIdContrato = $idContrato;
+                        $this->extraccionArchivoPersistidoId = $archivoPersistido->id;
+                        $this->extraccionContratoSnapshot = $contratoSnapshot;
+                        $this->mostrarSelectorDocumentosMenor = true;
+                        return;
+                    }
+
+                    // Single PDF: reemplaza el archivo original y actualiza metadata
+                    $chosenPath = $extractResult['pdfs'][0]['path'];
+                    copy($chosenPath, $localPath);
+                    $archivoPersistido->update([
+                        'tamano_bytes' => filesize($localPath),
+                        'mime_type' => 'application/pdf',
+                        'extension' => 'pdf',
+                    ]);
+                } elseif ($extractResult['type'] === 'error') {
+                    $this->notify($extractResult['message'], 'warning');
+                    $this->analizandoTdr = false;
+                    return;
+                }
+                // If type === 'pdf', continue normally
+            }
+
             // ── Fast-path: ya hay análisis en DB ──────────────────────────────
             $analisisCacheado = TdrAnalisis::where('contrato_archivo_id', $archivoPersistido->id)
                 ->where('estado', TdrAnalisis::ESTADO_EXITOSO)
@@ -1207,6 +1247,60 @@ class BuscadorPublico extends Component
         $this->resultadoProforma = null;
         $this->proformaToken = null;
         $this->proformaContratoId = null;
+        $this->mostrarSelectorDocumentosMenor = false;
+        $this->documentosExtraidosMenor = [];
+        $this->extraccionIdContrato = null;
+        $this->extraccionArchivoPersistidoId = null;
+        $this->extraccionContratoSnapshot = null;
+    }
+
+    public function analizarDocumentoExtraidoMenor(int $index): void
+    {
+        $pdf = $this->documentosExtraidosMenor[$index] ?? null;
+        if (!$pdf || !$this->extraccionArchivoPersistidoId) {
+            $this->mostrarSelectorDocumentosMenor = false;
+            return;
+        }
+
+        $this->mostrarSelectorDocumentosMenor = false;
+
+        $archivoPersistido = \App\Models\ContratoArchivo::find($this->extraccionArchivoPersistidoId);
+        if (!$archivoPersistido) {
+            return;
+        }
+
+        $localPath = $archivoPersistido->absolute_path;
+        if (!$localPath) {
+            return;
+        }
+
+        copy($pdf['path'], $localPath);
+        $archivoPersistido->update([
+            'tamano_bytes' => filesize($localPath),
+            'mime_type' => 'application/pdf',
+            'extension' => 'pdf',
+        ]);
+
+        $this->analizandoTdr = false;
+        $idContrato = $this->extraccionIdContrato;
+        $contratoSnapshot = $this->extraccionContratoSnapshot;
+
+        $this->documentosExtraidosMenor = [];
+        $this->extraccionIdContrato = null;
+        $this->extraccionArchivoPersistidoId = null;
+        $this->extraccionContratoSnapshot = null;
+
+        // Relaunch analysis with the replaced file
+        $this->analizarTdr((int)$idContrato);
+    }
+
+    public function cancelarSelectorDocumentosMenor(): void
+    {
+        $this->mostrarSelectorDocumentosMenor = false;
+        $this->documentosExtraidosMenor = [];
+        $this->extraccionIdContrato = null;
+        $this->extraccionArchivoPersistidoId = null;
+        $this->extraccionContratoSnapshot = null;
     }
 
     public function calcularCompatibilidad(int $subscriptionId): void

@@ -514,8 +514,20 @@
                                     @if($suscripcion->ultima_notificacion_at)
                                         <span>🕐 Ultima: {{ $suscripcion->ultima_notificacion_at->diffForHumans() }}</span>
                                     @endif
-                                </div>
-                            </div>
+                </div>
+                <div class="flex items-center gap-4 mt-4">
+                    <label class="flex items-center gap-2 cursor-pointer" wire:click="toggleRecibirMenores({{ $suscripcion->id }})">
+                        <input type="checkbox" {{ $suscripcion->recibir_menores ? 'checked' : '' }} tabindex="-1" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500 pointer-events-none">
+                        <span class="text-sm text-neutral-700">Contratos Menores (&lt; 8UIT)</span>
+                    </label>
+                    @can('analyze-tdr-mayores')
+                    <label class="flex items-center gap-2 cursor-pointer" wire:click="toggleRecibirMayores({{ $suscripcion->id }})">
+                        <input type="checkbox" {{ $suscripcion->recibir_mayores ? 'checked' : '' }} tabindex="-1" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500 pointer-events-none">
+                        <span class="text-sm text-neutral-700">Contratos Mayores (&gt; 8UIT)</span>
+                    </label>
+                    @endcan
+                </div>
+            </div>
                         </div>
                         <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 self-end md:self-auto">
                             <button wire:click="probarNotificacionSuscriptor({{ $suscripcion->id }})" title="Enviar prueba" class="p-2 hover:bg-white rounded-full transition-colors">
@@ -689,6 +701,18 @@
                         </div>
                     </div>
                 </div>
+                <div class="flex items-center gap-4 mt-4">
+                    <label class="flex items-center gap-2 cursor-pointer" wire:click="toggleWaRecibirMenores">
+                        <input type="checkbox" {{ $whatsappSubscription->recibir_menores ? 'checked' : '' }} tabindex="-1" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500 pointer-events-none">
+                        <span class="text-sm text-neutral-700">Contratos Menores (&lt; 8UIT)</span>
+                    </label>
+                    @if(auth()->user()?->hasPermission('analyze-tdr-mayores'))
+                    <label class="flex items-center gap-2 cursor-pointer" wire:click="toggleWaRecibirMayores">
+                        <input type="checkbox" {{ $whatsappSubscription->recibir_mayores ? 'checked' : '' }} tabindex="-1" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500 pointer-events-none">
+                        <span class="text-sm text-neutral-700">Contratos Mayores (&gt; 8UIT)</span>
+                    </label>
+                    @endif
+                </div>
                 <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 self-end md:self-auto">
                     <button wire:click="probarWhatsAppNotificacion" wire:loading.attr="disabled" wire:target="probarWhatsAppNotificacion" title="Enviar mensaje de prueba" class="p-2 hover:bg-white rounded-full transition-colors">
                         <svg class="w-4 h-4 text-primary-500" wire:loading.class="animate-pulse" wire:target="probarWhatsAppNotificacion" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
@@ -745,6 +769,19 @@
                            class="w-full px-4 py-2 rounded-full border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all text-sm"
                            placeholder="Nombre para identificar">
                 </div>
+            </div>
+
+            <div class="flex items-center gap-4 mt-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" wire:model="wa_recibir_menores" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500">
+                    <span class="text-sm text-neutral-700">Contratos Menores (&lt; 8UIT)</span>
+                </label>
+                @if(auth()->user()?->hasPermission('analyze-tdr-mayores'))
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" wire:model="wa_recibir_mayores" class="rounded border-neutral-300 text-primary-500 focus:ring-primary-500">
+                    <span class="text-sm text-neutral-700">Contratos Mayores (&gt; 8UIT)</span>
+                </label>
+                @endif
             </div>
 
             <div class="flex items-center gap-2 mt-6">

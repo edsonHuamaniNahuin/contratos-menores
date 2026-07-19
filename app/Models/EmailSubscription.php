@@ -20,6 +20,8 @@ class EmailSubscription extends Model
         'email',
         'activo',
         'notificar_todo',
+        'recibir_menores',
+        'recibir_mayores',
         'ultima_notificacion_at',
         'notificaciones_enviadas',
     ];
@@ -27,6 +29,8 @@ class EmailSubscription extends Model
     protected $casts = [
         'activo' => 'boolean',
         'notificar_todo' => 'boolean',
+        'recibir_menores' => 'boolean',
+        'recibir_mayores' => 'boolean',
         'ultima_notificacion_at' => 'datetime',
     ];
 

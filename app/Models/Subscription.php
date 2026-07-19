@@ -11,6 +11,7 @@ class Subscription extends Model
     public const PLAN_TRIAL   = 'trial';
     public const PLAN_MONTHLY = 'monthly';
     public const PLAN_YEARLY  = 'yearly';
+    public const PLAN_MAYORES_PREMIUM = 'mayores-premium';
 
     // ─── Statuses ────────────────
     public const STATUS_ACTIVE          = 'active';

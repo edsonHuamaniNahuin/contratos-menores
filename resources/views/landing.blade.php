@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
-@section('title', 'Software de Licitaciones Perú — Alertas SEACE, Analizador TDR con IA | Licitaciones MYPe')
-@section('meta_description', 'Software de monitoreo de licitaciones del SEACE para MYPEs en Perú. Alertas automáticas por Telegram y WhatsApp, análisis de TDR con inteligencia artificial, score de compatibilidad. Contrataciones menores hasta 8 UIT — Ley 32069.')
+@section('title', 'Software de Licitaciones Perú — Alertas SEACE, Analizador TDR con IA, Contratos Mayores | Vigilante SEACE')
+@section('meta_description', 'Software de monitoreo de licitaciones del SEACE para MYPEs y proveedores en Perú. Alertas automáticas por Telegram y WhatsApp, análisis de TDR con IA, score de compatibilidad. Contratos menores y mayores (> 8 UIT) bajo Ley 32069.')
 
 @push('head')
 {{-- Schema.org WebSite with SearchAction (habilita sitelinks searchbox en Google) --}}
@@ -9,8 +9,8 @@
 {
     "@@context": "https://schema.org",
     "@@type": "WebSite",
-    "name": "Licitaciones MYPe",
-    "alternateName": "Vigilante SEACE",
+    "name": "Vigilante SEACE",
+    "alternateName": "Licitaciones MYPe",
     "url": "{{ config('app.url') }}",
     "potentialAction": {
         "@@type": "SearchAction",
@@ -74,7 +74,7 @@
     "name": "Licitaciones MYPe — Vigilante SEACE",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
-    "description": "Software de monitoreo de licitaciones del SEACE para MYPEs en Perú. Alertas automáticas, análisis de TDR con IA y score de compatibilidad.",
+    "description": "Software de monitoreo de licitaciones del SEACE para MYPEs en Perú. Alertas automáticas, análisis de TDR con IA, score de compatibilidad y bandeja de contratos mayores (> 8 UIT).",
     "url": "{{ config('app.url') }}",
     "offers": [
         {
@@ -90,6 +90,13 @@
             "priceCurrency": "PEN",
             "name": "Plan Premium",
             "description": "Análisis TDR con IA, alertas Telegram/WhatsApp/Email, score de compatibilidad"
+        },
+        {
+            "@@type": "Offer",
+            "price": "68",
+            "priceCurrency": "PEN",
+            "name": "Plan Premium + Contratos Mayores",
+            "description": "Todo Premium más bandeja de Contratos Mayores (> 8 UIT), análisis IA para licitaciones públicas, detección de direccionamiento avanzado"
         }
     ],
     "featureList": [
@@ -178,7 +185,7 @@
             <span class="text-secondary-400">para MYPEs en Perú</span>
         </h1>
         <p class="text-white/70 text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            Monitorea licitaciones del SEACE con inteligencia artificial. Recibe <strong class="text-white">alertas automáticas por Telegram y WhatsApp</strong>, analiza TDR en segundos y encuentra contrataciones menores hasta 8 UIT compatibles con tu empresa.
+            Monitorea licitaciones del SEACE con inteligencia artificial. Recibe <strong class="text-white">alertas automáticas por Telegram y WhatsApp</strong>, analiza TDR en segundos y encuentra contratos menores y mayores (&gt;8 UIT) compatibles con tu empresa.
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a href="{{ route('buscador.publico') }}" class="inline-flex items-center gap-2 bg-white text-brand-800 font-bold text-base px-8 py-3.5 rounded-full hover:bg-neutral-50 transition-colors shadow-lg">
@@ -319,6 +326,18 @@
                     'desc' => 'Estadísticas y gráficos de las contrataciones del Estado: distribución por departamento, entidad, tipo de objeto y tendencias mensuales.',
                     'premium' => false,
                 ],
+                [
+                    'icon' => '<svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>',
+                    'title' => 'Bandeja de Contratos Mayores (> 8 UIT)',
+                    'desc' => 'Accede a licitaciones públicas, concursos públicos y adjudicaciones simplificadas mayores. Bandeja exclusiva con búsqueda, filtros y análisis avanzado bajo Ley N° 32069.',
+                    'premium' => true,
+                ],
+                [
+                    'icon' => '<svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>',
+                    'title' => 'Postores y adjudicatarios',
+                    'desc' => 'Visualiza las partes involucradas en cada proceso mayor: entidad convocante, postores, ganadores y datos de contacto disponibles en la API de Contrataciones Abiertas.',
+                    'premium' => true,
+                ],
             ];
             @endphp
 
@@ -363,14 +382,14 @@
                     <thead>
                         <tr>
                             <th class="text-left py-4 px-6 bg-neutral-50 font-semibold text-neutral-900">Criterio</th>
-                            <th class="text-center py-4 px-6 bg-brand-800 text-white font-semibold">Licitaciones MYPe</th>
+                            <th class="text-center py-4 px-6 bg-brand-800 text-white font-semibold">Vigilante SEACE</th>
                             <th class="text-center py-4 px-6 bg-neutral-50 font-semibold text-neutral-900">Consultoría tradicional</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-neutral-100">
                         <tr>
                             <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Costo mensual</td>
-                            <td class="py-3.5 px-6 text-center font-semibold text-brand-800">Desde S/ 0 · Premium S/ 49</td>
+                            <td class="py-3.5 px-6 text-center font-semibold text-brand-800">Desde S/ 0 · Premium S/ 49 · Contratos Mayores S/ 68</td>
                             <td class="py-3.5 px-6 text-center text-neutral-600">S/ 500 — S/ 2,000+</td>
                         </tr>
                         <tr>
@@ -545,7 +564,7 @@
             </h2>
         </div>
 
-        <div class="grid sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
+        <div class="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
             <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
                 <p class="text-xs font-bold text-neutral-600 uppercase tracking-widest mb-2">Gratuito</p>
                 <p class="text-4xl font-extrabold text-neutral-900 mb-1">S/ 0</p>
@@ -565,7 +584,7 @@
                 <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-800 text-white text-xs font-bold px-4 py-1 rounded-full">Recomendado</span>
                 <p class="text-xs font-bold text-brand-800 uppercase tracking-widest mb-2">Premium</p>
                 <p class="text-4xl font-extrabold text-neutral-900 mb-1">S/ 49<span class="text-lg text-neutral-500 font-normal">/mes</span></p>
-                <p class="text-sm text-neutral-600 mb-6">15 días de prueba al registrarte</p>
+                <p class="text-sm text-neutral-600 mb-6">Para proveedores que quieren ganar más licitaciones.</p>
                 <ul class="text-sm text-neutral-600 space-y-3 mb-8">
                     <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Todo lo del plan gratuito</li>
                     <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Analizador de TDR con IA</li>
@@ -576,7 +595,25 @@
                     <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Proforma de cotización en Word</li>
                 </ul>
                 <a href="{{ route('planes') }}" class="block w-full text-center py-3 text-sm font-bold bg-brand-800 text-white rounded-full hover:bg-brand-900 transition-colors">
-                    Ver Todos los Planes →
+                    Ver Planes →
+                </a>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-soft border-2 border-amber-500 p-8 relative">
+                <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs font-bold px-4 py-1 rounded-full">Más Completo</span>
+                <p class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-2">Premium + Contratos Mayores</p>
+                <p class="text-4xl font-extrabold text-neutral-900 mb-1">S/ 68<span class="text-lg text-neutral-500 font-normal">/mes</span></p>
+                <p class="text-sm text-neutral-600 mb-6">Todo Premium + Contratos > 8 UIT</p>
+                <ul class="text-sm text-neutral-600 space-y-3 mb-8">
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Todo lo del plan Premium</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Bandeja Contratos Mayores</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Análisis IA para Contratos Mayores</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Direccionamiento en Contratos Mayores</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Proformas para Contratos Mayores</li>
+                    <li class="flex items-center gap-2.5"><svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Postores y adjudicatarios</li>
+                </ul>
+                <a href="{{ route('planes') }}" class="block w-full text-center py-3 text-sm font-bold bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors">
+                    Ver Planes →
                 </a>
             </div>
         </div>
@@ -618,8 +655,8 @@
                     'a' => 'Sí. La <strong>Ley 32069</strong> actualiza la Ley de Contrataciones del Estado y establece disposiciones que favorecen a las MYPEs: fomento de la participación de pequeñas y medianas empresas, simplificación de requisitos y reserva de cuotas en determinados procesos de contratación pública.',
                 ],
                 [
-                    'q' => '¿Qué diferencia hay entre el buscador gratuito y el plan Premium?',
-                    'a' => 'El <strong>buscador gratuito</strong> te permite buscar licitaciones del SEACE sin límite y ver el detalle de cada proceso. El plan <strong>Premium</strong> (S/ 49/mes) agrega: análisis automático de TDR con IA, alertas por Telegram/WhatsApp/Email, score de compatibilidad, detección de direccionamiento, calendario de seguimientos y generación de proforma de cotización en Word.',
+                    'q' => '¿Qué diferencia hay entre el plan Gratuito, Premium y Premium + Contratos Mayores?',
+                    'a' => 'El <strong>plan Gratuito</strong> incluye buscador de licitaciones ilimitado, descarga de TDR y dashboard de estadísticas. El plan <strong>Premium</strong> (S/ 49/mes) agrega análisis de TDR con IA, alertas por Telegram/WhatsApp/Email, score de compatibilidad, detección de direccionamiento y proformas en Word. El plan <strong>Premium + Contratos Mayores</strong> (S/ 68/mes) incluye todo lo anterior más la bandeja exclusiva de Contratos Mayores (> 8 UIT), análisis IA para licitaciones públicas, detección de direccionamiento avanzado y visualización de postores y adjudicatarios.',
                 ],
             ] as $i => $faq)
             <div class="bg-white rounded-2xl border border-neutral-100 shadow-soft overflow-hidden">

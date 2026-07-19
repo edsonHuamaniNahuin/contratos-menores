@@ -22,6 +22,8 @@ class TelegramSubscription extends Model
         'nombre',
         'username',
         'activo',
+        'recibir_menores',
+        'recibir_mayores',
         'filtros',
         'subscrito_at',
         'ultima_notificacion_at',
@@ -30,6 +32,8 @@ class TelegramSubscription extends Model
 
     protected $casts = [
         'activo' => 'boolean',
+        'recibir_menores' => 'boolean',
+        'recibir_mayores' => 'boolean',
         'filtros' => 'array',
         'subscrito_at' => 'datetime',
         'ultima_notificacion_at' => 'datetime',

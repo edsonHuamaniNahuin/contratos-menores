@@ -95,6 +95,43 @@
             </div>
         @endif
     </div>
+
+    {{-- Acceso rápido: Contratos Mayores --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a href="{{ route('buscador.publico') }}" class="bg-white rounded-3xl shadow-soft p-5 border border-neutral-200 hover:border-primary-300 transition-colors group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-brand-800 rounded-full flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors">Contratos Menores</p>
+                    <p class="text-xs text-neutral-500 mt-0.5">Búsqueda en tiempo real - API pública SEACE</p>
+                </div>
+                <svg class="w-5 h-5 text-neutral-300 group-hover:text-primary-500 ml-auto transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+        <a href="{{ route('buscador.mayores') }}" class="bg-white rounded-3xl shadow-soft p-5 border border-neutral-200 hover:border-primary-300 transition-colors group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors">Contratos Mayores</p>
+                    <p class="text-xs text-neutral-500 mt-0.5">SEACE 3.0 - Licitaciones y Concursos Públicos</p>
+                </div>
+                <svg class="w-5 h-5 text-neutral-300 group-hover:text-primary-500 ml-auto transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+    </div>
+
     {{-- Estadísticas en Cards (Diseño Sequence) --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {{-- Total Contratos --}}

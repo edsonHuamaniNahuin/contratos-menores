@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\ContratoSeguimiento;
+use App\Models\ContratoSeguimientoMayor;
 use Carbon\Carbon;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,7 @@ class SeguimientosCalendario extends Component
     public string $mesActual;
     public array $dias = [];
     public array $seguimientos = [];
-    public ?int $detalleId = null;
+    public int|string|null $detalleId = null;
     public ?array $detalleSeguimiento = null;
 
     protected string $zonaHoraria = 'America/Lima';
@@ -58,35 +59,92 @@ class SeguimientosCalendario extends Component
             return;
         }
 
-        $items = ContratoSeguimiento::query()
+        $now = Carbon::now($this->zonaHoraria);
+
+        // Menores
+        $itemsMenores = ContratoSeguimiento::query()
             ->where('user_id', $userId)
             ->orderByDesc('fecha_fin')
             ->get();
 
-        $now = Carbon::now($this->zonaHoraria);
-
-        $this->seguimientos = $items->map(function (ContratoSeguimiento $item) use ($now) {
+        $seguimientosMenores = $itemsMenores->map(function (ContratoSeguimiento $item) use ($now) {
+            $snapshot = $item->snapshot ?? [];
             $inicio = $item->fecha_inicio ?? $item->fecha_publicacion;
             $fin = $item->fecha_fin ?? $inicio;
 
             return [
-                'id' => $item->id,
-                'codigo' => $item->codigo_proceso,
-                'entidad' => $item->entidad,
-                'objeto' => $item->objeto,
-                'estado' => $item->estado,
-                'inicio' => $inicio?->toDateString(),
-                'fin' => $fin?->toDateString(),
-                'inicio_label' => $inicio?->format('d/m/Y'),
-                'fin_label' => $fin?->format('d/m/Y'),
-                'urgencia' => $this->resolverUrgencia($fin, $now),
+                'id'             => $item->id,
+                'tipo'           => 'menores',
+                'codigo'         => $item->codigo_proceso,
+                'entidad'        => $item->entidad,
+                'entidad_ruc'    => $snapshot['entidad_ruc'] ?? '',
+                'entidad_direccion' => $snapshot['entidad_direccion'] ?? '',
+                'objeto'         => $item->objeto,
+                'metodo'         => $snapshot['metodo_contratacion'] ?? '',
+                'estado'         => $item->estado,
+                'vigente'        => $snapshot['vigente'] ?? null,
+                'estado_vigencia'=> $snapshot['estado_vigencia'] ?? '',
+                'moneda'         => $snapshot['moneda'] ?? '',
+                'monto'          => $snapshot['monto_formateado'] ?? ($snapshot['valor_referencial'] ?? null),
+                'fecha_publicacion' => $snapshot['fecha_formateada'] ?? '',
+                'descripcion'    => $snapshot['descripcion_objeto'] ?? '',
+                'url_documento'  => $snapshot['url_documento'] ?? '',
+                'ocid'           => $snapshot['ocid'] ?? '',
+                'nomenclatura'   => $snapshot['nomenclatura'] ?? $item->codigo_proceso,
+                'inicio'         => $inicio?->toDateString(),
+                'fin'            => $fin?->toDateString(),
+                'inicio_label'   => $inicio?->format('d/m/Y'),
+                'fin_label'      => $fin?->format('d/m/Y'),
+                'urgencia'       => $this->resolverUrgencia($fin, $now),
             ];
         })->toArray();
+
+        // Mayores
+        $itemsMayores = ContratoSeguimientoMayor::query()
+            ->where('user_id', $userId)
+            ->orderByDesc('fecha_publicacion')
+            ->get();
+
+        $seguimientosMayores = $itemsMayores->map(function (ContratoSeguimientoMayor $item) use ($now) {
+            $snapshot = $item->snapshot ?? [];
+            $inicio = isset($snapshot['fecha_inicio']) ? Carbon::parse($snapshot['fecha_inicio']) : $item->fecha_publicacion;
+            $fin = isset($snapshot['fecha_fin']) ? Carbon::parse($snapshot['fecha_fin']) : $inicio;
+            $fin = $fin ?? $inicio;
+
+            return [
+                'id'             => 'mayor_' . $item->id,
+                'tipo'           => 'mayores',
+                'db_id'          => $item->id,
+                'codigo'         => $item->codigo_proceso,
+                'entidad'        => $item->entidad_nombre,
+                'entidad_ruc'    => $snapshot['entidad_ruc'] ?? '',
+                'entidad_direccion' => $snapshot['entidad_direccion'] ?? '',
+                'objeto'         => $item->objeto_contratacion,
+                'metodo'         => $snapshot['metodo_contratacion'] ?? '',
+                'estado'         => $item->estado,
+                'vigente'        => $snapshot['vigente'] ?? null,
+                'estado_vigencia'=> $snapshot['estado_vigencia'] ?? '',
+                'moneda'         => $snapshot['moneda'] ?? $item->moneda ?? '',
+                'monto'          => $snapshot['monto_formateado'] ?? ($item->valor_referencial > 0 ? 'S/ ' . number_format($item->valor_referencial, 2) : '---'),
+                'fecha_publicacion' => $snapshot['fecha_formateada'] ?? ($item->fecha_publicacion ? $item->fecha_publicacion->format('d/m/Y') : ''),
+                'descripcion'    => $snapshot['descripcion_objeto'] ?? '',
+                'url_documento'  => $snapshot['url_documento'] ?? '',
+                'ocid'           => $item->ocid,
+                'nomenclatura'   => $snapshot['nomenclatura'] ?? $item->codigo_proceso,
+                'inicio'         => $inicio?->toDateString(),
+                'fin'            => $fin?->toDateString(),
+                'inicio_label'   => $inicio?->format('d/m/Y'),
+                'fin_label'      => $fin?->format('d/m/Y'),
+                'urgencia'       => $this->resolverUrgencia($fin, $now),
+            ];
+        })->toArray();
+
+        $this->seguimientos = array_merge($seguimientosMenores, $seguimientosMayores);
 
         $this->hidratarDetalle();
     }
 
-    public function verDetalle(int $seguimientoId): void
+    public function verDetalle(int|string $seguimientoId): void
     {
         $this->detalleId = $seguimientoId;
         $this->hidratarDetalle();
@@ -98,13 +156,20 @@ class SeguimientosCalendario extends Component
         $this->detalleSeguimiento = null;
     }
 
-    public function eliminarSeguimiento(int $id): void
+    public function eliminarSeguimiento(int|string $id): void
     {
-        ContratoSeguimiento::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->delete();
+        if (is_string($id) && str_starts_with($id, 'mayor_')) {
+            $dbId = (int) substr($id, 6);
+            ContratoSeguimientoMayor::where('id', $dbId)
+                ->where('user_id', Auth::id())
+                ->delete();
+        } else {
+            ContratoSeguimiento::where('id', (int) $id)
+                ->where('user_id', Auth::id())
+                ->delete();
+        }
 
-        if ($this->detalleId === $id) {
+        if ((string) $this->detalleId === (string) $id) {
             $this->cerrarDetalle();
         }
 

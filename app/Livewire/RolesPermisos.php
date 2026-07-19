@@ -156,7 +156,10 @@ class RolesPermisos extends Component
         $groupMap = [
             'Vistas del sistema' => ['view-tdr-repository', 'view-configuracion', 'view-buscador-publico', 'view-cuentas', 'view-prueba-endpoints', 'view-configuracion-alertas', 'view-mis-procesos'],
             'Configurar alertas' => ['add-telegram-subscription', 'add-whatsapp-subscription', 'add-email-subscription', 'manage-subscriptions'],
-            'TDR y procesos' => ['import-tdr', 'analyze-tdr', 'follow-contracts', 'cotizar-seace', 'create-proforma'],
+            'TDR y procesos' => ['import-tdr', 'analyze-tdr', 'follow-contracts', 'cotizar-seace', 'create-proforma',
+                'view-buscador-mayores', 'view-detalle-mayores', 'download-tdr-mayores',
+                'follow-mayores', 'analyze-tdr-mayores', 'detect-direccionamiento-mayores',
+                'create-proforma-mayores', 'view-partes-mayores'],
             'Administración' => ['manage-roles-permissions', 'view-consumo-ia'],
         ];
 

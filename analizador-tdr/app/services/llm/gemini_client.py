@@ -178,9 +178,18 @@ TDR:
             # ESTRATEGIA: Inline data (sin Files API)
             self.logger.info("📦 Preparando PDF inline para Gemini...")
 
-            # Crear parte inline con el PDF
-            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
-            self.logger.info(f"✅ PDF preparado ({len(pdf_bytes)} bytes)")
+            # Detectar MIME type según extensión
+            ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'pdf'
+            mime_map = {
+                'pdf': 'application/pdf',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'doc': 'application/msword',
+            }
+            mime_type = mime_map.get(ext, 'application/pdf')
+
+            # Crear parte inline con el documento
+            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type=mime_type)
+            self.logger.info(f"✅ Documento preparado ({len(pdf_bytes)} bytes, MIME: {mime_type})")
 
             # Prompt para análisis
             prompt = """

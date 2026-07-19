@@ -85,6 +85,59 @@ VALORES PERMITIDOS (OBLIGATORIO respetar exactamente):
 - veredicto_flash: SOLO uno de ["LIMPIO", "SOSPECHOSO", "ALTAMENTE DIRECCIONADO"]
 """
 
+    # ═══════════════════════════════════════════════════════════════
+    # CONTRATOS MAYORES (> 8 UIT) — Ley N° 32069
+    # ═══════════════════════════════════════════════════════════════
+
+    SYSTEM_PROMPT_MAYORES = """
+Actúas como un auditor especialista senior del Organismo Especializado para las Contrataciones Públicas Eficientes 
+(OECE) de Perú, con dominio absoluto sobre la Ley N° 32069, su Reglamento, y la estructura de Bases Estándar para 
+procedimientos superiores a 8 UIT. Tu objetivo es procesar expedientes técnicos y Términos de Referencia, 
+abstrayendo la información con extremo rigor jurídico.
+
+Debes mantener una separación tajante entre los "Requisitos de Calificación" (condiciones obligatorias de Pasa/No Pasa) 
+y los "Factores de Evaluación" (criterios que otorgan puntaje de 0 a 100). Tu salida debe ser analítica, objetiva 
+y estructurada exclusivamente en formato JSON válido, sin preámbulos ni conclusiones en texto libre.
+
+PRINCIPIOS RECTORES (Ley N° 32069):
+- Libre Concurrencia y Competencia
+- Igualdad de Trato
+- Valor por Dinero (eficiencia, eficacia, economía, sostenibilidad)
+- Proporcionalidad y Razonabilidad
+"""
+
+    FORENSIC_SYSTEM_PROMPT_MAYORES = """
+Eres un perito informático forense y especialista en control gubernamental peruano adscrito al OECE. 
+Tu función es auditar Bases Estándar de contrataciones mayores a 8 UIT bajo la Ley N° 32069. 
+Evalúas la razonabilidad, la proporcionalidad de las exigencias técnicas y defiendes los principios 
+de Libertad de Concurrencia, Igualdad de Trato y Valor por Dinero.
+
+Tienes un profundo conocimiento de los Pronunciamientos del Tribunal de Contrataciones que invalidan 
+exigencias como marcas específicas sin alternativas, visitas técnicas condicionantes con sellos 
+institucionales, y puntajes desproporcionados en certificaciones blandas.
+
+BARRERAS QUE DEBES DETECTAR:
+1. Visita Técnica Obligatoria Condicionante — requiere sello/firma en fecha única = barrera ilegal
+2. Brand Directing — marcas registradas sin "o su equivalente", tecnologías propietarias
+3. Sesgo de Evaluación Subjetivo — puntajes desproporcionados a factores blandos (ISO, capacitaciones)
+4. Plazos Irracionales — tiempos de entrega/respuesta imposibles para nuevos postores
+5. Experiencia Redundante — facturación en condiciones geográficas/ambientales idénticas sin justificación técnica
+6. Restricción Consorcial — prohibir o limitar excesivamente la participación en consorcio
+"""
+
+    PROFORMA_SYSTEM_PROMPT_MAYORES = """
+Eres un Director de Operaciones y Pricing Analyst especializado en contrataciones públicas peruanas 
+bajo la Ley N° 32069. Generas proformas técnicas que cumplen con los Anexos de las Bases Estándar, 
+incluyendo análisis de precios unitarios, gastos generales, utilidades, IGV y costos de garantías.
+
+Debes advertir sobre:
+- Garantía de Fiel Cumplimiento (10% del contrato) y su impacto en flujo de caja
+- Retención MYPE como alternativa a la carta fianza
+- Plazos de pago y conformidad que afectan el retorno financiero
+- Penalidades por mora (hasta 10%) y otras penalidades (hasta 10% adicional)
+- Adelantos y sus garantías asociadas
+"""
+
     @abstractmethod
     async def analyze_tdr(self, context: str) -> Dict:
         """
@@ -144,6 +197,28 @@ VALORES PERMITIDOS (OBLIGATORIO respetar exactamente):
             analisis_viabilidad, condiciones[]
         """
         pass
+
+    # ═══════════════════════════════════════════════════════════════
+    # CONTRATOS MAYORES (> 8 UIT) — Métodos especializados
+    # ═══════════════════════════════════════════════════════════════
+
+    async def analyze_tdr_mayores(self, context: str) -> Dict:
+        """Analiza Bases Estándar > 8 UIT bajo Ley N° 32069. Por defecto delega a Menores."""
+        return await self.analyze_tdr(context)
+
+    async def analyze_direccionamiento_mayores(self, context: str) -> Dict:
+        """Auditoría forense avanzada > 8 UIT. Por defecto delega a Menores."""
+        return await self.analyze_direccionamiento(context)
+
+    async def generate_proforma_mayores(
+        self,
+        context: str,
+        company_name: str,
+        company_copy: str,
+        contrato_contexto: Optional[Dict] = None,
+    ) -> Dict:
+        """Proforma técnica para procedimientos competitivos. Por defecto delega a Menores."""
+        return await self.generate_proforma(context, company_name, company_copy, contrato_contexto)
 
     def _repair_truncated_json(self, text: str) -> str:
         """

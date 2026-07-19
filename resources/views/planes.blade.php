@@ -39,7 +39,7 @@
                     </svg>
                 </div>
                 <div>
-                    <span class="text-lg font-bold text-neutral-900 block leading-tight">Licitaciones MYPe</span>
+                    <span class="text-lg font-bold text-neutral-900 block leading-tight">Vigilante SEACE</span>
                     <span class="text-[10px] text-neutral-400 font-medium tracking-wider uppercase">Vigilante SEACE</span>
                 </div>
             </a>
@@ -72,8 +72,8 @@
     </div>
 
     <!-- Cards de precios -->
-    <div class="max-w-5xl mx-auto px-6 pb-20">
-        <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+    <div class="max-w-6xl mx-auto px-6 pb-20">
+        <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-8 max-w-6xl mx-auto">
 
             <!-- ═══════════════════════════════════════════ -->
             <!-- CARD 1: PLAN GRATUITO                      -->
@@ -396,6 +396,126 @@
                         <a href="{{ route('register') }}" class="block w-full text-center px-6 py-3 text-sm font-medium text-primary-500 bg-white border-2 border-primary-500 rounded-full hover:bg-primary-500 hover:text-white transition-colors">
                             Comprar Anual — S/ 470/año
                             <span class="ml-1 text-xs opacity-75">(ahorra 20%)</span>
+                        </a>
+                    @endauth
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════ -->
+            <!-- CARD 3: PREMIUM + CONTRATOS MAYORES         -->
+            <!-- ═══════════════════════════════════════════ -->
+            <div class="relative bg-white rounded-3xl shadow-soft p-8 border-2 border-amber-500 flex flex-col">
+                <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span class="inline-block px-5 py-1 text-xs font-bold rounded-full bg-amber-500 text-white shadow-sm">
+                        MÁS COMPLETO
+                    </span>
+                </div>
+
+                <div class="mb-6">
+                    <span class="inline-block px-4 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-600">
+                        PREMIUM + CONTRATOS MAYORES
+                    </span>
+                    <div class="mt-4 flex items-baseline gap-1">
+                        <span class="text-4xl font-bold text-neutral-900">S/ 68</span>
+                        <span class="text-sm text-neutral-400">/mes</span>
+                    </div>
+                    <p class="mt-2 text-sm text-neutral-400">
+                        Todo Premium más acceso completo a Contratos Mayores (&gt;8 UIT).
+                    </p>
+                </div>
+
+                <div class="border-t border-neutral-100 my-2"></div>
+
+                <div class="flex items-center gap-2 mt-4 mb-3">
+                    <div class="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                        <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-semibold text-neutral-900">Todo lo del plan Premium, más:</span>
+                </div>
+
+                <ul class="space-y-4 flex-1">
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-sm text-neutral-600">
+                            <strong class="text-neutral-900">Bandeja de Contratos Mayores</strong><br>
+                            Accede a la bandeja exclusiva de contratos &gt;8 UIT (Licitaciones Públicas, Concursos Públicos, Adjudicaciones Simplificadas Mayores).
+                        </span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-sm text-neutral-600">
+                            <strong class="text-neutral-900">Análisis IA para Contratos Mayores</strong><br>
+                            Análisis avanzado de TDR, requisitos de admisión, factores de evaluación, garantías y penalidades bajo la Ley N° 32069.
+                        </span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-sm text-neutral-600">
+                            <strong class="text-neutral-900">Detección de Direccionamiento</strong><br>
+                            Auditoría forense del TDR en busca de barreras técnicas, sesgos de evaluación y restricciones a la competencia.
+                        </span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-sm text-neutral-600">
+                            <strong class="text-neutral-900">Proforma Técnica para Contratos Mayores</strong><br>
+                            Genera proformas con estructura de costos, análisis de viabilidad y advertencias financieras para procesos competitivos.
+                        </span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-sm text-neutral-600">
+                            <strong class="text-neutral-900">Ver Partes Involucradas</strong><br>
+                            Visualiza las entidades participantes, postores y adjudicatarios de cada proceso de contrato mayor.
+                        </span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-sm text-neutral-600">
+                            <strong class="text-neutral-900">Alertas de Contratos Mayores</strong><br>
+                            Recibe notificaciones por Telegram y WhatsApp cuando se publiquen nuevos contratos mayores que coincidan con tus palabras clave.
+                        </span>
+                    </li>
+                </ul>
+
+                <div class="mt-8 space-y-3">
+                    @auth
+                        @php
+                            $user2 = auth()->user();
+                            $isAdmin2   = $user2->isAdmin();
+                            $isPremium2 = $user2->isPremium();
+                        @endphp
+
+                        @if($isAdmin2)
+                            <span class="block w-full text-center px-6 py-3 text-sm font-medium text-white bg-secondary-500 rounded-full">
+                                ✓ Acceso completo como Administrador
+                            </span>
+                        @elseif($isPremium2)
+                            <a href="{{ route('checkout.mercadopago', ['plan' => \App\Models\Subscription::PLAN_MAYORES_PREMIUM]) }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-amber-500 rounded-full hover:bg-amber-600 transition-colors shadow-md">
+                                Mejorar a Premium + Contratos Mayores — S/ 68/mes
+                            </a>
+                        @else
+                            <a href="{{ route('planes.checkout', 'monthly') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-amber-500 rounded-full hover:bg-amber-600 transition-colors shadow-md">
+                                Contratar Premium + Contratos Mayores — S/ 68/mes
+                            </a>
+                        @endif
+                    @else
+                        <a href="{{ route('register') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-amber-500 rounded-full hover:bg-amber-600 transition-colors shadow-md">
+                            Crear cuenta y contratar
                         </a>
                     @endauth
                 </div>

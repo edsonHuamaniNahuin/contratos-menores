@@ -31,6 +31,8 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
         'phone_number',
         'nombre',
         'activo',
+        'recibir_menores',
+        'recibir_mayores',
         'filtros',
         'subscrito_at',
         'ultima_notificacion_at',
@@ -39,6 +41,8 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
 
     protected $casts = [
         'activo' => 'boolean',
+        'recibir_menores' => 'boolean',
+        'recibir_mayores' => 'boolean',
         'filtros' => 'array',
         'subscrito_at' => 'datetime',
         'ultima_notificacion_at' => 'datetime',

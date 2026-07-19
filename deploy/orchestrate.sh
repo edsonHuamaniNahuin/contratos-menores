@@ -460,6 +460,15 @@ do_deploy() {
         log_step "DEPENDENCIAS PYTHON"
         cd "$PYTHON_DIR"
 
+        # Instalar unrar si no está presente (extracción de RAR en TDR)
+        if ! command -v unrar &>/dev/null; then
+            log_info "Instalando unrar (extracción de archivos RAR)..."
+            sudo apt-get install -y -qq unrar 2>&1 | tail -2 || sudo apt-get install -y -qq unrar-free 2>&1 | tail -2
+            log_ok "unrar instalado"
+        elif [ "$VERBOSE" = true ]; then
+            log_info "unrar ya instalado"
+        fi
+
         # Instalar Tesseract OCR si no está presente (necesario para OCR de imágenes en PDFs)
         if ! command -v tesseract &>/dev/null; then
             log_info "Instalando Tesseract OCR + idioma español..."
@@ -500,6 +509,14 @@ do_deploy() {
     sudo chown -R www-data:www-data "$APP_DIR/storage" 2>/dev/null || true
     sudo chmod -R 775 "$APP_DIR/storage" 2>/dev/null || true
     sudo chmod 1777 /tmp 2>/dev/null || true
+
+    # Directorio de backups automáticos
+    local backup_dir="${BACKUP_DIRECTORY:-/var/backups/vigilante-seace}"
+    sudo mkdir -p "$backup_dir"
+    sudo chown www-data:www-data "$backup_dir"
+    sudo chmod 775 "$backup_dir"
+    log_ok "Directorio de backups: $backup_dir"
+
     log_ok "Permisos configurados"
 
     # ═══ RESTART PHASE (downtime mínimo, por servicio) ═══

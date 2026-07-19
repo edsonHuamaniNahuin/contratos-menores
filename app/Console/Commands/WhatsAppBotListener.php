@@ -723,7 +723,61 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                             ['idContrato' => $idContrato]
                         );
                     }
-                } else {
+            } elseif (str_starts_with($data, 'mayor_')) {
+                $parts = explode('_', $data, 3);
+                $action = $parts[1] ?? '';
+                $ocid = $parts[2] ?? '';
+
+                if (empty($ocid) || empty($action)) {
+                    $this->whatsapp->enviarMensaje($phoneNumber, '❌ Datos del contrato no válidos.');
+                    return;
+                }
+
+                $contrato = \App\Models\ContratoMayor::where('ocid', $ocid)->first();
+                if (!$contrato) {
+                    $this->whatsapp->enviarMensaje($phoneNumber, '❌ Contrato no encontrado.');
+                    return;
+                }
+
+                $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($ocid);
+
+                match ($action) {
+                    'analizar' => $this->whatsapp->enviarMensaje($phoneNumber,
+                        "🤖 *Analizar Contrato Mayor*\n\n"
+                        . "📋 {$contrato->nomenclatura}\n"
+                        . "🏢 {$contrato->entidad_nombre}\n\n"
+                        . "Abrí el enlace para analizar con IA:\n{$webUrl}"),
+                    'descargar' => $this->whatsapp->enviarMensaje($phoneNumber,
+                        "📎 *Descargar TDR*\n\n"
+                        . "📋 {$contrato->nomenclatura}\n\n"
+                        . ($contrato->url_documento
+                            ? "Link de descarga:\n{$contrato->url_documento}"
+                            : "Abrí el enlace para descargar:\n{$webUrl}")),
+                    'direccionar' => $this->whatsapp->enviarMensaje($phoneNumber,
+                        "🔍 *Detectar Direccionamiento*\n\n"
+                        . "📋 {$contrato->nomenclatura}\n"
+                        . "🏢 {$contrato->entidad_nombre}\n\n"
+                        . "Abrí el enlace para auditar el TDR:\n{$webUrl}"),
+                    'proforma' => $this->whatsapp->enviarMensaje($phoneNumber,
+                        "📋 *Crear Proforma*\n\n"
+                        . "📋 {$contrato->nomenclatura}\n"
+                        . "🏢 {$contrato->entidad_nombre}\n\n"
+                        . "Abrí el enlace para generar proforma:\n{$webUrl}"),
+                    'postores' => $this->whatsapp->enviarMensaje($phoneNumber,
+                        "👥 *Ver Postores*\n\n"
+                        . "📋 {$contrato->nomenclatura}\n"
+                        . "🏢 {$contrato->entidad_nombre}\n\n"
+                        . "Abrí el enlace para ver partes:\n{$webUrl}"),
+                    'verweb' => $this->whatsapp->enviarMensaje($phoneNumber,
+                        "🌐 *Ver en la web*\n\n"
+                        . "📋 {$contrato->nomenclatura}\n"
+                        . "🏢 {$contrato->entidad_nombre}\n"
+                        . "💰 " . ($contrato->valor_referencial > 0 ? 'S/ ' . number_format($contrato->valor_referencial, 2) : '---') . "\n\n"
+                        . "Abrí el enlace:\n{$webUrl}"),
+                    default => $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida.'),
+                };
+
+            } else {
                     $publicService = new PublicTdrDocumentService(
                         $persistence,
                         new SeacePublicArchivoService()

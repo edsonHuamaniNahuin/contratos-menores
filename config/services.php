@@ -159,6 +159,12 @@ return [
         'secret' => env('ANALIZADOR_TDR_SECRET', ''),
     ],
 
+    'seace_mayores' => [
+        'base_url' => env('SEACE_MAYORES_API_URL', 'https://contratacionesabiertas.oece.gob.pe/api/v1'),
+        'timeout' => env('SEACE_MAYORES_TIMEOUT', 30),
+        'debug_logs' => env('SEACE_MAYORES_DEBUG_LOGS', false),
+    ],
+
     // ─── Pasarela de pago activa ────────────────────────
     'payment_gateway' => env('PAYMENT_GATEWAY', 'mercadopago'),
 

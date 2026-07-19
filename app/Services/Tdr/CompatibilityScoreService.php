@@ -36,12 +36,13 @@ class CompatibilityScoreService
         bool $forceRefresh = false
     ): array {
         $contratoId = $this->resolveContratoId($contratoSnapshot);
+        $ocid = $this->resolveOcid($contratoSnapshot);
 
-        if ($contratoId === null) {
-            throw new RuntimeException('No fue posible determinar el ID del contrato para evaluar compatibilidad.');
+        if ($contratoId === null && $ocid === null) {
+            throw new RuntimeException('No fue posible determinar el identificador del contrato para evaluar compatibilidad.');
         }
 
-        $existing = $this->repository->findMatch($subscription, $contratoId);
+        $existing = $this->repository->findMatch($subscription, $contratoId, $ocid);
 
         if (!$forceRefresh && $this->repository->canReuseMatch($existing, $subscription)) {
             return [
@@ -134,6 +135,13 @@ class CompatibilityScoreService
         $id = (int) $id;
 
         return $id > 0 ? $id : null;
+    }
+
+    protected function resolveOcid(array $contratoSnapshot): ?string
+    {
+        $ocid = Arr::get($contratoSnapshot, 'ocid');
+
+        return $ocid ? (string) $ocid : null;
     }
 
     protected function buildContratoContext(array $contratoSnapshot): array
