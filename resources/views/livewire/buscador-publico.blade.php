@@ -2269,7 +2269,45 @@
 
 </div>
 
-@script
+    {{-- Modal: Seleccionar documento (ZIP con múltiples PDFs) - Menores --}}
+    @if($mostrarSelectorDocumentosMenor)
+        <div class="fixed inset-0 z-[140] flex items-center justify-center px-4 py-8" x-data x-on:keydown.escape.window="$wire.call('cancelarSelectorDocumentosMenor')">
+            <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" wire:click="cancelarSelectorDocumentosMenor"></div>
+            <div class="relative w-full max-w-lg bg-white rounded-[2rem] shadow-soft border border-neutral-200 flex flex-col max-h-[80vh]">
+                <div class="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-neutral-100">
+                    <div>
+                        <p class="text-xs font-semibold uppercase text-amber-600 tracking-[0.2em] mb-1">Documentos múltiples</p>
+                        <h3 class="text-lg font-bold text-neutral-900">Seleccioná el documento a analizar</h3>
+                    </div>
+                    <button wire:click="cancelarSelectorDocumentosMenor" class="w-9 h-9 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="overflow-y-auto p-5 space-y-2">
+                    <p class="text-sm text-neutral-500 mb-3">El archivo ZIP contiene {{ count($documentosExtraidosMenor) }} documentos PDF. Elegí cuál analizar:</p>
+                    @foreach($documentosExtraidosMenor as $idx => $doc)
+                        <button
+                            wire:click="analizarDocumentoExtraidoMenor({{ $idx }})"
+                            wire:loading.attr="disabled"
+                            wire:target="analizarDocumentoExtraidoMenor({{ $idx }})"
+                            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl border border-neutral-200 hover:border-primary-400 hover:bg-primary-50/50 transition-all text-left group"
+                        >
+                            <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0 group-hover:bg-primary-100 transition-colors">
+                                <svg class="w-5 h-5 text-red-500 group-hover:text-primary-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-neutral-800 truncate">{{ $doc['filename'] }}</p>
+                                <p class="text-xs text-neutral-400 mt-0.5">{{ number_format($doc['size'] / 1024, 0) }} KB</p>
+                            </div>
+                            <svg class="w-5 h-5 text-neutral-300 group-hover:text-primary-500 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @script
 <script>
     $wire.on('descargar-archivo', (event) => {
         if (!event?.url) {

@@ -57,6 +57,16 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('view-mis-procesos', fn ($user) => $user->hasPermission('view-mis-procesos'));
         Gate::define('cotizar-seace', fn ($user) => $user->hasPermission('cotizar-seace'));
         Gate::define('create-proforma', fn ($user) => $user->hasPermission('create-proforma'));
+
+        // Contratos Mayores
+        Gate::define('view-buscador-mayores', fn ($user) => $user->hasPermission('view-buscador-mayores'));
+        Gate::define('view-detalle-mayores', fn ($user) => $user->hasPermission('view-detalle-mayores'));
+        Gate::define('download-tdr-mayores', fn ($user) => $user->hasPermission('download-tdr-mayores'));
+        Gate::define('follow-mayores', fn ($user) => $user->hasPermission('follow-mayores'));
+        Gate::define('analyze-tdr-mayores', fn ($user) => $user->hasPermission('analyze-tdr-mayores'));
+        Gate::define('detect-direccionamiento-mayores', fn ($user) => $user->hasPermission('detect-direccionamiento-mayores'));
+        Gate::define('create-proforma-mayores', fn ($user) => $user->hasPermission('create-proforma-mayores'));
+        Gate::define('view-partes-mayores', fn ($user) => $user->hasPermission('view-partes-mayores'));
     }
 
     /**

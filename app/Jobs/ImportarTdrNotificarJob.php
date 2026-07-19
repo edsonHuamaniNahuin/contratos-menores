@@ -17,19 +17,9 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Job programado que importa procesos TDR del SEACE y notifica a suscriptores
- * de Telegram y WhatsApp.
+ * de Telegram y WhatsApp SOLO para CONTRATOS MENORES.
  *
- * Horario: Lunes a domingo, cada 2 horas entre 06:00 y 20:00 (hora Lima).
- * Ejecuciones: 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00.
- *
- * La ejecución de las 06:00 busca procesos de HOY + AYER para cubrir la
- * brecha nocturna (procesos publicados entre 20:00 y 23:59 del día anterior).
- * Carbon::subDay() maneja automáticamente transiciones de mes:
- *   - 1 marzo → 28/29 febrero
- *   - 1 julio → 30 junio
- *   - 1 enero → 31 diciembre del año anterior
- *
- * Las demás ejecuciones (08:00-20:00) solo buscan procesos de HOY.
+ * Los suscriptores deben tener recibir_menores = true para recibir notificaciones.
  */
 class ImportarTdrNotificarJob implements ShouldQueue
 {
@@ -87,13 +77,15 @@ class ImportarTdrNotificarJob implements ShouldQueue
             Log::info('ImportarTdrNotificarJob: canal WhatsApp registrado.');
         }
 
-        // Obtener TODOS los suscriptores activos de TODOS los canales
+        // Obtener suscriptores que quieren recibir Contratos Menores
         $telegramSubs = TelegramSubscription::with('user.subscriberProfile.keywords')
             ->activas()
+            ->where('recibir_menores', true)
             ->get();
 
         $whatsappSubs = WhatsAppSubscription::with('user.subscriberProfile.keywords')
             ->activas()
+            ->where('recibir_menores', true)
             ->get();
 
         // Concat en una sola colección polimórfica

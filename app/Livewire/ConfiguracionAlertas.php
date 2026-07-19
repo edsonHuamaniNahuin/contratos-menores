@@ -11,6 +11,7 @@ use App\Models\WhatsAppSubscription;
 use App\Models\SystemSetting;
 use App\Services\TelegramNotificationService;
 use App\Services\WhatsAppNotificationService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -46,6 +47,8 @@ class ConfiguracionAlertas extends Component
     public string $nuevo_nombre = '';
     public string $nuevo_username = '';
     public bool $nuevo_activo = true;
+    public bool $nuevo_recibir_menores = true;
+    public bool $nuevo_recibir_mayores = true;
     public ?int $editando_suscripcion_id = null;
 
     // ── WhatsApp Modal ────────────────────────────────────────────
@@ -53,6 +56,8 @@ class ConfiguracionAlertas extends Component
     public string $wa_phone_number = '';
     public string $wa_nombre = '';
     public bool $wa_activo = true;
+    public bool $wa_recibir_menores = true;
+    public bool $wa_recibir_mayores = true;
     public ?int $editando_wa_id = null;
 
     // ── Email Modal ───────────────────────────────────────────────
@@ -100,6 +105,32 @@ class ConfiguracionAlertas extends Component
         } else {
             $this->profile_company_copy = '';
             $this->profile_keywords = [];
+        }
+    }
+
+    public function toggleRecibirMenores(int $suscripcionId): void
+    {
+        $query = TelegramSubscription::where('id', $suscripcionId);
+        if (!Auth::user()->isAdmin()) {
+            $query->where('user_id', Auth::id());
+        }
+        $sub = $query->first();
+
+        if ($sub) {
+            $sub->update(['recibir_menores' => !$sub->recibir_menores]);
+        }
+    }
+
+    public function toggleRecibirMayores(int $suscripcionId): void
+    {
+        $query = TelegramSubscription::where('id', $suscripcionId);
+        if (!Auth::user()->isAdmin()) {
+            $query->where('user_id', Auth::id());
+        }
+        $sub = $query->first();
+
+        if ($sub) {
+            $sub->update(['recibir_mayores' => !$sub->recibir_mayores]);
         }
     }
 
@@ -260,6 +291,8 @@ class ConfiguracionAlertas extends Component
                     'nombre' => $this->nuevo_nombre ?: null,
                     'username' => $this->nuevo_username ?: null,
                     'activo' => $this->nuevo_activo,
+                    'recibir_menores' => $this->nuevo_recibir_menores,
+                    'recibir_mayores' => $this->nuevo_recibir_mayores,
                 ]);
 
                 session()->flash('success', '✅ Suscriptor actualizado exitosamente');
@@ -271,6 +304,8 @@ class ConfiguracionAlertas extends Component
                     'nombre' => $this->nuevo_nombre ?: null,
                     'username' => $this->nuevo_username ?: null,
                     'activo' => $this->nuevo_activo,
+                    'recibir_menores' => $this->nuevo_recibir_menores,
+                    'recibir_mayores' => $this->nuevo_recibir_mayores,
                     'subscrito_at' => now(),
                 ]);
 
@@ -297,6 +332,8 @@ class ConfiguracionAlertas extends Component
         $this->nuevo_nombre = $suscripcion->nombre ?? '';
         $this->nuevo_username = $suscripcion->username ?? '';
         $this->nuevo_activo = $suscripcion->activo;
+        $this->nuevo_recibir_menores = $suscripcion->recibir_menores ?? true;
+        $this->nuevo_recibir_mayores = $suscripcion->recibir_mayores ?? true;
     }
 
     public function toggleTelegramNotificaciones(): void
@@ -370,6 +407,8 @@ class ConfiguracionAlertas extends Component
         $this->nuevo_nombre = '';
         $this->nuevo_username = '';
         $this->nuevo_activo = true;
+        $this->nuevo_recibir_menores = true;
+        $this->nuevo_recibir_mayores = true;
         $this->editando_suscripcion_id = null;
         $this->resetValidation(['nuevo_chat_id', 'nuevo_nombre', 'nuevo_username']);
     }
@@ -527,7 +566,24 @@ class ConfiguracionAlertas extends Component
     public function toggleWhatsAppModal(): void
     {
         $this->showWhatsAppModal = !$this->showWhatsAppModal;
-        if (!$this->showWhatsAppModal) {
+        if ($this->showWhatsAppModal) {
+            $waSub = WhatsAppSubscription::where('user_id', auth()->id())->first();
+            if ($waSub) {
+                $this->wa_phone_number = $waSub->phone_number;
+                $this->wa_nombre = $waSub->nombre ?? '';
+                $this->wa_activo = $waSub->activo;
+                $this->wa_recibir_menores = $waSub->recibir_menores ?? true;
+                $this->wa_recibir_mayores = $waSub->recibir_mayores ?? true;
+                $this->editando_wa_id = $waSub->id;
+            } else {
+                $this->wa_phone_number = '';
+                $this->wa_nombre = '';
+                $this->wa_activo = true;
+                $this->wa_recibir_menores = true;
+                $this->wa_recibir_mayores = true;
+                $this->editando_wa_id = null;
+            }
+        } else {
             $this->loadWhatsAppSubscription();
             $this->resetValidation(['wa_phone_number', 'wa_nombre']);
         }
@@ -558,6 +614,8 @@ class ConfiguracionAlertas extends Component
                     'phone_number' => $this->wa_phone_number,
                     'nombre' => $this->wa_nombre ?: null,
                     'activo' => $this->wa_activo,
+                    'recibir_menores' => $this->wa_recibir_menores,
+                    'recibir_mayores' => $this->wa_recibir_mayores,
                     'subscrito_at' => now(),
                 ]
             );
@@ -588,6 +646,22 @@ class ConfiguracionAlertas extends Component
             Log::info('WhatsApp: Toggle activo', ['id' => $waSub->id, 'activo' => $waSub->activo]);
         } catch (\Exception $e) {
             session()->flash('wa_error', '❌ Error: ' . $e->getMessage());
+        }
+    }
+
+    public function toggleWaRecibirMenores(): void
+    {
+        $sub = WhatsAppSubscription::where('user_id', auth()->id())->first();
+        if ($sub) {
+            $sub->update(['recibir_menores' => !$sub->recibir_menores]);
+        }
+    }
+
+    public function toggleWaRecibirMayores(): void
+    {
+        $sub = WhatsAppSubscription::where('user_id', auth()->id())->first();
+        if ($sub) {
+            $sub->update(['recibir_mayores' => !$sub->recibir_mayores]);
         }
     }
 

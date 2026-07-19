@@ -319,9 +319,18 @@ class OpenpayService
      */
     public static function planPrices(): array
     {
+        if (session('checkout_test_price')) {
+            return [
+                Subscription::PLAN_MONTHLY => 1.00,
+                Subscription::PLAN_YEARLY  => 1.00,
+                Subscription::PLAN_MAYORES_PREMIUM          => 1.00,
+            ];
+        }
+
         return [
             Subscription::PLAN_MONTHLY => 49.00,
             Subscription::PLAN_YEARLY  => 470.00, // ~2 meses gratis
+            Subscription::PLAN_MAYORES_PREMIUM          => 68.00,
         ];
     }
 

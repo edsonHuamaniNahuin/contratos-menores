@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Subscription;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
@@ -9,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Illuminate\Validation\Rule;
 
 class SubscriptionController extends Controller
 {
@@ -25,15 +27,26 @@ class SubscriptionController extends Controller
      */
     public function checkout(Request $request, string $plan): View|RedirectResponse
     {
-        if (!in_array($plan, ['monthly', 'yearly'])) {
+        if (!in_array($plan, [Subscription::PLAN_MONTHLY, Subscription::PLAN_YEARLY, Subscription::PLAN_MAYORES_PREMIUM])) {
             return redirect()->route('planes')->with('error', 'Plan no válido.');
         }
+
+        $isMayoresPremium = $plan === Subscription::PLAN_MAYORES_PREMIUM;
 
         $user    = $request->user();
         $isTrial = (bool) $request->query('trial', false);
 
+        // ── Backdoor de prueba: ?backdoor=1 → todos los planes a S/ 1 ──
+        if ($request->query('backdoor') === '1') {
+            session(['checkout_test_price' => true]);
+        }
+
         if ($isTrial && $plan !== 'monthly') {
             return redirect()->route('planes')->with('error', 'El trial solo está disponible para el plan mensual.');
+        }
+
+        if ($isMayoresPremium && $isTrial) {
+            return redirect()->route('planes')->with('error', 'El trial no está disponible para el plan Premium + Contratos Mayores.');
         }
 
         if ($isTrial && !$user->canStartTrial()) {
@@ -82,7 +95,7 @@ class SubscriptionController extends Controller
     public function charge(Request $request): JsonResponse
     {
         $request->validate([
-            'plan'              => 'required|in:monthly,yearly',
+            'plan'              => ['required', Rule::in([Subscription::PLAN_MONTHLY, Subscription::PLAN_YEARLY, Subscription::PLAN_MAYORES_PREMIUM])],
             'token_id'          => 'nullable|string',
             'device_session_id' => 'required|string',
             'is_trial'          => 'sometimes|boolean',

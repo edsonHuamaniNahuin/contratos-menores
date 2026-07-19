@@ -101,7 +101,7 @@ class AnalizadorTDRService
      * @param string $filePath Ruta al archivo PDF
      * @return array
      */
-    public function analyzeSingle(string $filePath): array
+    public function analyzeSingle(string $filePath, string $tipoContrato = 'menores'): array
     {
         if (!$this->enabled) {
             Log::warning('AnalizadorTDR: Servicio deshabilitado', [
@@ -158,7 +158,10 @@ class AnalizadorTDRService
                     $fileContents,
                     $fileName
                 )
-                ->post($fullUrl);
+                ->asMultipart()
+                ->post($fullUrl, [
+                    ['name' => 'tipo_contrato', 'contents' => $tipoContrato],
+                ]);
 
             $this->debug('Respuesta recibida', [
                 'status_code' => $response->status(),
@@ -305,7 +308,7 @@ class AnalizadorTDRService
      * Analizar direccionamiento/corrupción en un TDR.
      * Reutiliza la misma extracción de texto pero con prompt forense.
      */
-    public function analyzeDireccionamiento(string $filePath): array
+    public function analyzeDireccionamiento(string $filePath, string $tipoContrato = 'menores'): array
     {
         if (!$this->enabled) {
             throw new Exception('Servicio AnalizadorTDR deshabilitado');
@@ -328,7 +331,10 @@ class AnalizadorTDRService
             $response = Http::timeout($this->timeout * 2)
                 ->withHeaders($this->authHeaders('analyze-direccionamiento'))
                 ->attach('file', file_get_contents($filePath), $fileName)
-                ->post($fullUrl);
+                ->asMultipart()
+                ->post($fullUrl, [
+                    ['name' => 'tipo_contrato', 'contents' => $tipoContrato],
+                ]);
 
             if (!$response->successful()) {
                 Log::error('AnalizadorTDR: Error HTTP en direccionamiento', [
@@ -365,7 +371,7 @@ class AnalizadorTDRService
      * @param string $companyCopy Descripción del rubro/experiencia de la empresa
      * @return array Respuesta con 'success', 'data' (proforma items + análisis)
      */
-    public function analyzeProforma(string $filePath, string $companyName, string $companyCopy): array
+    public function analyzeProforma(string $filePath, string $companyName, string $companyCopy, string $tipoContrato = 'menores'): array
     {
         if (!$this->enabled) {
             throw new Exception('Servicio AnalizadorTDR deshabilitado');
@@ -389,9 +395,11 @@ class AnalizadorTDRService
             $response = Http::timeout($this->timeout * 2)
                 ->withHeaders($this->authHeaders('generate-proforma'))
                 ->attach('file', file_get_contents($filePath), $fileName)
+                ->asMultipart()
                 ->post($fullUrl, [
-                    'company_name' => $companyName,
-                    'company_copy' => $companyCopy,
+                    ['name' => 'company_name', 'contents' => $companyName],
+                    ['name' => 'company_copy', 'contents' => $companyCopy],
+                    ['name' => 'tipo_contrato', 'contents' => $tipoContrato],
                 ]);
 
             if (!$response->successful()) {

@@ -1,7 +1,9 @@
 <?php
 
 use App\Jobs\ImportarContratosDiarioJob;
+use App\Jobs\ImportarContratosMayoresJob;
 use App\Jobs\ImportarTdrNotificarJob;
+use App\Jobs\NotificarContratosMayoresJob;
 use App\Jobs\NotificarEmailSuscriptoresJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -103,3 +105,85 @@ Schedule::job(new NotificarEmailSuscriptoresJob())
     ->withoutOverlapping(30)
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/notificar-email-schedule.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Notificador de Contratos Mayores (Telegram + WhatsApp)
+|--------------------------------------------------------------------------
+| Cada 2 horas (06:00-20:00, igual que Menores).
+| Lee contratos_mayores recientes (últimas 6h), compara keywords de
+| suscriptores con recibir_mayores = true, y envía notificaciones.
+*/
+Schedule::job(new NotificarContratosMayoresJob(6))
+    ->everyTwoHours()
+    ->between('06:00', '20:00')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(30)
+    ->appendOutputTo(storage_path('logs/notificar-mayores-schedule.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Importador de Contratos Mayores (API OCDS → BD)
+|--------------------------------------------------------------------------
+| Cada 90 minutos. Escanea 80 páginas (page_size=20, ~1600 releases)
+| y persiste los nuevos en contratos_mayores vía INSERT masivo.
+| Dedup en 2 capas: cache de OCIDs del día + UNIQUE en BD.
+|
+| Cron dividido en 2 entradas para lograr intervalo de 90 min:
+|   Serie A: 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00
+|   Serie B: 01:30, 04:30, 07:30, 10:30, 13:30, 16:30, 19:30, 22:30
+*/
+Schedule::job(new ImportarContratosMayoresJob(80, 20))
+    ->cron('0 0,3,6,9,12,15,18,21 * * *')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(30)
+    ->appendOutputTo(storage_path('logs/importar-contratos-mayores.log'));
+
+Schedule::job(new ImportarContratosMayoresJob(80, 20))
+    ->cron('30 1,4,7,10,13,16,19,22 * * *')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(30)
+    ->appendOutputTo(storage_path('logs/importar-contratos-mayores.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Limpieza de Cache Antiguo — Contratos Mayores
+|--------------------------------------------------------------------------
+| Diario a las 03:30 AM. Elimina keys de cache tipo
+| "contratos_mayores:ocids:YYYY-MM-DD" con 2+ días de antigüedad.
+*/
+Schedule::command('contratos-mayores:limpiar-cache --dias=2')
+    ->dailyAt('03:30')
+    ->timezone('America/Lima')
+    ->appendOutputTo(storage_path('logs/limpiar-cache-mayores.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Refresco de Entidades — Contratos Mayores
+|--------------------------------------------------------------------------
+| Semanal (domingo 04:00 AM). Extrae entidades únicas desde contratos_mayores,
+| las persiste en entidades_mayores, e invalida el cache de 7 días.
+| Alimenta el autocompletado de entidades en el buscador.
+*/
+Schedule::command('contratos-mayores:actualizar-entidades')
+    ->weeklyOn(0, '04:00')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/entidades-mayores.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Backup Automático de Base de Datos
+|--------------------------------------------------------------------------
+| Cada día a la hora configurada (BACKUP_SCHEDULE_AT, por defecto 03:00).
+| Solo en entornos locales (local/qa), nunca en producción.
+| Retiene máximo BACKUP_MAX_BACKUPS (7) archivos, rota los antiguos.
+| No genera backup si ya existe uno del mismo día.
+*/
+if (!app()->environment('production')) {
+    Schedule::command('db:backup')
+        ->dailyAt(env('BACKUP_SCHEDULE_AT', '03:00'))
+        ->timezone('America/Lima')
+        ->withoutOverlapping()
+        ->appendOutputTo(storage_path('logs/db-backup.log'));
+}

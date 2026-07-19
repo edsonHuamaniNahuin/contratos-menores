@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Licitaciones MYPe')</title>
+    <title>@yield('title', 'Vigilante SEACE')</title>
     <meta name="description" content="@yield('meta_description', 'Plataforma inteligente de monitoreo de licitaciones y contrataciones del Estado peruano. Buscador SEACE, alertas automáticas y análisis con IA.')">
     @unless(app()->environment('production'))
         <meta name="robots" content="noindex, nofollow">
@@ -69,7 +69,7 @@
                     </svg>
                 </div>
                 <div>
-                    <span class="text-lg font-bold text-neutral-900 block leading-tight">Licitaciones MYPe</span>
+                    <span class="text-lg font-bold text-neutral-900 block leading-tight">Vigilante SEACE</span>
                     <span class="text-[10px] text-neutral-500 font-medium tracking-wider uppercase">Vigilante SEACE</span>
                 </div>
             </a>
@@ -80,7 +80,10 @@
                     Inicio
                 </a>
                 <a href="{{ route('buscador.publico') }}" class="px-4 py-2 text-sm font-medium rounded-full transition-colors {{ request()->routeIs('buscador.publico') ? 'text-brand-800 bg-brand-800/5' : 'text-neutral-600 hover:text-brand-800' }}">
-                    Buscador
+                    Contratos Menores
+                </a>
+                <a href="{{ route('buscador.mayores') }}" class="px-4 py-2 text-sm font-medium rounded-full transition-colors {{ request()->routeIs('buscador.mayores') ? 'text-brand-800 bg-brand-800/5' : 'text-neutral-600 hover:text-brand-800' }}">
+                    Contratos Mayores
                 </a>
                 <a href="{{ route('planes') }}" class="px-4 py-2 text-sm font-medium rounded-full transition-colors {{ request()->routeIs('planes') ? 'text-brand-800 bg-brand-800/5' : 'text-neutral-600 hover:text-brand-800' }}">
                     Planes
@@ -122,7 +125,8 @@
         <div x-show="mobileMenu" x-collapse class="md:hidden mt-4 pb-2 border-t border-neutral-100 pt-4">
             <div class="flex flex-col gap-1">
                 <a href="{{ route('landing') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Inicio</a>
-                <a href="{{ route('buscador.publico') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Buscador</a>
+                <a href="{{ route('buscador.publico') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Contratos Menores</a>
+                <a href="{{ route('buscador.mayores') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Contratos Mayores</a>
                 <a href="{{ route('planes') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Planes</a>
                 <a href="{{ route('manual') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Manual</a>
                 <a href="{{ route('contacto') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Contacto</a>
@@ -156,7 +160,7 @@
                             </svg>
                         </div>
                         <div>
-                            <span class="font-bold block leading-tight">Licitaciones MYPe</span>
+                            <span class="font-bold block leading-tight">Vigilante SEACE</span>
                             <span class="text-[10px] text-neutral-400 font-medium tracking-wider uppercase">Vigilante SEACE</span>
                         </div>
                     </div>
@@ -170,6 +174,7 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Plataforma</p>
                     <ul class="space-y-2.5 text-sm text-neutral-400">
                         <li><a href="{{ route('buscador.publico') }}" class="hover:text-white transition-colors">Buscador público</a></li>
+                        <li><a href="{{ route('buscador.mayores') }}" class="hover:text-white transition-colors">Contratos mayores</a></li>
                         <li><a href="{{ route('planes') }}" class="hover:text-white transition-colors">Planes y precios</a></li>
                         <li><a href="{{ route('manual') }}" class="hover:text-white transition-colors">Manual del usuario</a></li>
                     </ul>
@@ -208,7 +213,7 @@
 
             <div class="border-t border-neutral-800 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p class="text-xs text-neutral-400">&copy; {{ date('Y') }} Sunqupacha S.A.C. Todos los derechos reservados.</p>
-                <p class="text-xs text-neutral-400">Licitaciones MYPe es un producto de <a href="https://sunqupacha.com" target="_blank" rel="noopener" class="text-neutral-300 hover:text-white underline underline-offset-2">Sunqupacha</a></p>
+                <p class="text-xs text-neutral-400">Vigilante SEACE es un producto de <a href="https://sunqupacha.com" target="_blank" rel="noopener" class="text-neutral-300 hover:text-white underline underline-offset-2">Sunqupacha</a></p>
             </div>
         </div>
     </footer>

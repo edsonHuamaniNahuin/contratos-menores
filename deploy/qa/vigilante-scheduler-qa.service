@@ -22,7 +22,7 @@ StandardOutput=append:/var/log/vigilante-seace-qa/scheduler.log
 StandardError=append:/var/log/vigilante-seace-qa/scheduler-error.log
 
 NoNewPrivileges=true
-ReadWritePaths=/var/www/vigilante-seace-qa/storage /var/log/vigilante-seace-qa /tmp
+ReadWritePaths=/var/www/vigilante-seace-qa/storage /var/log/vigilante-seace-qa /tmp /var/backups/vigilante-seace-qa
 
 [Install]
 WantedBy=multi-user.target

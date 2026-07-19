@@ -5,7 +5,7 @@ Coordina PDF Processor → RAG Extractor → LLM Client.
 from typing import Dict, Optional, Literal
 from app.services.pdf_processor import PDFProcessorService
 from app.services.rag_extractor import RAGExtractionService
-from app.services.llm import LLMFactory
+from app.services.llm import LLMFactory, BaseLLMClient
 from app.models.schemas import (
     TDRAnalysisResponse,
     CompatibilityScoreRequest,
@@ -38,7 +38,9 @@ class TDRAnalyzerService:
     async def analyze_tdr_document(
         self,
         pdf_bytes: bytes,
-        llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None
+        llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None,
+        tipo_contrato: str = "menores",
+        filename: str = "document.pdf",
     ) -> TDRAnalysisResponse:
         """
         Pipeline completo de análisis de TDR.
@@ -64,10 +66,67 @@ class TDRAnalyzerService:
 
         llm_client = LLMFactory.create_client(llm_provider)
 
+        # ── Reconocimiento de formato por extensión ──────────────────────────
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+        
+        # DOCX/DOC: extraer texto y analizar como texto (Gemini multimodal no soporta DOCX)
+        if ext in ('docx', 'doc'):
+            self.logger.info(f"📝 Word (.{ext}) — extrayendo texto...")
+            docx_text = self._extract_docx_text(pdf_bytes)
+            if not docx_text:
+                raise ValueError("No se pudo extraer texto del documento Word. El archivo podría estar corrupto o protegido.")
+            
+            self.logger.info(f"✓ DOCX: {len(docx_text)} chars extraídos")
+            es_mayor = (tipo_contrato == "mayores")
+            
+            if len(docx_text) < 5000:
+                context = f"DOCUMENTO COMPLETO DEL TDR:\n\n{docx_text}\n\n===== FIN DEL DOCUMENTO ====="
+            else:
+                fragments = self.rag_extractor.extract_relevant_fragments(docx_text)
+                context = self.rag_extractor.build_context_for_llm(fragments)
+                self.logger.info(f"✓ RAG: {len(context)} chars")
+            
+            self.logger.info(f"Paso 4/4: Analizando con LLM (tipo: {tipo_contrato})...")
+            if es_mayor:
+                if hasattr(llm_client, 'analyze_tdr_mayores') and type(llm_client).analyze_tdr_mayores != BaseLLMClient.analyze_tdr_mayores:
+                    analysis_dict = await llm_client.analyze_tdr_mayores(context)
+                else:
+                    mayores_prefix = """[INSTRUCCION: Contrato Mayor (>8 UIT) bajo Ley N 32069. DEBES devolver UNICAMENTE un JSON con metadatos_proceso, requisitos_admisibilidad_y_calificacion, factores_puntaje_evaluacion, parametros_consorcio, garantias_y_penalidades.]\n\n"""
+                    analysis_dict = await llm_client.analyze_tdr(mayores_prefix + context)
+            else:
+                analysis_dict = await llm_client.analyze_tdr(context)
+            self.last_token_usage = analysis_dict.pop('_token_usage', {})
+            return analysis_dict if es_mayor else self._validate_response(self._sanitize_llm_payload(analysis_dict))
+
         # Paso 1: Detección ultrarrápida — PyMuPDF directo, cero OCR (~0.3s)
         self.logger.info("Paso 1/4: Detectando tipo de PDF (nativo vs escaneado)...")
         detect_text = self._extract_native_text(pdf_bytes)
         num_pages = self._get_page_count(pdf_bytes)
+
+        # PyMuPDF no pudo leer el archivo (DOCX, etc.) → extraer texto de DOCX o markdown
+        if num_pages == 0 and len(detect_text) < 50:
+            docx_text = self._extract_docx_text(pdf_bytes)
+            if docx_text:
+                self.logger.info(f"📝 Documento no-PDF detectado (DOCX/Word) — {len(docx_text)} chars extraídos")
+                context = f"DOCUMENTO COMPLETO DEL TDR:\n\n{docx_text}\n\n===== FIN DEL DOCUMENTO ====="
+                self.logger.info(f"✓ Contexto preparado: {len(context)} caracteres")
+                self.logger.info(f"Paso 4/4: Analizando con LLM (provider: {llm_provider or 'default'}, tipo: {tipo_contrato})...")
+                # Para DOCX, usar el prompt textual de Mayores o Menores según corresponda
+                if es_mayor:
+                    if hasattr(llm_client, 'analyze_tdr_mayores') and type(llm_client).analyze_tdr_mayores != BaseLLMClient.analyze_tdr_mayores:
+                        analysis_dict = await llm_client.analyze_tdr_mayores(context)
+                    else:
+                        # Inyectar instrucción Mayores
+                        mayores_prefix = """[INSTRUCCIÓN: Contrato Mayor (>8 UIT) bajo Ley N° 32069. DEBES devolver ÚNICAMENTE un JSON con metadatos_proceso, requisitos_admisibilidad_y_calificacion, factores_puntaje_evaluacion, parametros_consorcio, garantias_y_penalidades.]\n\n"""
+                        analysis_dict = await llm_client.analyze_tdr(mayores_prefix + context)
+                else:
+                    analysis_dict = await llm_client.analyze_tdr(context)
+                self.last_token_usage = analysis_dict.pop('_token_usage', {})
+                return analysis_dict if es_mayor else self._validate_response(self._sanitize_llm_payload(analysis_dict))
+            else:
+                # Ni PDF ni DOCX — intentar multimodal de todas formas (podría ser PDF corrupto)
+                pass
+
         chars_per_page = len(detect_text) / max(num_pages, 1)
 
         self.logger.info(
@@ -75,12 +134,16 @@ class TDRAnalyzerService:
             f"{num_pages} págs, {chars_per_page:.0f} chars/pág"
         )
 
+        # ── Router: Contratos Mayores vs Menores ──────────────────────────────
+        es_mayor = (tipo_contrato == "mayores")
+
         # ── Estrategia híbrida ─────────────────────────────────────────────
-        # PDF nativo (≥200 chars/pág): texto + tablas → RAG → LLM
-        # PDF escaneado (<200 chars/pág): PDF directo → Gemini multimodal
-        #   Salta extract_text_from_pdf y Tesseract por completo.
+        # PDF escaneado (<200 chars/pág) O PDF grande (>50 págs): multimodal directo
+        #   Salta extract_text_from_pdf, RAG y Tesseract por completo.
+        #   Gemini procesa el PDF visualmente en ~30s constante.
+        pdf_muy_grande = num_pages > 20
         use_multimodal = (
-            chars_per_page < MIN_CHARS_PER_PAGE
+            (chars_per_page < MIN_CHARS_PER_PAGE or pdf_muy_grande)
             and hasattr(llm_client, 'analyze_tdr_from_pdf')
         )
 
@@ -91,6 +154,9 @@ class TDRAnalyzerService:
             )
             analysis_dict = await llm_client.analyze_tdr_from_pdf(pdf_bytes, "document.pdf")
             self.last_token_usage = analysis_dict.pop('_token_usage', {})
+            # Para Mayores, el resultado multimodal viene en formato Menores — es aceptable
+            if es_mayor:
+                return analysis_dict
             analysis_dict = self._sanitize_llm_payload(analysis_dict)
             return self._validate_response(analysis_dict)
 
@@ -129,11 +195,36 @@ class TDRAnalyzerService:
             self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
 
         # Paso 4: Analizar con el LLM usando texto enriquecido
-        self.logger.info(f"Paso 4/4: Analizando con LLM (provider: {llm_provider or 'default'})...")
-        analysis_dict = await llm_client.analyze_tdr(context)
+        self.logger.info(f"Paso 4/4: Analizando con LLM (provider: {llm_provider or 'default'}, tipo: {tipo_contrato})...")
+        if es_mayor:
+            # Para Mayores, si el cliente tiene método especializado, usarlo.
+            # Si no (Gemini, OpenAI), inyectar instrucción Mayores en el contexto.
+            if hasattr(llm_client, 'analyze_tdr_mayores') and type(llm_client).analyze_tdr_mayores != BaseLLMClient.analyze_tdr_mayores:
+                analysis_dict = await llm_client.analyze_tdr_mayores(context)
+            else:
+                # Gemini/OpenAI: envolver contexto con instrucciones Mayores
+                mayores_prefix = """[INSTRUCCIÓN: Contrato Mayor (>8 UIT) bajo Ley N° 32069.
+DEBES devolver ÚNICAMENTE un JSON con esta estructura (no uses el formato de contratos menores):
+{
+  "metadatos_proceso": {"objeto_principal": "...", "sistema_de_contratacion": "...", "valor_monetario_referencial": "...", "modalidad_inferida": "..."},
+  "requisitos_admisibilidad_y_calificacion": {"habilitaciones_legales_obligatorias": [], "equipamiento_infraestructura": [], "experiencia_financiera_postor": "...", "perfil_personal_clave": [{"cargo": "...", "formacion_academica": "...", "experiencia_especifica_obligatoria": "..."}]},
+  "factores_puntaje_evaluacion": [{"factor_nombre": "...", "puntaje_maximo_asignado": 0, "criterio_evaluacion": "..."}],
+  "parametros_consorcio": {"permite_consorcio": true, "limite_maximo_integrantes": 0, "porcentaje_minimo_individual": "..."},
+  "garantias_y_penalidades": {"porcentaje_garantia_fiel_cumplimiento": "...", "permite_retencion_mype": true, "penalidad_mora_tope_maximo": "...", "otras_penalidades_tope": "..."}
+}
+Separa estrictamente Requisitos de Calificación (Pasa/No Pasa) de Factores de Evaluación (puntaje 0-100).
+]\n\n"""
+                context = mayores_prefix + context
+                analysis_dict = await llm_client.analyze_tdr(context)
+        else:
+            analysis_dict = await llm_client.analyze_tdr(context)
 
         # Extraer token usage antes de validar con Pydantic
         self.last_token_usage = analysis_dict.pop('_token_usage', {})
+
+        # Contratos Mayores: devolver raw dict (esquema diferente a Menores)
+        if es_mayor:
+            return analysis_dict
 
         # Asegurar que el payload cumpla con límites antes de validar
         analysis_dict = self._sanitize_llm_payload(analysis_dict)
@@ -277,7 +368,8 @@ class TDRAnalyzerService:
     async def analyze_direccionamiento_document(
         self,
         pdf_bytes: bytes,
-        llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None
+        llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None,
+        tipo_contrato: str = "menores",
     ) -> DireccionamientoAnalysisResponse:
         """
         Pipeline de análisis forense de direccionamiento.
@@ -298,9 +390,12 @@ class TDRAnalyzerService:
             f"{num_pages} págs, {chars_per_page:.0f} chars/pág"
         )
 
+        # ── Router: Contratos Mayores vs Menores ──────────────────────────────
+        es_mayor = (tipo_contrato == "mayores")
+
         # ── Estrategia híbrida ─────────────────────────────────────────────
         use_multimodal = (
-            chars_per_page < MIN_CHARS_PER_PAGE
+            (chars_per_page < MIN_CHARS_PER_PAGE or num_pages > 20)
             and hasattr(llm_client, 'analyze_direccionamiento_from_pdf')
         )
 
@@ -339,8 +434,13 @@ class TDRAnalyzerService:
         self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
 
         # Paso 4: Analizar con prompt forense
-        self.logger.info("🔍 Analizando direccionamiento con LLM...")
-        analysis_dict = await llm_client.analyze_direccionamiento(context)
+        self.logger.info(f"🔍 Analizando direccionamiento con LLM (tipo: {tipo_contrato})...")
+        if es_mayor:
+            analysis_dict = await llm_client.analyze_direccionamiento_mayores(context)
+            self.last_token_usage = analysis_dict.pop('_token_usage', {})
+            return analysis_dict
+        else:
+            analysis_dict = await llm_client.analyze_direccionamiento(context)
         self.last_token_usage = analysis_dict.pop('_token_usage', {})
         analysis_dict = self._sanitize_direccionamiento_payload(analysis_dict)
 
@@ -454,6 +554,7 @@ class TDRAnalyzerService:
         company_copy: str,
         contrato_contexto: Optional[Dict] = None,
         llm_provider: Optional[Literal["gemini", "openai", "anthropic"]] = None,
+        tipo_contrato: str = "menores",
     ) -> ProformaResponse:
         """
         Pipeline de generación de proforma técnica de cotización.
@@ -474,9 +575,12 @@ class TDRAnalyzerService:
             f"{num_pages} págs, {chars_per_page:.0f} chars/pág"
         )
 
+        # ── Router: Contratos Mayores vs Menores ──────────────────────────────
+        es_mayor = (tipo_contrato == "mayores")
+
         # ── Estrategia híbrida ─────────────────────────────────────────────
         use_multimodal = (
-            chars_per_page < MIN_CHARS_PER_PAGE
+            (chars_per_page < MIN_CHARS_PER_PAGE or num_pages > 20)
             and hasattr(llm_client, 'generate_proforma_from_pdf')
         )
 
@@ -517,13 +621,17 @@ class TDRAnalyzerService:
         self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
 
         # Paso 4: Generar proforma con LLM
-        self.logger.info("📋 Generando proforma técnica con LLM...")
-        raw = await llm_client.generate_proforma(
-            context,
-            company_name,
-            company_copy,
-            contrato_contexto,
-        )
+        self.logger.info(f"📋 Generando proforma con LLM (tipo: {tipo_contrato})...")
+        if es_mayor:
+            raw = await llm_client.generate_proforma_mayores(
+                context, company_name, company_copy, contrato_contexto,
+            )
+            self.last_token_usage = raw.pop('_token_usage', {})
+            return raw
+        else:
+            raw = await llm_client.generate_proforma(
+                context, company_name, company_copy, contrato_contexto,
+            )
         self.last_token_usage = raw.pop('_token_usage', {})
         sanitized = self._sanitize_proforma_payload(raw)
 
@@ -627,3 +735,34 @@ class TDRAnalyzerService:
             payload["analisis_viabilidad"] = viab[:2997] + "..."
 
         return payload
+
+    def _extract_docx_text(self, pdf_bytes: bytes) -> str:
+        """Extrae texto de un archivo DOCX (Office Open XML) sin dependencias externas."""
+        import zipfile
+        import xml.etree.ElementTree as ET
+        import io
+
+        try:
+            with zipfile.ZipFile(io.BytesIO(pdf_bytes)) as zf:
+                if 'word/document.xml' not in zf.namelist():
+                    return ""
+
+                xml_content = zf.read('word/document.xml')
+                root = ET.fromstring(xml_content)
+
+                paragraphs = []
+                for p in root.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p'):
+                    texts = []
+                    for t in p.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t'):
+                        if t.text:
+                            texts.append(t.text)
+                    if texts:
+                        paragraphs.append(''.join(texts))
+
+                text = '\n\n'.join(paragraphs)
+                self.logger.info(f"✓ DOCX: {len(text)} chars extraídos de {len(paragraphs)} párrafos")
+                return text
+
+        except Exception as e:
+            self.logger.warning(f"No se pudo extraer texto del DOCX: {e}")
+            return ""
