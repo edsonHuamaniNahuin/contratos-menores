@@ -398,14 +398,15 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                     return;
                 }
 
-                $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($ocid);
-
-                $this->whatsapp->enviarMensaje($phoneNumber, match ($action) {
-                    'analizar' => "🤖 Analizar Contrato Mayor\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\nAbrí para analizar:\n{$webUrl}",
-                    'verweb' => "🌐 Ver en la web\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\nAbrí:\n{$webUrl}",
-                    'descargar' => "📎 Descargar TDR\n\n📋 {$contrato->nomenclatura}\n\n" . ($contrato->url_documento ? "Link: {$contrato->url_documento}" : "Abrí: {$webUrl}"),
-                    default => '❌ Acción no reconocida.',
-                });
+                match ($action) {
+                    'analizar' => $this->analizarMayorParaUsuario($phoneNumber, $contrato),
+                    'descargar' => $this->descargarMayorParaUsuario($phoneNumber, $contrato),
+                    'direccionar' => $this->direccionarMayorParaUsuario($phoneNumber, $contrato),
+                    'proforma' => $this->generarProformaMayorParaUsuario($phoneNumber, $contrato),
+                    'postores', 'verweb' => $this->whatsapp->enviarMensaje($phoneNumber,
+                        "🌐 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\nAbrí en la web:\n" . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($ocid)),
+                    default => $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida.'),
+                };
 
             } else {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida');
@@ -415,7 +416,161 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         }
     }
 
-    // ─── Análisis TDR ───────────────────────────────────────────────
+    // ─── Análisis TDR Mayores ───────────────────────────────────────
+
+    protected function analizarMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void
+    {
+        $this->whatsapp->enviarMensaje($phoneNumber, '⏳ Analizando TDR con IA...');
+
+        try {
+            $pdfUrl = $contrato->url_documento;
+            if (empty($pdfUrl)) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Este contrato no tiene documento TDR disponible.');
+                return;
+            }
+
+            $pdfBytes = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl)->body();
+            if (empty($pdfBytes)) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ No se pudo descargar el TDR.');
+                return;
+            }
+
+            $service = app(\App\Services\MayoresTdrService::class);
+            $ctx = [
+                'entidad_nombre' => $contrato->entidad_nombre,
+                'nomenclatura' => $contrato->nomenclatura,
+                'descripcion_objeto' => $contrato->descripcion_objeto,
+                'objeto_contratacion' => $contrato->objeto_contratacion,
+                'valor_referencial' => $contrato->valor_referencial,
+            ];
+            $userId = \App\Models\WhatsAppSubscription::where('phone_number', $phoneNumber)->value('user_id');
+
+            $resultado = $service->analizar($contrato->ocid, $pdfUrl, $ctx, $userId);
+
+            if ($resultado['success']) {
+                $data = $resultado['data'] ?? [];
+                $resumen = $data['resumen_ejecutivo'] ?? '';
+                $this->whatsapp->enviarMensaje($phoneNumber,
+                    "🤖 *Análisis IA*\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\n" .
+                    mb_substr(strip_tags($resumen), 0, 800) .
+                    "\n\n🔗 Ver completo: " . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid));
+            } else {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error: ' . ($resultado['error'] ?? 'Análisis fallido.'));
+            }
+        } catch (\Exception $e) {
+            $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error al analizar: ' . $e->getMessage());
+        }
+    }
+
+    protected function descargarMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void
+    {
+        $pdfUrl = $contrato->url_documento;
+        if (empty($pdfUrl)) {
+            $this->whatsapp->enviarMensaje($phoneNumber, '❌ Este contrato no tiene documento TDR.');
+            return;
+        }
+
+        $this->whatsapp->enviarMensaje($phoneNumber, '📥 Descargando TDR...');
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl);
+            if (!$response->successful()) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ No se pudo descargar el documento.');
+                return;
+            }
+
+            $filename = 'TDR_' . ($contrato->nomenclatura ?? $contrato->ocid) . '.pdf';
+            $filename = preg_replace('/[^A-Za-z0-9_.-]/', '_', $filename);
+            $resultado = $this->whatsapp->enviarDocumento($phoneNumber, $response->body(), $filename);
+
+            if (!$resultado['success']) {
+                $this->whatsapp->enviarMensaje($phoneNumber,
+                    "📎 Descargalo aquí:\n{$pdfUrl}");
+            }
+        } catch (\Exception $e) {
+            $this->whatsapp->enviarMensaje($phoneNumber,
+                "📎 No se pudo enviar el archivo. Descargalo aquí:\n{$pdfUrl}");
+        }
+    }
+
+    protected function direccionarMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void
+    {
+        $this->whatsapp->enviarMensaje($phoneNumber, '🔍 Analizando direccionamiento...');
+
+        try {
+            $pdfUrl = $contrato->url_documento;
+            if (empty($pdfUrl)) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Sin documento TDR.');
+                return;
+            }
+
+            $analizador = new \App\Services\AnalizadorTDRService();
+            $pdfBytes = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl)->body();
+            $tempPath = storage_path('app/temp/' . \Illuminate\Support\Str::uuid() . '.pdf');
+            file_put_contents($tempPath, $pdfBytes);
+
+            $resultado = $analizador->analyzeDireccionamiento($tempPath, 'mayores');
+            @unlink($tempPath);
+
+            if ($resultado['success']) {
+                $data = $resultado['data'] ?? [];
+                $score = $data['score_probabilidad_direccionamiento'] ?? $data['score_riesgo_corrupcion'] ?? 0;
+                $estado = $data['estado_proceso'] ?? $data['veredicto_flash'] ?? 'N/A';
+                $this->whatsapp->enviarMensaje($phoneNumber,
+                    "🔍 *Direccionamiento*\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\n"
+                    . "Score: {$score}%\nEstado: {$estado}\n\n"
+                    . "🔗 Ver completo: " . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid));
+            } else {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ ' . ($resultado['error'] ?? 'Error al analizar.'));
+            }
+        } catch (\Exception $e) {
+            $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error: ' . $e->getMessage());
+        }
+    }
+
+    protected function generarProformaMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void
+    {
+        $this->whatsapp->enviarMensaje($phoneNumber, '📋 Generando proforma técnica...');
+
+        try {
+            $profile = \App\Models\SubscriberProfile::where('user_id', $this->resolveUserIdFromPhone($phoneNumber))->first();
+            if (!$profile || blank($profile->company_copy)) {
+                $this->whatsapp->enviarMensaje($phoneNumber,
+                    '⚠️ Configurá el perfil de tu empresa en la web antes de generar proformas.' . "\n\n"
+                    . '🔗 ' . config('app.url') . '/configuracion-alertas');
+                return;
+            }
+
+            $analizador = new \App\Services\AnalizadorTDRService();
+            $pdfUrl = $contrato->url_documento;
+            if (empty($pdfUrl)) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ Sin documento TDR.');
+                return;
+            }
+
+            $pdfBytes = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl)->body();
+            $tempPath = storage_path('app/temp/' . \Illuminate\Support\Str::uuid() . '.pdf');
+            file_put_contents($tempPath, $pdfBytes);
+
+            $resultado = $analizador->analyzeProforma($tempPath, $profile->company_name ?? '', $profile->company_copy, 'mayores');
+            @unlink($tempPath);
+
+            if ($resultado['success']) {
+                $data = $resultado['data'] ?? [];
+                $total = $data['total_estimado'] ?? '---';
+                $this->whatsapp->enviarMensaje($phoneNumber,
+                    "📋 *Proforma*\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\n"
+                    . "Total estimado: {$total}\n\n"
+                    . "🔗 Ver completo: " . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid));
+            } else {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ ' . ($resultado['error'] ?? 'Error al generar proforma.'));
+            }
+        } catch (\Exception $e) {
+            $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error: ' . $e->getMessage());
+        }
+    }
+
+    // ─── Análisis TDR Menores ───────────────────────────────────────
 
     protected function resolveUserIdFromPhone(string $phoneNumber): ?int
     {
