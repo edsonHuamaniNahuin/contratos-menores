@@ -450,10 +450,18 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             if ($resultado['success']) {
                 $data = $resultado['data'] ?? [];
                 $resumen = $data['resumen_ejecutivo'] ?? '';
-                $this->whatsapp->enviarMensaje($phoneNumber,
-                    "🤖 *Análisis IA*\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\n" .
-                    mb_substr(strip_tags($resumen), 0, 800) .
-                    "\n\n🔗 Ver completo: " . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid));
+                $monto = $data['presupuesto_referencial'] ?? $contrato->valor_referencial;
+                $montoStr = is_numeric($monto) && $monto > 0 ? 'S/ ' . number_format((float)$monto, 2) : '---';
+
+                $msg = "🤖 *Análisis IA*\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n💰 {$montoStr}\n\n";
+
+                if (!empty($resumen)) {
+                    $msg .= mb_substr(strip_tags($resumen), 0, 900);
+                } else {
+                    $msg .= 'Análisis completado.';
+                }
+
+                $this->whatsapp->enviarMensaje($phoneNumber, $msg);
             } else {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error: ' . ($resultado['error'] ?? 'Análisis fallido.'));
             }
@@ -516,10 +524,10 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $data = $resultado['data'] ?? [];
                 $score = $data['score_probabilidad_direccionamiento'] ?? $data['score_riesgo_corrupcion'] ?? 0;
                 $estado = $data['estado_proceso'] ?? $data['veredicto_flash'] ?? 'N/A';
+                $emoji = $score <= 25 ? '✅' : ($score <= 65 ? '⚠️' : '🚨');
                 $this->whatsapp->enviarMensaje($phoneNumber,
                     "🔍 *Direccionamiento*\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\n"
-                    . "Score: {$score}%\nEstado: {$estado}\n\n"
-                    . "🔗 Ver completo: " . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid));
+                    . "{$emoji} Score: {$score}%\nEstado: {$estado}");
             } else {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ ' . ($resultado['error'] ?? 'Error al analizar.'));
             }
@@ -560,8 +568,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $total = $data['total_estimado'] ?? '---';
                 $this->whatsapp->enviarMensaje($phoneNumber,
                     "📋 *Proforma*\n\n📋 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\n"
-                    . "Total estimado: {$total}\n\n"
-                    . "🔗 Ver completo: " . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid));
+                    . "Total estimado: {$total}");
             } else {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ ' . ($resultado['error'] ?? 'Error al generar proforma.'));
             }
