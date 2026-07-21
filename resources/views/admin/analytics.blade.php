@@ -42,8 +42,8 @@
     <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
         <h3 class="text-sm font-bold text-neutral-900 mb-4">Paginas mas visitadas</h3>
         <div class="space-y-3">
-            @php $maxViews = count($topPages) > 0 ? max(array_column($topPages, 'screenPageViews')) : 1; @endphp
-            @foreach($topPages as $page)
+            @php $validPages = array_filter($topPages); $maxViews = count($validPages) > 0 ? max(array_column($validPages, 'screenPageViews')) : 1; @endphp
+            @foreach($validPages as $page)
             <div class="flex items-center gap-3">
                 <span class="text-xs text-neutral-500 w-20 truncate" title="{{ $page['pageTitle'] }}">{{ Str::limit($page['pageTitle'], 25) }}</span>
                 <div class="flex-1 h-6 bg-neutral-100 rounded-full overflow-hidden">
@@ -62,7 +62,7 @@
         <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
             <h3 class="text-sm font-bold text-neutral-900 mb-4">Como llegan los usuarios</h3>
             <div class="space-y-2">
-                @foreach($sources as $src)
+                @foreach(array_filter($sources) as $src)
                 <div class="flex items-center justify-between py-2 border-b border-neutral-50">
                     <span class="text-sm text-neutral-700">{{ $src['sessionSource'] }} / {{ $src['sessionMedium'] }}</span>
                     <div class="flex items-center gap-3">
@@ -77,7 +77,7 @@
         <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
             <h3 class="text-sm font-bold text-neutral-900 mb-4">Eventos rastreados</h3>
             <div class="space-y-2">
-                @foreach($events as $evt)
+                @foreach(array_filter($events) as $evt)
                 <div class="flex items-center justify-between py-2 border-b border-neutral-50">
                     <span class="text-sm text-neutral-700">{{ $evt['eventName'] }}</span>
                     <div class="flex items-center gap-3">
