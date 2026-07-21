@@ -185,7 +185,10 @@ class NotificarContratosMayoresJob implements ShouldQueue
             if ($isTelegram) {
                 $keyboard = [
                     'inline_keyboard' => [
-                        [['text' => '🔍 Ver en la web', 'url' => $webUrl]],
+                        [['text' => '🤖 Analizar con IA', 'url' => $webUrl]],
+                        [['text' => '🔍 Detectar Direccionamiento', 'url' => $webUrl]],
+                        [['text' => '📋 Crear Proforma', 'url' => $webUrl]],
+                        [['text' => '👥 Ver Postores', 'url' => $webUrl]],
                     ],
                 ];
                 if (!empty($contrato->url_documento)) {
