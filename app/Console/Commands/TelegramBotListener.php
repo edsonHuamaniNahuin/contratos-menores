@@ -351,6 +351,19 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $this->answerCallbackQuery($callbackId, '📋 Generando proforma técnica...', $token);
                 $this->generarProformaParaUsuario($chatId, $idContrato, $idContratoArchivo, $nombreArchivo, $token);
 
+            } elseif (str_starts_with($data, 'mayor_')) {
+                $parts = explode('_', $data, 3);
+                $action = $parts[1] ?? '';
+                $ocid = $parts[2] ?? '';
+
+                $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($ocid);
+
+                $this->answerCallbackQuery($callbackId, '⏳ Abriendo...', $token);
+                $this->sendMessage($chatId,
+                    "🔗 Abrí el enlace para ver el contrato mayor:\n{$webUrl}",
+                    $token
+                );
+
             } else {
                 $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
             }

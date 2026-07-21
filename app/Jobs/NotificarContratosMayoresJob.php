@@ -191,19 +191,16 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
         try {
             if ($isTelegram) {
-                $keyboard = [
-                    'inline_keyboard' => [
-                        [['text' => '🤖 Analizar con IA', 'url' => $webUrl]],
-                        [['text' => '🔍 Detectar Direccionamiento', 'url' => $webUrl]],
-                        [['text' => '📋 Crear Proforma', 'url' => $webUrl]],
-                        [['text' => '👥 Ver Postores', 'url' => $webUrl]],
-                    ],
+                $buttons = [
+                    [['text' => '🤖 Analizar con IA', 'callback_data' => 'mayor_analizar_' . $contrato->ocid]],
+                    [['text' => '🔍 Detectar Direccionamiento', 'callback_data' => 'mayor_direccionar_' . $contrato->ocid]],
+                    [['text' => '📋 Crear Proforma', 'callback_data' => 'mayor_proforma_' . $contrato->ocid]],
+                    [['text' => '👥 Ver Postores', 'callback_data' => 'mayor_postores_' . $contrato->ocid]],
                 ];
                 if (!empty($contrato->url_documento)) {
-                    $keyboard['inline_keyboard'][] = [
-                        ['text' => '📎 Descargar TDR', 'url' => $contrato->url_documento],
-                    ];
+                    $buttons[] = [['text' => '📎 Descargar TDR', 'url' => $contrato->url_documento]];
                 }
+                $keyboard = ['inline_keyboard' => $buttons];
                 $channel->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
             } else {
                 $bodyWhatsApp = "NUEVO CONTRATO MAYOR\n\n"
