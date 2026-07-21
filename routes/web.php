@@ -318,6 +318,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('home');
     })->name('home');
 
+    Route::get('/admin/analytics', \App\Http\Controllers\AdminAnalyticsController::class)
+        ->name('admin.analytics')
+        ->middleware('can:view-consumo-ia');
+
     // Rutas de gestión de cuentas SEACE
     Route::resource('cuentas', CuentaSeaceController::class)->middleware('can:view-cuentas');
 
