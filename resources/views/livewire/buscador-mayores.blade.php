@@ -20,7 +20,7 @@
     </div>
 
     <div>
-        <h1 class="text-xl lg:text-2xl font-bold text-neutral-900">Contratos Mayores</h1>
+        <h1 class="text-xl lg:text-2xl font-bold text-neutral-900" data-ga-event="page_view_mayores" data-ga-category="mayores">Contratos Mayores</h1>
     </div>
 
     {{-- Notificación toast --}}
@@ -319,6 +319,7 @@
                                             @if(!empty($c['url_documento']))
                                                 <div class="border-t border-neutral-100 my-0.5"></div>
                                                 <button wire:click="analizarTdr('{{ $c['url_documento'] }}'); open = false" wire:loading.attr="disabled" wire:target="analizarTdr('{{ $c['url_documento'] }}')" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 transition-colors"
+                                                    data-ga-event="mayores_analizar_click"
                                                     @mouseenter="showTooltip('Analiza el documento con IA para extraer requisitos, plazos, penalidades y mas', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
                                                     <span>Analizar con IA</span>

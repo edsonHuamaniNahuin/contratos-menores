@@ -39,6 +39,21 @@
             };
         });
     </script>
+    <script>
+        // GA4 Custom Events via data-ga-event attribute
+        document.addEventListener('click', function(e) {
+            if (typeof gtag !== 'function') return;
+            var el = e.target.closest('[data-ga-event]');
+            if (!el) return;
+            var name = el.dataset.gaEvent;
+            var category = el.dataset.gaCategory || '';
+            var label = el.dataset.gaLabel || el.textContent.trim().substring(0, 100);
+            gtag('event', name, {
+                event_category: category,
+                event_label: label,
+            });
+        });
+    </script>
     @endif
 </head>
 <body class="font-sans antialiased min-h-screen bg-neutral-100" x-data="{ sidebarOpen: false }" :class="{ 'overflow-hidden': sidebarOpen }">

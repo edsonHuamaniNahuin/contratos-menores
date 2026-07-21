@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "ga4": {
+      "command": "python",
+      "args": [
+        "D:/xampp/htdocs/vigilante-seace/scripts/ga4-mcp-server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "D:/xampp/htdocs/vigilante-seace"
+      },
+      "tools": {
+        "ga4_totals": {"description": "Visitantes, sesiones, páginas vistas totales (últimos N días)"},
+        "ga4_daily_trend": {"description": "Tendencia diaria de visitas (últimos N días)"},
+        "ga4_top_pages": {"description": "Páginas más visitadas"},
+        "ga4_traffic_sources": {"description": "Fuentes de tráfico (origen/medio)"},
+        "ga4_devices": {"description": "Dispositivos usados (desktop/mobile/tablet)"},
+        "ga4_all_events": {"description": "Todos los eventos registrados"},
+        "ga4_event_count": {"description": "Contar cuántas veces se disparó un evento específico"}
+      }
+    }
+  }
+}
