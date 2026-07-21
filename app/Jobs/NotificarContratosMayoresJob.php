@@ -153,40 +153,40 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
         $isTelegram = $sub instanceof TelegramSubscription;
         $tipoLabel = $isTelegram
-            ? "🔔 *NUEVO CONTRATO MAYOR*"
+            ? "🔔 NUEVO CONTRATO MAYOR"
             : "🔔 NUEVO CONTRATO MAYOR";
 
         $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid);
 
         $mensaje = "{$tipoLabel}\n\n"
-            . "🏢 *Entidad:* {$contrato->entidad_nombre}\n"
-            . "📝 *Código:* {$contrato->nomenclatura}\n"
-            . "🎯 *Objeto:* {$contrato->objeto_contratacion}\n";
+            . "🏢 Entidad: {$contrato->entidad_nombre}\n"
+            . "📝 Código: {$contrato->nomenclatura}\n"
+            . "🎯 Objeto: {$contrato->objeto_contratacion}\n";
 
         $descripcion = $contrato->descripcion_objeto ?? '';
         if (mb_strlen($descripcion) > 200) {
             $descripcion = mb_substr($descripcion, 0, 200) . '...';
         }
         if (!empty($descripcion)) {
-            $mensaje .= "📋 *Descripción:* {$descripcion}\n";
+            $mensaje .= "📋 Descripción: {$descripcion}\n";
         }
 
         if ($contrato->valor_referencial > 0) {
-            $mensaje .= "💰 *Monto:* S/ " . number_format($contrato->valor_referencial, 2) . "\n";
+            $mensaje .= "💰 Monto: S/ " . number_format($contrato->valor_referencial, 2) . "\n";
         }
 
         if ($contrato->fecha_publicacion) {
-            $mensaje .= "📅 *Publicado:* " . $contrato->fecha_publicacion->format('d/m/Y H:i') . "\n";
+            $mensaje .= "📅 Publicado: " . $contrato->fecha_publicacion->format('d/m/Y H:i') . "\n";
         }
 
         $estado = $contrato->estado ?? 'N/A';
         if ($contrato->vigente ?? false) {
             $estado = 'Vigente';
         }
-        $mensaje .= "💼 *Estado:* {$estado}";
+        $mensaje .= "💼 Estado: {$estado}";
 
         if (!empty($keywords)) {
-            $mensaje .= "\n\n🔎 *Coincidencias:* " . implode(', ', $keywords);
+            $mensaje .= "\n\n🔎 Coincidencias: " . implode(', ', $keywords);
         }
 
         try {
