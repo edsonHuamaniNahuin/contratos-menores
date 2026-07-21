@@ -356,13 +356,19 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                 $action = $parts[1] ?? '';
                 $ocid = $parts[2] ?? '';
 
-                $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($ocid);
+                $contrato = \App\Models\ContratoMayor::where('ocid', $ocid)->first();
+                if (!$contrato) {
+                    $this->answerCallbackQuery($callbackId, '❌ Contrato no encontrado', $token);
+                    return;
+                }
 
-                $this->answerCallbackQuery($callbackId, '⏳ Abriendo...', $token);
-                $this->sendMessage($chatId,
-                    "🔗 Abrí el enlace para ver el contrato mayor:\n{$webUrl}",
-                    $token
-                );
+                match ($action) {
+                    'analizar' => $this->analizarMayor($chatId, $contrato, $token, $callbackId),
+                    'descargar' => $this->descargarMayor($chatId, $contrato, $token, $callbackId),
+                    'direccionar' => $this->direccionarMayor($chatId, $contrato, $token, $callbackId),
+                    'proforma' => $this->proformaMayor($chatId, $contrato, $token, $callbackId),
+                    default => $this->mostrarMayorWeb($chatId, $contrato, $token, $callbackId),
+                };
 
             } else {
                 $this->answerCallbackQuery($callbackId, '❌ Acción no reconocida', $token);
@@ -381,6 +387,122 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
             'callback_query_id' => $callbackQueryId,
             'text' => $text,
         ]);
+    }
+
+    // ─── Contratos Mayores ──────────────────────────────────────────
+
+    protected function mostrarMayorWeb(string $chatId, \App\Models\ContratoMayor $c, string $token, string $callbackId): void
+    {
+        $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($c->ocid);
+        $this->answerCallbackQuery($callbackId, '⏳ Abriendo...', $token);
+        $this->sendMessage($chatId, "🔗 {$c->nomenclatura}\n🏢 {$c->entidad_nombre}\n\nAbrí: {$webUrl}", $token);
+    }
+
+    protected function analizarMayor(string $chatId, \App\Models\ContratoMayor $c, string $token, string $callbackId): void
+    {
+        $this->answerCallbackQuery($callbackId, '⏳ Analizando...', $token);
+        $this->sendMessage($chatId, '⏳ Analizando TDR con IA...', $token);
+
+        try {
+            $pdfUrl = $c->url_documento;
+            if (empty($pdfUrl)) { $this->sendMessage($chatId, '❌ Sin documento TDR.', $token); return; }
+
+            $service = app(\App\Services\MayoresTdrService::class);
+            $ctx = ['entidad_nombre' => $c->entidad_nombre, 'nomenclatura' => $c->nomenclatura, 'descripcion_objeto' => $c->descripcion_objeto, 'objeto_contratacion' => $c->objeto_contratacion, 'valor_referencial' => $c->valor_referencial];
+            $userId = \App\Models\TelegramSubscription::where('chat_id', $chatId)->value('user_id');
+
+            $res = $service->analizar($c->ocid, $pdfUrl, $ctx, $userId);
+            if ($res['success']) {
+                $resumen = mb_substr(strip_tags($res['data']['resumen_ejecutivo'] ?? ''), 0, 900);
+                $monto = $c->valor_referencial > 0 ? 'S/ ' . number_format($c->valor_referencial, 2) : '---';
+                $this->sendMessage($chatId, "🤖 Análisis IA\n\n📋 {$c->nomenclatura}\n🏢 {$c->entidad_nombre}\n💰 {$monto}\n\n{$resumen}", $token);
+            } else {
+                $this->sendMessage($chatId, '❌ ' . ($res['error'] ?? 'Error.'), $token);
+            }
+        } catch (\Exception $e) {
+            $this->sendMessage($chatId, '❌ ' . $e->getMessage(), $token);
+        }
+    }
+
+    protected function descargarMayor(string $chatId, \App\Models\ContratoMayor $c, string $token, string $callbackId): void
+    {
+        $this->answerCallbackQuery($callbackId, '📥 Preparando descarga...', $token);
+        $pdfUrl = $c->url_documento;
+        if (empty($pdfUrl)) { $this->sendMessage($chatId, '❌ Sin documento TDR.', $token); return; }
+        $this->sendMessage($chatId, '📥 Descargando TDR...', $token);
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl);
+            if (!$response->successful()) { $this->sendMessage($chatId, '❌ No se pudo descargar.', $token); return; }
+            $filename = preg_replace('/[^A-Za-z0-9_.-]/', '_', 'TDR_' . $c->nomenclatura) . '.pdf';
+            $this->sendDocument($chatId, $response->body(), $filename, "📎 {$c->nomenclatura}\n🏢 {$c->entidad_nombre}", $token);
+        } catch (\Exception $e) {
+            $this->sendMessage($chatId, "📎 Descargalo aquí:\n{$pdfUrl}", $token);
+        }
+    }
+
+    protected function direccionarMayor(string $chatId, \App\Models\ContratoMayor $c, string $token, string $callbackId): void
+    {
+        $this->answerCallbackQuery($callbackId, '🔍 Analizando...', $token);
+        $this->sendMessage($chatId, '🔍 Analizando direccionamiento...', $token);
+
+        try {
+            $pdfUrl = $c->url_documento;
+            if (empty($pdfUrl)) { $this->sendMessage($chatId, '❌ Sin documento TDR.', $token); return; }
+
+            $analizador = new \App\Services\AnalizadorTDRService();
+            $pdfBytes = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl)->body();
+            $tempPath = storage_path('app/temp/' . \Illuminate\Support\Str::uuid() . '.pdf');
+            file_put_contents($tempPath, $pdfBytes);
+            $res = $analizador->analyzeDireccionamiento($tempPath, 'mayores');
+            @unlink($tempPath);
+
+            if ($res['success']) {
+                $d = $res['data'] ?? [];
+                $score = $d['score_probabilidad_direccionamiento'] ?? $d['score_riesgo_corrupcion'] ?? 0;
+                $estado = $d['estado_proceso'] ?? $d['veredicto_flash'] ?? 'N/A';
+                $emoji = $score <= 25 ? '✅' : ($score <= 65 ? '⚠️' : '🚨');
+                $this->sendMessage($chatId, "🔍 Direccionamiento\n\n📋 {$c->nomenclatura}\n🏢 {$c->entidad_nombre}\n\n{$emoji} Score: {$score}%\nEstado: {$estado}", $token);
+            } else {
+                $this->sendMessage($chatId, '❌ ' . ($res['error'] ?? 'Error.'), $token);
+            }
+        } catch (\Exception $e) {
+            $this->sendMessage($chatId, '❌ ' . $e->getMessage(), $token);
+        }
+    }
+
+    protected function proformaMayor(string $chatId, \App\Models\ContratoMayor $c, string $token, string $callbackId): void
+    {
+        $this->answerCallbackQuery($callbackId, '📋 Generando...', $token);
+        $this->sendMessage($chatId, '📋 Generando proforma técnica...', $token);
+
+        try {
+            $pdfUrl = $c->url_documento;
+            if (empty($pdfUrl)) { $this->sendMessage($chatId, '❌ Sin documento TDR.', $token); return; }
+
+            $userId = \App\Models\TelegramSubscription::where('chat_id', $chatId)->value('user_id');
+            $profile = \App\Models\SubscriberProfile::where('user_id', $userId)->first();
+            if (!$profile || blank($profile->company_copy)) {
+                $this->sendMessage($chatId, '⚠️ Configurá el perfil de tu empresa en la web.', $token);
+                return;
+            }
+
+            $analizador = new \App\Services\AnalizadorTDRService();
+            $pdfBytes = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl)->body();
+            $tempPath = storage_path('app/temp/' . \Illuminate\Support\Str::uuid() . '.pdf');
+            file_put_contents($tempPath, $pdfBytes);
+            $res = $analizador->analyzeProforma($tempPath, $profile->company_name ?? '', $profile->company_copy, 'mayores');
+            @unlink($tempPath);
+
+            if ($res['success']) {
+                $total = $res['data']['total_estimado'] ?? '---';
+                $this->sendMessage($chatId, "📋 Proforma\n\n📋 {$c->nomenclatura}\n🏢 {$c->entidad_nombre}\n\nTotal: {$total}", $token);
+            } else {
+                $this->sendMessage($chatId, '❌ ' . ($res['error'] ?? 'Error.'), $token);
+            }
+        } catch (\Exception $e) {
+            $this->sendMessage($chatId, '❌ ' . $e->getMessage(), $token);
+        }
     }
 
     /**
