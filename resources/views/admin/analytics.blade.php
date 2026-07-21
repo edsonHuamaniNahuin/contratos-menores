@@ -103,7 +103,7 @@
                 ['page' => 'Registro', 'views' => $pageViews['/register'] ?? 0, 'color' => 'purple'],
                 ['page' => 'Dashboard', 'views' => $pageViews['/dashboard'] ?? 0, 'color' => 'indigo'],
             ];
-            $maxJourney = count($journey) > 0 ? max(array_column($journey, 'views')) : 1;
+            $maxJourney = max(array_column($journey, 'views')) ?: 1;
             @endphp
             @foreach($journey as $step)
             <div class="flex items-center gap-2 flex-shrink-0">

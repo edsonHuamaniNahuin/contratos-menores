@@ -46,7 +46,7 @@ class AdminAnalyticsController extends Controller
     private function pageViewsMap(): array
     {
         $pages = $this->queryGa4('ga4_top_pages', [7, 50]);
-        $map = [];
+        $map = ['/' => 0, '/buscador-publico' => 0, '/buscador-contratos-mayores' => 0, '/planes' => 0, '/register' => 0, '/dashboard' => 0];
         foreach ($pages as $p) {
             $path = rtrim($p['pagePath'] ?? '', '/') ?: '/';
             $map[$path] = ($map[$path] ?? 0) + (int)($p['screenPageViews'] ?? 0);
