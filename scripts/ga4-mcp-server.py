@@ -16,12 +16,26 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 # ─── Configuración ─────────────────────────────────────
-GA4_PROPERTY_ID = os.environ.get("GA4_PROPERTY_ID", "properties/404642926")  # G-4PRW1QCW48
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GA4_PROPERTY_ID = "properties/404642926"  # G-4PRW1QCW48
 
-# ⚠️ Las credenciales SOLO se leen de variable de entorno, nunca de archivo
-_creds_json = os.environ.get("GA4_CREDENTIALS_JSON", "")
+def _load_env_credentials():
+    """Carga GA4_CREDENTIALS_JSON desde variable de entorno o archivo .env."""
+    val = os.environ.get("GA4_CREDENTIALS_JSON", "")
+    if val:
+        return val
+    env_file = os.path.join(PROJECT_ROOT, ".env")
+    if os.path.exists(env_file):
+        for line in open(env_file):
+            line = line.strip()
+            if line.startswith("GA4_CREDENTIALS_JSON="):
+                val = line.split("=", 1)[1].strip().strip("\"'")
+                return val
+    return ""
+
+_creds_json = _load_env_credentials()
 if not _creds_json:
-    print(json.dumps({"error": "GA4_CREDENTIALS_JSON env var is required"}))
+    print(json.dumps({"error": "GA4_CREDENTIALS_JSON not found in env or .env"}))
     sys.exit(1)
 
 credentials = service_account.Credentials.from_service_account_info(
