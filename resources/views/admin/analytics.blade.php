@@ -15,11 +15,11 @@
     {{-- KPIs principales --}}
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         @foreach([
-            ['label' => 'Usuarios', 'value' => $totals['activeUsers'] ?? 0, 'icon' => 'users', 'color' => 'blue'],
-            ['label' => 'Sesiones', 'value' => $totals['sessions'] ?? 0, 'icon' => 'activity', 'color' => 'green'],
-            ['label' => 'Page Views', 'value' => $totals['screenPageViews'] ?? 0, 'icon' => 'eye', 'color' => 'purple'],
-            ['label' => 'Tiempo Promedio', 'value' => gmdate('i:s', (int)($totals['averageSessionDuration'] ?? 0)), 'icon' => 'clock', 'color' => 'amber'],
-            ['label' => 'Bounce Rate', 'value' => round(($totals['bounceRate'] ?? 0) * 100) . '%', 'icon' => 'trending-down', 'color' => 'red'],
+            ['label' => 'Usuarios', 'value' => $totals['activeUsers'] ?? '---', 'icon' => 'users', 'color' => 'blue'],
+            ['label' => 'Sesiones', 'value' => $totals['sessions'] ?? '---', 'icon' => 'activity', 'color' => 'green'],
+            ['label' => 'Page Views', 'value' => $totals['screenPageViews'] ?? '---', 'icon' => 'eye', 'color' => 'purple'],
+            ['label' => 'Tiempo Promedio', 'value' => isset($totals['averageSessionDuration']) ? gmdate('i:s', (int)$totals['averageSessionDuration']) : '---', 'icon' => 'clock', 'color' => 'amber'],
+            ['label' => 'Bounce Rate', 'value' => isset($totals['bounceRate']) ? round($totals['bounceRate'] * 100) . '%' : '---', 'icon' => 'trending-down', 'color' => 'red'],
         ] as $kpi)
         <div class="bg-white rounded-2xl shadow-soft border border-neutral-100 p-5">
             <div class="flex items-center gap-2 mb-2">
@@ -42,7 +42,7 @@
     <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
         <h3 class="text-sm font-bold text-neutral-900 mb-4">Paginas mas visitadas</h3>
         <div class="space-y-3">
-            @php $maxViews = max(array_column($topPages, 'screenPageViews')) ?: 1; @endphp
+            @php $maxViews = count($topPages) > 0 ? max(array_column($topPages, 'screenPageViews')) : 1; @endphp
             @foreach($topPages as $page)
             <div class="flex items-center gap-3">
                 <span class="text-xs text-neutral-500 w-20 truncate" title="{{ $page['pageTitle'] }}">{{ Str::limit($page['pageTitle'], 25) }}</span>
@@ -103,7 +103,7 @@
                 ['page' => 'Registro', 'views' => $pageViews['/register'] ?? 0, 'color' => 'purple'],
                 ['page' => 'Dashboard', 'views' => $pageViews['/dashboard'] ?? 0, 'color' => 'indigo'],
             ];
-            $maxJourney = max(array_column($journey, 'views')) ?: 1;
+            $maxJourney = count($journey) > 0 ? max(array_column($journey, 'views')) : 1;
             @endphp
             @foreach($journey as $step)
             <div class="flex items-center gap-2 flex-shrink-0">
