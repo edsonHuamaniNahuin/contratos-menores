@@ -440,6 +440,7 @@ do_deploy() {
     # ── 2. Dependencias Laravel ──
     if [ "$SKIP_DEPS" = false ]; then
         log_step "DEPENDENCIAS PHP"
+        rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
         $PHP_BIN $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction 2>&1 | tail -3
         log_ok "Composer install completado"
     else
