@@ -1623,6 +1623,23 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
      * Enviar mensaje de procesamiento visible y devolver su message_id
      * para poder eliminarlo después si se desea.
      */
+    protected function sendMessage(string $chatId, string $text, string $token): void
+    {
+        Http::post($this->buildTelegramUrl($token, 'sendMessage'), [
+            'chat_id' => $chatId,
+            'text' => $text,
+        ]);
+    }
+
+    protected function sendDocument(string $chatId, string $binary, string $filename, string $caption, string $token): void
+    {
+        Http::attach('document', $binary, $filename)
+            ->post($this->buildTelegramUrl($token, 'sendDocument'), [
+                'chat_id' => $chatId,
+                'caption' => $caption,
+            ]);
+    }
+
     protected function enviarMensajeProcesando(string $chatId, string $texto, string $token): ?int
     {
         try {
