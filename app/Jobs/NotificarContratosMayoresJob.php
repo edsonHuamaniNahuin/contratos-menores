@@ -153,32 +153,40 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
         $isTelegram = $sub instanceof TelegramSubscription;
         $tipoLabel = $isTelegram
-            ? "🏛️ *Contrato Mayor (> 8UIT)*"
-            : "🏛️ Contrato Mayor (> 8UIT)";
+            ? "🔔 *NUEVO CONTRATO MAYOR*"
+            : "🔔 NUEVO CONTRATO MAYOR";
 
         $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid);
 
         $mensaje = "{$tipoLabel}\n\n"
-            . "📋 {$contrato->nomenclatura}\n"
-            . "🏢 Entidad: {$contrato->entidad_nombre}\n"
-            . "📦 Objeto: {$contrato->objeto_contratacion}\n";
+            . "🏢 *Entidad:* {$contrato->entidad_nombre}\n"
+            . "📝 *Código:* {$contrato->nomenclatura}\n"
+            . "🎯 *Objeto:* {$contrato->objeto_contratacion}\n";
+
+        $descripcion = $contrato->descripcion_objeto ?? '';
+        if (mb_strlen($descripcion) > 200) {
+            $descripcion = mb_substr($descripcion, 0, 200) . '...';
+        }
+        if (!empty($descripcion)) {
+            $mensaje .= "📋 *Descripción:* {$descripcion}\n";
+        }
 
         if ($contrato->valor_referencial > 0) {
-            $mensaje .= "💰 Monto: S/ " . number_format($contrato->valor_referencial, 2) . "\n";
+            $mensaje .= "💰 *Monto:* S/ " . number_format($contrato->valor_referencial, 2) . "\n";
         }
 
         if ($contrato->fecha_publicacion) {
-            $mensaje .= "📅 Publicación: " . $contrato->fecha_publicacion->format('d/m/Y') . "\n";
+            $mensaje .= "📅 *Publicado:* " . $contrato->fecha_publicacion->format('d/m/Y H:i') . "\n";
         }
+
+        $estado = $contrato->estado ?? 'N/A';
+        if ($contrato->vigente ?? false) {
+            $estado = 'Vigente';
+        }
+        $mensaje .= "💼 *Estado:* {$estado}";
 
         if (!empty($keywords)) {
-            $mensaje .= "\n🔎 Coincidencias: " . implode(', ', $keywords);
-        }
-
-        $mensaje .= "\n\n🔍 Ver en web: {$webUrl}";
-
-        if (!empty($contrato->url_documento)) {
-            $mensaje .= "\n📎 TDR: {$contrato->url_documento}";
+            $mensaje .= "\n\n🔎 *Coincidencias:* " . implode(', ', $keywords);
         }
 
         try {
@@ -198,31 +206,33 @@ class NotificarContratosMayoresJob implements ShouldQueue
                 }
                 $channel->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
             } else {
-                $bodyWhatsApp = "*NUEVO CONTRATO MAYOR*\n\n"
-                    . "🏢 *Entidad:* {$contrato->entidad_nombre}\n"
-                    . "📝 *Código:* {$contrato->nomenclatura}\n"
-                    . "🎯 *Objeto:* {$contrato->objeto_contratacion}\n";
+                $bodyWhatsApp = "NUEVO CONTRATO MAYOR\n\n"
+                    . "Entidad: {$contrato->entidad_nombre}\n"
+                    . "Codigo: {$contrato->nomenclatura}\n"
+                    . "Objeto: {$contrato->objeto_contratacion}\n";
 
                 $descripcion = $contrato->descripcion_objeto ?? '';
                 if (mb_strlen($descripcion) > 200) {
                     $descripcion = mb_substr($descripcion, 0, 200) . '...';
                 }
                 if (!empty($descripcion)) {
-                    $bodyWhatsApp .= "📋 *Descripción:* {$descripcion}\n\n";
-                } else {
-                    $bodyWhatsApp .= "\n";
+                    $bodyWhatsApp .= "Descripcion: {$descripcion}\n";
                 }
 
                 if ($contrato->valor_referencial > 0) {
-                    $bodyWhatsApp .= "💰 *Monto:* S/ " . number_format($contrato->valor_referencial, 2) . "\n";
+                    $bodyWhatsApp .= "Monto: S/ " . number_format($contrato->valor_referencial, 2) . "\n";
                 }
                 if ($contrato->fecha_publicacion) {
-                    $bodyWhatsApp .= "📅 *Publicado:* " . $contrato->fecha_publicacion->format('d/m/Y') . "\n";
+                    $bodyWhatsApp .= "Publicado: " . $contrato->fecha_publicacion->format('d/m/Y H:i') . "\n";
                 }
-                $bodyWhatsApp .= "💼 *Estado:* " . ($contrato->estado ?? 'N/A');
+                $estado = $contrato->estado ?? 'N/A';
+                if ($contrato->vigente ?? false) {
+                    $estado = 'Vigente';
+                }
+                $bodyWhatsApp .= "Estado: {$estado}";
 
                 if (!empty($keywords)) {
-                    $bodyWhatsApp .= "\n\n🔎 *Coincidencias:* " . implode(', ', $keywords);
+                    $bodyWhatsApp .= "\n\nCoincidencias: " . implode(', ', $keywords);
                 }
 
                 $bodyText = str_replace(['*', '_', '~'], '', $bodyWhatsApp);
