@@ -16,25 +16,18 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 # ─── Configuración ─────────────────────────────────────
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CREDENTIALS_PATH = os.path.join(PROJECT_ROOT, "storage", "ga4-service-account.json")
 GA4_PROPERTY_ID = os.environ.get("GA4_PROPERTY_ID", "properties/404642926")  # G-4PRW1QCW48
 
-# ─── Inicialización ────────────────────────────────────
-if os.path.exists(CREDENTIALS_PATH):
-    credentials = service_account.Credentials.from_service_account_file(
-        CREDENTIALS_PATH,
-        scopes=["https://www.googleapis.com/auth/analytics.readonly"]
-    )
-elif os.environ.get("GA4_CREDENTIALS_JSON"):
-    import io
-    credentials = service_account.Credentials.from_service_account_info(
-        json.loads(os.environ["GA4_CREDENTIALS_JSON"]),
-        scopes=["https://www.googleapis.com/auth/analytics.readonly"]
-    )
-else:
-    print(json.dumps({"error": "GA4 credentials not found"}))
+# ⚠️ Las credenciales SOLO se leen de variable de entorno, nunca de archivo
+_creds_json = os.environ.get("GA4_CREDENTIALS_JSON", "")
+if not _creds_json:
+    print(json.dumps({"error": "GA4_CREDENTIALS_JSON env var is required"}))
     sys.exit(1)
+
+credentials = service_account.Credentials.from_service_account_info(
+    json.loads(_creds_json),
+    scopes=["https://www.googleapis.com/auth/analytics.readonly"]
+)
 
 analytics = build("analyticsdata", "v1beta", credentials=credentials)
 
