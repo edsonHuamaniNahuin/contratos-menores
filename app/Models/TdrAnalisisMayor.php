@@ -45,4 +45,17 @@ class TdrAnalisisMayor extends Model
         }
         return $this->share_token;
     }
+
+    /**
+     * URL pública para ver el análisis completo.
+     */
+    public function getShareUrlAttribute(): string
+    {
+        return url('/analisis-mayores/' . $this->ensureShareToken());
+    }
+
+    public function esExitoso(): bool
+    {
+        return $this->estado === self::ESTADO_EXITOSO;
+    }
 }

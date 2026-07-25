@@ -495,6 +495,7 @@ class BuscadorMayores extends Component
             $meta = $data['metadatos_proceso'] ?? [];
             $calificacion = $data['requisitos_admisibilidad_y_calificacion'] ?? [];
             $result = array_merge($data, ['_formato' => 'mayores']);
+            $result['share_url'] = $analisis->share_url;
             // Agregar resumen visible desde los metadatos
             if (empty($result['resumen_ejecutivo']) && !empty($meta['objeto_principal'])) {
                 $monto = $meta['valor_monetario_referencial'] ?? '';
@@ -510,6 +511,7 @@ class BuscadorMayores extends Component
 
         // ── Formato Menores (legacy) ──
         return [
+            '_formato' => 'menores',
             'resumen_ejecutivo' => $data['resumen_ejecutivo']
                 ?? $analisis->resumen
                 ?? ($payload['data']['resumen_ejecutivo'] ?? null),
@@ -525,6 +527,7 @@ class BuscadorMayores extends Component
             'presupuesto_referencial' => $data['presupuesto_referencial']
                 ?? $analisis->monto_referencial_text
                 ?? ($payload['data']['presupuesto_referencial'] ?? null),
+            'share_url' => $analisis->share_url,
         ];
     }
 

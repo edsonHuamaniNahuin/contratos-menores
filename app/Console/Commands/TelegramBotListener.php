@@ -367,6 +367,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                     'descargar' => $this->descargarMayor($chatId, $contrato, $token, $callbackId),
                     'direccionar' => $this->direccionarMayor($chatId, $contrato, $token, $callbackId),
                     'proforma' => $this->proformaMayor($chatId, $contrato, $token, $callbackId),
+                    'postores' => $this->postoresMayor($chatId, $contrato, $token, $callbackId),
                     default => $this->mostrarMayorWeb($chatId, $contrato, $token, $callbackId),
                 };
 
@@ -390,6 +391,74 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
     }
 
     // ─── Contratos Mayores ──────────────────────────────────────────
+
+    protected function postoresMayor(string $chatId, \App\Models\ContratoMayor $c, string $token, string $callbackId): void
+    {
+        $this->answerCallbackQuery($callbackId, '👥 Cargando partes...', $token);
+
+        $raw = is_string($c->datos_raw) ? json_decode($c->datos_raw, true) : $c->datos_raw;
+        $parties = $raw['parties'] ?? [];
+
+        if (empty($parties)) {
+            $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($c->ocid);
+            $this->sendMessage($chatId, "👥 No se encontraron partes.\n\nAbrí en la web:\n{$webUrl}", $token);
+            return;
+        }
+
+        $mensaje = "👥 Partes del proceso\n\n📋 {$c->nomenclatura}\n🏢 {$c->entidad_nombre}\n";
+
+        $partesFormateadas = [];
+        foreach ($parties as $p) {
+            $ruc = '';
+            if (!empty($p['additionalIdentifiers'])) {
+                foreach ($p['additionalIdentifiers'] as $ai) {
+                    if (($ai['scheme'] ?? '') === 'PE-RUC') {
+                        $ruc = $ai['id'] ?? '';
+                        break;
+                    }
+                }
+            }
+            if (empty($ruc) && ($p['identifier']['scheme'] ?? '') === 'PE-RUC') {
+                $ruc = $p['identifier']['id'] ?? '';
+            }
+
+            $roles = array_map(fn($r) => match ($r) {
+                'buyer' => 'Comprador',
+                'procuringEntity' => 'Entidad Convocante',
+                'supplier' => 'Ganador',
+                'tenderer' => 'Postor',
+                'funder' => 'Financista',
+                default => $r,
+            }, $p['roles'] ?? []);
+
+            $nombre = $p['name'] ?? 'Sin nombre';
+            $direccion = $p['address']['streetAddress'] ?? '';
+            $localidad = $p['address']['locality'] ?? '';
+            $region = $p['address']['region'] ?? '';
+
+            $bloque = '━━━━━━━━━━';
+            if (!empty($roles)) {
+                $bloque = '┌ ' . strtoupper(implode(' | ', $roles));
+            }
+            $bloque .= "\n🏢 {$nombre}";
+            if (!empty($ruc)) {
+                $bloque .= "\n🔑 RUC: {$ruc}";
+            }
+            $ubicacion = array_filter([$direccion, $localidad, $region]);
+            if (!empty($ubicacion)) {
+                $bloque .= "\n📍 " . implode(', ', $ubicacion);
+            }
+
+            $partesFormateadas[] = $bloque;
+        }
+
+        $mensaje .= "\n" . implode("\n\n", $partesFormateadas);
+
+        $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($c->ocid);
+        $mensaje .= "\n\n🌐 Ver en la web:\n{$webUrl}";
+
+        $this->sendMessage($chatId, $mensaje, $token);
+    }
 
     protected function mostrarMayorWeb(string $chatId, \App\Models\ContratoMayor $c, string $token, string $callbackId): void
     {

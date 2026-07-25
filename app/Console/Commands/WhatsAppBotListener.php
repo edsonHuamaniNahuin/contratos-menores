@@ -403,7 +403,8 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                     'descargar' => $this->descargarMayorParaUsuario($phoneNumber, $contrato),
                     'direccionar' => $this->direccionarMayorParaUsuario($phoneNumber, $contrato),
                     'proforma' => $this->generarProformaMayorParaUsuario($phoneNumber, $contrato),
-                    'postores', 'verweb' => $this->whatsapp->enviarMensaje($phoneNumber,
+                    'postores' => $this->postoresMayorParaUsuario($phoneNumber, $contrato),
+                    'verweb' => $this->whatsapp->enviarMensaje($phoneNumber,
                         "🌐 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\nAbrí en la web:\n" . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($ocid)),
                     default => $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida.'),
                 };
@@ -575,6 +576,72 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         } catch (\Exception $e) {
             $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error: ' . $e->getMessage());
         }
+    }
+
+    protected function postoresMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void
+    {
+        $raw = is_string($contrato->datos_raw) ? json_decode($contrato->datos_raw, true) : $contrato->datos_raw;
+        $parties = $raw['parties'] ?? [];
+
+        if (empty($parties)) {
+            $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid);
+            $this->whatsapp->enviarMensaje($phoneNumber, "👥 No se encontraron partes.\n\n🌐 Ver en la web:\n{$webUrl}");
+            return;
+        }
+
+        $mensaje = "*Partes del proceso*\n\n*{$contrato->nomenclatura}*\n_{$contrato->entidad_nombre}_\n";
+
+        $partesFormateadas = [];
+        foreach ($parties as $p) {
+            $ruc = '';
+            if (!empty($p['additionalIdentifiers'])) {
+                foreach ($p['additionalIdentifiers'] as $ai) {
+                    if (($ai['scheme'] ?? '') === 'PE-RUC') {
+                        $ruc = $ai['id'] ?? '';
+                        break;
+                    }
+                }
+            }
+            if (empty($ruc) && ($p['identifier']['scheme'] ?? '') === 'PE-RUC') {
+                $ruc = $p['identifier']['id'] ?? '';
+            }
+
+            $roles = array_map(fn($r) => match ($r) {
+                'buyer' => 'Comprador',
+                'procuringEntity' => 'Entidad Convocante',
+                'supplier' => 'Ganador',
+                'tenderer' => 'Postor',
+                'funder' => 'Financista',
+                default => $r,
+            }, $p['roles'] ?? []);
+
+            $nombre = $p['name'] ?? 'Sin nombre';
+            $direccion = $p['address']['streetAddress'] ?? '';
+            $localidad = $p['address']['locality'] ?? '';
+            $region = $p['address']['region'] ?? '';
+
+            $bloque = '';
+            if (!empty($roles)) {
+                $bloque .= '*' . strtoupper(implode(' | ', $roles)) . "*\n";
+            }
+            $bloque .= "🏢 {$nombre}";
+            if (!empty($ruc)) {
+                $bloque .= "\n🔑 RUC: {$ruc}";
+            }
+            $ubicacion = array_filter([$direccion, $localidad, $region]);
+            if (!empty($ubicacion)) {
+                $bloque .= "\n📍 " . implode(', ', $ubicacion);
+            }
+
+            $partesFormateadas[] = $bloque;
+        }
+
+        $mensaje .= "\n" . implode("\n\n", $partesFormateadas);
+
+        $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid);
+        $mensaje .= "\n\n🌐 Ver en la web:\n{$webUrl}";
+
+        $this->whatsapp->enviarMensaje($phoneNumber, $mensaje);
     }
 
     // ─── Análisis TDR Menores ───────────────────────────────────────

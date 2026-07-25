@@ -4,6 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
+[x-cloak] { display: none !important; }
+
 /* ═══════════════════════════════════════════════════════════════════════════════════
    VIGILANTE SEACE - GUÍA DE LEGIBILIDAD Y CONTRASTE (WCAG AA Mínimo)
    ═══════════════════════════════════════════════════════════════════════════════════

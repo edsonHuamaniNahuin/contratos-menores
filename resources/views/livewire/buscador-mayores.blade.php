@@ -19,9 +19,7 @@
         <div class="bg-neutral-900 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-lg max-w-sm break-words" x-text="tooltip.text"></div>
     </div>
 
-    <div>
-        <h1 class="text-xl lg:text-2xl font-bold text-neutral-900" data-ga-event="page_view_mayores" data-ga-category="mayores">Contratos Mayores</h1>
-    </div>
+    <h1 class="sr-only" data-ga-event="page_view_mayores" data-ga-category="mayores">Contratos Mayores &mdash; Vigilante SEACE</h1>
 
     {{-- Notificación toast --}}
     @if($notificacion)
@@ -43,7 +41,12 @@
                     <span class="px-2.5 py-1 bg-secondary-500 text-white text-xs font-semibold rounded-full">{{ $this->contarFiltrosActivos() }}</span>
                 @endif
             </div>
-            <button wire:click="limpiarFiltros" class="text-xs lg:text-sm text-neutral-600 hover:text-primary-500 font-medium transition-colors">Limpiar todo</button>
+            @if($this->contarFiltrosActivos() > 0)
+                <button wire:click="limpiarFiltros" class="text-xs lg:text-sm text-red-500 hover:text-red-700 font-medium transition-colors flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Limpiar todo
+                </button>
+            @endif
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4">
@@ -203,9 +206,35 @@
         $puedeCotizar = $logueado && (auth()->user()?->hasPermission('cotizar-seace') ?? false);
     @endphp
 
-    @if(!$buscando && !empty($resultados))
-            <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 w-full min-w-0" style="overflow: visible;">
-            <div class="px-4 lg:px-6 py-4 border-b border-neutral-100 flex items-center justify-end gap-3">
+    @if(!empty($resultados))
+            <div class="bg-white rounded-3xl shadow-soft border border-neutral-200 w-full min-w-0" style="overflow: visible;" x-data="{
+                vista: localStorage.getItem('vistaMayores') || 'tabla',
+                toggle(modo) {
+                    this.vista = modo;
+                    localStorage.setItem('vistaMayores', modo);
+                }
+            }">
+            <div class="px-4 lg:px-6 py-4 border-b border-neutral-100 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-1 bg-neutral-100 rounded-xl p-1">
+                    <button
+                        @click="toggle('tabla')"
+                        :class="vista === 'tabla' ? 'bg-white shadow-sm text-primary-600' : 'text-neutral-400 hover:text-neutral-600'"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
+                        title="Vista tabla"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                        <span class="hidden sm:inline">Tabla</span>
+                    </button>
+                    <button
+                        @click="toggle('grid')"
+                        :class="vista === 'grid' ? 'bg-white shadow-sm text-primary-600' : 'text-neutral-400 hover:text-neutral-600'"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
+                        title="Vista cuadrícula"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+                        <span class="hidden sm:inline">Cuadrícula</span>
+                    </button>
+                </div>
                 <div class="flex items-center gap-2">
                     <label class="text-xs text-neutral-600 hidden sm:inline">Mostrar:</label>
                     <select wire:model.live="registrosPorPagina" class="px-2.5 py-1.5 bg-neutral-50 border border-neutral-100 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -216,6 +245,100 @@
                     </select>
                 </div>
             </div>
+
+            {{-- SKELETON LOADING: visible durante búsqueda --}}
+            <div wire:loading wire:target="palabraClave,entidadTexto,buscarEntidades,seleccionarEntidad,limpiarEntidad,objetoContratacion,estado,buscar,limpiarFiltros,irPagina,registrosPorPagina" class="w-full">
+                {{-- Skeleton Tabla --}}
+                <div x-show="vista === 'tabla'" class="w-full">
+                    <div class="hidden lg:block animate-pulse w-full">
+                        <table class="w-full table-fixed">
+                            <thead class="bg-neutral-100 border-b border-neutral-200">
+                                <tr>
+                                    <th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-16"></div></th>
+                                    <th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-24"></div></th>
+                                    <th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-12"></div></th>
+                                    <th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-20"></div></th>
+                                    <th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-16 ml-auto"></div></th>
+                                    <th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-12 mx-auto"></div></th>
+                                    <th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-16 mx-auto"></div></th>
+                                    <th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-8 mx-auto"></div></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-neutral-100">
+                                @for($s = 0; $s < min($registrosPorPagina, 20); $s++)
+                                <tr>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-3.5 bg-neutral-100 rounded w-28"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-3.5 bg-neutral-100 rounded w-36"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-5 bg-neutral-100 rounded-full w-14"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-3.5 bg-neutral-100 rounded w-48"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5 text-right"><div class="h-3.5 bg-neutral-100 rounded w-20 ml-auto"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-3.5 bg-neutral-100 rounded w-16 mx-auto"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-5 bg-neutral-100 rounded-full w-16 mx-auto"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-8 w-8 bg-neutral-100 rounded-lg mx-auto"></div></td>
+                                </tr>
+                                @endfor
+                            </tbody>
+                        </table>
+                    </div>
+                    {{-- Skeleton mobile --}}
+                    <div class="lg:hidden px-4 py-4 space-y-3 w-full">
+                        @for($s = 0; $s < min($registrosPorPagina, 10); $s++)
+                        <div class="border border-neutral-100 rounded-2xl p-4 space-y-3 animate-pulse">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="h-3.5 bg-neutral-100 rounded w-3/4"></div>
+                                <div class="h-4 bg-neutral-100 rounded-full w-10 shrink-0"></div>
+                            </div>
+                            <div class="h-3 bg-neutral-100 rounded w-1/2"></div>
+                            <div class="h-3 bg-neutral-100 rounded w-full"></div>
+                            <div class="h-3 bg-neutral-100 rounded w-5/6"></div>
+                            <div class="flex items-center justify-between pt-2 border-t border-neutral-50">
+                                <div class="h-3 bg-neutral-100 rounded w-16"></div>
+                                <div class="h-3 bg-neutral-100 rounded w-20"></div>
+                            </div>
+                            <div class="flex items-center gap-2 pt-2 border-t border-neutral-50">
+                                <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                                <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                                <div class="h-7 w-7 bg-neutral-100 rounded-lg ml-auto"></div>
+                                <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                            </div>
+                        </div>
+                        @endfor
+                    </div>
+                </div>
+
+                {{-- Skeleton Cuadrícula --}}
+                <div x-show="vista === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-4 lg:p-6">
+                    @for($s = 0; $s < min($registrosPorPagina, 20); $s++)
+                    <div class="bg-white border border-neutral-100 rounded-2xl p-5 space-y-3 animate-pulse">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex-1 space-y-1.5">
+                                <div class="h-4 bg-neutral-100 rounded w-3/4"></div>
+                                <div class="h-2.5 bg-neutral-50 rounded w-1/3"></div>
+                            </div>
+                            <div class="h-5 bg-neutral-100 rounded-full w-14 shrink-0"></div>
+                        </div>
+                        <div class="h-3 bg-neutral-100 rounded w-1/2"></div>
+                        <div class="h-3 bg-neutral-100 rounded w-full"></div>
+                        <div class="h-3 bg-neutral-100 rounded w-5/6"></div>
+                        <div class="flex items-center justify-between pt-2 border-t border-neutral-50">
+                            <div class="h-3 bg-neutral-100 rounded w-20"></div>
+                            <div class="h-3 bg-neutral-100 rounded w-16"></div>
+                        </div>
+                        <div class="flex items-center gap-1.5 pt-2 border-t border-neutral-50">
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg ml-auto"></div>
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                        </div>
+                    </div>
+                    @endfor
+                </div>
+            </div>{{-- end wire:loading --}}
+
+            {{-- RESULTADOS REALES (ocultos durante carga) --}}
+            <div wire:loading.remove wire:target="palabraClave,entidadTexto,buscarEntidades,seleccionarEntidad,limpiarEntidad,objetoContratacion,estado,buscar,limpiarFiltros,irPagina,registrosPorPagina">
+            <div x-show="vista === 'tabla'" x-cloak>
 
             {{-- Desktop Table --}}
             <div class="hidden lg:block" style="overflow: visible;">
@@ -239,7 +362,9 @@
                                  <td class="px-4 lg:px-6 py-3 text-sm font-mono text-neutral-700 whitespace-nowrap max-w-[200px] truncate" @mouseenter="showTooltip('{{ e($c['nomenclatura'] ?? '') }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">{{ $c['nomenclatura'] ?? '' }}</td>
                                 <td class="px-4 lg:px-6 py-3 text-sm whitespace-nowrap">@if($c['objeto_contratacion'] ?? '')<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700">{{ $c['objeto_contratacion'] }}</span>@endif</td>
                                 <td class="px-4 lg:px-6 py-3 text-sm text-neutral-600 max-w-[250px] truncate" @mouseenter="showTooltip('{{ e($c['descripcion_objeto'] ?? '') }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">{{ $c['descripcion_objeto'] ?? '' }}</td>
-                                <td class="px-4 lg:px-6 py-3 text-sm text-neutral-700 text-right whitespace-nowrap font-medium tabular-nums">{{ $c['monto_formateado'] }}</td>
+                                        <td class="px-4 lg:px-6 py-3 text-sm text-right whitespace-nowrap tabular-nums {{ ($c['monto_formateado'] ?? '') === '---' || empty($c['monto_formateado']) ? 'text-neutral-400 italic font-normal' : 'text-neutral-700 font-bold' }}">
+                                            {{ ($c['monto_formateado'] ?? '') === '---' || empty($c['monto_formateado']) ? 'No especificado' : $c['monto_formateado'] }}
+                                        </td>
                                 <td class="px-4 lg:px-6 py-3 text-sm text-neutral-500 text-center whitespace-nowrap">{{ $c['fecha_formateada'] }}</td>
                                 <td class="px-4 lg:px-6 py-3 text-center whitespace-nowrap">
                                     @if(isset($c['vigente']))
@@ -286,60 +411,64 @@
                                             x-transition:leave="transition ease-in duration-100"
                                             x-transition:leave-start="opacity-100 scale-100"
                                             x-transition:leave-end="opacity-0 scale-90"
-                                            class="absolute right-0 z-[100] w-48 bg-white rounded-2xl shadow-lg border border-neutral-200 py-1.5"
+                                            class="absolute right-0 z-[100] w-52 bg-white rounded-2xl shadow-xl border border-neutral-200 py-1 divide-y divide-neutral-100"
                                             style="display:none"
                                         >
-                                            {{-- Ver --}}
-                                            
-                                            <button wire:click="verDetalle({{ $i }}); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-brand-600 transition-colors"
-                                                @mouseenter="showTooltip('Ver todos los datos del proceso: Entidad, RUC, fechas, proveedores y mas', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
-                                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                <span>Ver detalle</span>
-                                            </button>
-                                            {{-- Descargar --}}
+                                            {{-- Sección: Información --}}
+                                            <div class="py-1">
+                                                <button wire:click="verDetalle({{ $i }}); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors font-medium"
+                                                    @mouseenter="showTooltip('Ver todos los datos del proceso', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                    <span>Ver detalle</span>
+                                                </button>
+                                                <button wire:click="verPartesMayor('{{ $c['ocid'] }}'); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                                                    @mouseenter="showTooltip('Entidades involucradas: comprador, proveedores', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                                    <span>Ver Partes</span>
+                                                </button>
+                                            </div>
+                                            {{-- Sección: Documento --}}
                                             @if(!empty($c['url_documento']))
-                                                
-                                                <a href="{{ $c['url_documento'] }}" target="_blank" rel="noopener" @click="open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-brand-600 transition-colors"
-                                                    @mouseenter="showTooltip('Descarga el documento TDR original en PDF desde el portal SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
-                                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                            <div class="py-1">
+                                                <a href="{{ $c['url_documento'] }}" target="_blank" rel="noopener" @click="open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                                                    @mouseenter="showTooltip('Descargar TDR original del SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                                     <span>Descargar TDR</span>
                                                 </a>
-                                            @endif
-                                            {{-- Seguimiento --}}
-                                            
-                                            <button wire:click="hacerSeguimiento('{{ $c['ocid'] }}'); open = false" wire:loading.attr="disabled" wire:target="hacerSeguimiento('{{ $c['ocid'] }}')"
-                                                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm {{ !empty($seguimientosActivos[$c['ocid']]) ? 'text-primary-600 bg-primary-50' : 'text-neutral-700 hover:bg-primary-50 hover:text-brand-600' }} transition-colors"
-                                                @mouseenter="showTooltip('{{ !empty($seguimientosActivos[$c['ocid']]) ? 'Ya estás siguiendo este proceso' : 'Activa notificaciones y seguimiento de este proceso' }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
-                                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                <span>{{ !empty($seguimientosActivos[$c['ocid']]) ? 'Siguiendo' : 'Seguimiento' }}</span>
-                                                @if(!empty($seguimientosActivos[$c['ocid']]))
-                                                    <svg class="w-3.5 h-3.5 ml-auto text-primary-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                                @endif
-                                            </button>
-                                            @if(!empty($c['url_documento']))
-                                                <div class="border-t border-neutral-100 my-0.5"></div>
-                                                <button wire:click="analizarTdr('{{ $c['url_documento'] }}'); open = false" wire:loading.attr="disabled" wire:target="analizarTdr('{{ $c['url_documento'] }}')" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 transition-colors"
+                                                <button wire:click="hacerSeguimiento('{{ $c['ocid'] }}'); open = false" wire:loading.attr="disabled" wire:target="hacerSeguimiento('{{ $c['ocid'] }}')"
+                                                    class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm {{ !empty($seguimientosActivos[$c['ocid']]) ? 'text-primary-600 font-medium bg-primary-50' : 'text-neutral-700 hover:bg-neutral-50' }} transition-colors"
+                                                    @mouseenter="showTooltip('{{ !empty($seguimientosActivos[$c['ocid']]) ? 'Ya estás siguiendo' : 'Activar notificaciones' }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0 {{ !empty($seguimientosActivos[$c['ocid']]) ? 'text-primary-500' : 'text-neutral-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    <span>{{ !empty($seguimientosActivos[$c['ocid']]) ? 'Siguiendo' : 'Seguimiento' }}</span>
+                                                    @if(!empty($seguimientosActivos[$c['ocid']]))
+                                                        <svg class="w-3.5 h-3.5 ml-auto text-primary-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                                    @endif
+                                                </button>
+                                            </div>
+                                            {{-- Sección: Herramientas IA --}}
+                                            <div class="py-1 bg-purple-50/30">
+                                                <div class="px-3.5 pb-1 pt-0.5">
+                                                    <span class="text-[9px] font-bold text-purple-400 uppercase tracking-widest">Herramientas IA</span>
+                                                </div>
+                                                <button wire:click="analizarTdr('{{ $c['url_documento'] }}'); open = false" wire:loading.attr="disabled" wire:target="analizarTdr('{{ $c['url_documento'] }}')" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors"
                                                     data-ga-event="mayores_analizar_click"
-                                                    @mouseenter="showTooltip('Analiza el documento con IA para extraer requisitos, plazos, penalidades y mas', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    @mouseenter="showTooltip('Extraer requisitos, plazos y penalidades con IA', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
                                                     <span>Analizar con IA</span>
+                                                    <span class="ml-auto text-[9px] font-bold text-purple-400">PRO</span>
                                                 </button>
                                                 <button wire:click="detectarDireccionamiento('{{ $c['url_documento'] }}'); open = false" wire:loading.attr="disabled" wire:target="detectarDireccionamiento('{{ $c['url_documento'] }}')" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                                    @mouseenter="showTooltip('Audita el documento en busca de indicios de direccionamiento, barreras tecnicas y restricciones a la competencia', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    @mouseenter="showTooltip('Auditar documento en busca de direccionamiento', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
                                                     <span>Direccionamiento</span>
                                                 </button>
                                                 <button wire:click="generarProformaTecnicaMayor('{{ $c['url_documento'] }}'); open = false" wire:loading.attr="disabled" wire:target="generarProformaTecnicaMayor('{{ $c['url_documento'] }}')" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-secondary-600 hover:bg-secondary-50 transition-colors"
-                                                    @mouseenter="showTooltip('Genera una proforma tecnica de cotizacion con items, precios y analisis de viabilidad', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    @mouseenter="showTooltip('Generar proforma técnica con items y costos', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                                     <span>Crear Proforma</span>
                                                 </button>
+                                            </div>
                                             @endif
-                                            <button wire:click="verPartesMayor('{{ $c['ocid'] }}'); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
-                                                @mouseenter="showTooltip('Entidades involucradas: comprador, proveedores y sus datos', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
-                                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                                <span>Ver Partes</span>
-                                            </button>
                                         </div>
                                     </div>
                                 </td>
@@ -361,7 +490,7 @@
                         <p class="text-xs text-neutral-600 line-clamp-2">{{ $c['descripcion_objeto'] ?? '' }}</p>
                         <div class="flex items-center justify-between text-xs">
                             <span class="text-neutral-500">{{ $c['fecha_formateada'] }}</span>
-                            <span class="font-semibold text-neutral-700 tabular-nums">{{ $c['monto_formateado'] }}</span>
+                            <span class="font-semibold tabular-nums {{ ($c['monto_formateado'] ?? '') === '---' || empty($c['monto_formateado']) ? 'text-neutral-400 italic' : 'text-neutral-700' }}">{{ ($c['monto_formateado'] ?? '') === '---' || empty($c['monto_formateado']) ? 'No especificado' : $c['monto_formateado'] }}</span>
                         </div>
                         @if(isset($c['vigente']))
                             <div class="flex items-center gap-1.5 text-xs pt-1">
@@ -444,40 +573,108 @@
                     </div>
                 @endforeach
             </div>
+            </div>{{-- end x-show tabla --}}
 
-            {{-- Paginación --}}
-            @if(($paginacion['total_pages'] ?? 1) > 1)
-                <div class="px-4 lg:px-6 py-5 bg-gradient-to-br from-neutral-50 to-neutral-100/50 border-t border-neutral-200">
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="text-xs font-medium text-neutral-700">
-                            Página <span class="font-bold text-neutral-900">{{ $paginacion['current_page'] }}</span> de <span class="font-bold text-neutral-900">{{ $paginacion['total_pages'] }}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            @if($paginacion['has_prev'])
-                                <button wire:click="irPagina(1)" class="w-10 h-10 flex items-center justify-center text-sm font-semibold rounded-xl transition-all bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md" title="Primera">&#171;</button>
-                                <button wire:click="irPagina({{ $paginacion['current_page'] - 1 }})" class="px-4 py-2.5 text-sm font-semibold rounded-xl transition-all bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md">Anterior</button>
-                            @else
-                                <span class="w-10 h-10 flex items-center justify-center text-sm font-semibold rounded-xl bg-neutral-200 text-neutral-400 cursor-not-allowed">&#171;</span>
-                                <span class="px-4 py-2.5 text-sm font-semibold rounded-xl bg-neutral-200 text-neutral-400 cursor-not-allowed">Anterior</span>
-                            @endif
-
-                            @foreach(range(max(1, $paginacion['current_page'] - 2), min($paginacion['total_pages'], $paginacion['current_page'] + 2)) as $pg)
-                                @if($pg === $paginacion['current_page'])
-                                    <span class="w-10 h-10 text-sm font-bold rounded-xl transition-all bg-primary-500 text-white shadow-lg scale-110 ring-2 ring-primary-300 flex items-center justify-center">{{ $pg }}</span>
-                                @else
-                                    <button wire:click="irPagina({{ $pg }})" class="w-10 h-10 text-sm font-bold rounded-xl transition-all bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-50 hover:border-primary-500 hover:text-brand-600 shadow-sm flex items-center justify-center">{{ $pg }}</button>
+            {{-- Vista Cuadrícula --}}
+            <div x-show="vista === 'grid'" x-cloak>
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-4 lg:p-6">
+                    @foreach($resultados as $i => $c)
+                        <div class="bg-white border border-neutral-200 rounded-2xl p-5 hover:border-primary-300 hover:shadow-md transition-all flex flex-col gap-3 {{ $i % 2 === 0 ? 'bg-white' : 'bg-neutral-50/30' }}">
+                            {{-- Header: Nomenclatura + Vigencia --}}
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="text-sm font-bold text-neutral-900 leading-tight truncate flex-1" @mouseenter="showTooltip('{{ e($c['nomenclatura'] ?? '') }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">{{ $c['nomenclatura'] ?? 'Sin código' }}</p>
+                                @if(isset($c['vigente']))
+                                    @if($c['vigente'])
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Vigente</span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200 shrink-0"><span class="w-1 h-1 rounded-full bg-red-400"></span> {{ $c['estado_vigencia'] }}</span>
+                                    @endif
                                 @endif
-                            @endforeach
+                            </div>
 
-                            @if($paginacion['has_next'])
-                                <button wire:click="irPagina({{ $paginacion['current_page'] + 1 }})" class="px-4 py-2.5 text-sm font-semibold rounded-xl transition-all bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md">Siguiente</button>
-                            @else
-                                <span class="px-4 py-2.5 text-sm font-semibold rounded-xl bg-neutral-200 text-neutral-400 cursor-not-allowed">Siguiente</span>
+                            {{-- Entidad --}}
+                            <p class="text-xs text-neutral-500 truncate" @mouseenter="showTooltip('{{ e($c['entidad_nombre'] ?? '') }}{{ !empty($c['entidad_ruc']) ? ' | RUC: '.e($c['entidad_ruc']) : '' }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">{{ $c['entidad_nombre'] ?? '' }}</p>
+
+                            {{-- Descripción --}}
+                            <p class="text-xs text-neutral-600 line-clamp-2 leading-relaxed" @mouseenter="showTooltip('{{ e($c['descripcion_objeto'] ?? '') }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">{{ $c['descripcion_objeto'] ?? 'Sin descripción' }}</p>
+
+                            {{-- Meta: Monto + Fecha + Objeto --}}
+                            <div class="flex items-center justify-between text-xs pt-1 border-t border-neutral-100">
+                                <span class="font-bold tabular-nums {{ ($c['monto_formateado'] ?? '') === '---' || empty($c['monto_formateado']) ? 'text-neutral-400 italic' : 'text-neutral-800' }}">
+                                    {{ ($c['monto_formateado'] ?? '') === '---' || empty($c['monto_formateado']) ? 'No especif.' : $c['monto_formateado'] }}
+                                </span>
+                                <span class="text-neutral-400">{{ $c['fecha_formateada'] }}</span>
+                            </div>
+
+                            @if($c['objeto_contratacion'] ?? '')
+                                <span class="inline-flex self-start px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary-50 text-primary-700">{{ $c['objeto_contratacion'] }}</span>
                             @endif
+
+                            {{-- Acciones compactas --}}
+                            <div class="flex items-center gap-1.5 pt-2 border-t border-neutral-100 mt-auto">
+                                <button wire:click="verDetalle({{ $i }})" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-500 text-white hover:bg-primary-400 transition-colors" title="Ver detalle"
+                                    @mouseenter="showTooltip('Ver detalle', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                </button>
+                                @if(!empty($c['url_documento']))
+                                    <a href="{{ $c['url_documento'] }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-neutral-500 hover:text-brand-600 hover:border-primary-400 transition-colors" title="Descargar TDR"
+                                        @mouseenter="showTooltip('Descargar TDR', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                    </a>
+                                @endif
+                                <button wire:click="hacerSeguimiento('{{ $c['ocid'] }}')" wire:loading.attr="disabled" wire:target="hacerSeguimiento('{{ $c['ocid'] }}')"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg border {{ !empty($seguimientosActivos[$c['ocid']]) ? 'border-primary-300 bg-primary-50 text-primary-600' : 'border-neutral-200 text-neutral-500 hover:text-brand-600 hover:border-primary-400' }} transition-colors" title="{{ !empty($seguimientosActivos[$c['ocid']]) ? 'Siguiendo' : 'Seguimiento' }}"
+                                    @mouseenter="showTooltip('{{ !empty($seguimientosActivos[$c['ocid']]) ? 'Ya estás siguiendo' : 'Hacer seguimiento' }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </button>
+                                @if(!empty($c['url_documento']))
+                                    <button wire:click="analizarTdr('{{ $c['url_documento'] }}')" wire:loading.attr="disabled" wire:target="analizarTdr('{{ $c['url_documento'] }}')"
+                                        class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-purple-200 text-purple-500 hover:bg-purple-50 transition-colors" title="Analizar con IA"
+                                        data-ga-event="mayores_analizar_click"
+                                        @mouseenter="showTooltip('Analizar con IA', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+                                    </button>
+                                @endif
+                                <button wire:click="verPartesMayor('{{ $c['ocid'] }}')" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-indigo-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors ml-auto" title="Ver Partes"
+                                    @mouseenter="showTooltip('Ver Partes', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                </button>
+                            </div>
                         </div>
+                    @endforeach
+                </div>
+            </div>{{-- end x-show grid --}}
+            @if(($paginacion['total_pages'] ?? 1) > 1)
+                <div class="px-4 lg:px-6 py-3 border-t border-neutral-100 flex items-center justify-between">
+                    <span class="text-xs font-medium text-neutral-500">Página {{ $paginacion['current_page'] }} de {{ $paginacion['total_pages'] }}</span>
+                    <div class="flex items-center gap-1">
+                        <button
+                            @if(!$paginacion['has_prev']) disabled @endif
+                            wire:click="irPagina({{ $paginacion['current_page'] - 1 }})"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                            aria-label="Anterior"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        @foreach(range(max(1, $paginacion['current_page'] - 2), min($paginacion['total_pages'], $paginacion['current_page'] + 2)) as $pg)
+                            @if($pg === $paginacion['current_page'])
+                                <span class="w-8 h-8 text-xs font-bold rounded-lg bg-primary-500 text-white flex items-center justify-center">{{ $pg }}</span>
+                            @else
+                                <button wire:click="irPagina({{ $pg }})" class="w-8 h-8 text-xs font-medium rounded-lg text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 transition-colors flex items-center justify-center">{{ $pg }}</button>
+                            @endif
+                        @endforeach
+                        <button
+                            @if(!$paginacion['has_next']) disabled @endif
+                            wire:click="irPagina({{ $paginacion['current_page'] + 1 }})"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                            aria-label="Siguiente"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </button>
                     </div>
                 </div>
             @endif
+            </div>{{-- end wire:loading.remove --}}
         </div>
     @endif
 
@@ -617,9 +814,17 @@
                                 <p class="text-sm text-neutral-600 mt-0.5">{{ $contratoAnalizado['entidad_nombre'] ?? 'Entidad no disponible' }}</p>
                             </div>
                         </div>
-                        <button type="button" wire:click="cerrarAnalisis" class="flex-shrink-0 w-10 h-10 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            @if(!empty($resultadoAnalisis['share_url']))
+                                <a href="{{ $resultadoAnalisis['share_url'] }}" target="_blank" rel="noopener" class="flex-shrink-0 px-4 py-2 rounded-full bg-primary-500 text-white text-xs font-semibold hover:bg-primary-400 transition-colors flex items-center gap-1.5" data-ga-event="mayores_share_analysis" title="Ver análisis completo en una página dedicada">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    Compartir
+                                </a>
+                            @endif
+                            <button type="button" wire:click="cerrarAnalisis" class="flex-shrink-0 w-10 h-10 rounded-full border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-400 transition-colors flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

@@ -62,7 +62,18 @@
     </script>
     @endif
 </head>
-<body class="font-sans antialiased min-h-screen bg-neutral-100" x-data="{ sidebarOpen: false }" :class="{ 'overflow-hidden': sidebarOpen }">
+<body class="font-sans antialiased min-h-screen bg-neutral-100 lg:overflow-auto"
+      x-data="{
+          sidebarOpen: (function () {
+              const val = localStorage.getItem('sidebarBuscador');
+              if (val !== null) return val === '1';
+              return {{ request()->routeIs('buscador.publico', 'buscador.mayores') ? 'false' : 'true' }};
+          })(),
+          init() {
+              this.$watch('sidebarOpen', v => localStorage.setItem('sidebarBuscador', v ? '1' : '0'));
+          }
+      }"
+      :class="{ 'overflow-hidden': sidebarOpen }">
     <div class="min-h-screen bg-neutral-100 flex overflow-x-hidden">
         <!-- Overlay para cerrar sidebar en mobile -->
         <div
@@ -78,10 +89,10 @@
             style="display: none;"
         ></div>
 
-        <!-- Sidebar - Responsive -->
+        <!-- Sidebar - Responsive (collapsible on all screens) -->
         <aside
-            x-bind:class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-            class="fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-neutral-100 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0"
+            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+            class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-neutral-100 flex flex-col transition-transform duration-300 ease-in-out"
         >
             <!-- Logo -->
             <div class="p-6 border-b border-neutral-100 flex items-center justify-between">
@@ -132,6 +143,13 @@
                     </svg>
                     Contratos Mayores
                     <span class="absolute -top-1 -right-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500 text-white leading-none shadow-sm">NUEVO</span>
+                </a>
+
+                <a href="{{ url('/blog') }}" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors text-neutral-600 hover:bg-neutral-50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                    </svg>
+                    Blog
                 </a>
 
                 <a href="{{ route('planes') }}" class="flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('planes') ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-50' }}">
@@ -258,36 +276,35 @@
         </aside>
 
         <!-- Main Content Area -->
-        <div class="flex-1 bg-neutral-100 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
+        <div class="flex-1 bg-neutral-100 flex flex-col min-h-screen min-w-0 overflow-x-hidden transition-all duration-300 ease-in-out" :class="{ 'lg:pl-64': sidebarOpen }">
             <!-- Navbar -->
-            <header class="bg-white border-b border-neutral-200 px-4 lg:px-6 py-4 shadow-sm">
+            <header class="bg-white border-b border-neutral-200 px-4 lg:px-6 py-4 shadow-sm sticky top-0 z-30">
                 <div class="flex items-center justify-between">
-                    <!-- Botón hamburger para mobile -->
-                    <button
-                        @click="sidebarOpen = !sidebarOpen"
-                        class="lg:hidden p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
-                        aria-label="Abrir menú de navegación"
-                    >
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </button>
+                    <!-- Botón toggle sidebar (visible en todos los tamaños) -->
+                    <div class="flex items-center gap-3">
+                        <button
+                            @click="sidebarOpen = !sidebarOpen"
+                            class="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
+                            aria-label="Abrir/cerrar menú de navegación"
+                            :title="sidebarOpen ? 'Ocultar menú' : 'Mostrar menú'"
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
 
-                    <div class="flex-1 max-w-xl mx-4">
-                        <form action="#" x-data="{ tipo: 'menores' }" @submit.prevent="const q = $el.querySelector('input').value.trim(); if (q) { if (tipo === 'mayores') { window.location = '{{ route('buscador.mayores') }}?descripcionObjeto=' + encodeURIComponent(q); } else { window.location = '{{ route('buscador.publico') }}?palabraClave=' + encodeURIComponent(q); } }" class="relative hidden sm:flex items-center gap-0">
-                            <select x-model="tipo" class="appearance-none bg-neutral-50 border border-neutral-200 border-r-0 rounded-l-full pl-4 pr-8 py-2.5 text-xs font-medium text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                                <option value="menores">Contratos Menores</option>
-                                <option value="mayores">Contratos Mayores</option>
-                            </select>
-                            <div class="relative flex-1">
-                                <input type="text" name="q" placeholder="Buscar contrataciones..." class="w-full px-4 py-2.5 pl-4 pr-12 bg-white border border-neutral-200 rounded-r-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" required>
-                                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-neutral-100 transition-colors">
-                                    <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </form>
+                        <!-- Badge indicador de modo: Contratos Menores o Mayores -->
+                        @if(request()->routeIs('buscador.publico'))
+                            <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-secondary-500/10 text-secondary-600 border border-secondary-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-secondary-500"></span>
+                                Contratos Menores
+                            </span>
+                        @elseif(request()->routeIs('buscador.mayores'))
+                            <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-primary-500/10 text-primary-600 border border-primary-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></span>
+                                Contratos Mayores
+                            </span>
+                        @endif
                     </div>
                     <div class="flex items-center gap-3">
                         @auth

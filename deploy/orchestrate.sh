@@ -505,7 +505,14 @@ do_deploy() {
     $PHP_BIN artisan event:cache
     log_ok "Cachés generados"
 
-    # ── 7. Permisos ──
+    # ── 7. Blog estático ──
+    log_step "BLOG ESTÁTICO"
+    $PHP_BIN artisan blog:generate
+    log_ok "Blog estático generado"
+    sudo chown -R www-data:www-data "$APP_DIR/public/blog" 2>/dev/null || true
+    log_ok "Permisos del blog configurados"
+
+    # ── 8. Permisos ──
     log_step "PERMISOS"
     sudo chown -R www-data:www-data "$APP_DIR/storage" 2>/dev/null || true
     sudo chmod -R 775 "$APP_DIR/storage" 2>/dev/null || true
@@ -522,16 +529,16 @@ do_deploy() {
 
     # ═══ RESTART PHASE (downtime mínimo, por servicio) ═══
 
-    # ── 8. Reiniciar PHP-FPM + Apache ──
+    # ── 9. Reiniciar PHP-FPM + Apache ──
     log_step "WEB SERVER"
     sudo systemctl restart php-fpm.service 2>/dev/null || true
     sudo systemctl reload apache2 2>/dev/null || true
     log_ok "PHP-FPM y Apache reiniciados"
 
-    # ── 9. Reinicio inteligente de servicios (uno por uno) ──
+    # ── 10. Reinicio inteligente de servicios (uno por uno) ──
     do_smart_restart
 
-    # ── 10. Verificación de salud ──
+    # ── 11. Verificación de salud ──
     do_health
 
     # ── Resumen ──

@@ -52,12 +52,15 @@
                     </span>
                 @endif
             </div>
-            <button
-                wire:click="limpiarFiltros"
-                class="text-xs lg:text-sm text-neutral-600 hover:text-primary-500 font-medium transition-colors"
-            >
-                Limpiar todo
-            </button>
+            @if($this->contarFiltrosActivos() > 0)
+                <button
+                    wire:click="limpiarFiltros"
+                    class="text-xs lg:text-sm text-red-500 hover:text-red-700 font-medium transition-colors flex items-center gap-1"
+                >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Limpiar todo
+                </button>
+            @endif
         </div>
 
         <!-- Grid de Filtros Responsive -->
@@ -231,7 +234,7 @@
             <button
                 @click="mostrar = !mostrar"
                 type="button"
-                class="text-xs lg:text-sm text-neutral-600 hover:text-primary-500 font-medium transition-colors flex items-center gap-2"
+                class="text-xs lg:text-sm font-medium transition-colors flex items-center gap-2 {{ ($departamento > 0 || $provincia > 0 || $distrito > 0) ? 'text-primary-600 hover:text-primary-700' : 'text-neutral-600 hover:text-primary-500' }}"
             >
                 <svg
                     class="w-4 h-4 transition-transform duration-200"
@@ -242,7 +245,16 @@
                 >
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
+                @php
+                    $geoActivos = 0;
+                    if ($departamento > 0) $geoActivos++;
+                    if ($provincia > 0) $geoActivos++;
+                    if ($distrito > 0) $geoActivos++;
+                @endphp
                 <span x-text="mostrar ? 'Ocultar filtros geográficos' : 'Mostrar filtros geográficos'"></span>
+                @if($geoActivos > 0)
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold leading-none">{{ $geoActivos }}</span>
+                @endif
             </button>
 
             <div
@@ -593,9 +605,35 @@
             $puedeCotizarPermiso = auth()->user()?->hasPermission('cotizar-seace') ?? false;
         @endphp
         <!-- Tabla de Resultados -->
-        <div class="bg-white rounded-3xl shadow-soft overflow-hidden border border-neutral-200 w-full min-w-0">
+        <div class="bg-white rounded-3xl shadow-soft overflow-hidden border border-neutral-200 w-full min-w-0" x-data="{
+            vista: localStorage.getItem('vistaMenores') || 'tabla',
+            toggle(modo) {
+                this.vista = modo;
+                localStorage.setItem('vistaMenores', modo);
+            }
+        }">
             <!-- Header Compacto -->
-            <div class="px-4 lg:px-6 py-4 border-b border-neutral-100 flex items-center justify-end gap-3">
+            <div class="px-4 lg:px-6 py-4 border-b border-neutral-100 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-1 bg-neutral-100 rounded-xl p-1">
+                    <button
+                        @click="toggle('tabla')"
+                        :class="vista === 'tabla' ? 'bg-white shadow-sm text-primary-600' : 'text-neutral-400 hover:text-neutral-600'"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
+                        title="Vista tabla"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                        <span class="hidden sm:inline">Tabla</span>
+                    </button>
+                    <button
+                        @click="toggle('grid')"
+                        :class="vista === 'grid' ? 'bg-white shadow-sm text-primary-600' : 'text-neutral-400 hover:text-neutral-600'"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
+                        title="Vista cuadrícula"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+                        <span class="hidden sm:inline">Cuadrícula</span>
+                    </button>
+                </div>
                 <div class="flex items-center gap-2">
                     <label for="select-por-pagina" class="text-xs text-neutral-600 hidden sm:inline">Mostrar:</label>
                     <select
@@ -610,6 +648,77 @@
                     </select>
                 </div>
             </div>
+
+            {{-- SKELETON LOADING: visible durante búsqueda --}}
+            <div wire:loading wire:target="palabraClave,entidadTexto,buscarEntidades,seleccionarEntidad,limpiarEntidad,objetoContrato,estadoContrato,departamento,provincia,distrito,buscar,limpiarFiltros,cambiarOrden,irAPagina,registrosPorPagina" class="w-full">
+                {{-- Skeleton Tabla --}}
+                <div x-show="vista === 'tabla'" class="w-full">
+                    <div class="hidden lg:block animate-pulse px-6 py-4 w-full">
+                        <table class="w-full table-fixed">
+                            <thead>
+                                <tr><th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-12"></div></th><th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-16"></div></th><th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-12"></div></th><th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-14"></div></th><th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-16"></div></th><th class="px-4 lg:px-6 py-3.5"><div class="h-3 bg-neutral-200 rounded w-16"></div></th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-neutral-100">
+                                @for($s = 0; $s < min($registrosPorPagina, 20); $s++)
+                                <tr>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="space-y-1"><div class="h-3.5 bg-neutral-100 rounded w-36"></div><div class="h-2.5 bg-neutral-50 rounded w-16"></div></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-3.5 bg-neutral-100 rounded w-44"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="space-y-1"><div class="h-3 bg-neutral-100 rounded w-12"></div><div class="h-2.5 bg-neutral-50 rounded w-32"></div></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-5 bg-neutral-100 rounded-full w-16"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="h-3.5 bg-neutral-100 rounded w-16"></div></td>
+                                    <td class="px-4 lg:px-6 py-3.5"><div class="flex items-center gap-1"><div class="h-8 w-8 bg-neutral-100 rounded-lg"></div><div class="h-8 w-8 bg-neutral-100 rounded-lg"></div><div class="h-8 w-8 bg-neutral-100 rounded-lg"></div><div class="h-8 w-8 bg-neutral-100 rounded-lg"></div></div></td>
+                                </tr>
+                                @endfor
+                            </tbody>
+                        </table>
+                    </div>
+                    {{-- Skeleton mobile --}}
+                    <div class="lg:hidden px-4 py-4 space-y-3 w-full">
+                        @for($s = 0; $s < min($registrosPorPagina, 10); $s++)
+                        <div class="border border-neutral-100 rounded-2xl p-4 space-y-3 animate-pulse">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex-1 space-y-1"><div class="h-3.5 bg-neutral-100 rounded w-3/4"></div><div class="h-2.5 bg-neutral-100 rounded w-1/3"></div></div>
+                                <div class="h-5 bg-neutral-100 rounded-full w-16 shrink-0"></div>
+                            </div>
+                            <div class="h-3 bg-neutral-100 rounded w-1/2"></div>
+                            <div class="space-y-1"><div class="h-2.5 bg-neutral-100 rounded w-16"></div><div class="h-3 bg-neutral-100 rounded w-full"></div></div>
+                            <div class="flex items-center gap-1.5"><div class="h-3 bg-neutral-100 rounded w-20"></div></div>
+                            <div class="flex items-center gap-2 pt-2 border-t border-neutral-50">
+                                <div class="h-8 w-8 bg-neutral-100 rounded-full"></div>
+                                <div class="h-8 w-8 bg-neutral-100 rounded-full"></div>
+                                <div class="h-8 w-8 bg-neutral-100 rounded-full"></div>
+                                <div class="h-8 w-8 bg-neutral-100 rounded-full"></div>
+                            </div>
+                        </div>
+                        @endfor
+                    </div>
+                </div>
+
+                {{-- Skeleton Cuadrícula --}}
+                <div x-show="vista === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-4 lg:p-6">
+                    @for($s = 0; $s < min($registrosPorPagina, 20); $s++)
+                    <div class="bg-white border border-neutral-100 rounded-2xl p-5 space-y-3 animate-pulse">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex-1 space-y-1"><div class="h-4 bg-neutral-100 rounded w-3/4"></div><div class="h-2.5 bg-neutral-50 rounded w-1/3"></div></div>
+                            <div class="h-5 bg-neutral-100 rounded-full w-14 shrink-0"></div>
+                        </div>
+                        <div class="h-3 bg-neutral-100 rounded w-1/2"></div>
+                        <div class="space-y-1"><div class="h-3 bg-neutral-100 rounded w-full"></div><div class="h-3 bg-neutral-100 rounded w-5/6"></div></div>
+                        <div class="flex items-center gap-1.5"><div class="h-3 bg-neutral-100 rounded w-20"></div></div>
+                        <div class="flex items-center gap-1.5 pt-2 border-t border-neutral-50">
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                            <div class="h-7 w-7 bg-neutral-100 rounded-lg"></div>
+                        </div>
+                    </div>
+                    @endfor
+                </div>
+            </div>{{-- end wire:loading --}}
+
+            {{-- RESULTADOS REALES (ocultos durante carga) --}}
+            <div wire:loading.remove wire:target="palabraClave,entidadTexto,buscarEntidades,seleccionarEntidad,limpiarEntidad,objetoContrato,estadoContrato,departamento,provincia,distrito,buscar,limpiarFiltros,cambiarOrden,irAPagina,registrosPorPagina">
+            <div x-show="vista === 'tabla'" x-cloak>
 
             <!-- Tabla Desktop -->
             <div class="hidden lg:block overflow-x-auto px-6 py-4">
@@ -712,13 +821,13 @@
                                     @php
                                         $estado = strtolower($contrato['nomEstadoContrato'] ?? '');
                                         $badgeClass = match(true) {
-                                            str_contains($estado, 'vigente') => 'bg-secondary-500/10 border-secondary-500/40 text-primary-500',
-                                            str_contains($estado, 'evaluación') => 'bg-yellow-50/80 border-yellow-400/40 text-yellow-800',
-                                            str_contains($estado, 'culminado') => 'bg-neutral-100/80 border-neutral-400/40 text-neutral-600',
-                                            default => 'bg-neutral-100/80 border-neutral-400/40 text-neutral-600',
+                                            str_contains($estado, 'vigente') || str_contains($estado, 'activo') || str_contains($estado, 'abierto') => 'bg-green-50 text-green-700 border-green-200',
+                                            str_contains($estado, 'evaluación') || str_contains($estado, 'evaluacion') => 'bg-amber-50 text-amber-700 border-amber-200',
+                                            str_contains($estado, 'culminado') || str_contains($estado, 'finalizado') || str_contains($estado, 'vencido') => 'bg-red-50 text-red-600 border-red-200',
+                                            default => 'bg-neutral-100 text-neutral-600 border-neutral-300',
                                         };
                                     @endphp
-                                    <span class="inline-flex px-3 py-1.5 text-xs font-semibold rounded-full border {{ $badgeClass }}">
+                                    <span class="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full border {{ $badgeClass }}">
                                         {{ $contrato['nomEstadoContrato'] ?? 'N/A' }}
                                     </span>
                                 </td>
@@ -731,14 +840,13 @@
                                     </div>
                                 </td>
                                 <td class="px-4 lg:px-6 py-3.5">
-                                    <div class="flex flex-wrap items-center gap-2">
+                                    <div class="flex items-center gap-1">
                                         {{-- Seguimiento --}}
                                         <button
                                             wire:click="hacerSeguimiento({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-neutral-200 text-neutral-600 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
-                                            title="Hacer seguimiento"
+                                            class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-neutral-200 text-neutral-500 hover:text-brand-600 hover:border-primary-400 hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeSeguimiento ? '' : 'opacity-70' }}"
                                             @mouseenter="showTooltip('Hacer seguimiento', $event)"
                                             @mouseleave="hideTooltip()"
                                             @mousemove="moveTooltip($event)"
@@ -753,45 +861,46 @@
                                             wire:click="verContrato({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="verContrato({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-primary-500 hover:bg-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                                            title="Ver detalle del proceso"
+                                            class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary-500 text-white hover:bg-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                            @mouseenter="showTooltip('Ver detalle', $event)"
+                                            @mouseleave="hideTooltip()"
+                                            @mousemove="moveTooltip($event)"
                                         >
                                             <svg wire:loading.remove wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                             </svg>
                                             <svg wire:loading wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                                            <span class="hidden xl:inline">Ver</span>
                                         </button>
                                         {{-- Descargar --}}
                                         <button
                                             wire:click="descargarTdr({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="descargarTdr({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 hover:text-brand-600 hover:border-primary-400 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                                            title="Descargar TDR"
+                                            class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-neutral-200 text-neutral-500 hover:text-brand-600 hover:border-primary-400 hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                            @mouseenter="showTooltip('Descargar TDR', $event)"
+                                            @mouseleave="hideTooltip()"
+                                            @mousemove="moveTooltip($event)"
                                         >
                                             <svg wire:loading.remove wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11" />
                                             </svg>
                                             <svg wire:loading wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                                            <span wire:loading.remove wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Descargar</span>
-                                            <span wire:loading wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Descargando...</span>
                                         </button>
                                         {{-- Analizar --}}
                                         <button
                                             wire:click="analizarTdr({{ $contrato['idContrato'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="analizarTdr({{ $contrato['idContrato'] }})"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-500/40 text-xs font-semibold text-primary-500 bg-primary-500/10 hover:bg-primary-500/20 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeAnalizar ? '' : 'opacity-70' }}"
-                                            title="Analizar con IA"
+                                            class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-purple-200 text-purple-500 hover:bg-purple-50 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeAnalizar ? '' : 'opacity-70' }}"
+                                            @mouseenter="showTooltip('Analizar con IA', $event)"
+                                            @mouseleave="hideTooltip()"
+                                            @mousemove="moveTooltip($event)"
                                         >
                                             <svg wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
                                             </svg>
                                             <svg wire:loading wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                                            <span wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Analizar</span>
-                                            <span wire:loading wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="hidden xl:inline">Analizando...</span>
                                         </button>
                                         {{-- Cotizar --}}
                                         @if($contrato['cotizar'] ?? false)
@@ -799,20 +908,20 @@
                                                 wire:click="cotizarEnSeace({{ $contrato['idContrato'] }})"
                                                 wire:loading.attr="disabled"
                                                 wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})"
-                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary-500 text-white text-xs font-semibold hover:bg-secondary-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait {{ $puedeCotizarPermiso ? '' : 'opacity-70' }}"
-                                                title="Cotizar en el portal SEACE"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-secondary-500 text-white hover:bg-secondary-400 transition-colors disabled:opacity-50 disabled:cursor-wait {{ $puedeCotizarPermiso ? '' : 'opacity-70' }}"
+                                                @mouseenter="showTooltip('Cotizar en SEACE', $event)"
+                                                @mouseleave="hideTooltip()"
+                                                @mousemove="moveTooltip($event)"
                                             >
                                                 <svg wire:loading.remove wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                                 </svg>
                                                 <svg wire:loading wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                                                <span wire:loading.remove wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="hidden xl:inline">Cotizar</span>
-                                                <span wire:loading wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="hidden xl:inline">Preparando...</span>
                                             </button>
                                         @endif
                                     </div>
                                     @if(isset($archivosErrores[$contrato['idContrato']]))
-                                        <div class="text-[11px] text-primary-700 mt-2">
+                                        <div class="text-[11px] text-primary-700 mt-1.5">
                                             {{ $archivosErrores[$contrato['idContrato']] }}
                                         </div>
                                     @endif
@@ -836,10 +945,10 @@
                             @php
                                 $estadoMobile = strtolower($contrato['nomEstadoContrato'] ?? '');
                                 $badgeMobileClass = match(true) {
-                                    str_contains($estadoMobile, 'vigente') => 'bg-secondary-500/10 border-secondary-500/40 text-primary-500',
-                                    str_contains($estadoMobile, 'evaluación') => 'bg-yellow-50/80 border-yellow-400/40 text-yellow-800',
-                                    str_contains($estadoMobile, 'culminado') => 'bg-neutral-100/80 border-neutral-400/40 text-neutral-600',
-                                    default => 'bg-neutral-100/80 border-neutral-400/40 text-neutral-600',
+                                    str_contains($estadoMobile, 'vigente') || str_contains($estadoMobile, 'activo') || str_contains($estadoMobile, 'abierto') => 'bg-green-50 text-green-700 border-green-200',
+                                    str_contains($estadoMobile, 'evaluación') || str_contains($estadoMobile, 'evaluacion') => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    str_contains($estadoMobile, 'culminado') || str_contains($estadoMobile, 'finalizado') || str_contains($estadoMobile, 'vencido') => 'bg-red-50 text-red-600 border-red-200',
+                                    default => 'bg-neutral-100 text-neutral-600 border-neutral-300',
                                 };
                             @endphp
                             <span class="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full border shrink-0 {{ $badgeMobileClass }}">
@@ -939,85 +1048,128 @@
                     </div>
                 @endforeach
             </div>
+            </div>{{-- end x-show tabla --}}
 
-            <!-- Paginación -->
-            @if(($paginacion['total_pages'] ?? 1) > 1)
-                <div class="px-4 lg:px-6 py-5 bg-gradient-to-br from-neutral-50 to-neutral-100/50 border-t border-neutral-200">
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="text-xs font-medium text-neutral-700">
-                            Mostrando <span class="font-bold text-neutral-900">{{ ($pagina - 1) * $registrosPorPagina + 1 }}</span> a <span class="font-bold text-neutral-900">{{ min($pagina * $registrosPorPagina, $paginacion['total_elements']) }}</span> de <span class="font-bold text-neutral-900">{{ number_format($paginacion['total_elements']) }}</span>
-                        </div>
+            {{-- Vista Cuadrícula --}}
+            <div x-show="vista === 'grid'" x-cloak>
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-4 lg:p-6">
+                    @foreach($resultados as $index => $contrato)
+                        @php
+                            $estadoGrid = strtolower($contrato['nomEstadoContrato'] ?? '');
+                            $badgeGrid = match(true) {
+                                str_contains($estadoGrid, 'vigente') || str_contains($estadoGrid, 'activo') || str_contains($estadoGrid, 'abierto') => 'bg-green-50 text-green-700 border-green-200',
+                                str_contains($estadoGrid, 'evaluación') || str_contains($estadoGrid, 'evaluacion') => 'bg-amber-50 text-amber-700 border-amber-200',
+                                str_contains($estadoGrid, 'culminado') || str_contains($estadoGrid, 'finalizado') || str_contains($estadoGrid, 'vencido') => 'bg-red-50 text-red-600 border-red-200',
+                                default => 'bg-neutral-100 text-neutral-600 border-neutral-300',
+                            };
+                        @endphp
+                        <div class="bg-white border border-neutral-200 rounded-2xl p-5 hover:border-primary-300 hover:shadow-md transition-all flex flex-col gap-3 {{ $index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/30' }}">
+                            {{-- Header: Código + Estado --}}
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-neutral-900 leading-tight truncate">{{ $contrato['desContratacion'] ?? 'N/A' }}</p>
+                                    <p class="text-xs text-neutral-500 mt-0.5">N° {{ $contrato['nroContratacion'] ?? '-' }}</p>
+                                </div>
+                                <span class="inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full border shrink-0 {{ $badgeGrid }}">
+                                    {{ $contrato['nomEstadoContrato'] ?? 'N/A' }}
+                                </span>
+                            </div>
 
-                        <div class="flex flex-wrap items-center justify-center gap-2">
-                            <!-- Primera -->
-                            <button
-                                wire:click="irAPagina(1)"
-                                class="w-10 h-10 flex items-center justify-center text-sm font-semibold rounded-xl transition-all {{ $pagina === 1 ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md' }}"
-                                {{ $pagina === 1 ? 'disabled' : '' }}
-                                aria-label="Primera página"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
-                                </svg>
-                            </button>
+                            {{-- Entidad --}}
+                            <p class="text-xs text-neutral-500 truncate" @mouseenter="showTooltip('{{ e($contrato['nomEntidad'] ?? '') }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">{{ $contrato['nomEntidad'] ?? 'N/A' }}</p>
 
-                            <!-- Anterior -->
-                            <button
-                                wire:click="irAPagina({{ $pagina - 1 }})"
-                                class="px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $pagina === 1 ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md' }}"
-                                {{ $pagina === 1 ? 'disabled' : '' }}
-                                aria-label="Página anterior"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                                </svg>
-                            </button>
+                            {{-- Objeto --}}
+                            <p class="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
+                                <span class="font-medium">{{ $contrato['nomObjetoContrato'] ?? 'N/A' }}</span>
+                                <span class="text-neutral-400"> — {{ \Illuminate\Support\Str::limit($contrato['desObjetoContrato'] ?? '-', 100) }}</span>
+                            </p>
 
-                            <!-- Páginas -->
-                            @php
-                                $totalPages = $paginacion['total_pages'];
-                                $currentPage = $pagina;
-                                $range = 2;
-                                $start = max(1, $currentPage - $range);
-                                $end = min($totalPages, $currentPage + $range);
-                            @endphp
+                            {{-- Fecha --}}
+                            <div class="flex items-center gap-1.5 text-xs text-neutral-500">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span title="{{ $contrato['fecPublica_completa'] ?? $contrato['fecPublica'] ?? '' }}">{{ $contrato['fecPublica_amigable'] ?? $contrato['fecPublica'] ?? 'N/A' }}</span>
+                            </div>
 
-                            @foreach(range($start, $end) as $i)
-                                <button
-                                    wire:click="irAPagina({{ $i }})"
-                                    class="w-10 h-10 text-sm font-bold rounded-xl transition-all {{ $i === $currentPage ? 'bg-primary-500 text-white shadow-lg scale-110 ring-2 ring-primary-300' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-50 hover:border-primary-500 hover:text-brand-600 shadow-sm' }}"
-                                >
-                                    {{ $i }}
+                            {{-- Acciones compactas --}}
+                            <div class="flex items-center gap-1.5 pt-2 border-t border-neutral-100 mt-auto">
+                                <button wire:click="hacerSeguimiento({{ $contrato['idContrato'] }})" wire:loading.attr="disabled" wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-neutral-500 hover:text-brand-600 hover:border-primary-400 hover:bg-primary-50 transition-colors disabled:opacity-50 {{ $puedeSeguimiento ? '' : 'opacity-70' }}" title="Seguimiento"
+                                    @mouseenter="showTooltip('Hacer seguimiento', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                    <svg wire:loading.remove wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <svg wire:loading wire:target="hacerSeguimiento({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                                 </button>
-                            @endforeach
-
-                            <!-- Siguiente -->
-                            <button
-                                wire:click="irAPagina({{ $pagina + 1 }})"
-                                class="px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $pagina === $totalPages ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md' }}"
-                                {{ $pagina === $totalPages ? 'disabled' : '' }}
-                                aria-label="Página siguiente"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                </svg>
-                            </button>
-
-                            <!-- Última -->
-                            <button
-                                wire:click="irAPagina({{ $totalPages }})"
-                                class="w-10 h-10 flex items-center justify-center text-sm font-semibold rounded-xl transition-all {{ $pagina === $totalPages ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-primary-500 hover:border-primary-500 hover:text-white shadow-sm hover:shadow-md' }}"
-                                {{ $pagina === $totalPages ? 'disabled' : '' }}
-                                aria-label="Última página"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
-                                </svg>
-                            </button>
+                                <button wire:click="verContrato({{ $contrato['idContrato'] }})" wire:loading.attr="disabled" wire:target="verContrato({{ $contrato['idContrato'] }})"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-500 text-white hover:bg-primary-400 transition-colors disabled:opacity-50" title="Ver detalle"
+                                    @mouseenter="showTooltip('Ver detalle', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                    <svg wire:loading.remove wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <svg wire:loading wire:target="verContrato({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                </button>
+                                <button wire:click="descargarTdr({{ $contrato['idContrato'] }})" wire:loading.attr="disabled" wire:target="descargarTdr({{ $contrato['idContrato'] }})"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-neutral-500 hover:text-brand-600 hover:border-primary-400 hover:bg-primary-50 transition-colors disabled:opacity-50" title="Descargar TDR"
+                                    @mouseenter="showTooltip('Descargar TDR', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                    <svg wire:loading.remove wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                    <svg wire:loading wire:target="descargarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                </button>
+                                <button wire:click="analizarTdr({{ $contrato['idContrato'] }})" wire:loading.attr="disabled" wire:target="analizarTdr({{ $contrato['idContrato'] }})"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-purple-200 text-purple-500 hover:bg-purple-50 transition-colors disabled:opacity-50 {{ $puedeAnalizar ? '' : 'opacity-70' }}" title="Analizar con IA"
+                                    @mouseenter="showTooltip('Analizar con IA', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                    <svg wire:loading.remove wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+                                    <svg wire:loading wire:target="analizarTdr({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                </button>
+                                @if($contrato['cotizar'] ?? false)
+                                    <button wire:click="cotizarEnSeace({{ $contrato['idContrato'] }})" wire:loading.attr="disabled" wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})"
+                                        class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-secondary-500 text-white hover:bg-secondary-400 transition-colors disabled:opacity-50 {{ $puedeCotizarPermiso ? '' : 'opacity-70' }}" title="Cotizar en SEACE"
+                                        @mouseenter="showTooltip('Cotizar en SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                        <svg wire:loading.remove wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <svg wire:loading wire:target="cotizarEnSeace({{ $contrato['idContrato'] }})" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                    </button>
+                                @endif
+                            </div>
+                            @if(isset($archivosErrores[$contrato['idContrato']]))
+                                <div class="text-[11px] text-primary-700">{{ $archivosErrores[$contrato['idContrato']] }}</div>
+                            @endif
                         </div>
+                    @endforeach
+                </div>
+            </div>{{-- end x-show grid --}}
+            @if(($paginacion['total_pages'] ?? 1) > 1)
+                @php
+                    $totalPages = $paginacion['total_pages'];
+                    $currentPage = $pagina;
+                    $range = 2;
+                    $start = max(1, $currentPage - $range);
+                    $end = min($totalPages, $currentPage + $range);
+                @endphp
+                <div class="px-4 lg:px-6 py-3 border-t border-neutral-100 flex items-center justify-between">
+                    <span class="text-xs font-medium text-neutral-500">{{ ($pagina - 1) * $registrosPorPagina + 1 }}&ndash;{{ min($pagina * $registrosPorPagina, $paginacion['total_elements']) }} de {{ number_format($paginacion['total_elements']) }}</span>
+                    <div class="flex items-center gap-1">
+                        <button
+                            @if($currentPage <= 1) disabled @endif
+                            wire:click="irAPagina({{ $currentPage - 1 }})"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                            aria-label="Anterior"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        @foreach(range($start, $end) as $i)
+                            @if($i === $currentPage)
+                                <span class="w-8 h-8 text-xs font-bold rounded-lg bg-primary-500 text-white flex items-center justify-center">{{ $i }}</span>
+                            @else
+                                <button wire:click="irAPagina({{ $i }})" class="w-8 h-8 text-xs font-medium rounded-lg text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 transition-colors flex items-center justify-center">{{ $i }}</button>
+                            @endif
+                        @endforeach
+                        <button
+                            @if($currentPage >= $totalPages) disabled @endif
+                            wire:click="irAPagina({{ $currentPage + 1 }})"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                            aria-label="Siguiente"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </button>
                     </div>
                 </div>
             @endif
+            </div>{{-- end wire:loading.remove --}}
         </div>
 
         {{-- Modal: Ver detalle del contrato --}}
@@ -1026,10 +1178,10 @@
                 $det = $contratoDetalle;
                 $estadoDet = strtolower($det['nomEstadoContrato'] ?? '');
                 $badgeDetalle = match(true) {
-                    str_contains($estadoDet, 'vigente') => 'bg-secondary-500/10 border-secondary-500/40 text-primary-500',
-                    str_contains($estadoDet, 'evaluación') => 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                    str_contains($estadoDet, 'culminado') => 'bg-neutral-100 text-neutral-700 border-neutral-200',
-                    default => 'bg-neutral-100 text-neutral-700 border-neutral-200',
+                    str_contains($estadoDet, 'vigente') || str_contains($estadoDet, 'activo') || str_contains($estadoDet, 'abierto') => 'bg-green-50 text-green-700 border-green-200',
+                    str_contains($estadoDet, 'evaluación') || str_contains($estadoDet, 'evaluacion') => 'bg-amber-50 text-amber-700 border-amber-200',
+                    str_contains($estadoDet, 'culminado') || str_contains($estadoDet, 'finalizado') || str_contains($estadoDet, 'vencido') => 'bg-red-50 text-red-600 border-red-200',
+                    default => 'bg-neutral-100 text-neutral-600 border-neutral-300',
                 };
                 $puedeCotizar = $det['cotizar'] ?? false;
             @endphp

@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\SubscriptionController;
 use App\Models\TdrAnalisis;
+use App\Models\TdrAnalisisMayor;
 use Illuminate\Support\Facades\Cache;
 
 Route::middleware('guest')->group(function () {
@@ -79,6 +80,15 @@ Route::get('/analisis/{token}', function (string $token) {
 
     return view('analisis-compartido', compact('analisis'));
 })->name('analisis.compartido')->where('token', '[0-9a-f\-]{36}');
+
+// ─── Análisis Mayores compartido (público) ─────────────────────────
+Route::get('/analisis-mayores/{token}', function (string $token) {
+    $analisis = TdrAnalisisMayor::where('share_token', $token)
+        ->where('estado', TdrAnalisisMayor::ESTADO_EXITOSO)
+        ->firstOrFail();
+
+    return view('analisis-compartido-mayores', compact('analisis'));
+})->name('analisis.mayores.compartido')->where('token', '[0-9a-f\-]{36}');
 
 // ─── Guía de cotización (accesible desde bots) ───────────────────
 Route::get('/cotizar-guia', function () {

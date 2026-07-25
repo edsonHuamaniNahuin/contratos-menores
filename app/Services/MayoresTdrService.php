@@ -71,7 +71,7 @@ class MayoresTdrService
                 ->first();
 
             if ($cacheado) {
-                return ['success' => true, 'data' => $cacheado->payload['data'] ?? [], 'cached' => true];
+                return ['success' => true, 'data' => $cacheado->payload['data'] ?? [], 'cached' => true, 'share_url' => ($cacheado ?? null)?->share_url];
             }
 
             return ['success' => false, 'error' => 'El análisis está en proceso. Intenta en unos segundos.'];
@@ -85,7 +85,7 @@ class MayoresTdrService
                 ->first();
 
             if ($cacheado) {
-                return ['success' => true, 'data' => $cacheado->payload['data'] ?? [], 'cached' => true];
+                return ['success' => true, 'data' => $cacheado->payload['data'] ?? [], 'cached' => true, 'share_url' => ($cacheado ?? null)?->share_url];
             }
 
             // ── Download PDF (or use local path) ──
@@ -172,6 +172,7 @@ class MayoresTdrService
                 'data' => $resultado['data'] ?? [],
                 'cached' => false,
                 'analisis_id' => $analisis->id,
+                'share_url' => $analisis->share_url,
             ];
 
         } catch (Exception $e) {
