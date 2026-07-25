@@ -76,14 +76,14 @@
 
             {{-- Desktop links --}}
             <div class="hidden md:flex items-center gap-1">
-                <a href="{{ route('landing') }}" class="px-4 py-2 text-sm font-medium rounded-full transition-colors {{ request()->routeIs('landing') ? 'text-brand-800 bg-brand-800/5' : 'text-neutral-600 hover:text-brand-800' }}">
-                    Inicio
-                </a>
                 <a href="{{ route('buscador.publico') }}" class="px-4 py-2 text-sm font-medium rounded-full transition-colors {{ request()->routeIs('buscador.publico') ? 'text-brand-800 bg-brand-800/5' : 'text-neutral-600 hover:text-brand-800' }}">
                     Contratos Menores
                 </a>
                 <a href="{{ route('buscador.mayores') }}" class="px-4 py-2 text-sm font-medium rounded-full transition-colors {{ request()->routeIs('buscador.mayores') ? 'text-brand-800 bg-brand-800/5' : 'text-neutral-600 hover:text-brand-800' }}">
                     Contratos Mayores
+                </a>
+                <a href="{{ url('/blog') }}" class="px-4 py-2 text-sm font-medium rounded-full transition-colors text-neutral-600 hover:text-brand-800">
+                    Blog
                 </a>
                 <a href="{{ route('planes') }}" class="px-4 py-2 text-sm font-medium rounded-full transition-colors {{ request()->routeIs('planes') ? 'text-brand-800 bg-brand-800/5' : 'text-neutral-600 hover:text-brand-800' }}">
                     Planes
@@ -124,9 +124,9 @@
         {{-- Mobile menu --}}
         <div x-show="mobileMenu" x-collapse class="md:hidden mt-4 pb-2 border-t border-neutral-100 pt-4">
             <div class="flex flex-col gap-1">
-                <a href="{{ route('landing') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Inicio</a>
                 <a href="{{ route('buscador.publico') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Contratos Menores</a>
                 <a href="{{ route('buscador.mayores') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Contratos Mayores</a>
+                <a href="{{ url('/blog') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Blog</a>
                 <a href="{{ route('planes') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Planes</a>
                 <a href="{{ route('manual') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Manual</a>
                 <a href="{{ route('contacto') }}" class="px-4 py-2.5 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50">Contacto</a>
