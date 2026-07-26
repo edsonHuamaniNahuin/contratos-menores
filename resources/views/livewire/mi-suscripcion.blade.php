@@ -3,7 +3,7 @@
     {{-- Header --}}
     <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-8 border border-neutral-100">
         <h1 class="text-xl sm:text-3xl font-bold text-neutral-900">⭐ Mi Suscripción</h1>
-        <p class="text-sm text-neutral-400 mt-2">Gestiona tu plan premium e historial de cambios.</p>
+        <p class="text-sm text-neutral-500 mt-2">Gestiona tu plan premium e historial de cambios.</p>
     </div>
 
     {{-- Flash messages --}}
@@ -20,10 +20,10 @@
 
     @if($isPremium && $subscription)
         {{-- Plan activo --}}
-        <div class="bg-gradient-to-br from-primary-800 to-primary-900 rounded-2xl p-6 sm:p-8 text-white">
+        <div class="bg-brand-800 rounded-2xl p-6 sm:p-8 text-white">
             <div class="flex items-start justify-between flex-wrap gap-4">
                 <div>
-                    <p class="text-sm text-primary-400 font-medium">Plan actual</p>
+                    <p class="text-xs font-semibold text-brand-200/80 uppercase tracking-wider">Plan actual</p>
                     <p class="text-2xl font-bold mt-1">{{ $planLabel }}</p>
                 </div>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold
@@ -34,20 +34,20 @@
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
                 <div>
-                    <p class="text-xs text-primary-400">Inicio</p>
-                    <p class="text-sm font-semibold">{{ $startsAt }}</p>
+                    <p class="text-xs text-brand-200">Inicio</p>
+                    <p class="text-sm font-semibold text-white">{{ $startsAt }}</p>
                 </div>
                 <div>
-                    <p class="text-xs text-primary-400">Vence</p>
-                    <p class="text-sm font-semibold">{{ $endsAt }}</p>
+                    <p class="text-xs text-brand-200">Vence</p>
+                    <p class="text-sm font-semibold text-white">{{ $endsAt }}</p>
                 </div>
                 <div>
-                    <p class="text-xs text-primary-400">Días restantes</p>
-                    <p class="text-sm font-semibold">{{ $daysRemaining }} días</p>
+                    <p class="text-xs text-brand-200">Días restantes</p>
+                    <p class="text-sm font-semibold text-white">{{ $daysRemaining }} días</p>
                 </div>
                 <div>
-                    <p class="text-xs text-primary-400">Pasarela</p>
-                    <p class="text-sm font-semibold">{{ $gatewayLabel }}</p>
+                    <p class="text-xs text-brand-200">Pasarela</p>
+                    <p class="text-sm font-semibold text-white">{{ $gatewayLabel }}</p>
                 </div>
             </div>
 
@@ -59,11 +59,11 @@
                 $progress = $totalDays > 0 ? max(0, min(100, (($totalDays - $daysRemaining) / $totalDays) * 100)) : 0;
             @endphp
             <div class="mt-6">
-                <div class="flex justify-between text-xs text-primary-400 mb-1">
+                <div class="flex justify-between text-xs text-brand-200 mb-1">
                     <span>Progreso del periodo</span>
                     <span>{{ round($progress) }}%</span>
                 </div>
-                <div class="w-full bg-primary-700 rounded-full h-2">
+                <div class="w-full bg-primary-500/50 rounded-full h-2">
                     <div class="h-2 rounded-full transition-all duration-500 {{ $progress > 80 ? 'bg-amber-400' : 'bg-secondary-500' }}"
                          style="width: {{ $progress }}%"></div>
                 </div>
@@ -93,12 +93,12 @@
         {{-- Sin suscripción --}}
         <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100 text-center">
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-100 mb-4">
-                <svg class="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <svg class="w-8 h-8 text-neutral-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
             <h3 class="text-lg font-bold text-neutral-900 mb-2">Sin suscripción activa</h3>
-            <p class="text-sm text-neutral-400 mb-6">
+            <p class="text-sm text-neutral-500 mb-6">
                 @if($canStartTrial) Activa tu prueba gratuita de 15 días o elige un plan premium.
                 @else Elige un plan premium para acceder a todas las funcionalidades. @endif
             </p>
@@ -116,26 +116,26 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-neutral-100">
-                            <th class="text-left py-3 px-2 text-xs font-semibold text-neutral-400 uppercase">Fecha</th>
-                            <th class="text-left py-3 px-2 text-xs font-semibold text-neutral-400 uppercase">Acción</th>
-                            <th class="text-left py-3 px-2 text-xs font-semibold text-neutral-400 uppercase">Origen</th>
-                            <th class="text-left py-3 px-2 text-xs font-semibold text-neutral-400 uppercase">Plan</th>
-                            <th class="text-right py-3 px-2 text-xs font-semibold text-neutral-400 uppercase">Monto</th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-neutral-500 uppercase">Fecha</th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-neutral-500 uppercase">Acción</th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-neutral-500 uppercase">Origen</th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-neutral-500 uppercase">Plan</th>
+                            <th class="text-right py-3 px-2 text-xs font-semibold text-neutral-500 uppercase">Monto</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($auditHistory as $log)
                             <tr class="border-b border-neutral-50">
-                                <td class="py-3 px-2 text-neutral-600">{{ $log['created_at'] }}</td>
+                                <td class="py-3 px-2 text-neutral-700 text-xs">{{ $log['created_at'] }}</td>
                                 <td class="py-3 px-2">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
-                                        {{ $log['action'] === 'granted' ? 'bg-secondary-500/10 text-secondary-600' : 'bg-neutral-100 text-neutral-600' }}">
+                                        {{ $log['action'] === 'granted' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-neutral-100 text-neutral-700 border border-neutral-200' }}">
                                         {{ $log['action_label'] }}
                                     </span>
                                 </td>
-                                <td class="py-3 px-2 text-neutral-600">{{ $log['source'] }}</td>
-                                <td class="py-3 px-2 text-neutral-600">{{ $log['plan'] ? ucfirst($log['plan']) : '—' }}</td>
-                                <td class="py-3 px-2 text-right font-medium">{{ $log['amount'] > 0 ? 'S/ ' . number_format($log['amount'], 2) : '—' }}</td>
+                                <td class="py-3 px-2 text-neutral-700 text-xs">{{ $log['source'] }}</td>
+                                <td class="py-3 px-2 text-neutral-700 text-xs">{{ $log['plan'] ? ucfirst($log['plan']) : '—' }}</td>
+                                <td class="py-3 px-2 text-right font-medium text-neutral-900 text-xs">{{ $log['amount'] > 0 ? 'S/ ' . number_format($log['amount'], 2) : '—' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -153,7 +153,7 @@
                         <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
                     </div>
                     <h3 class="text-lg font-bold text-neutral-900">¿Cancelar suscripción?</h3>
-                    <p class="text-sm text-neutral-400 mt-2">Perderás acceso inmediato a las funcionalidades premium.</p>
+                    <p class="text-sm text-neutral-500 mt-2">Perderás acceso inmediato a las funcionalidades premium.</p>
                 </div>
                 <div class="mb-6">
                     <label class="block text-xs font-semibold text-neutral-600 mb-3">¿Por qué cancelas? <span class="text-red-400">(opcional)</span></label>

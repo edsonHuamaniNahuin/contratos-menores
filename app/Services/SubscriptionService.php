@@ -482,9 +482,9 @@ class SubscriptionService
     }
 
     /**
-     * Otorga premium manualmente desde admin (sin pago).
+     * Otorga premium manualmente desde admin (sin pago o via Yape).
      */
-    public function grantPremium(User $user, int $days, string $plan = Subscription::PLAN_MONTHLY): Subscription
+    public function grantPremium(User $user, int $days, string $plan = Subscription::PLAN_MONTHLY, float $amount = 0, string $gatewayProvider = ''): Subscription
     {
         if ($user->isAdmin()) {
             throw new \RuntimeException('Los administradores ya tienen acceso completo, no necesitan suscripción.');
@@ -493,23 +493,31 @@ class SubscriptionService
         $now    = Carbon::now();
         $endsAt = $now->copy()->addDays($days);
 
-        return DB::transaction(function () use ($user, $plan, $now, $endsAt) {
+        return DB::transaction(function () use ($user, $plan, $now, $endsAt, $amount, $gatewayProvider) {
             // Expirar anteriores
             $user->subscriptions()
                 ->where('status', Subscription::STATUS_ACTIVE)
                 ->update(['status' => Subscription::STATUS_EXPIRED]);
+
+            $metadata = ['granted_by' => 'admin', 'granted_at' => $now->toDateTimeString()];
+            if ($gatewayProvider) {
+                $metadata['gateway'] = $gatewayProvider;
+                $metadata['source'] = 'yape_admin';
+            }
 
             $subscription = $user->subscriptions()->create([
                 'plan'     => $plan,
                 'status'   => Subscription::STATUS_ACTIVE,
                 'starts_at' => $now,
                 'ends_at'  => $endsAt,
-                'amount'   => 0,
+                'amount'   => $amount,
                 'currency' => 'PEN',
-                'metadata' => ['granted_by' => 'admin', 'granted_at' => $now->toDateTimeString()],
+                'gateway_provider' => $gatewayProvider ?: null,
+                'payment_method' => $gatewayProvider ?: null,
+                'metadata' => $metadata,
             ]);
 
-            $this->assignPremiumRole($user);
+            $this->assignPremiumRole($user, $plan);
 
             PremiumAuditService::logGranted(
                 $user,
@@ -519,8 +527,12 @@ class SubscriptionService
                 ['reason' => 'Premium otorgado manualmente por admin']
             );
 
+            // Notificar al admin por Telegram
+            $this->notifyAdminNewSubscription($user, $subscription);
+
             Log::info('Premium otorgado por admin', [
                 'user_id' => $user->id,
+                'plan'    => $plan,
                 'days'    => $endsAt->diffInDays($now),
             ]);
 
@@ -560,23 +572,27 @@ class SubscriptionService
      |──────────────────────────────── */
 
     /**
-     * Asigna el rol proveedor-premium.
+     * Asigna el rol premium según el plan.
      * NUNCA toca usuarios con rol admin.
      */
-    private function assignPremiumRole(User $user): void
+    private function assignPremiumRole(User $user, string $plan = Subscription::PLAN_MONTHLY): void
     {
         if ($user->isAdmin()) {
             return;
         }
 
-        $premiumRole = \App\Models\Role::where('slug', 'proveedor-premium')->first();
-        if ($premiumRole && !$user->hasRole('proveedor-premium')) {
-            $user->roles()->attach($premiumRole->id);
+        $slug = $plan === Subscription::PLAN_MAYORES_PREMIUM
+            ? 'proveedor-premium-total'
+            : 'proveedor-premium';
+
+        $role = \App\Models\Role::where('slug', $slug)->first();
+        if ($role && !$user->hasRole($slug)) {
+            $user->roles()->attach($role->id);
         }
     }
 
     /**
-     * Revoca el rol proveedor-premium.
+     * Revoca los roles premium (normal + total).
      * NUNCA toca usuarios con rol admin.
      */
     private function revokePremiumRole(User $user): void
@@ -585,9 +601,10 @@ class SubscriptionService
             return;
         }
 
-        $premiumRole = \App\Models\Role::where('slug', 'proveedor-premium')->first();
-        if ($premiumRole) {
-            $user->roles()->detach($premiumRole->id);
+        $slugs = ['proveedor-premium', 'proveedor-premium-total'];
+        $roleIds = \App\Models\Role::whereIn('slug', $slugs)->pluck('id');
+        if ($roleIds->isNotEmpty()) {
+            $user->roles()->detach($roleIds->toArray());
         }
     }
 

@@ -75,8 +75,13 @@ class AdminTelegramNotificationService
             'monthly' => '📅 Mensual (S/ 49.00)',
             'yearly'  => '📆 Anual (S/ 470.00)',
             'trial'   => '🆓 Trial 15 días',
+            'mayores-premium' => '🏢 Premium + Contratos Mayores (S/ 68.00)',
             default   => $subscription->plan,
         };
+
+        $roleLabel = $subscription->plan === 'mayores-premium'
+            ? 'PROVEEDOR PREMIUM TOTAL'
+            : 'PROVEEDOR PREMIUM';
 
         $gateway = $subscription->gateway_provider
             ? strtoupper($subscription->gateway_provider)
@@ -86,6 +91,7 @@ class AdminTelegramNotificationService
                  . "📧 *Usuario:* {$user->email}\n"
                  . "📝 *Nombre:* {$user->name}\n"
                  . "🎯 *Plan:* {$planLabel}\n"
+                 . "🛡️ *Rol:* {$roleLabel}\n"
                  . "💳 *Pasarela:* {$gateway}\n"
                  . "💵 *Monto:* S/ " . number_format((float) $subscription->amount, 2) . "\n"
                  . "📅 *Inicio:* " . ($subscription->starts_at?->format('d/m/Y') ?? 'N/A') . "\n"

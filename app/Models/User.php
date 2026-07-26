@@ -110,7 +110,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isPremium(): bool
     {
-        return $this->hasRole('proveedor-premium') || $this->isAdmin();
+        return $this->hasRole('proveedor-premium') || $this->hasRole('proveedor-premium-total') || $this->isAdmin();
     }
 
     public function isOnTrial(): bool

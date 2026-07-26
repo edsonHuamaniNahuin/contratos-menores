@@ -58,6 +58,7 @@ class SubscriptionExpiringMail extends Mailable
                 'type'          => $this->type,
                 'miSuscripcionUrl' => route('mi.suscripcion'),
                 'planesUrl'     => route('planes'),
+                'billingUrl'    => route('billing'),
                 'homeUrl'       => route('home'),
             ],
         );

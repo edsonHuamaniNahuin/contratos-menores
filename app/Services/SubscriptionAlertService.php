@@ -92,7 +92,11 @@ class SubscriptionAlertService
     {
         $targetDate = Carbon::now()->addDays($daysBefore)->startOfDay();
 
-        $subscriptions = Subscription::whereIn('plan', [Subscription::PLAN_MONTHLY, Subscription::PLAN_YEARLY])
+        $subscriptions = Subscription::whereIn('plan', [
+                Subscription::PLAN_MONTHLY,
+                Subscription::PLAN_YEARLY,
+                Subscription::PLAN_MAYORES_PREMIUM,
+            ])
             ->where('status', Subscription::STATUS_ACTIVE)
             ->whereDate('ends_at', '=', $targetDate->toDateString())
             ->with('user')

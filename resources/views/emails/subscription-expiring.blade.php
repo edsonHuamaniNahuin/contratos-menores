@@ -78,27 +78,26 @@
 
                                 <div style="background-color:#fee2e2;border-left:4px solid #ef4444;padding:16px;margin:0 0 24px;border-radius:4px">
                                     <p style="font-size:14px;color:#991b1b;margin:0;line-height:1.5">
-                                        <strong>Tu acceso premium expirará pronto.</strong> Renueva para seguir disfrutando
-                                        de análisis de TDR con IA, seguimiento de contratos y más.
+                                        <strong>Tu acceso premium expirará pronto.</strong> Realiza el pago vía Yape y sube tu comprobante para extender tu vigencia sin perder el acceso.
                                     </p>
                                 </div>
                             @endif
 
-                            {{-- CTA Buttons --}}
+                            {{-- CTA Button --}}
                             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">
                                 <tr>
                                     <td align="center" style="padding-bottom:12px">
-                                        <a href="{{ $miSuscripcionUrl }}"
-                                           style="display:inline-block;background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:100px">
-                                            Gestionar mi suscripción
+                                        <a href="{{ $billingUrl }}"
+                                           style="display:inline-block;background:linear-gradient(135deg,#025964,#014752);color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:100px">
+                                            Renovar con Yape
                                         </a>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td align="center">
-                                        <a href="{{ $planesUrl }}"
+                                        <a href="{{ $miSuscripcionUrl }}"
                                            style="display:inline-block;color:#6b7280;font-size:13px;text-decoration:underline">
-                                            Ver todos los planes
+                                            Gestionar mi suscripción
                                         </a>
                                     </td>
                                 </tr>

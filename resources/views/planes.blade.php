@@ -330,44 +330,28 @@
                             <span class="block w-full text-center px-6 py-3 text-sm font-medium text-amber-700 bg-amber-100 rounded-full">
                                 ⏱ Trial activo — {{ $daysLeft }} días restantes
                             </span>
-                            <a href="{{ route('planes.checkout', 'monthly') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-primary-500 rounded-full hover:bg-primary-400 transition-colors">
+                            <a href="{{ route('pago.yape.show', 'monthly') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-primary-500 rounded-full hover:bg-primary-400 transition-colors">
                                 Comprar Mensual — S/ 49/mes
                             </a>
-                            <a href="{{ route('planes.checkout', 'yearly') }}" class="block w-full text-center px-6 py-3 text-sm font-medium text-primary-500 bg-white border-2 border-primary-500 rounded-full hover:bg-primary-500 hover:text-white transition-colors">
+                            <a href="{{ route('pago.yape.show', 'yearly') }}" class="block w-full text-center px-6 py-3 text-sm font-medium text-primary-500 bg-white border-2 border-primary-500 rounded-full hover:bg-primary-500 hover:text-white transition-colors">
                                 Comprar Anual — S/ 470/año
                                 <span class="ml-1 text-xs opacity-75">(ahorra 20%)</span>
                             </a>
 
                         @elseif($canTrial)
-                            {{-- Puede probar trial Y puede comprar directamente --}}
-                            <a href="{{ route('planes.checkout', ['plan' => 'monthly', 'trial' => 1]) }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-secondary-500 rounded-full hover:bg-secondary-400 transition-colors shadow-sm">
-                                🎁 Probar 15 días gratis
-                            </a>
-                            <p class="text-xs text-neutral-400 text-center">
-                                Registra tu tarjeta para empezar. No se cobra hasta que termine el trial.
-                            </p>
-
-                            {{-- Separador "o comprar directamente" --}}
-                            <div class="flex items-center gap-3 pt-1">
-                                <div class="h-px flex-1 bg-neutral-200"></div>
-                                <span class="text-xs text-neutral-400 font-medium">o comprar directamente</span>
-                                <div class="h-px flex-1 bg-neutral-200"></div>
-                            </div>
-
-                            <a href="{{ route('planes.checkout', 'monthly') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-primary-500 rounded-full hover:bg-primary-400 transition-colors">
+                            <a href="{{ route('pago.yape.show', 'monthly') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-primary-500 rounded-full hover:bg-primary-400 transition-colors">
                                 Comprar Mensual — S/ 49/mes
                             </a>
-                            <a href="{{ route('planes.checkout', 'yearly') }}" class="block w-full text-center px-6 py-3 text-sm font-medium text-primary-500 bg-white border-2 border-primary-500 rounded-full hover:bg-primary-500 hover:text-white transition-colors">
+                            <a href="{{ route('pago.yape.show', 'yearly') }}" class="block w-full text-center px-6 py-3 text-sm font-medium text-primary-500 bg-white border-2 border-primary-500 rounded-full hover:bg-primary-500 hover:text-white transition-colors">
                                 Comprar Anual — S/ 470/año
                                 <span class="ml-1 text-xs opacity-75">(ahorra 20%)</span>
                             </a>
-
                         @else
                             {{-- Ya usó trial, no es premium → solo comprar --}}
-                            <a href="{{ route('planes.checkout', 'monthly') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-primary-500 rounded-full hover:bg-primary-400 transition-colors">
+                            <a href="{{ route('pago.yape.show', 'monthly') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-primary-500 rounded-full hover:bg-primary-400 transition-colors">
                                 Comprar Mensual — S/ 49/mes
                             </a>
-                            <a href="{{ route('planes.checkout', 'yearly') }}" class="block w-full text-center px-6 py-3 text-sm font-medium text-primary-500 bg-white border-2 border-primary-500 rounded-full hover:bg-primary-500 hover:text-white transition-colors">
+                            <a href="{{ route('pago.yape.show', 'yearly') }}" class="block w-full text-center px-6 py-3 text-sm font-medium text-primary-500 bg-white border-2 border-primary-500 rounded-full hover:bg-primary-500 hover:text-white transition-colors">
                                 Comprar Anual — S/ 470/año
                                 <span class="ml-1 text-xs opacity-75">(ahorra 20%)</span>
                             </a>
@@ -376,20 +360,7 @@
                             </p>
                         @endif
                     @else
-                        {{-- Guest: no logueado → ambas opciones --}}
-                        <a href="{{ route('register') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-secondary-500 rounded-full hover:bg-secondary-400 transition-colors shadow-sm">
-                            🎁 Probar 15 días gratis
-                        </a>
-                        <p class="text-xs text-neutral-400 text-center">
-                            Crea tu cuenta y registra tu tarjeta. Sin cobro durante el trial.
-                        </p>
-
-                        <div class="flex items-center gap-3 pt-1">
-                            <div class="h-px flex-1 bg-neutral-200"></div>
-                            <span class="text-xs text-neutral-400 font-medium">o comprar directamente</span>
-                            <div class="h-px flex-1 bg-neutral-200"></div>
-                        </div>
-
+                        {{-- Guest: no logueado → crear cuenta para comprar --}}
                         <a href="{{ route('register') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-primary-500 rounded-full hover:bg-primary-400 transition-colors">
                             Comprar Mensual — S/ 49/mes
                         </a>
@@ -505,11 +476,11 @@
                                 ✓ Acceso completo como Administrador
                             </span>
                         @elseif($isPremium2)
-                            <a href="{{ route('checkout.mercadopago', ['plan' => \App\Models\Subscription::PLAN_MAYORES_PREMIUM]) }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-amber-500 rounded-full hover:bg-amber-600 transition-colors shadow-md">
+                            <a href="{{ route('pago.yape.show', \App\Models\Subscription::PLAN_MAYORES_PREMIUM) }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-amber-500 rounded-full hover:bg-amber-600 transition-colors shadow-md">
                                 Mejorar a Premium + Contratos Mayores — S/ 68/mes
                             </a>
                         @else
-                            <a href="{{ route('planes.checkout', 'monthly') }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-amber-500 rounded-full hover:bg-amber-600 transition-colors shadow-md">
+                            <a href="{{ route('pago.yape.show', \App\Models\Subscription::PLAN_MAYORES_PREMIUM) }}" class="block w-full text-center px-6 py-3.5 text-sm font-semibold text-white bg-amber-500 rounded-full hover:bg-amber-600 transition-colors shadow-md">
                                 Contratar Premium + Contratos Mayores — S/ 68/mes
                             </a>
                         @endif

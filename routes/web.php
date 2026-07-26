@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\YapePaymentController;
 use App\Models\TdrAnalisis;
 use App\Models\TdrAnalisisMayor;
 use Illuminate\Support\Facades\Cache;
@@ -397,6 +398,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/planes/charge', [SubscriptionController::class, 'charge'])
         ->name('planes.charge');
+
+    // ─── Yape Payment Flow ─────────────────────────────────────────
+
+    Route::get('/pago-yape/{plan}', [YapePaymentController::class, 'show'])
+        ->name('pago.yape.show');
+
+    Route::post('/pago-yape/{plan}', [YapePaymentController::class, 'submit'])
+        ->name('pago.yape.submit');
+
+    // ─── Admin: Pagos Yape ─────────────────────────────────────────
+
+    Route::get('/admin/pagos-yape', function () {
+        return view('admin.pagos-yape');
+    })->name('admin.pagos-yape')->middleware('can:manage-subscriptions');
+
+    Route::get('/comprobante/{pago}', function (\App\Models\PagoYape $pago) {
+        abort_unless(auth()->user()?->hasPermission('manage-subscriptions'), 403);
+        return response()->file(storage_path('app/public/' . $pago->comprobante));
+    })->name('comprobante.yape')->middleware('auth');
 
     // Callback de MercadoPago (retorno después de pagar en MP)
     Route::get('/planes/callback', [SubscriptionController::class, 'callback'])

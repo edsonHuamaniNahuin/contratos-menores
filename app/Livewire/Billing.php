@@ -2,13 +2,18 @@
 
 namespace App\Livewire;
 
+use App\Models\PagoYape;
 use App\Models\Subscription;
+use App\Services\Payments\MercadoPagoGateway;
 use App\Services\SubscriptionService;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Billing extends Component
 {
+    use WithFileUploads;
     public ?array $subscription = null;
     public bool $isPremium = false;
     public bool $isOnTrial = false;
@@ -61,8 +66,14 @@ class Billing extends Component
                 Subscription::PLAN_TRIAL   => 'Prueba gratuita (15 días)',
                 Subscription::PLAN_MONTHLY => 'Mensual — S/ 49',
                 Subscription::PLAN_YEARLY  => 'Anual — S/ 470',
+                Subscription::PLAN_MAYORES_PREMIUM => 'Premium + Contratos Mayores — S/ 68',
                 default                    => ucfirst($activeSub->plan),
             };
+
+            // Check for pending Yape payment
+            $this->hasPendingYape = PagoYape::where('user_id', $user->id)
+                ->where('estado', PagoYape::ESTADO_PENDIENTE)
+                ->exists();
 
             // Cargar info de tarjeta desde MercadoPago
             $this->loadSavedCard($activeSub);
@@ -168,6 +179,85 @@ class Billing extends Component
     public function dismissCancelModal(): void
     {
         $this->showCancelModal = false;
+    }
+
+    // Yape payment
+    public bool $showYapeForm = false;
+    public $comprobante = null;
+    public string $referenciaAdicional = '';
+    public string $telefonoRenovacion = '';
+    public bool $hasPendingYape = false;
+
+    public function toggleYapeForm(): void
+    {
+        $this->showYapeForm = !$this->showYapeForm;
+        $this->comprobante = null;
+        $this->referenciaAdicional = '';
+        $this->telefonoRenovacion = '';
+    }
+
+    public function submitYapePago(): void
+    {
+        $user = auth()->user();
+        if (!$user || !$this->isPremium) return;
+
+        $this->validate([
+            'comprobante' => 'required|image|mimes:jpeg,png,webp|max:5120',
+            'telefonoRenovacion' => 'nullable|string|max:9',
+            'referenciaAdicional' => 'nullable|string|max:500',
+        ], [
+            'comprobante.required' => 'Debes adjuntar el screenshot del pago.',
+            'comprobante.image' => 'El archivo debe ser una imagen.',
+            'comprobante.mimes' => 'Solo JPG, PNG o WebP.',
+            'comprobante.max' => 'Máximo 5 MB.',
+        ]);
+
+        $pending = PagoYape::where('user_id', $user->id)
+            ->where('estado', PagoYape::ESTADO_PENDIENTE)
+            ->first();
+        if ($pending) {
+            session()->flash('error', 'Ya tienes un pago pendiente de validación.');
+            return;
+        }
+
+        $file = $this->comprobante;
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($file->getRealPath());
+        if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'])) {
+            session()->flash('error', 'Formato no permitido.');
+            return;
+        }
+
+        $nombreOriginal = preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+        $nombreOriginal = substr($nombreOriginal, -100);
+        $identificador = date('Ymd_His') . '_' . strtolower(Str::random(12));
+        $carpeta = 'comprobantes/yape/' . $user->id;
+        $filename = "pago_{$identificador}." . strtolower($file->getClientOriginalExtension());
+        $path = $file->storeAs($carpeta, $filename, 'public');
+
+        $plan = $this->subscription['plan'] ?? Subscription::PLAN_MONTHLY;
+        $prices = MercadoPagoGateway::planPrices();
+        $monto = $prices[$plan] ?? 0;
+
+        PagoYape::create([
+            'user_id' => $user->id,
+            'plan' => $plan,
+            'tipo' => PagoYape::TIPO_RENOVACION,
+            'monto' => $monto,
+            'comprobante' => $path,
+            'comprobante_dir' => $carpeta,
+            'nombre_original' => $nombreOriginal,
+            'estado' => PagoYape::ESTADO_PENDIENTE,
+            'referencia_adicional' => $this->referenciaAdicional,
+            'telefono' => $this->telefonoRenovacion,
+        ]);
+
+        $this->showYapeForm = false;
+        $this->comprobante = null;
+        $this->referenciaAdicional = '';
+        $this->telefonoRenovacion = '';
+
+        session()->flash('success', 'Comprobante enviado. Tu pago será validado en máximo 24 horas.');
     }
 
     public function render()
