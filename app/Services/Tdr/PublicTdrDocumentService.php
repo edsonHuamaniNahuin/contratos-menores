@@ -158,6 +158,7 @@ class PublicTdrDocumentService
 
     protected function resolveAllowedMime(string $binary, ?string $headerMime = null): ?string
     {
+        // Check header MIME first
         if ($headerMime && stripos($headerMime, 'application/pdf') !== false) {
             return 'application/pdf';
         }
@@ -171,8 +172,20 @@ class PublicTdrDocumentService
             return 'application/x-rar-compressed';
         }
 
+        if ($headerMime && (
+            stripos($headerMime, 'application/vnd.openxmlformats-officedocument') !== false
+            || stripos($headerMime, 'application/msword') !== false
+        )) {
+            return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        }
+
+        // Check binary magic bytes
         if ($this->binaryLooksPdf($binary)) {
             return 'application/pdf';
+        }
+
+        if ($this->binaryLooksDocx($binary)) {
+            return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         }
 
         if ($this->binaryLooksZip($binary)) {
@@ -191,6 +204,7 @@ class PublicTdrDocumentService
         return match ($mime) {
             'application/zip' => 'zip',
             'application/x-rar-compressed', 'application/vnd.rar' => 'rar',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
             default => 'pdf',
         };
     }
@@ -215,6 +229,30 @@ class PublicTdrDocumentService
         }
 
         return in_array($signature, ["PK\x03\x04", "PK\x05\x06", "PK\x07\x08"], true);
+    }
+
+    protected function binaryLooksDocx(string $binary): bool
+    {
+        $signature = substr($binary, 0, 4);
+        if ($signature !== "PK\x03\x04") {
+            return false;
+        }
+
+        // DOCX es un ZIP con [Content_Types].xml — verificamos dentro del ZIP
+        try {
+            $tempPath = tempnam(sys_get_temp_dir(), 'tdr_docx_');
+            file_put_contents($tempPath, $binary);
+            $zip = new \ZipArchive();
+            if ($zip->open($tempPath) === true) {
+                $isDocx = $zip->locateName('[Content_Types].xml') !== false;
+                $zip->close();
+                @unlink($tempPath);
+                return $isDocx;
+            }
+            @unlink($tempPath);
+        } catch (\Throwable) {}
+
+        return false;
     }
 
     protected function binaryLooksRar(string $binary): bool

@@ -834,7 +834,7 @@ class BuscadorPublico extends Component
             $archivoMeta = $this->resolveArchivoMeta($idContrato);
 
             if (!$archivoMeta) {
-                $this->notify('No se encontraron anexos públicos para este proceso.', 'warning');
+                $this->notify('No se encontraron anexos para este proceso. La entidad no publicó documentos (TDR, bases) en el portal público.', 'warning');
                 return;
             }
             $contratoSnapshot = $this->resolveContrato($idContrato);

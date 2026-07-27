@@ -102,8 +102,8 @@ class SeacePublicArchivoService
             $contents = (string) $response->body();
             $mime = $response->header('Content-Type', 'application/octet-stream');
 
-            if (!$this->isPdfPayload($contents, $mime)) {
-                Log::warning('SeacePublicArchivoService: respuesta no PDF', [
+            if (!$this->isAllowedDocumentPayload($contents, $mime)) {
+                Log::warning('SeacePublicArchivoService: respuesta no es documento válido', [
                     'id_contrato_archivo' => $idContratoArchivo,
                     'status' => $response->status(),
                     'content_type' => $mime,
@@ -112,7 +112,7 @@ class SeacePublicArchivoService
 
                 return [
                     'success' => false,
-                    'error' => 'El portal público devolvió un archivo inválido (no es PDF). Intenta nuevamente en unos minutos.',
+                    'error' => 'El portal público devolvió un archivo inválido (no es PDF, DOCX, ZIP o RAR). Intenta nuevamente en unos minutos.',
                     'status' => $response->status(),
                 ];
             }
@@ -120,7 +120,7 @@ class SeacePublicArchivoService
             return [
                 'success' => true,
                 'filename' => $this->resolveFilename($response),
-                'mime' => 'application/pdf',
+                'mime' => $this->detectMime($contents, $mime),
                 'contents' => $contents,
             ];
         } catch (Exception $e) {
@@ -178,7 +178,7 @@ class SeacePublicArchivoService
         ];
     }
 
-    protected function isPdfPayload(string $binary, ?string $headerMime = null): bool
+    protected function isAllowedDocumentPayload(string $binary, ?string $headerMime = null): bool
     {
         if ($binary === '') {
             return false;
@@ -186,15 +186,76 @@ class SeacePublicArchivoService
 
         $prefix = substr($binary, 0, 12) ?: '';
 
+        // PDF
         if (str_contains($prefix, '%PDF')) {
             return true;
         }
 
+        // DOCX (Office Open XML — empieza con PK)
+        if (str_starts_with($prefix, "PK\x03\x04")) {
+            return true;
+        }
+
+        // RAR
+        if (str_starts_with($prefix, "Rar!\x1a\x07")) {
+            return true;
+        }
+
+        // HTML o error page
         if ($this->looksLikeHtml($binary)) {
             return false;
         }
 
-        return $headerMime && stripos($headerMime, 'pdf') !== false;
+        // Trust header MIME for pdf, zip, docx, rar
+        if ($headerMime) {
+            $allowedHeader = ['pdf', 'zip', 'rar', 'docx', 'officedocument', 'octet-stream', 'msword'];
+            foreach ($allowedHeader as $token) {
+                if (stripos($headerMime, $token) !== false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    protected function detectMime(string $binary, ?string $headerMime = null): string
+    {
+        if ($headerMime && stripos($headerMime, 'pdf') !== false) {
+            return 'application/pdf';
+        }
+
+        $prefix = substr($binary, 0, 12) ?: '';
+        if (str_contains($prefix, '%PDF')) {
+            return 'application/pdf';
+        }
+
+        if (str_starts_with($prefix, "PK\x03\x04")) {
+            // Could be DOCX or ZIP — check ZIP contents for [Content_Types].xml
+            try {
+                $tempPath = tempnam(sys_get_temp_dir(), 'seace_mime_');
+                file_put_contents($tempPath, $binary);
+                $zip = new \ZipArchive();
+                if ($zip->open($tempPath) === true) {
+                    $isDocx = $zip->locateName('[Content_Types].xml') !== false;
+                    $zip->close();
+                    @unlink($tempPath);
+                    if ($isDocx) {
+                        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                    }
+                    return 'application/zip';
+                }
+                @unlink($tempPath);
+            } catch (\Throwable) {}
+
+            return 'application/zip';
+        }
+
+        if (str_starts_with($prefix, "Rar!\x1a\x07")) {
+            return 'application/x-rar-compressed';
+        }
+
+        return $headerMime ?? 'application/pdf';
     }
 
     protected function looksLikeHtml(string $binary): bool
