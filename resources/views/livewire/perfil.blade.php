@@ -212,17 +212,17 @@
                     </div>
 
                 @elseif($canStartTrial)
-                    {{-- Puede iniciar trial --}}
+                    {{-- Trial deshabilitado --}}
                     <div class="text-center">
-                        <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-100 mb-3">
-                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-neutral-100 mb-3">
+                            <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                         <h3 class="text-sm font-bold text-neutral-900">Prueba gratuita</h3>
-                        <p class="text-xs text-neutral-400 mt-1 mb-3">15 días de acceso Premium</p>
-                        <a href="{{ route('planes.checkout', ['plan' => 'monthly', 'trial' => 1]) }}"
-                           class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white rounded-full text-xs font-semibold hover:bg-amber-600 transition-colors">
+                        <p class="text-xs text-neutral-400 mt-1 mb-3">Actualmente hemos inhabilitado la opción de pruebas gratuitas. Adquiere un plan Premium para acceder a todas las funcionalidades.</p>
+                        <a href="{{ route('planes') }}"
+                           class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 text-white rounded-full text-xs font-semibold hover:bg-primary-400 transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                            Activar trial
+                            Ver planes
                         </a>
                     </div>
                 @else

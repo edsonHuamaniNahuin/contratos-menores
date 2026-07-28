@@ -413,6 +413,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('admin.pagos-yape');
     })->name('admin.pagos-yape')->middleware('can:manage-subscriptions');
 
+    Route::get('/admin/correos', function () {
+        return view('admin.correos');
+    })->name('admin.correos')->middleware('can:manage-subscriptions');
+
     Route::get('/comprobante/{pago}', function (\App\Models\PagoYape $pago) {
         abort_unless(auth()->user()?->hasPermission('manage-subscriptions'), 403);
         return response()->file(storage_path('app/public/' . $pago->comprobante));

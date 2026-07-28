@@ -61,6 +61,17 @@ Schedule::command('subscriptions:expire')
 
 /*
 |--------------------------------------------------------------------------
+| Campañas de correo — envío programado
+|--------------------------------------------------------------------------
+| Cada 5 minutos revisa si hay campañas de correo programadas para enviar.
+*/
+Schedule::command('campaigns:send-scheduled')
+    ->everyFiveMinutes()
+    ->timezone('America/Lima')
+    ->withoutOverlapping();
+
+/*
+|--------------------------------------------------------------------------
 | Renovar Suscripciones (Cobro Recurrente)
 |--------------------------------------------------------------------------
 | Cada 6 horas intenta renovar suscripciones que vencen en las próximas 24h.
