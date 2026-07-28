@@ -232,20 +232,19 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
                 $bodyText = str_replace(['*', '_', '~'], '', $bodyWhatsApp);
 
-                $rows = [
-                    ['id' => 'mayor_analizar_' . $contrato->ocid, 'title' => '🤖 Analizar con IA', 'description' => 'Requisitos, plazos y penalidades'],
-                ];
-                if (!empty($contrato->url_documento)) {
-                    $rows[] = ['id' => 'mayor_descargar_' . $contrato->ocid, 'title' => '📎 Descargar TDR', 'description' => 'Documento de bases'];
-                }
-                $rows[] = ['id' => 'mayor_direccionar_' . $contrato->ocid, 'title' => '🔍 Detectar Direccionamiento', 'description' => 'Auditar el TDR'];
-                $rows[] = ['id' => 'mayor_proforma_' . $contrato->ocid, 'title' => '📋 Crear Proforma', 'description' => 'Cotización y costos'];
-                $rows[] = ['id' => 'mayor_postores_' . $contrato->ocid, 'title' => '👥 Ver Postores', 'description' => 'Entidades involucradas'];
-                $rows[] = ['id' => 'mayor_verweb_' . $contrato->ocid, 'title' => '🌐 Ver en la web', 'description' => 'Abrir en el buscador'];
+            $rows = [
+                ['id' => 'mayor_analizar_' . $this->sanitizeOcid($contrato->ocid), 'title' => '🤖 Analizar con IA', 'description' => 'Requisitos, plazos y penalidades'],
+            ];
+            if (!empty($contrato->url_documento)) {
+                $rows[] = ['id' => 'mayor_descargar_' . $this->sanitizeOcid($contrato->ocid), 'title' => '📎 Descargar TDR', 'description' => 'Documento de bases'];
+            }
+            $rows[] = ['id' => 'mayor_direccionar_' . $this->sanitizeOcid($contrato->ocid), 'title' => '🔍 Direccionamiento', 'description' => 'Auditar el TDR'];
+            $rows[] = ['id' => 'mayor_proforma_' . $this->sanitizeOcid($contrato->ocid), 'title' => '📋 Crear Proforma', 'description' => 'Cotización y costos'];
+            $rows[] = ['id' => 'mayor_postores_' . $this->sanitizeOcid($contrato->ocid), 'title' => '👥 Ver Postores', 'description' => 'Entidades involucradas'];
+            $rows[] = ['id' => 'mayor_verweb_' . $this->sanitizeOcid($contrato->ocid), 'title' => '🌐 Ver en la web', 'description' => 'Abrir en el buscador'];
 
                 $keyboard = [
                     'type' => 'list',
-                    'header' => ['type' => 'text', 'text' => '📋 Acciones del Proceso'],
                     'body' => ['text' => mb_substr($bodyText, 0, 1024)],
                     'footer' => ['text' => '🤖 Vigilante SEACE'],
                     'action' => [
@@ -272,5 +271,10 @@ class NotificarContratosMayoresJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    protected function sanitizeOcid(string $ocid): string
+    {
+        return preg_replace('/[^a-z0-9_-]/', '_', strtolower($ocid));
     }
 }
