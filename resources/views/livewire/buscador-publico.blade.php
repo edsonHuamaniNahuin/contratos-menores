@@ -230,6 +230,7 @@
         </div>
 
         <!-- Filtros Geográficos (Colapsables) -->
+        @if(!$this->regionalMode)
         <div class="mt-3" x-data="{ mostrar: @entangle('mostrarFiltrosAvanzados') }">
             <button
                 @click="mostrar = !mostrar"
@@ -487,6 +488,7 @@
             </div>
         </div>
     </div>
+        @endif
 
     <!-- Mensaje de Error -->
     @if($errorMensaje)
@@ -595,6 +597,10 @@
                 Cerrar
             </button>
         </div>
+    @endif
+
+    @if($this->regionalMode)
+    </div>{{-- cierra panel de filtros en modo regional; resultados quedan como card independiente --}}
     @endif
 
     <!-- Resultados -->
@@ -2238,9 +2244,11 @@
                     </svg>
                     Ir al portal SEACE
                 </button>
-            </div>
         </div>
     </div>
+    @if(!$this->regionalMode)
+    </div>{{-- cierra panel de filtros (modo normal) --}}
+    @endif
 
     <script>
         function cotizadorSeace() {

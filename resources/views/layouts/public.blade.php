@@ -22,13 +22,14 @@
     @unless(app()->environment('production'))
         <meta name="robots" content="noindex, nofollow">
     @else
-        @hasSection('noindex')
-            <meta name="robots" content="noindex, nofollow">
+        @if(trim($__env->yieldContent('noindex')))
+        <meta name="robots" content="noindex, nofollow">
         @endif
     @endunless
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="canonical" href="{{ url()->current() }}">
+    @yield('head')
     {{-- Google Fonts: preconnect + preload para evitar render-blocking --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

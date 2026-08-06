@@ -62,6 +62,9 @@ class BuscadorPublico extends Component
     #[Url(as: 'dist')]
     public string $distSlug = '';
 
+    // Modo regional: oculta filtros geográficos en URLs /buscador-publico/{dep}
+    public bool $regionalMode = false;
+
     // IDs numéricos internos (resueltos desde slugs, NO en URL)
     public int $objetoContrato = 0;
     public int $estadoContrato = 0;
@@ -177,9 +180,24 @@ class BuscadorPublico extends Component
         $this->compatibilityService = $compatibilityService;
     }
 
-    public function mount()
+    public function mount($initialDep = null, $initialProv = null, $initialDist = null)
     {
         $this->cargarCatalogos();
+
+        // Detectar si es modo regional: URL contiene /buscador-publico/ o /contratos-estado/ con segmento
+        $path = request()->path();
+        $this->regionalMode = (bool) preg_match('#^(buscador-publico|contratos-estado)/[a-z]#', $path);
+
+        // Pre-carga regional: inicializar filtros desde parámetros de ruta (SEO departamental)
+        if ($initialDep && empty($this->depSlug)) {
+            $this->depSlug = $initialDep;
+        }
+        if ($initialProv && empty($this->provSlug)) {
+            $this->provSlug = $initialProv;
+        }
+        if ($initialDist && empty($this->distSlug)) {
+            $this->distSlug = $initialDist;
+        }
 
         // Resolver slugs de URL → IDs internos (+ backward compat con URLs viejas)
         $this->syncFromUrl();

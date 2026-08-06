@@ -140,6 +140,27 @@ licitacionesmype.pe/
 
 ---
 
+## 🌎 5.5. ANÁLISIS SEO REGIONAL — OPORTUNIDAD POR DEPARTAMENTO
+
+**Hallazgo:** El 100% del trafico actual proviene de keywords genericas. No existe presencia en busquedas locales. Se identificaron **25 departamentos** con demanda real en Google Suggest.
+
+| Departamento | Keywords con demanda | Prioridad |
+|---|---|---|
+| Arequipa | licitaciones arequipa 2026, osce licitaciones arequipa, gobierno regional arequipa | P1 |
+| Cusco | licitaciones cusco 2026, gobierno regional cusco, caja cusco | P1 |
+| Piura | licitaciones publicas piura, caja piura | P1 |
+| La Libertad | osce-seace trujillo, seace la libertad | P1 |
+| Junin | licitaciones huancayo, licitaciones publicas junin | P1 |
+| Cajamarca | licitaciones publicas cajamarca 2025 | P1 |
+| Tacna | licitaciones publicas tacna | P1 |
+| Puno | licitaciones publicas puno, electro puno | P1 |
+| Lima | licitaciones lima, licitaciones lima peru | P1 |
+| +16 departamentos mas | Ver Seccion 7 - Fase 2.5 | P2-P3 |
+
+**Estrategia:** Crear 27 paginas de aterrizaje (1 por departamento + Lima + Callao) con contratos SEACE filtrados por ubicacion. Template dinamico desde backend con meta tags, schema LocalBusiness, y datos reales de contratos activos por region. NADIE en el mercado peruano ofrece esto indexable por Google.
+
+---
+
 ## 💰 6. VALOR POTENCIAL PERDIDO (CÁLCULO DE OPORTUNIDAD)
 
 ### Si optimizamos el CTR de 0.42% → 3% (benchmark posición 7)
@@ -295,6 +316,214 @@ Los posts con más impresiones pero bajo CTR:
 
 ---
 
+### FASE 2.5 — SEO REGIONAL Y LOCAL (Semana 2-4) 🌎📍
+
+#### 2.5.1 El Problema: Todo apunta a Lima
+
+Actualmente el sitio solo rankea keywords genericas como "seace buscador". No existe ninguna pagina dedicada a busquedas por departamento, region o provincia. Esto deja fuera a miles de proveedores que buscan licitaciones locales.
+
+**Dato clave:** De los 79K impresiones, el 97.6% del trafico es de Peru, pero el buscador no ofrece filtro visible por ubicacion que Google pueda indexar.
+
+#### 2.5.2 Demanda Comprobada — Google Suggest por Departamento
+
+Se ejecuto Google Suggest para los 25 departamentos del Peru con patrones: `"licitaciones [departamento]"` y `"seace [departamento]"`. Resultados:
+
+**ALTA DEMANDA (>5 sugerencias):**
+
+| Departamento | Keywords con demanda |
+|---|---|
+| **Arequipa** | licitaciones arequipa 2026, licitaciones publicas arequipa, osce licitaciones arequipa, gobierno regional arequipa, caja arequipa licitaciones, seal arequipa |
+| **Cusco** | licitaciones cusco 2026, licitaciones publicas cusco, licitaciones caja cusco, gobierno regional cusco |
+| **Piura** | licitaciones caja piura, licitaciones publicas piura |
+| **Junin** | licitaciones huancayo, licitaciones publicas junin, municipalidad de junin |
+| **Cajamarca** | licitaciones publicas cajamarca, licitaciones cajamarca 2025, 2024 |
+| **Tacna** | licitaciones publicas tacna, licitacion ptar tacna |
+| **Puno** | licitaciones publicas puno, licitaciones electro puno |
+| **Apurimac** | licitaciones apurimac 2025, licitaciones gore apurimac, licitaciones publicas apurimac |
+| **Huancavelica** | licitaciones huancavelica 2026, licitaciones publicas huancavelica |
+| **San Martin** | licitaciones publicas san martin, municipalidad de san martin |
+| **Ayacucho** | licitaciones publicas ayacucho |
+| **Moquegua** | licitaciones publicas moquegua |
+| **Madre de Dios** | licitaciones madre de dios, goremad, madre de dios convocatorias |
+
+**DEMANDA MEDIA (2-4 sugerencias):**
+
+| Departamento | Keywords |
+|---|---|
+| **La Libertad / Trujillo** | osce-seace trujillo, seace la libertad, caja trujillo licitaciones |
+| **Lambayeque / Chiclayo** | licitaciones chiclayo, licitaciones osce lambayeque |
+| **Ancash** | licitaciones ancash 2024, licitaciones de obras en ancash |
+| **Loreto** | seace loreto |
+| **Huanuco** | licitaciones publicas huanuco |
+| **Ica** | caja ica licitaciones |
+| **Ucayali** | licitaciones (baja especificidad) |
+
+**SIN DEMANDA DETECTADA (pero con potencial):** Amazonas, Pasco, Tumbes, Callao
+
+#### 2.5.3 Estrategia de URLs y Template
+
+**URL pattern:**
+```
+licitacionesmype.pe/licitaciones/arequipa
+licitacionesmype.pe/licitaciones/cusco
+licitacionesmype.pe/licitaciones/piura
+licitacionesmype.pe/licitaciones/la-libertad
+... (25 departamentos + Lima Metropolitana + Callao)
+```
+
+**Template por departamento:**
+
+```html
+<!-- TITLE (50-60 chars) -->
+🔍 Licitaciones y Contratos SEACE en [DEPARTAMENTO] 2026 | Vigilante SEACE
+
+<!-- META DESCRIPTION (140-155 chars) -->
+Encuentra [N] licitaciones activas en [DEPARTAMENTO]. Buscador SEACE actualizado con contratos de [ENTIDADES_TOP]. Monitoreo, alertas y analisis IA. Empieza gratis.
+
+<!-- H1 -->
+Licitaciones en [DEPARTAMENTO] — Buscador SEACE Actualizado
+
+<!-- CONTENIDO (min 300 palabras) -->
+- Introduccion sobre contrataciones en [DEPARTAMENTO] (datos reales)
+- Top 5 entidades que mas licitan en [DEPARTAMENTO]
+- Lista de contratos activos (dinamico desde backend)
+- Tipos de procesos mas comunes en la region
+- CTA: "Recibe alertas de licitaciones en [DEPARTAMENTO]"
+```
+
+**Schema Markup por departamento:**
+```json
+{
+  "@type": "WebPage",
+  "name": "Licitaciones SEACE en [DEPARTAMENTO]",
+  "description": "Buscador de contratos del Estado en [DEPARTAMENTO]",
+  "about": {
+    "@type": "Place",
+    "name": "[DEPARTAMENTO]",
+    "containedInPlace": {
+      "@type": "Country",
+      "name": "Peru"
+    }
+  },
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": [/* contratos dinamicos */]
+  }
+}
+```
+
+#### 2.5.4 Lista Completa de Departamentos para Indexar
+
+| # | Departamento | Capital | Slug | Prioridad |
+|---|---|---|---|---|
+| 1 | Amazonas | Chachapoyas | amazonas | P3 |
+| 2 | Ancash | Huaraz | ancash | P2 |
+| 3 | Apurimac | Abancay | apurimac | P2 |
+| 4 | Arequipa | Arequipa | arequipa | **P1** |
+| 5 | Ayacucho | Ayacucho | ayacucho | P2 |
+| 6 | Cajamarca | Cajamarca | cajamarca | **P1** |
+| 7 | Callao | Callao | callao | P1 |
+| 8 | Cusco | Cusco | cusco | **P1** |
+| 9 | Huancavelica | Huancavelica | huancavelica | P2 |
+| 10 | Huanuco | Huanuco | huanuco | P2 |
+| 11 | Ica | Ica | ica | P2 |
+| 12 | Junin | Huancayo | junin | **P1** |
+| 13 | La Libertad | Trujillo | la-libertad | **P1** |
+| 14 | Lambayeque | Chiclayo | lambayeque | P1 |
+| 15 | Lima | Lima | lima | **P1** |
+| 16 | Loreto | Iquitos | loreto | P2 |
+| 17 | Madre de Dios | Puerto Maldonado | madre-de-dios | P2 |
+| 18 | Moquegua | Moquegua | moquegua | P2 |
+| 19 | Pasco | Cerro de Pasco | pasco | P3 |
+| 20 | Piura | Piura | piura | **P1** |
+| 21 | Puno | Puno | puno | **P1** |
+| 22 | San Martin | Moyobamba | san-martin | P2 |
+| 23 | Tacna | Tacna | tacna | P1 |
+| 24 | Tumbes | Tumbes | tumbes | P3 |
+| 25 | Ucayali | Pucallpa | ucayali | P2 |
+
+**Total: 27 paginas** (25 departamentos + Lima Metropolitana + Callao)
+
+#### 2.5.5 Expansion a Provincias (Fase Futura)
+
+Para los departamentos con mas demanda, expandir a nivel provincia:
+
+| Departamento | Provincias a crear |
+|---|---|
+| Lima | Lima Norte, Lima Sur, Lima Este, Callao |
+| Arequipa | Arequipa, Caylloma, Islay |
+| La Libertad | Trujillo, Chepen, Pacasmayo |
+| Cusco | Cusco, La Convencion, Canchis |
+| Piura | Piura, Sullana, Talara |
+
+**Total fase 2: ~40 paginas provinciales adicionales.**
+
+#### 2.5.6 Keywords Locales por Intencion de Busqueda
+
+**Patron A: Buscador + Region** (intencion transaccional — QUIEREN BUSCAR)
+- "licitaciones [region] 2026" → landing departamental
+- "seace [region]" → landing departamental
+- "buscador seace [region]" → landing departamental
+- "contratos seace en [region]" → landing departamental
+
+**Patron B: Informativo + Region** (intencion informativa — QUIEREN APRENDER)
+- "como vender al estado en [region]" → blog post regional
+- "requisitos proveedor estado [region]" → blog post regional
+- "convocatorias [region] 2026" → pagina de convocatorias
+- "obras en [region] seace" → pagina filtrada por tipo
+
+**Patron C: Entidad + Region** (intencion especifica)
+- "gobierno regional [departamento] licitaciones" → pagina de entidad
+- "municipalidad de [ciudad] licitaciones" → pagina de entidad
+- "caja [ciudad] licitaciones" → pagina de entidad
+
+#### 2.5.7 Implementacion Tecnica (Backend)
+
+En Laravel, crear:
+
+```php
+// Route: routes/web.php
+Route::get('/licitaciones/{departamento}', [LicitacionesController::class, 'porDepartamento'])
+    ->name('licitaciones.departamento');
+
+// Controller logica:
+// 1. Validar que el departamento existe en la lista
+// 2. Cargar contratos filtrados por ubicacion (ya tienes el campo en BD)
+// 3. Generar meta tags dinamicos con:
+//    - Nombre del departamento
+//    - Cantidad de contratos activos
+//    - Top 3 entidades de la region
+// 4. Renderizar vista con datos reales
+```
+
+**Vista Blade sugerida:** `resources/views/licitaciones/departamento.blade.php`
+
+**Sitemap XML dinamico:** Agregar las 27 URLs al sitemap existente.
+
+**Internal Linking:** Agregar en el footer/home:
+```html
+<div class="grid grid-cols-3 gap-2 text-sm">
+  <a href="/licitaciones/arequipa">Licitaciones Arequipa</a>
+  <a href="/licitaciones/cusco">Licitaciones Cusco</a>
+  <a href="/licitaciones/piura">Licitaciones Piura</a>
+  <!-- ... 25 departamentos -->
+</div>
+```
+
+#### 2.5.8 Impacto Estimado
+
+| Metrica | Actual | Con SEO Local (30 dias) | Con SEO Local (90 dias) |
+|---|---|---|---|
+| Paginas indexadas | 26 | 53 (+27 departamentos) | 93 (+40 provincias) |
+|Keywords locales rankeadas| 0 | ~50 | ~200 |
+|Impresiones nuevas/mes| 0 | ~5,000 | ~15,000 |
+|Clics nuevos/mes| 0 | ~100 | ~400 |
+|CTR estimado (local)| — | 2-3% | 3-4% |
+
+**Ventaja competitiva:** NADIE en el mercado peruano tiene paginas de licitaciones por departamento. El SEACE oficial no ofrece URLs indexables por ubicacion. Esto es un oceano azul SEO.
+
+---
+
 ### FASE 3 — MEDIO PLAZO (Mes 1-2) 📈
 
 #### 3.1 Campaña de Contenido SEO
@@ -355,26 +584,30 @@ Los posts con más impresiones pero bajo CTR:
 
 ## 📊 8. MÉTRICAS DE SEGUIMIENTO (KPIs)
 
-| KPI | Actual | Objetivo 30 días | Objetivo 90 días |
+| KPI | Actual | Objetivo 30 dias | Objetivo 90 dias |
 |---|---|---|---|
 | CTR promedio | 0.62% | 1.5% | 3% |
 | Clics mensuales | 490 | 1,200 | 2,500 |
-| Posición promedio | 7.3 | 6.8 | 5.5 |
-| Páginas con 0 clics | 12/26 | 5/26 | 0/26 |
+| Posicion promedio | 7.3 | 6.8 | 5.5 |
+| Paginas con 0 clics | 12/26 | 5/26 | 0/26 |
 | Keywords con 0 clics | 50+ | 25 | 10 |
+| **Paginas regionales (nuevas)** | **0** | **27** | **67** |
+| **Impresiones regionales/mes** | **0** | **5,000** | **15,000** |
+| **Clics regionales/mes** | **0** | **100** | **400** |
 | Registros/mes | ? | Medir baseline | +50% |
-| Conversión a Premium | ? | Medir baseline | +30% |
+| Conversion a Premium | ? | Medir baseline | +30% |
 
 ---
 
 ## 🏁 9. VEREDICTO FINAL
 
 ### 🟢 Fortalezas
-1. **Producto sólido**: 29 módulos, IA real, multi-canal, precios competitivos
-2. **SEO técnico básico OK**: HTTPS, sitemap, canonical, indexación
+1. **Producto solido**: 29 modulos, IA real, multi-canal, precios competitivos
+2. **SEO tecnico basico OK**: HTTPS, sitemap, canonical, indexacion
 3. **Brand awareness**: "licitaciones mype" tiene 70% CTR
 4. **Contenido de calidad**: 16 posts de blog bien investigados
 5. **Mercado nicho**: Poca competencia en "software monitoreo licitaciones peru"
+6. **Oceano azul SEO regional**: NADIE rankea "licitaciones [departamento]" — 25 departamentos sin competencia
 
 ### 🔴 Debilidades críticas
 1. **CTR catastrófico (0.62%)**: El 99.4% de quienes ven el sitio en Google NO hacen click

@@ -68,6 +68,7 @@
                     </div>
                 </div>
             </div>
+            @if(!$this->regionalMode)
             <div class="lg:col-span-3" x-data="{ abierto: false }" @click.away="abierto = false">
                 <label class="block text-xs font-medium mb-1.5 {{ !empty($entidadFiltro) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }} transition-colors">Entidad</label>
                 <div class="relative">
@@ -145,6 +146,7 @@
                     </div>
                 </div>
             </div>
+            @endif
             <div class="lg:col-span-2">
                 <label class="block text-xs font-medium mb-1.5 {{ !empty($objetoContratacion) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Objeto</label>
                 <div class="relative">

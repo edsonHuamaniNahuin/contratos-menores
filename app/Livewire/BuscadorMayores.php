@@ -39,6 +39,9 @@ class BuscadorMayores extends Component
     public string $entidadTexto = '';
     public string $entidadFiltro = ''; // Solo se setea al hacer click en sugerencia
 
+    // Modo regional: oculta filtro de entidad en URLs /buscador-contratos-mayores/{entidad}
+    public bool $regionalMode = false;
+
     #[Url(as: 'tipo')]
     public string $objetoContratacion = '';
 
@@ -79,9 +82,24 @@ class BuscadorMayores extends Component
         $this->apiService = $apiService;
     }
 
-    public function mount(): void
+    public function mount($initialEntidad = null): void
     {
         $this->cargarEstadosDisponibles();
+
+        // Detectar modo regional: URL /buscador-contratos-mayores/{entidad}
+        $path = request()->path();
+        $this->regionalMode = (bool) preg_match('#^buscador-contratos-mayores/[a-z]#', $path);
+
+        // Pre-carga regional: inicializar filtro de entidad desde URL
+        if ($initialEntidad && empty($this->entidadFiltro)) {
+            // Buscar la entidad en DB por nombre (case-insensitive)
+            $entidad = \App\Models\EntidadMayor::whereRaw('LOWER(nombre) = ?', [strtolower($initialEntidad)])->first();
+            if ($entidad) {
+                $this->entidadTexto = $entidad->nombre;
+                $this->entidadFiltro = $entidad->nombre;
+            }
+        }
+
         $this->buscar(1);
     }
 
