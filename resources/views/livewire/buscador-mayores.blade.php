@@ -19,7 +19,12 @@
         <div class="bg-neutral-900 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-lg max-w-sm break-words" x-text="tooltip.text"></div>
     </div>
 
-    <h1 class="sr-only" data-ga-event="page_view_mayores" data-ga-category="mayores">Contratos Mayores &mdash; Vigilante SEACE</h1>
+        <div class="px-6">
+            <h1 class="text-2xl font-bold text-neutral-900">Contratos Mayores &gt;8 UIT</h1>
+            <p class="text-sm text-neutral-500 mt-1">Licitaciones Públicas, Concursos Públicos y Adjudicaciones Simplificadas del SEACE 3.0. Análisis IA, detección de direccionamiento y proformas.</p>
+        </div>
+
+        <h2 class="sr-only" data-ga-event="page_view_mayores" data-ga-category="mayores">Contratos Mayores &mdash; Vigilante SEACE</h2>
 
     {{-- Notificación toast --}}
     @if($notificacion)

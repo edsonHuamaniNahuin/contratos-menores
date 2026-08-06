@@ -99,7 +99,7 @@
             <div class="p-6 border-b border-neutral-100 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] text-neutral-400 uppercase tracking-widest font-medium">Vigilante SEACE</p>
-                    <h1 class="text-xl font-bold text-neutral-900">Vigilante SEACE</h1>
+                    <div class="text-xl font-bold text-neutral-900">Vigilante SEACE</div>
                 </div>
                 <!-- Botón cerrar en mobile -->
                 <button @click="sidebarOpen = false" class="lg:hidden text-neutral-400 hover:text-neutral-600" aria-label="Cerrar menú">
