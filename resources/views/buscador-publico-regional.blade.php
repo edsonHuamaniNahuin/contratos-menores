@@ -8,7 +8,7 @@
     $locationLabel = implode(', ', $locationParts);
     $seoTitle = '🔍 Contratos Menores en ' . $locationLabel . ' 2026 — Buscador SEACE | Vigilante SEACE';
     $seoDescription = 'Busca contratos menores del Estado en ' . $locationLabel . ' (&lt;8 UIT). Licitaciones del SEACE por palabra clave, entidad y tipo de proceso. Resultados actualizados 24/7. Vigilante SEACE.';
-    $canonicalUrl = url()->current();
+    $canonicalUrl = url('/contratos-estado/' . $seoDep . ($seoProv ? '/' . $seoProv : '') . ($seoDist ? '/' . $seoDist : ''));
 @endphp
 
 @section('title', $seoTitle)
