@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
-@section('title', 'Manual del Usuario — Licitaciones MYPe')
-@section('meta_description', 'Guía completa para usar Licitaciones MYPe: buscador de licitaciones SEACE, análisis con IA, notificaciones automáticas, score de compatibilidad y más.')
+@section('title', '📖 Manual de Usuario — Vigilante SEACE | Guía Completa del Buscador de Licitaciones')
+@section('meta_description', 'Guía completa para usar Vigilante SEACE: buscador de licitaciones, análisis de TDR con IA, alertas Telegram/WhatsApp, score de compatibilidad, seguimiento de procesos y más.')
 
 @php
     /**
@@ -66,7 +66,7 @@
                 Manual del Usuario
             </div>
             <h1 class="text-3xl sm:text-4xl font-extrabold text-white mb-3">
-                Guía Completa de Licitaciones MYPe
+                Guía Completa de Vigilante SEACE
             </h1>
             <p class="text-primary-200 text-base sm:text-lg leading-relaxed max-w-2xl">
                 Aprende a usar todas las herramientas para monitorear licitaciones del Estado peruano con Vigilante SEACE.
@@ -101,15 +101,15 @@
         <div x-show="activeTab === 'inicio'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
             <div class="space-y-8">
                 <section class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
-                    <h2 class="text-2xl font-bold text-neutral-900 mb-4">¿Qué es Licitaciones MYPe?</h2>
+                    <h2 class="text-2xl font-bold text-neutral-900 mb-4">¿Qué es Vigilante SEACE?</h2>
                     <p class="text-neutral-600 leading-relaxed mb-4">
-                        <strong class="text-neutral-900">Licitaciones MYPe</strong> es una plataforma de monitoreo inteligente que te permite rastrear, analizar y recibir alertas automáticas sobre licitaciones y contrataciones del Estado peruano publicadas en el SEACE (Sistema Electrónico de Contrataciones del Estado).
+                        <strong class="text-neutral-900">Vigilante SEACE</strong> es una plataforma de monitoreo inteligente que te permite rastrear, analizar y recibir alertas automáticas sobre licitaciones y contrataciones del Estado peruano publicadas en el SEACE (Sistema Electrónico de Contrataciones del Estado).
                     </p>
                     <p class="text-neutral-600 leading-relaxed mb-6">
                         El motor de nuestra plataforma, <strong class="text-brand-800">Vigilante SEACE</strong>, trabaja 24/7 monitoreando el portal de contrataciones del Estado para que tú no tengas que hacerlo.
                     </p>
 
-                    {!! manualImg('inicio-plataforma.png', 'Vista general de la plataforma Licitaciones MYPe', 'Página principal con acceso al buscador y funciones principales') !!}
+                    {!! manualImg('inicio-plataforma.png', 'Vista general de la plataforma Vigilante SEACE', 'Página principal con acceso al buscador y funciones principales') !!}
 
                     <div class="grid sm:grid-cols-2 gap-4">
                         <div class="bg-neutral-50 rounded-2xl p-5 border border-neutral-200">
@@ -637,7 +637,7 @@
                     <div class="space-y-3">
                         @php
                         $faqs = [
-                            ['¿Necesito cuenta en el SEACE para usar la plataforma?', '<strong>No.</strong> Licitaciones MYPe consulta la información pública del SEACE por ti. Solo necesitas crear una cuenta en nuestra plataforma. El buscador público ni siquiera requiere registro.'],
+                            ['¿Necesito cuenta en el SEACE para usar la plataforma?', '<strong>No.</strong> Vigilante SEACE consulta la información pública del SEACE por ti. Solo necesitas crear una cuenta en nuestra plataforma. El buscador público ni siquiera requiere registro.'],
                             ['¿Qué significa el score de compatibilidad?', 'Es un puntaje de <strong>0 a 10</strong> calculado por IA que indica qué tan compatible es un proceso con tu empresa. 7+ = alta compatibilidad. Requiere configurar tu "Company Copy".'],
                             ['¿Cada cuánto se actualizan los procesos?', 'Sincronización automática <strong>cada 42-50 minutos</strong> 24/7. El buscador público consulta la API del SEACE en tiempo real.'],
                             ['¿Cómo configuro las notificaciones Telegram?', 'Suscríbete Premium → Perfil → Agregar suscripción Telegram → Ingresa Chat ID (del bot @userinfobot) → Agrega palabras clave → ¡Activa!'],

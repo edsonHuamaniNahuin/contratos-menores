@@ -8,7 +8,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <meta property="og:title" content="__TITLE__">
     <meta property="og:description" content="__EXCERPT__">
+    <meta property="og:image" content="__IMAGE_URL__">
+    <meta property="og:url" content="__CANONICAL_URL__">
     <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="__TITLE__">
+    <meta name="twitter:description" content="__EXCERPT__">
+    <meta name="twitter:image" content="__IMAGE_URL__">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -47,6 +53,36 @@
         .callout { border-left: 4px solid #025964; background: #e8f0f1; padding: 1rem 1.25rem; margin: 1.75rem 0; border-radius: 0 0.75rem 0.75rem 0; }
         .callout p { margin-bottom: 0; color: #014752; }
     </style>
+    {{-- Structured Data --}}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "__TITLE__",
+        "description": "__EXCERPT__",
+        "image": "__IMAGE_URL__",
+        "author": { "@type": "Person", "name": "__AUTHOR__" },
+        "datePublished": "__DATE_ISO__",
+        "dateModified": "__DATE_ISO__",
+        "mainEntityOfPage": { "@type": "WebPage", "@id": "__CANONICAL_URL__" },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Vigilante SEACE",
+            "logo": { "@type": "ImageObject", "url": "https://vigilanteseace.pe/favicon.svg" }
+        }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Blog", "item": "https://vigilanteseace.pe/blog/" },
+            { "@type": "ListItem", "position": 2, "name": "__CATEGORY__", "item": "__CATEGORY_URL_FULL__" },
+            { "@type": "ListItem", "position": 3, "name": "__TITLE__" }
+        ]
+    }
+    </script>
 </head>
 <body class="font-sans antialiased min-h-screen bg-neutral-50 text-neutral-900">
     <header class="bg-white border-b border-neutral-200 sticky top-0 z-30 shadow-sm">

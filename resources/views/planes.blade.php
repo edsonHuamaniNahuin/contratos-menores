@@ -3,7 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Planes - Vigilante SEACE</title>
+    <title>💎 Planes y Precios — Vigilante SEACE | Desde S/ 0/mes · Análisis IA + Alertas</title>
+    <meta name="description" content="Elige tu plan: Gratuito (S/0), Premium (S/49/mes) con IA y alertas ilimitadas, o Premium + Contratos Mayores (S/68/mes). Buscador SEACE, análisis de TDR y más. Empieza gratis.">
+    <meta property="og:title" content="Planes y Precios — Vigilante SEACE">
+    <meta property="og:description" content="Planes desde S/ 0/mes. Análisis de TDR con IA, alertas en tiempo real, buscador de licitaciones del Estado peruano.">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])

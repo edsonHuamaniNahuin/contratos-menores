@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'Vigilante SEACE') }}</title>
+    <title>@yield('title', '🔍 Vigilante SEACE — Iniciar Sesión | Buscador de Licitaciones SEACE')</title>
+    <meta name="description" content="@yield('meta_description', 'Accede a tu cuenta de Vigilante SEACE. Buscador de licitaciones del Estado peruano, análisis de TDR con IA, alertas en tiempo real y más.')">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
-@section('title', 'Eliminación de Datos — Licitaciones MYPe')
-@section('meta_description', 'Instrucciones para solicitar la eliminación de tus datos personales en Licitaciones MYPe (Vigilante SEACE).')
+@section('title', '🗑️ Eliminación de Datos — Vigilante SEACE')
+@section('meta_description', 'Solicita la eliminación de tus datos personales en Vigilante SEACE. Instrucciones paso a paso para ejercer tu derecho de supresión de datos.')
 
 @section('content')
 <section class="bg-neutral-50 py-16 sm:py-20">

@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
-@section('title', 'Guía para Cotizar en SEACE — Licitaciones MYPe')
-@section('meta_description', 'Guía informativa paso a paso para enviar una cotización en el portal oficial SEACE del OSCE. Licitaciones MYPe es un servicio independiente, no afiliado al gobierno.')
+@section('title', '📝 Guía para Cotizar en SEACE — Paso a Paso | Vigilante SEACE')
+@section('meta_description', 'Guía paso a paso para enviar una cotización en el portal oficial SEACE del OSCE. Vigilante SEACE es un servicio independiente de monitoreo, no afiliado al gobierno.')
 @section('noindex', true)
 
 @php
@@ -22,7 +22,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             <p class="text-xs text-amber-800 leading-relaxed">
-                <strong>Licitaciones MYPe es un servicio privado e independiente.</strong>
+                <strong>Vigilante SEACE es un servicio privado e independiente.</strong>
                 No somos el SEACE ni el OSCE. No recopilamos tus credenciales del portal del Estado.
                 Esta página es solo una guía informativa.
             </p>
@@ -85,7 +85,7 @@
                     <span class="w-8 h-8 rounded-full bg-secondary-500 text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
                     <div class="flex-1">
                         <p class="text-sm font-bold text-neutral-900">Abre el portal oficial del SEACE</p>
-                        <p class="text-xs text-neutral-400 mt-0.5">Haz clic en el botón de abajo. Se abrirá el portal oficial seace.gob.pe en una nueva pestaña — la autenticación se realiza directamente allí. <strong class="text-neutral-600">Licitaciones MYPe nunca solicita ni almacena tus datos de acceso al Estado.</strong></p>
+                        <p class="text-xs text-neutral-400 mt-0.5">Haz clic en el botón de abajo. Se abrirá el portal oficial seace.gob.pe en una nueva pestaña — la autenticación se realiza directamente allí. <strong class="text-neutral-600">Vigilante SEACE nunca solicita ni almacena tus datos de acceso al Estado.</strong></p>
                     </div>
                 </div>
 
@@ -111,7 +111,7 @@
                     <p class="text-xs text-primary-700">
                         El portal oficial del SEACE (seace.gob.pe) protege cada sesión de forma individual.
                         Nunca compartas tus credenciales con ningún servicio externo — ningún sistema puede cotizar válidamente en tu nombre.
-                        <strong>Licitaciones MYPe no solicita, no almacena ni tiene acceso a tus credenciales del Estado.</strong>
+                        <strong>Vigilante SEACE no solicita, no almacena ni tiene acceso a tus credenciales del Estado.</strong>
                     </p>
                 </div>
             </div>

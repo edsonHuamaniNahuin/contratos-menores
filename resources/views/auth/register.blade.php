@@ -1,5 +1,6 @@
 @extends('layouts.guest')
 
+@section('title', '📝 Registro Gratis — Vigilante SEACE | Buscador de Licitaciones')
 @section('content')
     <div x-data="{ accountType: '{{ old('account_type', 'personal') }}' }"
          class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8 space-y-8">

@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('title', 'Contratos Mayores | Vigilante SEACE')
+@section('title', '📊 Contratos Mayores >8 UIT — Licitaciones Públicas y Concursos | Vigilante SEACE')
 
 @section('seo')
-    <meta name="description" content="Buscador de Contratos Mayores - Procedimientos de Selección del SEACE 3.0 (Licitaciones Públicas, Concursos Públicos).">
+    <meta name="description" content="Buscador de Contratos Mayores del SEACE 3.0. Licitaciones Públicas, Concursos Públicos y Adjudicaciones Simplificadas. Análisis IA, direccionamiento y proformas. {{ date('Y') }}.">
     <link rel="canonical" href="{{ route('buscador.mayores') }}">
     <meta property="og:title" content="Buscador Público - Contratos Mayores | Vigilante SEACE">
     <meta property="og:description" content="Busca licitaciones, concursos públicos y adjudicaciones en el SEACE 3.0">

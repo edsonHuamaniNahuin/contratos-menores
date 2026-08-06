@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
-@section('title', 'Condiciones del Servicio — Licitaciones MYPe')
-@section('meta_description', 'Condiciones del servicio de Licitaciones MYPe (Vigilante SEACE). Términos de uso, responsabilidades y limitaciones de la plataforma.')
+@section('title', '📋 Condiciones del Servicio — Vigilante SEACE')
+@section('meta_description', 'Condiciones del servicio de Vigilante SEACE. Términos de uso, responsabilidades y limitaciones de la plataforma de monitoreo de licitaciones del Estado peruano.')
 
 @section('content')
 <section class="bg-neutral-50 py-16 sm:py-20">

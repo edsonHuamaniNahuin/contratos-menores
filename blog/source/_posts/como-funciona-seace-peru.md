@@ -1,9 +1,9 @@
 ---
-title: "¿Cómo Funciona el SEACE? Guía del Sistema de Contrataciones del Perú"
+title: "🔰 ¿Cómo Funciona el SEACE en 2026? — Guía del Sistema de Contrataciones para Principiantes"
 category: "Guía"
 author: "Vigilante SEACE"
 date: 2026-07-25
-excerpt: "Explicación completa del funcionamiento del SEACE. Cómo se publican las licitaciones, tipos de procesos y el rol del OSCE en las contrataciones peruanas."
+excerpt: "Explicación completa del funcionamiento del SEACE para principiantes. Tipos de procesos, cómo se publican las licitaciones y el rol del OSCE. Aprende a encontrar oportunidades de negocio."
 image: "https://images.unsplash.com/photo-1661956602116-aa6865609028?w=1200&q=80"
 ---
 

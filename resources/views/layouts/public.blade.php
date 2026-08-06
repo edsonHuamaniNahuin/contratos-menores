@@ -4,8 +4,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Vigilante SEACE')</title>
-    <meta name="description" content="@yield('meta_description', 'Plataforma inteligente de monitoreo de licitaciones y contrataciones del Estado peruano. Buscador SEACE, alertas automáticas y análisis con IA.')">
+    <title>@yield('title', '🔍 Vigilante SEACE — Buscador de Licitaciones del Estado Peruano | Análisis IA + Alertas')</title>
+    <meta name="description" content="@yield('meta_description', 'Busca licitaciones del Estado peruano en el SEACE. Análisis de TDR con inteligencia artificial, alertas en Telegram y WhatsApp, y detección de direccionamiento. Empieza gratis.')">
+    {{-- Open Graph / Social --}}
+    <meta property="og:title" content="@yield('title', '🔍 Vigilante SEACE — Buscador de Licitaciones del Estado Peruano | Análisis IA + Alertas')">
+    <meta property="og:description" content="@yield('meta_description', 'Busca licitaciones del Estado peruano en el SEACE. Análisis de TDR con inteligencia artificial, alertas en Telegram y WhatsApp, y detección de direccionamiento. Empieza gratis.')">
+    <meta property="og:image" content="@yield('og_image', asset('images/vigilante-seace-og.webp'))">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Vigilante SEACE">
+    <meta property="og:locale" content="es_PE">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('title', '🔍 Vigilante SEACE — Buscador de Licitaciones del Estado Peruano | Análisis IA + Alertas')">
+    <meta name="twitter:description" content="@yield('meta_description', 'Busca licitaciones del Estado peruano en el SEACE. Análisis de TDR con inteligencia artificial, alertas en Telegram y WhatsApp, y detección de direccionamiento. Empieza gratis.')">
+    <meta name="twitter:image" content="@yield('og_image', asset('images/vigilante-seace-og.webp'))">
+    {{-- Robots --}}
     @unless(app()->environment('production'))
         <meta name="robots" content="noindex, nofollow">
     @else

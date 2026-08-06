@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
-@section('title', ($analisis->tipo_analisis === 'direccionamiento' ? 'Análisis de Direccionamiento' : 'Análisis TDR') . ' — Licitaciones MYPe')
-@section('meta_description', 'Análisis de TDR generado con IA por Licitaciones MYPe. Resultados completos del proceso ' . ($contexto['codigo_proceso'] ?? '') . '.')
+@section('title', ($analisis->tipo_analisis === 'direccionamiento' ? '🔍 Análisis de Direccionamiento' : '🤖 Análisis TDR con IA') . ' — Vigilante SEACE')
+@section('meta_description', 'Análisis de TDR generado con inteligencia artificial por Vigilante SEACE. Resultados completos del proceso ' . ($contexto['codigo_proceso'] ?? '') . '. Requisitos, penalidades y más.')
 
 @php
     $esDireccionamiento = $analisis->tipo_analisis === 'direccionamiento';
@@ -14,7 +14,7 @@
     $shareText = ($esDireccionamiento ? '🔍 Direccionamiento' : '🤖 Análisis TDR')
         . ' de ' . ($contexto['entidad'] ?? 'Entidad SEACE')
         . ' (' . ($contexto['codigo_proceso'] ?? '') . ')'
-        . ' — vía Licitaciones MYPe';
+        . ' — vía Vigilante SEACE';
 @endphp
 
 @section('content')

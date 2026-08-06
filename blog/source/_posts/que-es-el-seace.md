@@ -1,9 +1,9 @@
 ---
-title: "Ley N° 32069: La Nueva Ley de Contrataciones del Estado Explicada"
+title: "🔰 ¿Qué es el SEACE? Guía Completa del Sistema de Contrataciones 2026 — Ley 32069 Explicada"
 category: "Legal"
 author: "Vigilante SEACE"
 date: 2026-07-25
-excerpt: "Todo lo que necesitas saber sobre la nueva Ley de Contrataciones Públicas N° 32069. Cambios clave, plazos y cómo afecta a proveedores y MYPEs."
+excerpt: "Aprende qué es el SEACE y cómo funciona el sistema de contrataciones del Estado peruano. Todo sobre la Ley N° 32069: cambios, plazos y cómo afecta a proveedores."
 image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&q=80"
 ---
 @extends('_layouts.post')

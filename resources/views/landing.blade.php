@@ -10,7 +10,7 @@
     "@@context": "https://schema.org",
     "@@type": "WebSite",
     "name": "Vigilante SEACE",
-    "alternateName": "Licitaciones MYPe",
+    "alternateName": "Vigilante SEACE",
     "url": "{{ config('app.url') }}",
     "potentialAction": {
         "@@type": "SearchAction",
@@ -48,19 +48,19 @@
         {
             "@@type": "SiteNavigationElement",
             "name": "Contacto",
-            "description": "Contacta al equipo de soporte de Licitaciones MYPe por email, teléfono o WhatsApp.",
+            "description": "Contacta al equipo de soporte de Vigilante SEACE por email, teléfono o WhatsApp.",
             "url": "{{ config('app.url') }}/contacto"
         },
         {
             "@@type": "SiteNavigationElement",
             "name": "Iniciar Sesión",
-            "description": "Accede a tu cuenta de Licitaciones MYPe para gestionar alertas y análisis.",
+            "description": "Accede a tu cuenta de Vigilante SEACE para gestionar alertas y análisis.",
             "url": "{{ config('app.url') }}/login"
         },
         {
             "@@type": "SiteNavigationElement",
             "name": "Registrarse",
-            "description": "Crea una cuenta gratuita en Licitaciones MYPe para monitorear licitaciones del SEACE.",
+            "description": "Crea una cuenta gratuita en Vigilante SEACE para monitorear licitaciones del SEACE.",
             "url": "{{ config('app.url') }}/register"
         }
     ]
@@ -71,7 +71,7 @@
 {
     "@@context": "https://schema.org",
     "@@type": "SoftwareApplication",
-    "name": "Licitaciones MYPe — Vigilante SEACE",
+    "name": "Vigilante SEACE — Buscador de Licitaciones del Estado",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
     "description": "Software de monitoreo de licitaciones del SEACE para MYPEs en Perú. Alertas automáticas, análisis de TDR con IA, score de compatibilidad y bandeja de contratos mayores (> 8 UIT).",
@@ -137,7 +137,7 @@
             "name": "¿Qué es el SEACE y cómo se usa para encontrar licitaciones?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "El SEACE (Sistema Electrónico de Contrataciones del Estado) es la plataforma oficial del OSCE donde las entidades públicas publican sus convocatorias. Licitaciones MYPe monitorea el SEACE automáticamente 24/7 y te envía alertas cuando hay procesos relevantes para tu empresa."
+                "text": "El SEACE (Sistema Electrónico de Contrataciones del Estado) es la plataforma oficial del OSCE donde las entidades públicas publican sus convocatorias. Vigilante SEACE monitorea el SEACE automáticamente 24/7 y te envía alertas cuando hay procesos relevantes para tu empresa."
             }
         },
         {
@@ -644,7 +644,7 @@
                 ],
                 [
                     'q' => '¿Qué es el SEACE y cómo se usa para encontrar licitaciones?',
-                    'a' => 'El <strong>SEACE</strong> (Sistema Electrónico de Contrataciones del Estado) es la plataforma oficial del <strong>OSCE</strong> donde las entidades públicas publican sus convocatorias, bases, TDR y resultados. Licitaciones MYPe monitorea el SEACE automáticamente 24/7 y te envía alertas cuando hay procesos relevantes para tu empresa.',
+                    'a' => 'El <strong>SEACE</strong> (Sistema Electrónico de Contrataciones del Estado) es la plataforma oficial del <strong>OSCE</strong> donde las entidades públicas publican sus convocatorias, bases, TDR y resultados. Vigilante SEACE monitorea el SEACE automáticamente 24/7 y te envía alertas cuando hay procesos relevantes para tu empresa.',
                 ],
                 [
                     'q' => '¿Necesito estar inscrito en el RNP para licitar con el Estado?',

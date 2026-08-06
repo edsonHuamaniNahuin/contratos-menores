@@ -175,6 +175,8 @@ class GenerateBlogCommand extends Command
         $dateLong = $post['date']->format('F d, Y');
         $shareText = urlencode($title . ' ' . $url);
         $urlEncoded = urlencode($url);
+        $dateIso = $post['date']->format('c');
+        $categoryUrlFull = 'https://vigilanteseace.pe' . $categoryUrl;
 
         $imageBlock = '';
         if (!empty($imageUrl)) {
@@ -195,6 +197,10 @@ class GenerateBlogCommand extends Command
             '__READTIME__' => (string) $readTime,
             '__SHARE_TEXT__' => $shareText,
             '__URL_ENCODED__' => $urlEncoded,
+            '__IMAGE_URL__' => $imageUrl,
+            '__DATE_ISO__' => $dateIso,
+            '__CANONICAL_URL__' => $url,
+            '__CATEGORY_URL_FULL__' => $categoryUrlFull,
             '__IMAGE_BLOCK__' => $imageBlock,
             '__CONTENT__' => $post['content'],
             '__RELATED__' => $relatedHtml,
@@ -311,8 +317,8 @@ class GenerateBlogCommand extends Command
         BODY;
 
         return strtr($this->layoutMaster, [
-            '@yield(\'title\', \'Blog — Vigilante SEACE\')' => 'Blog — Vigilante SEACE',
-            '@yield(\'description\', $page->description ?? \'Blog de Vigilante SEACE. Guías, noticias y análisis de contratación pública.\')' => 'Guías, noticias y análisis sobre contrataciones del Estado peruano en el SEACE.',
+            '@yield(\'title\', \'Blog — Vigilante SEACE\')' => '📰 Blog de Licitaciones SEACE — Guías, Noticias y Análisis | Vigilante SEACE',
+            '@yield(\'description\', \'Blog de Vigilante SEACE. Guías, noticias y análisis de contratación pública.\')' => 'Guías actualizadas sobre el SEACE, contrataciones del Estado peruano, análisis de TDR con IA, Ley 32069 y cómo vender al Estado. ' . date('Y') . '.',
             '@yield(\'head\')' => '',
             '@yield(\'content\')' => $body,
         ]);
@@ -385,8 +391,8 @@ class GenerateBlogCommand extends Command
         BODY;
 
         return strtr($this->layoutMaster, [
-            '@yield(\'title\', \'Blog — Vigilante SEACE\')' => "{$cat['name']} — Blog Vigilante SEACE",
-            '@yield(\'description\', $page->description ?? \'Blog de Vigilante SEACE. Guías, noticias y análisis de contratación pública.\')' => "Posts de Vigilante SEACE en la categoría {$cat['name']}.",
+            '@yield(\'title\', \'Blog — Vigilante SEACE\')' => "{$cat['name']} — Blog de Licitaciones SEACE | Vigilante SEACE",
+            '@yield(\'description\', \'Blog de Vigilante SEACE. Guías, noticias y análisis de contratación pública.\')' => "Artículos sobre {$cat['name']} en el blog de Vigilante SEACE. Guías, noticias y análisis de contrataciones del Estado peruano. " . date('Y') . ".",
             '@yield(\'head\')' => '',
             '@yield(\'content\')' => $body,
         ]);

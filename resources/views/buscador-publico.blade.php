@@ -36,8 +36,8 @@
     }
 
     $seoTitle = count($titleParts) > 0
-        ? 'Licitaciones ' . implode(' | ', $titleParts) . ' — SEACE | Licitaciones MYPe'
-        : 'Buscador de Licitaciones SEACE — Licitaciones MYPe';
+        ? 'Licitaciones ' . implode(' | ', $titleParts) . ' — Buscador SEACE | Vigilante SEACE'
+        : '🔍 Buscador SEACE 2026 — Licitaciones del Estado en Segundos | Vigilante SEACE';
 
     if ($pagina > 1) {
         $seoTitle .= " — Página {$pagina}";
@@ -92,7 +92,7 @@
         "url": "{{ $canonicalUrl }}",
         "isPartOf": {
             "@@type": "WebSite",
-            "name": "Licitaciones MYPe",
+            "name": "Vigilante SEACE",
             "url": "{{ url('/') }}"
         },
         "potentialAction": {
@@ -106,6 +106,12 @@
 
 @section('content')
     <article>
+        <div class="bg-gradient-to-r from-primary-800 to-primary-900 px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <div class="max-w-7xl mx-auto">
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">Buscador de Licitaciones del SEACE 2026</h1>
+                <p class="text-primary-100 text-sm sm:text-base max-w-2xl">Encuentra contratos del Estado peruano en segundos. Busca por palabra clave, entidad o departamento. Contratos menores (&lt;8 UIT) actualizados 24/7.</p>
+            </div>
+        </div>
         <header class="sr-only">
             <h1>{{ $seoTitle }}</h1>
             <p>{{ $seoDescription }}</p>

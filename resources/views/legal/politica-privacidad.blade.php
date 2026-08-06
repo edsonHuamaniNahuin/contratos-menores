@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
-@section('title', 'Política de Privacidad — Licitaciones MYPe')
-@section('meta_description', 'Política de privacidad de Licitaciones MYPe (Vigilante SEACE). Conoce cómo recopilamos, usamos y protegemos tu información personal.')
+@section('title', '🔒 Política de Privacidad — Vigilante SEACE')
+@section('meta_description', 'Política de privacidad de Vigilante SEACE. Conoce cómo recopilamos, usamos y protegemos tu información personal en nuestra plataforma de monitoreo de licitaciones.')
 
 @section('content')
 <section class="bg-neutral-50 py-16 sm:py-20">

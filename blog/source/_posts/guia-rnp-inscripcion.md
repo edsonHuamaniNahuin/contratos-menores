@@ -1,9 +1,9 @@
 ---
-title: "Guía RNP: Cómo Inscribirte en el Registro Nacional de Proveedores"
+title: "📋 Cómo Inscribirte en el RNP en 2026 — Guía Completa Paso a Paso | Gratis"
 category: "Guía"
 author: "Vigilante SEACE"
 date: 2026-07-25
-excerpt: "Paso a paso actualizado para inscribirte en el RNP. Documentos necesarios, costos, plazos y cómo renovar tu registro de proveedor del Estado."
+excerpt: "Paso a paso actualizado para inscribirte en el Registro Nacional de Proveedores (RNP). Documentos, costos, plazos y cómo renovar tu registro. Empieza a vender al Estado hoy."
 image: "https://images.unsplash.com/photo-1568992687947-868a62a9f521?w=1200&q=80"
 ---
 

@@ -1,5 +1,6 @@
 @extends('layouts.guest')
 
+@section('title', '🔐 Iniciar Sesión — Vigilante SEACE | Buscador de Licitaciones')
 @section('content')
     <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8 space-y-8">
         <div class="space-y-2 text-center">

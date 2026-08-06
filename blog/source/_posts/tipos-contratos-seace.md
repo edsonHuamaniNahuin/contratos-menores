@@ -1,9 +1,9 @@
 ---
-title: "Tipos de Contratos en el SEACE: Guía de Procedimientos de Selección"
+title: "🏗️ Tipos de Contrataciones en SEACE 2026 — Licitaciones, Concursos, Adjudicaciones Simplificadas"
 category: "Legal"
 author: "Vigilante SEACE"
 date: 2026-07-25
-excerpt: "Conoce todos los tipos de contratos que se publican en el SEACE. Licitaciones, concursos, adjudicaciones simplificadas y más."
+excerpt: "Guía de los 8 tipos de procedimientos de selección en el SEACE: licitación pública, concurso público, adjudicación simplificada y más. Encuentra el ideal para tu empresa."
 image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&q=80"
 ---
 
