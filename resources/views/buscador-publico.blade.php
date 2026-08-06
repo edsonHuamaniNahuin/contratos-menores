@@ -106,14 +106,14 @@
 
 @section('content')
     <article>
-        <div class="bg-gradient-to-r from-primary-800 to-primary-900 px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <div class="px-4 sm:px-6 lg:px-8 pt-6 lg:pt-0">
             <div class="max-w-7xl mx-auto">
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">Buscador de Licitaciones del SEACE 2026</h1>
-                <p class="text-primary-100 text-sm sm:text-base max-w-2xl">Encuentra contratos del Estado peruano en segundos. Busca por palabra clave, entidad o departamento. Contratos menores (&lt;8 UIT) actualizados 24/7.</p>
+                <h1 class="text-xl font-bold text-neutral-900">Buscador de Licitaciones del SEACE</h1>
+                <p class="text-sm text-neutral-500 mt-1">Encuentra contratos del Estado peruano en segundos. Busca por palabra clave, entidad o departamento. Contratos menores actualizados 24/7.</p>
             </div>
         </div>
         <header class="sr-only">
-            <h1>{{ $seoTitle }}</h1>
+            <h2>{{ $seoTitle }}</h2>
             <p>{{ $seoDescription }}</p>
         </header>
 
