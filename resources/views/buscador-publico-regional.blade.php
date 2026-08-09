@@ -44,7 +44,7 @@
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 <span class="text-neutral-600 font-medium">{{ $depDisplay }}</span>
             </div>
-            <h1 class="text-2xl font-bold text-neutral-900">Contratos Menores en {{ $locationLabel }}</h1>
+            <h1 class="text-2xl font-bold text-neutral-900">Contratos Menores en {{ $locationLabel }} 2026</h1>
             <p class="text-sm text-neutral-500 mt-1">Licitaciones del Estado peruano en {{ $locationLabel }} (&lt;8 UIT). Busca por palabra clave, entidad y tipo de proceso. Datos actualizados 24/7 desde el SEACE.</p>
         </div>
     </div>
