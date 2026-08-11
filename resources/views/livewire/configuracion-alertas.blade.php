@@ -737,6 +737,72 @@
     </div>
 
     {{-- ═══════════════════════════════════════════════════════════════
+         PANEL ADMIN: Supervision de todas las suscripciones WhatsApp
+    ═══════════════════════════════════════════════════════════════ --}}
+    @if($isAdmin && $allWhatsAppSubscriptions && $allWhatsAppSubscriptions->isNotEmpty())
+    <div class="bg-white rounded-3xl shadow-soft p-4 sm:p-8 border border-amber-200">
+        <div class="mb-4">
+            <h2 class="text-lg sm:text-xl font-bold text-neutral-900 flex items-center gap-2">
+                <svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                Panel Admin — Todas las suscripciones WhatsApp ({{ $allWhatsAppSubscriptions->count() }})
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-xs text-neutral-400 uppercase tracking-wider border-b border-neutral-100">
+                    <tr>
+                        <th class="text-left py-2 pr-3">Usuario</th>
+                        <th class="text-left py-2 pr-3">Teléfono</th>
+                        <th class="text-center py-2 pr-3">Activo</th>
+                        <th class="text-center py-2 pr-3">Menores</th>
+                        <th class="text-center py-2 pr-3">Mayores</th>
+                        <th class="text-right py-2 pr-3">Notif.</th>
+                        <th class="text-right py-2">Última</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-50">
+                    @foreach($allWhatsAppSubscriptions as $wa)
+                    @php $u = $wa->user; @endphp
+                    <tr class="hover:bg-neutral-50 transition-colors">
+                        <td class="py-2.5 pr-3 font-medium text-neutral-800">
+                            {{ $u?->name ?? 'N/A' }}
+                            <div class="text-[11px] text-neutral-400">{{ $u?->email ?? '' }}</div>
+                        </td>
+                        <td class="py-2.5 pr-3 font-mono text-neutral-700 text-xs">+{{ $wa->phone_number }}</td>
+                        <td class="py-2.5 pr-3 text-center">
+                            @if($wa->activo)
+                                <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[11px] font-semibold">Sí</span>
+                            @else
+                                <span class="px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded-full text-[11px] font-semibold">No</span>
+                            @endif
+                        </td>
+                        <td class="py-2.5 pr-3 text-center">
+                            @if($wa->recibir_menores)
+                                <span class="text-green-600 font-bold">✓</span>
+                            @else
+                                <span class="text-neutral-300">—</span>
+                            @endif
+                        </td>
+                        <td class="py-2.5 pr-3 text-center">
+                            @if($wa->recibir_mayores)
+                                <span class="text-green-600 font-bold">✓</span>
+                            @else
+                                <span class="text-neutral-300">—</span>
+                            @endif
+                        </td>
+                        <td class="py-2.5 pr-3 text-right tabular-nums font-medium text-neutral-700">{{ number_format($wa->notificaciones_recibidas) }}</td>
+                        <td class="py-2.5 text-right text-xs text-neutral-400 whitespace-nowrap">
+                            {{ $wa->ultima_notificacion_at ? $wa->ultima_notificacion_at->diffForHumans() : '—' }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
+    {{-- ═══════════════════════════════════════════════════════════════
          MODAL: Agregar/Editar WhatsApp
     ═══════════════════════════════════════════════════════════════ --}}
     @if($showWhatsAppModal)

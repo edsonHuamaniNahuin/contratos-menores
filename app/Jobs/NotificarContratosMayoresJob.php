@@ -65,6 +65,14 @@ class NotificarContratosMayoresJob implements ShouldQueue
             ->where('recibir_mayores', true)
             ->get();
 
+        // Filtrar: solo usuarios con permiso analyze-tdr-mayores (plan Premium + Mayores)
+        $telegramSubs = $telegramSubs->filter(fn ($sub) =>
+            $sub->user?->hasPermission('analyze-tdr-mayores')
+        );
+        $whatsappSubs = $whatsappSubs->filter(fn ($sub) =>
+            $sub->user?->hasPermission('analyze-tdr-mayores')
+        );
+
         $suscripciones = $telegramSubs->concat($whatsappSubs);
 
         if ($suscripciones->isEmpty()) {

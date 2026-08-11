@@ -596,8 +596,19 @@ class ConfiguracionAlertas extends Component
             return;
         }
 
+        $phone = $this->wa_phone_number;
         $this->validate([
-            'wa_phone_number' => 'required|string|min:10|max:15|regex:/^\d+$/',
+            'wa_phone_number' => [
+                'required', 'string', 'min:10', 'max:15', 'regex:/^\d+$/',
+                function ($attribute, $value, $fail) use ($phone) {
+                    $exists = WhatsAppSubscription::where('phone_number', $phone)
+                        ->where('user_id', '!=', auth()->id())
+                        ->exists();
+                    if ($exists) {
+                        $fail('Este numero de WhatsApp ya esta registrado por otro usuario.');
+                    }
+                },
+            ],
             'wa_nombre' => 'nullable|string|max:255',
         ], [
             'wa_phone_number.required' => 'El numero de WhatsApp es obligatorio.',
@@ -659,7 +670,17 @@ class ConfiguracionAlertas extends Component
 
     public function toggleWaRecibirMayores(): void
     {
-        $sub = WhatsAppSubscription::where('user_id', auth()->id())->first();
+        $user = auth()->user();
+        if (!$user?->hasPermission('analyze-tdr-mayores')) {
+            session()->flash('wa_error', 'Los Contratos Mayores requieren el plan Premium + Contratos Mayores.');
+            // Forzar desactivado si no tiene permiso
+            $sub = WhatsAppSubscription::where('user_id', $user->id)->first();
+            if ($sub && $sub->recibir_mayores) {
+                $sub->update(['recibir_mayores' => false]);
+            }
+            return;
+        }
+        $sub = WhatsAppSubscription::where('user_id', $user->id)->first();
         if ($sub) {
             $sub->update(['recibir_mayores' => !$sub->recibir_mayores]);
         }
@@ -738,6 +759,18 @@ class ConfiguracionAlertas extends Component
         $whatsappSubscription = WhatsAppSubscription::where('user_id', auth()->id())->first();
         $subscriberProfile = SubscriberProfile::with('keywords')->where('user_id', auth()->id())->first();
 
+        // Admin: cargar todas las suscripciones para panel de supervision
+        $allWhatsAppSubscriptions = null;
+        $allEmailSubscriptions = null;
+        if ($this->isAdmin) {
+            $allWhatsAppSubscriptions = WhatsAppSubscription::with('user')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            $allEmailSubscriptions = EmailSubscription::with('user')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
         return view('livewire.configuracion-alertas', [
             'suscripciones' => $suscripciones,
             'canAddMore' => $canAddMore,
@@ -751,6 +784,8 @@ class ConfiguracionAlertas extends Component
             'canAddTelegram' => $this->canAddTelegram,
             'canAddWhatsApp' => $this->canAddWhatsApp,
             'canAddEmail' => $this->canAddEmail,
+            'allWhatsAppSubscriptions' => $allWhatsAppSubscriptions,
+            'allEmailSubscriptions' => $allEmailSubscriptions,
         ]);
     }
 
