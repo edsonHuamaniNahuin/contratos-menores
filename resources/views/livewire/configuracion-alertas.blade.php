@@ -777,18 +777,22 @@
                             @endif
                         </td>
                         <td class="py-2.5 pr-3 text-center">
-                            @if($wa->recibir_menores)
-                                <span class="text-green-600 font-bold">✓</span>
-                            @else
-                                <span class="text-neutral-300">—</span>
-                            @endif
+                            <button wire:click="toggleWaRecibirMenoresAdmin({{ $wa->id }})"
+                                    class="text-lg transition-colors {{ $wa->recibir_menores ? 'text-green-600 hover:text-green-700' : 'text-neutral-300 hover:text-neutral-500' }}"
+                                    title="Click para {{ $wa->recibir_menores ? 'desactivar' : 'activar' }} Contratos Menores">
+                                {{ $wa->recibir_menores ? '✓' : '—' }}
+                            </button>
                         </td>
                         <td class="py-2.5 pr-3 text-center">
-                            @if($wa->recibir_mayores)
-                                <span class="text-green-600 font-bold">✓</span>
-                            @else
-                                <span class="text-neutral-300">—</span>
-                            @endif
+                            <button wire:click="toggleWaRecibirMayoresAdmin({{ $wa->id }})"
+                                    class="text-lg transition-colors {{ $wa->recibir_mayores ? ($wa->user?->hasPermission('analyze-tdr-mayores') ? 'text-green-600 hover:text-green-700' : 'text-amber-500 hover:text-amber-600') : 'text-neutral-300 hover:text-neutral-500' }}"
+                                    title="{{ $wa->recibir_mayores && !$wa->user?->hasPermission('analyze-tdr-mayores') ? '⚠️ Sin plan Premium+Mayores' : '' }}">
+                                @if($wa->recibir_mayores && !$wa->user?->hasPermission('analyze-tdr-mayores'))
+                                    ⚠️
+                                @else
+                                    {{ $wa->recibir_mayores ? '✓' : '—' }}
+                                @endif
+                            </button>
                         </td>
                         <td class="py-2.5 pr-3 text-right tabular-nums font-medium text-neutral-700">{{ number_format($wa->notificaciones_recibidas) }}</td>
                         <td class="py-2.5 text-right text-xs text-neutral-400 whitespace-nowrap">

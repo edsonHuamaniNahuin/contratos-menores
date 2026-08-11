@@ -705,6 +705,41 @@ class ConfiguracionAlertas extends Component
         }
     }
 
+    /**
+     * Admin: toggle recibir_menores para cualquier suscripción WhatsApp.
+     */
+    public function toggleWaRecibirMenoresAdmin(int $waSubId): void
+    {
+        if (!Auth::user()?->isAdmin()) return;
+
+        $sub = WhatsAppSubscription::find($waSubId);
+        if ($sub) {
+            $sub->update(['recibir_menores' => !$sub->recibir_menores]);
+            Log::info('WhatsApp: Admin toggle menores', ['wa_id' => $waSubId, 'valor' => $sub->recibir_menores]);
+        }
+    }
+
+    /**
+     * Admin: toggle recibir_mayores para cualquier suscripción WhatsApp.
+     * Solo permite activar si el usuario tiene permiso analyze-tdr-mayores (plan Premium+Mayores).
+     */
+    public function toggleWaRecibirMayoresAdmin(int $waSubId): void
+    {
+        if (!Auth::user()?->isAdmin()) return;
+
+        $sub = WhatsAppSubscription::with('user')->find($waSubId);
+        if (!$sub) return;
+
+        // Si se intenta activar pero el usuario no tiene permiso, bloquear
+        if (!$sub->recibir_mayores && !$sub->user?->hasPermission('analyze-tdr-mayores')) {
+            session()->flash('wa_error', "El usuario {$sub->user?->name} no tiene el plan Premium + Contratos Mayores. No se puede activar.");
+            return;
+        }
+
+        $sub->update(['recibir_mayores' => !$sub->recibir_mayores]);
+        Log::info('WhatsApp: Admin toggle mayores', ['wa_id' => $waSubId, 'valor' => $sub->recibir_mayores]);
+    }
+
     public function probarWhatsAppNotificacion(): void
     {
         try {
