@@ -206,26 +206,27 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     /**
      * Construir componentes dinámicos para template de notificación.
      *
-     * Para templates tipo "utility" que aceptan parámetros en el body:
-     * {{1}} = Entidad, {{2}} = Código, {{3}} = Descripción
+     * Template Meta "nuevo_contrato" (4 variables):
+     * {{1}} = CONTRATO MENOR o CONTRATO MAYOR
+     * {{2}} = Entidad contratante
+     * {{3}} = Código de proceso
+     * {{4}} = Objeto
      */
     protected function buildTemplateComponents(array $contratoData): array
     {
-        $entidad = $contratoData['nomEntidad'] ?? 'N/A';
-        $codigo = $contratoData['desContratacion'] ?? 'N/A';
-        $descripcion = $contratoData['desObjetoContrato'] ?? $contratoData['nomObjetoContrato'] ?? 'N/A';
-
-        if (mb_strlen($descripcion) > 200) {
-            $descripcion = mb_substr($descripcion, 0, 197) . '...';
-        }
+        $tipo = $contratoData['tipo'] ?? ($contratoData['es_mayor'] ?? false ? 'CONTRATO MAYOR' : 'CONTRATO MENOR');
+        $entidad = $contratoData['nomEntidad'] ?? $contratoData['entidad'] ?? 'N/A';
+        $codigo = $contratoData['desContratacion'] ?? $contratoData['codigo'] ?? 'N/A';
+        $objeto = $contratoData['nomObjetoContrato'] ?? $contratoData['objeto'] ?? 'N/A';
 
         return [
             [
                 'type' => 'body',
                 'parameters' => [
+                    ['type' => 'text', 'text' => $tipo],
                     ['type' => 'text', 'text' => $entidad],
                     ['type' => 'text', 'text' => $codigo],
-                    ['type' => 'text', 'text' => $descripcion],
+                    ['type' => 'text', 'text' => $objeto],
                 ],
             ],
         ];

@@ -431,6 +431,7 @@ class ImportadorTdrEngine
         $payload['idContrato'] = $contrato['idContrato'] ?? $contrato['id_contrato_seace'] ?? 0;
         $payload['idContratoArchivo'] = $archivoMeta['idContratoArchivo'] ?? 0;
         $payload['nombreArchivo'] = $archivoMeta['nombreArchivo'] ?? 'tdr.pdf';
+        $payload['tipo'] = 'CONTRATO MENOR';
 
         return $payload;
     }
