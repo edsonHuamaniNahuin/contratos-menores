@@ -751,13 +751,24 @@ class ConfiguracionAlertas extends Component
                 return;
             }
 
-            $resultado = $servicio->enviarTemplate($waSub->phone_number, 'hello_world', 'en_US');
+            // Intentar texto plano primero (no requiere template pre-aprobado)
+            $resultado = $servicio->enviarMensaje($waSub->phone_number, '✅ Prueba exitosa: Vigilante SEACE funciona correctamente. Ya estás recibiendo alertas de nuevos contratos.');
+
+            if (!$resultado['success']) {
+                // Fallback: intentar con template
+                $resultado = $servicio->enviarTemplate($waSub->phone_number, 'hello_world', 'en_US');
+            }
 
             if ($resultado['success']) {
-                session()->flash('wa_success', '✅ Mensaje de prueba enviado a +' . $waSub->phone_number . '. Revisa tu WhatsApp. Si lo recibes, responde cualquier mensaje para habilitar notificaciones personalizadas.');
-                Log::info('WhatsApp: Prueba exitosa (template)', ['phone' => $waSub->phone_number]);
+                session()->flash('wa_success', '✅ Mensaje de prueba enviado a +' . $waSub->phone_number . '. Revisa tu WhatsApp.');
+                Log::info('WhatsApp: Prueba exitosa', ['phone' => $waSub->phone_number]);
             } else {
-                session()->flash('wa_error', '❌ Error al enviar: ' . ($resultado['message'] ?? 'Error desconocido'));
+                $errorMsg = $resultado['message'] ?? 'Error desconocido';
+                // Si el error es de template, dar mensaje más claro
+                if (str_contains($errorMsg, '131001') || str_contains($errorMsg, '132001')) {
+                    $errorMsg = 'El botón de prueba requiere que hayas recibido al menos una notificación antes (ventana de 24h). Si ya recibiste notificaciones y no funciona, contacta a soporte.';
+                }
+                session()->flash('wa_error', '❌ ' . $errorMsg);
             }
         } catch (\Exception $e) {
             session()->flash('wa_error', '❌ Error: ' . $e->getMessage());
