@@ -21,6 +21,7 @@ class ConfiguracionAlertas extends Component
 {
     public const MAX_SUSCRIPTORES_POR_USUARIO = 2;
     public const MAX_KEYWORDS = 5;
+    public const MAX_KEYWORDS_PREMIUM_MAYORES = 8;
 
     public bool $telegramEnabled = false;
     public bool $whatsappEnabled = false;
@@ -149,17 +150,18 @@ class ConfiguracionAlertas extends Component
     {
         $this->profile_keywords = $this->sanitizeKeywordSelection($this->profile_keywords);
 
+        $max = $this->getMaxKeywords();
         $this->validate([
             'profile_company_name' => 'required|string|min:15|max:50',
             'profile_company_copy' => 'required|string|min:30',
-            'profile_keywords' => 'array|max:' . self::MAX_KEYWORDS,
+            'profile_keywords' => 'array|max:' . $max,
             'profile_keywords.*' => 'integer|exists:notification_keywords,id',
         ], [
             'profile_company_name.min' => 'El nombre de empresa debe tener al menos 15 caracteres.',
             'profile_company_name.max' => 'El nombre de empresa no puede superar 50 caracteres.',
             'profile_company_copy.required' => 'Describe brevemente el rubro de tu empresa.',
             'profile_company_copy.min' => 'La descripcion debe tener al menos 30 caracteres.',
-            'profile_keywords.max' => 'Maximo ' . self::MAX_KEYWORDS . ' palabras clave.',
+            'profile_keywords.max' => 'Maximo ' . $max . ' palabras clave.',
         ]);
 
         try {
@@ -821,7 +823,7 @@ class ConfiguracionAlertas extends Component
             'suscripciones' => $suscripciones,
             'canAddMore' => $canAddMore,
             'maxSuscriptores' => self::MAX_SUSCRIPTORES_POR_USUARIO,
-            'maxKeywords' => self::MAX_KEYWORDS,
+            'maxKeywords' => $this->getMaxKeywords(),
             'filteredKeywords' => $this->filteredKeywords,
             'keywordDictionary' => collect($this->availableKeywords)->keyBy('id'),
             'emailSubscription' => $emailSubscription,
@@ -856,5 +858,15 @@ class ConfiguracionAlertas extends Component
         if ($suscripcion->user_id !== auth()->id()) {
             abort(403);
         }
+    }
+
+    /**
+     * Palabras clave máximas según plan: 5 para básico, 8 para Premium+Mayores.
+     */
+    protected function getMaxKeywords(): int
+    {
+        return auth()->user()?->hasPermission('analyze-tdr-mayores')
+            ? self::MAX_KEYWORDS_PREMIUM_MAYORES
+            : self::MAX_KEYWORDS;
     }
 }
