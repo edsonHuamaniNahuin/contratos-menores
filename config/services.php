@@ -144,6 +144,7 @@ return [
         'debug_logs' => env('WHATSAPP_DEBUG_LOGS', false),
         'contrato_cache_ttl' => (int) env('WHATSAPP_CONTRATO_CACHE_TTL', 720),
         'notification_template' => env('WHATSAPP_NOTIFICATION_TEMPLATE', ''),
+        'business_phone' => env('WHATSAPP_BUSINESS_PHONE', ''),
     ],
 
     'analizador_tdr' => [
