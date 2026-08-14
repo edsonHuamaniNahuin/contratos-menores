@@ -155,27 +155,27 @@ Schedule::job(new ImportarContratosMayoresJob(15, 20))
 |--------------------------------------------------------------------------
 | Refresco de Estados — Contratos Mayores (estrategia día/noche)
 |--------------------------------------------------------------------------
-| MADRUGADA (03:00): refresco COMPLETO de todos los contratos almacenados
-| vía /records?ocid=. Garantiza que cada día TODOS los estados estén
-| frescos sin importar cuántos días tenga el contrato.
-| Costo: ~11,000 llamadas HTTP en ~1.8h (a las 3 AM, sin tráfico).
+| MADRUGADA (03:00): refresco de contratos publicados en los últimos
+| 30 días (los que tienen probabilidad real de cambiar de estado).
+| Garantiza frescura diaria del universo activo.
+| Costo: ~600-800 llamadas HTTP (~6-8 min) a las 3 AM.
 |
-| DÍA (13:00, 18:00): refresco ligero rotativo de 300 contratos c/u.
-| Captura los cambios de estado ocurridos durante la mañana y la tarde.
+| DÍA (13:00, 18:00): refresco ligero de los últimos 7 días, 300 contratos
+| c/u (los más viejos primero). Captura cambios de la mañana y la tarde.
 | Costo: 600 llamadas HTTP/día.
 |
 | IMPORT (cada 3h): descubre contratos nuevos (15 páginas, 120 calls/día).
 |
-| Total combinado: ~11,700 llamadas HTTP/día, con frescura garantizada
-| cada 24h para TODOS los contratos.
+| El escaneo GLOBAL (todos los contratos sin filtro de fecha) se ejecuta
+| SOLO manualmente: dispatch(new RefrescarEstadosContratosMayoresJob(20000, 0)).
 */
-Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(20000))
+Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(20000, 30))
     ->cron('0 3 * * *')
     ->timezone('America/Lima')
-    ->withoutOverlapping(180)
+    ->withoutOverlapping(60)
     ->appendOutputTo(storage_path('logs/refrescar-estados-mayores.log'));
 
-Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(300))
+Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(300, 7))
     ->cron('0 13,18 * * *')
     ->timezone('America/Lima')
     ->withoutOverlapping(60)

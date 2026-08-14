@@ -36,14 +36,27 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
 
     protected int $porCorrida;
 
-    public function __construct(int $porCorrida = 300)
+    /**
+     * Antigüedad máxima en días para el filtro de fecha_publicacion.
+     * 0 = sin filtro (escaneo global, solo manual).
+     */
+    protected int $antiguedadDias;
+
+    public function __construct(int $porCorrida = 300, int $antiguedadDias = 30)
     {
         $this->porCorrida = $porCorrida;
+        $this->antiguedadDias = $antiguedadDias;
     }
 
     public function handle(SeaceMayoresService $service): void
     {
-        $contratos = ContratoMayor::orderBy('updated_at', 'asc')
+        $query = ContratoMayor::orderBy('updated_at', 'asc');
+
+        if ($this->antiguedadDias > 0) {
+            $query->where('fecha_publicacion', '>=', now()->subDays($this->antiguedadDias));
+        }
+
+        $contratos = $query
             ->limit($this->porCorrida)
             ->get(['ocid', 'estado', 'fecha_fin', 'proveedores', 'nomenclatura', 'valor_referencial', 'url_documento', 'metodo_contratacion', 'entidad_nombre']);
 
@@ -55,6 +68,7 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
         Log::info('RefrescarEstadosContratosMayores: iniciando', [
             'contratos_a_refrescar' => $contratos->count(),
             'por_corrida' => $this->porCorrida,
+            'antiguedad_dias' => $this->antiguedadDias,
         ]);
 
         $actualizados = 0;
