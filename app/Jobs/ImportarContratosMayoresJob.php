@@ -109,9 +109,10 @@ class ImportarContratosMayoresJob implements ShouldQueue
 
                     // ¿Existe en BD (hoy o días anteriores)?
                     if (isset($dbMap[$ocid])) {
-                        // Comparar campos mutables: si algo cambió → actualizar
-                        if ($this->hayCambios($dbMap[$ocid], $mapped)) {
-                            $this->actualizarContrato($ocid, $mapped);
+                        // Comparar campos mutables: actualizar SOLO los que cambiaron
+                        $cambiados = $this->camposCambiados($dbMap[$ocid], $mapped);
+                        if (!empty($cambiados)) {
+                            $this->actualizarContrato($ocid, $mapped, $cambiados);
                             $actualizados++;
                         } else {
                             $sinCambios++;
@@ -179,18 +180,20 @@ class ImportarContratosMayoresJob implements ShouldQueue
 
     /**
      * Compara campos mutables del registro en BD contra lo que trae la API.
-     * Devuelve true si hay diferencias (el contrato cambió de estado, fecha, etc.).
+     * Devuelve la lista de columnas que cambiaron (vacía = sin cambios).
      */
-    protected function hayCambios(array $db, array $nuevo): bool
+    protected function camposCambiados(array $db, array $nuevo): array
     {
+        $cambiados = [];
+
         if (($db['estado'] ?? '') !== ($nuevo['estado'] ?? '')) {
-            return true;
+            $cambiados[] = 'estado';
         }
 
         $dbFechaFin = $db['fecha_fin'] ?? null;
         $nuevoFechaFin = $nuevo['fecha_fin'] ?? null;
         if ($dbFechaFin !== $nuevoFechaFin) {
-            return true;
+            $cambiados[] = 'fecha_fin';
         }
 
         // Normalizar proveedores: BD viene como array (cast), API como JSON string
@@ -201,62 +204,57 @@ class ImportarContratosMayoresJob implements ShouldQueue
             ? json_encode($nuevo['proveedores'])
             : (string) ($nuevo['proveedores'] ?? '[]');
         if ($dbProv !== $nuevoProv) {
-            return true;
+            $cambiados[] = 'proveedores';
         }
 
         if (($db['entidad_nombre'] ?? '') !== ($nuevo['entidad_nombre'] ?? '')) {
-            return true;
+            $cambiados[] = 'entidad_nombre';
         }
 
         if (($db['nomenclatura'] ?? '') !== ($nuevo['nomenclatura'] ?? '')) {
-            return true;
+            $cambiados[] = 'nomenclatura';
         }
 
         if ((float) ($db['valor_referencial'] ?? 0) !== (float) ($nuevo['valor_referencial'] ?? 0)) {
-            return true;
+            $cambiados[] = 'valor_referencial';
         }
 
         if (($db['url_documento'] ?? '') !== ($nuevo['url_documento'] ?? '')) {
-            return true;
+            $cambiados[] = 'url_documento';
         }
 
         if (($db['metodo_contratacion'] ?? '') !== ($nuevo['metodo_contratacion'] ?? '')) {
-            return true;
+            $cambiados[] = 'metodo_contratacion';
         }
 
-        return false;
+        return $cambiados;
     }
 
     /**
-     * Actualiza los campos mutables de un contrato existente (sin tocar
-     * created_at ni datos_raw, que son históricos/pesados).
+     * Actualiza SOLO las columnas que cambiaron en un contrato existente.
+     * No toca created_at ni datos_raw (históricos/pesados).
      */
-    protected function actualizarContrato(string $ocid, array $mapped): void
+    protected function actualizarContrato(string $ocid, array $mapped, array $cambiados): void
     {
-        ContratoMayor::where('ocid', $ocid)->update([
-            'entidad_nombre' => $mapped['entidad_nombre'],
-            'entidad_ruc' => $mapped['entidad_ruc'] ?? '',
-            'entidad_direccion' => $mapped['entidad_direccion'] ?? '',
-            'nomenclatura' => $mapped['nomenclatura'],
-            'descripcion_objeto' => $mapped['descripcion_objeto'] ?? '',
-            'objeto_contratacion' => $mapped['objeto_contratacion'] ?? '',
-            'valor_referencial' => $mapped['valor_referencial'] ?? 0,
-            'cuantia' => $mapped['cuantia'] ?? null,
-            'moneda' => $mapped['moneda'] ?? 'PEN',
-            'fecha_publicacion' => $mapped['fecha_publicacion'] ?? null,
-            'fecha_inicio' => $mapped['fecha_inicio'] ?? null,
-            'fecha_fin' => $mapped['fecha_fin'] ?? null,
-            'metodo_contratacion' => $mapped['metodo_contratacion'] ?? '',
+        $todoMap = [
             'estado' => $mapped['estado'] ?? '',
-            'codigo_snip' => $mapped['codigo_snip'] ?? '',
+            'fecha_fin' => $mapped['fecha_fin'] ?? null,
             'proveedores' => $mapped['proveedores'] ?? '[]',
+            'entidad_nombre' => $mapped['entidad_nombre'] ?? '',
+            'nomenclatura' => $mapped['nomenclatura'] ?? '',
+            'valor_referencial' => $mapped['valor_referencial'] ?? 0,
             'url_documento' => $mapped['url_documento'] ?? '',
-            'updated_at' => now(),
-        ]);
+            'metodo_contratacion' => $mapped['metodo_contratacion'] ?? '',
+        ];
+
+        $update = array_intersect_key($todoMap, array_flip($cambiados));
+        $update['updated_at'] = now();
+
+        ContratoMayor::where('ocid', $ocid)->update($update);
 
         Log::info('ImportarContratosMayores: contrato actualizado', [
             'ocid' => $ocid,
-            'estado' => $mapped['estado'] ?? '',
+            'campos' => $cambiados,
         ]);
     }
 
