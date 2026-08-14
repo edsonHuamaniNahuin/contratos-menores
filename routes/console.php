@@ -153,20 +153,30 @@ Schedule::job(new ImportarContratosMayoresJob(15, 20))
 
 /*
 |--------------------------------------------------------------------------
-| Refresco de Estados — Contratos Mayores (ciclo rotativo vía /records?ocid=)
+| Refresco de Estados — Contratos Mayores (estrategia día/noche)
 |--------------------------------------------------------------------------
-| El endpoint /releases solo expone ~2 días de eventos. Los contratos
-| pueden cambiar de estado semanas después. Este job rota sobre TODOS los
-| contratos almacenados (300 por corrida, ordenados por updated_at ASC)
-| y refresca su estado con /records?ocid=.
+| MADRUGADA (03:00): refresco COMPLETO de todos los contratos almacenados
+| vía /records?ocid=. Garantiza que cada día TODOS los estados estén
+| frescos sin importar cuántos días tenga el contrato.
+| Costo: ~2,100 llamadas HTTP en ~20 min (a las 3 AM, sin tráfico).
 |
-| Con ~2100 contratos: ciclo completo cada ~56 horas (300 × 7 corridas).
-| Costo: 300 × 3 corridas/día = 900 llamadas HTTP/día.
+| DÍA (13:00, 18:00): refresco ligero rotativo de 300 contratos c/u.
+| Captura los cambios de estado ocurridos durante la mañana y la tarde.
+| Costo: 600 llamadas HTTP/día.
 |
-| Total combinado: ~1,020 llamadas HTTP/día (antes ~2,480).
+| IMPORT (cada 3h): descubre contratos nuevos (15 páginas, 120 calls/día).
+|
+| Total combinado: ~2,820 llamadas HTTP/día, con frescura garantizada
+| cada 24h para TODOS los contratos.
 */
+Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(5000))
+    ->cron('0 3 * * *')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(180)
+    ->appendOutputTo(storage_path('logs/refrescar-estados-mayores.log'));
+
 Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(300))
-    ->cron('0 0,8,16 * * *')
+    ->cron('0 13,18 * * *')
     ->timezone('America/Lima')
     ->withoutOverlapping(60)
     ->appendOutputTo(storage_path('logs/refrescar-estados-mayores.log'));

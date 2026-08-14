@@ -32,7 +32,7 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 2;
-    public int $timeout = 900;
+    public int $timeout = 3600; // 1h: la corrida nocturna completa puede tomar ~20 min
 
     protected int $porCorrida;
 
