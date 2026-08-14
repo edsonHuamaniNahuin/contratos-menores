@@ -56,6 +56,22 @@ class ImportarContratosMayoresJob implements ShouldQueue
 
         $storedMap = array_flip($storedOcids);
 
+        // Mapa de registros existentes en BD (no solo de hoy) para detectar cambios.
+        // Clave: ocid → campos mutables actuales (para comparar y refrescar estado).
+        $dbMap = ContratoMayor::get([
+            'ocid', 'entidad_nombre', 'nomenclatura', 'estado', 'fecha_fin',
+            'valor_referencial', 'proveedores', 'url_documento', 'metodo_contratacion',
+        ])->keyBy('ocid')->map(fn ($r) => [
+            'estado' => $r->estado,
+            'fecha_fin' => optional($r->fecha_fin)->format('Y-m-d H:i:s'),
+            'proveedores' => $r->proveedores ?? '[]',
+            'entidad_nombre' => $r->entidad_nombre,
+            'nomenclatura' => $r->nomenclatura,
+            'valor_referencial' => (float) $r->valor_referencial,
+            'url_documento' => $r->url_documento,
+            'metodo_contratacion' => $r->metodo_contratacion,
+        ])->toArray();
+
         Log::info('ImportarContratosMayores: iniciando', [
             'pages' => $this->pagesToScan,
             'page_size' => $this->pageSize,
@@ -65,7 +81,8 @@ class ImportarContratosMayoresJob implements ShouldQueue
 
         $totalRecibidos = 0;
         $nuevos = 0;
-        $omitidos = 0;
+        $actualizados = 0;
+        $sinCambios = 0;
         $errores = 0;
         $nuevosOcids = [];
 
@@ -81,29 +98,50 @@ class ImportarContratosMayoresJob implements ShouldQueue
                 $data = $resultado['data'] ?? [];
                 $totalRecibidos += count($data);
 
-                $batch = [];
+                $batchNuevos = [];
                 foreach ($data as $contrato) {
                     $ocid = $contrato['ocid'] ?? null;
                     if (empty($ocid)) {
                         continue;
                     }
 
-                    if (isset($storedMap[$ocid])) {
-                        $omitidos++;
+                    $mapped = $this->mapearCampos($contrato);
+
+                    // ¿Existe en BD (hoy o días anteriores)?
+                    if (isset($dbMap[$ocid])) {
+                        // Comparar campos mutables: si algo cambió → actualizar
+                        if ($this->hayCambios($dbMap[$ocid], $mapped)) {
+                            $this->actualizarContrato($ocid, $mapped);
+                            $actualizados++;
+                        } else {
+                            $sinCambios++;
+                        }
+                        // Mantener el map de BD al día para no re-actualizar en este run
+                        $dbMap[$ocid] = [
+                            'estado' => $mapped['estado'],
+                            'fecha_fin' => $mapped['fecha_fin'],
+                            'proveedores' => $mapped['proveedores'],
+                            'entidad_nombre' => $mapped['entidad_nombre'],
+                            'nomenclatura' => $mapped['nomenclatura'],
+                            'valor_referencial' => (float) $mapped['valor_referencial'],
+                            'url_documento' => $mapped['url_documento'],
+                            'metodo_contratacion' => $mapped['metodo_contratacion'],
+                        ];
                         continue;
                     }
 
-                    $batch[] = $this->mapearCampos($contrato);
-                    $storedMap[$ocid] = true;
+                    // Nuevo: insertar
+                    $batchNuevos[] = $mapped;
+                    $dbMap[$ocid] = true;
                     $nuevosOcids[] = $ocid;
                 }
 
-                if (!empty($batch)) {
+                if (!empty($batchNuevos)) {
                     try {
-                        ContratoMayor::insert($batch);
-                        $nuevos += count($batch);
+                        ContratoMayor::insert($batchNuevos);
+                        $nuevos += count($batchNuevos);
                     } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
-                        $insertados = $this->insertarUnoPorUnoIgnorandoDuplicados($batch);
+                        $insertados = $this->insertarUnoPorUnoIgnorandoDuplicados($batchNuevos);
                         $nuevos += $insertados;
                     }
                 }
@@ -133,8 +171,92 @@ class ImportarContratosMayoresJob implements ShouldQueue
             'pages_error' => $errores,
             'total_api' => $totalRecibidos,
             'nuevos' => $nuevos,
-            'omitidos_cache' => $omitidos,
+            'actualizados' => $actualizados,
+            'sin_cambios' => $sinCambios,
             'total_hoy' => count($storedOcids) + $nuevos,
+        ]);
+    }
+
+    /**
+     * Compara campos mutables del registro en BD contra lo que trae la API.
+     * Devuelve true si hay diferencias (el contrato cambió de estado, fecha, etc.).
+     */
+    protected function hayCambios(array $db, array $nuevo): bool
+    {
+        if (($db['estado'] ?? '') !== ($nuevo['estado'] ?? '')) {
+            return true;
+        }
+
+        $dbFechaFin = $db['fecha_fin'] ?? null;
+        $nuevoFechaFin = $nuevo['fecha_fin'] ?? null;
+        if ($dbFechaFin !== $nuevoFechaFin) {
+            return true;
+        }
+
+        // Normalizar proveedores: BD viene como array (cast), API como JSON string
+        $dbProv = is_array($db['proveedores'] ?? null)
+            ? json_encode($db['proveedores'])
+            : (string) ($db['proveedores'] ?? '[]');
+        $nuevoProv = is_array($nuevo['proveedores'] ?? null)
+            ? json_encode($nuevo['proveedores'])
+            : (string) ($nuevo['proveedores'] ?? '[]');
+        if ($dbProv !== $nuevoProv) {
+            return true;
+        }
+
+        if (($db['entidad_nombre'] ?? '') !== ($nuevo['entidad_nombre'] ?? '')) {
+            return true;
+        }
+
+        if (($db['nomenclatura'] ?? '') !== ($nuevo['nomenclatura'] ?? '')) {
+            return true;
+        }
+
+        if ((float) ($db['valor_referencial'] ?? 0) !== (float) ($nuevo['valor_referencial'] ?? 0)) {
+            return true;
+        }
+
+        if (($db['url_documento'] ?? '') !== ($nuevo['url_documento'] ?? '')) {
+            return true;
+        }
+
+        if (($db['metodo_contratacion'] ?? '') !== ($nuevo['metodo_contratacion'] ?? '')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Actualiza los campos mutables de un contrato existente (sin tocar
+     * created_at ni datos_raw, que son históricos/pesados).
+     */
+    protected function actualizarContrato(string $ocid, array $mapped): void
+    {
+        ContratoMayor::where('ocid', $ocid)->update([
+            'entidad_nombre' => $mapped['entidad_nombre'],
+            'entidad_ruc' => $mapped['entidad_ruc'] ?? '',
+            'entidad_direccion' => $mapped['entidad_direccion'] ?? '',
+            'nomenclatura' => $mapped['nomenclatura'],
+            'descripcion_objeto' => $mapped['descripcion_objeto'] ?? '',
+            'objeto_contratacion' => $mapped['objeto_contratacion'] ?? '',
+            'valor_referencial' => $mapped['valor_referencial'] ?? 0,
+            'cuantia' => $mapped['cuantia'] ?? null,
+            'moneda' => $mapped['moneda'] ?? 'PEN',
+            'fecha_publicacion' => $mapped['fecha_publicacion'] ?? null,
+            'fecha_inicio' => $mapped['fecha_inicio'] ?? null,
+            'fecha_fin' => $mapped['fecha_fin'] ?? null,
+            'metodo_contratacion' => $mapped['metodo_contratacion'] ?? '',
+            'estado' => $mapped['estado'] ?? '',
+            'codigo_snip' => $mapped['codigo_snip'] ?? '',
+            'proveedores' => $mapped['proveedores'] ?? '[]',
+            'url_documento' => $mapped['url_documento'] ?? '',
+            'updated_at' => now(),
+        ]);
+
+        Log::info('ImportarContratosMayores: contrato actualizado', [
+            'ocid' => $ocid,
+            'estado' => $mapped['estado'] ?? '',
         ]);
     }
 
