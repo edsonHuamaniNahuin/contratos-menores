@@ -136,22 +136,17 @@ Schedule::job(new NotificarContratosMayoresJob(6))
 |--------------------------------------------------------------------------
 | Importador de Contratos Mayores (API OCDS → BD)
 |--------------------------------------------------------------------------
-| Cada 90 minutos. Escanea 80 páginas (page_size=20, ~1600 releases)
-| y persiste los nuevos en contratos_mayores vía INSERT masivo.
-| Dedup en 2 capas: cache de OCIDs del día + UNIQUE en BD.
+| Cada 3 horas. Escanea 15 páginas (page_size=20, ~300 releases ≈ últimas
+| 2-3 horas de eventos) y persiste los nuevos en contratos_mayores.
+| También actualiza cambios recientes (estado/proveedores/fechas).
 |
-| Cron dividido en 2 entradas para lograr intervalo de 90 min:
-|   Serie A: 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00
-|   Serie B: 01:30, 04:30, 07:30, 10:30, 13:30, 16:30, 19:30, 22:30
+| El refresco de estados ANTIGUOS lo hace RefrescarEstadosContratosMayoresJob
+| (abajo) vía /records?ocid=, por eso este job puede ser liviano.
+|
+| Costo: 15 páginas × 8 corridas/día = 120 llamadas HTTP/día.
 */
-Schedule::job(new ImportarContratosMayoresJob(80, 20))
+Schedule::job(new ImportarContratosMayoresJob(15, 20))
     ->cron('0 0,3,6,9,12,15,18,21 * * *')
-    ->timezone('America/Lima')
-    ->withoutOverlapping(30)
-    ->appendOutputTo(storage_path('logs/importar-contratos-mayores.log'));
-
-Schedule::job(new ImportarContratosMayoresJob(80, 20))
-    ->cron('30 1,4,7,10,13,16,19,22 * * *')
     ->timezone('America/Lima')
     ->withoutOverlapping(30)
     ->appendOutputTo(storage_path('logs/importar-contratos-mayores.log'));
@@ -165,10 +160,13 @@ Schedule::job(new ImportarContratosMayoresJob(80, 20))
 | contratos almacenados (300 por corrida, ordenados por updated_at ASC)
 | y refresca su estado con /records?ocid=.
 |
-| Con ~2100 contratos: ciclo completo cada ~42 horas (300 × 7 corridas).
+| Con ~2100 contratos: ciclo completo cada ~56 horas (300 × 7 corridas).
+| Costo: 300 × 3 corridas/día = 900 llamadas HTTP/día.
+|
+| Total combinado: ~1,020 llamadas HTTP/día (antes ~2,480).
 */
 Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(300))
-    ->cron('45 0,6,12,18 * * *')
+    ->cron('0 0,8,16 * * *')
     ->timezone('America/Lima')
     ->withoutOverlapping(60)
     ->appendOutputTo(storage_path('logs/refrescar-estados-mayores.log'));
