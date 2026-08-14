@@ -35,6 +35,20 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     protected int $contratoCacheTtl;
     protected string $contratoCachePrefix;
 
+    /**
+     * Throttle en memoria por destinatario (estático para sobrevivir
+     * múltiples instancias dentro del mismo proceso worker).
+     *
+     * WhatsApp Cloud API limita ~1 msg/seg por par (cuenta → usuario).
+     * Enviar en ráfaga provoca error #131056 "pair rate limit hit".
+     */
+    protected static array $ultimoEnvioPorDestinatario = [];
+
+    /**
+     * Intervalo mínimo entre envíos al MISMO destinatario (microsegundos).
+     */
+    protected int $minIntervaloEnvio = 1500000; // 1.5 segundos
+
     public function __construct()
     {
         $this->token = trim((string) config('services.whatsapp.token', ''));
@@ -58,6 +72,27 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     public function isEnabled(): bool
     {
         return $this->enabled;
+    }
+
+    /**
+     * Asegura un intervalo mínimo entre envíos al mismo destinatario.
+     * Previene el error #131056 "pair rate limit hit" de WhatsApp.
+     */
+    protected function throttle(string $recipientId): void
+    {
+        $now = microtime(true);
+
+        if (isset(self::$ultimoEnvioPorDestinatario[$recipientId])) {
+            $elapsed = ($now - self::$ultimoEnvioPorDestinatario[$recipientId]) * 1_000_000;
+            $espera = $this->minIntervaloEnvio - $elapsed;
+
+            if ($espera > 0) {
+                usleep((int) $espera);
+                $now = microtime(true);
+            }
+        }
+
+        self::$ultimoEnvioPorDestinatario[$recipientId] = $now;
     }
 
     public function channelName(): string
@@ -245,6 +280,8 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         }
 
         try {
+            $this->throttle($recipientId);
+
             $response = Http::withToken($this->token)
                 ->timeout($this->timeout)
                 ->post($this->buildApiUrl('messages'), [
@@ -296,6 +333,8 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         }
 
         try {
+            $this->throttle($recipientId);
+
             $response = Http::withToken($this->token)
                 ->timeout($this->timeout)
                 ->post($this->buildApiUrl('messages'), [
@@ -654,6 +693,8 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         }
 
         try {
+            $this->throttle($recipientId);
+
             $payload = [
                 'messaging_product' => 'whatsapp',
                 'recipient_type' => 'individual',
