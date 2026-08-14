@@ -156,9 +156,78 @@ class TelegramNotificationService implements NotificationChannelContract, Intera
 
         if ($resultado['success']) {
             $suscripcion->registrarNotificacion();
+        } else {
+            // Error permanente (usuario bloqueó el bot o borró el chat):
+            // desactivar la suscripción para no reintentar indefinidamente.
+            $this->desactivarSiErrorPermanente($suscripcion, $recipientId, $resultado['message'] ?? '');
         }
 
         return $resultado;
+    }
+
+    /**
+     * Desactiva la suscripción si Telegram devolvió un error permanente.
+     *
+     * Errores permanentes conocidos:
+     *  - 403 Forbidden: bot was blocked by the user
+     *  - 403 Forbidden: user is deactivated
+     *  - 400 Bad Request: chat not found
+     *
+     * Errores transitorios (timeout, 429 rate limit, 5xx) NO desactivan.
+     */
+    protected function desactivarSiErrorPermanente(object $suscripcion, string $chatId, string $mensajeError): void
+    {
+        if (!$this->isErrorPermanente($mensajeError)) {
+            return;
+        }
+
+        try {
+            if ($suscripcion instanceof \App\Models\TelegramSubscription) {
+                if ($suscripcion->activo) {
+                    $suscripcion->update(['activo' => false]);
+                    Log::warning('Telegram: suscripción desactivada por error permanente', [
+                        'subscription_id' => $suscripcion->id,
+                        'chat_id' => $chatId,
+                        'error' => $mensajeError,
+                    ]);
+                }
+            } else {
+                // Fallback por chat_id si el objeto no es TelegramSubscription
+                \App\Models\TelegramSubscription::where('chat_id', $chatId)
+                    ->where('activo', true)
+                    ->update(['activo' => false]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Telegram: no se pudo desactivar suscripción', [
+                'chat_id' => $chatId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Determina si el mensaje de error de Telegram es permanente
+     * (el chat ya no puede recibir mensajes y no tiene sentido reintentar).
+     */
+    protected function isErrorPermanente(string $mensajeError): bool
+    {
+        $patrones = [
+            'chat not found',
+            'bot was blocked by the user',
+            'user is deactivated',
+            'bot was kicked',
+            'group chat was deactivated',
+        ];
+
+        $error = mb_strtolower($mensajeError);
+
+        foreach ($patrones as $patron) {
+            if (str_contains($error, $patron)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function construirMensaje(array $contratoData): string
