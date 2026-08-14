@@ -327,6 +327,52 @@ class SeaceMayoresService
     }
 
     /**
+     * Refrescar el estado actual de UN contrato desde /records?ocid=.
+     *
+     * El endpoint /records devuelve el compiledRelease (estado consolidado
+     * al día de hoy) de cualquier OCID, sin importar cuántos días hayan
+     * pasado desde su publicación. Es la fuente de verdad para refrescar
+     * contratos que dejaron la ventana de /releases (~2 días).
+     */
+    public function fetchRecordPorOcid(string $ocid): array
+    {
+        try {
+            $response = Http::timeout($this->timeout)
+                ->get("{$this->baseUrl}/records", [
+                    'ocid' => $ocid,
+                ]);
+
+            if (!$response->successful()) {
+                return ['success' => false, 'error' => "HTTP {$response->status()}"];
+            }
+
+            $json = $response->json();
+            $records = $json['records'] ?? [];
+
+            if (empty($records)) {
+                return ['success' => false, 'error' => 'OCID no encontrado en /records'];
+            }
+
+            // El primer record contiene el compiledRelease con el estado actual
+            $compiled = $records[0]['compiledRelease'] ?? null;
+            if (!$compiled) {
+                return ['success' => false, 'error' => 'compiledRelease ausente'];
+            }
+
+            return [
+                'success' => true,
+                'data' => $this->mapearRelease($compiled),
+            ];
+        } catch (\Exception $e) {
+            Log::error('SEACE Mayores API: fetchRecordPorOcid', [
+                'ocid' => $ocid,
+                'error' => $e->getMessage(),
+            ]);
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Extraer información de paginación desde los links HATEOAS de la API.
      */
     protected function parsePagination(array $links, array $currentParams): array

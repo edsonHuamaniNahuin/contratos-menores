@@ -158,6 +158,23 @@ Schedule::job(new ImportarContratosMayoresJob(80, 20))
 
 /*
 |--------------------------------------------------------------------------
+| Refresco de Estados — Contratos Mayores (ciclo rotativo vía /records?ocid=)
+|--------------------------------------------------------------------------
+| El endpoint /releases solo expone ~2 días de eventos. Los contratos
+| pueden cambiar de estado semanas después. Este job rota sobre TODOS los
+| contratos almacenados (300 por corrida, ordenados por updated_at ASC)
+| y refresca su estado con /records?ocid=.
+|
+| Con ~2100 contratos: ciclo completo cada ~42 horas (300 × 7 corridas).
+*/
+Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(300))
+    ->cron('45 0,6,12,18 * * *')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(60)
+    ->appendOutputTo(storage_path('logs/refrescar-estados-mayores.log'));
+
+/*
+|--------------------------------------------------------------------------
 | Limpieza de Cache Antiguo — Contratos Mayores
 |--------------------------------------------------------------------------
 | Diario a las 03:30 AM. Elimina keys de cache tipo
