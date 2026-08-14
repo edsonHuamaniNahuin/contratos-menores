@@ -60,46 +60,82 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
         $actualizados = 0;
         $sinCambios = 0;
         $fallos = 0;
+        $fallosConsecutivos = 0;
+        $sinCambiosOcids = []; // se actualizan en bulk al final
 
-        foreach ($contratos as $contrato) {
+        foreach ($contratos as $indice => $contrato) {
             $resultado = $service->fetchRecordPorOcid($contrato->ocid);
 
             if (!$resultado['success']) {
                 $fallos++;
+                $fallosConsecutivos++;
+
+                // Salvaguarda: si la API está caída (15 fallos seguidos al
+                // inicio del run), abortar para no quemar miles de llamadas.
+                if ($fallosConsecutivos >= 15 && $indice < 50) {
+                    Log::critical('RefrescarEstadosContratosMayores: API aparentemente caída, abortando', [
+                        'fallos_consecutivos' => $fallosConsecutivos,
+                        'procesados' => $indice + 1,
+                    ]);
+                    $this->aplicarBulkSinCambios($sinCambiosOcids);
+                    return;
+                }
                 continue;
             }
 
-            $fresh = $resultado['data'];
+            $fallosConsecutivos = 0;
 
+            $fresh = $resultado['data'];
             $update = $this->columnasCambiadas($contrato, $fresh);
 
             if (empty($update)) {
-                // Sin cambios de estado: solo actualizar updated_at
-                // para que no vuelva a entrar en la próxima corrida pronto.
-                ContratoMayor::where('ocid', $contrato->ocid)
-                    ->update(['updated_at' => now()]);
+                // Sin cambios: marcar updated_at en bulk al final
+                $sinCambiosOcids[] = $contrato->ocid;
                 $sinCambios++;
-                continue;
+            } else {
+                $update['updated_at'] = now();
+                ContratoMayor::where('ocid', $contrato->ocid)->update($update);
+                $actualizados++;
+
+                Log::info('RefrescarEstadosContratosMayores: contrato actualizado', [
+                    'ocid' => $contrato->ocid,
+                    'campos' => array_keys($update),
+                    'estado_nuevo' => $fresh['estado'] ?? '',
+                ]);
             }
 
-            $update['updated_at'] = now();
-            ContratoMayor::where('ocid', $contrato->ocid)->update($update);
-            $actualizados++;
-
-            Log::info('RefrescarEstadosContratosMayores: contrato actualizado', [
-                'ocid' => $contrato->ocid,
-                'campos' => array_keys($update),
-                'estado_nuevo' => $fresh['estado'] ?? '',
-            ]);
+            // Progreso periódico para monitoreo nocturno
+            if (($indice + 1) % 250 === 0) {
+                Log::info('RefrescarEstadosContratosMayores: progreso', [
+                    'procesados' => $indice + 1,
+                    'actualizados' => $actualizados,
+                    'fallos' => $fallos,
+                ]);
+            }
 
             usleep(150_000); // 150ms entre llamadas: ser amable con la API
         }
+
+        $this->aplicarBulkSinCambios($sinCambiosOcids);
 
         Log::info('RefrescarEstadosContratosMayores: completado', [
             'actualizados' => $actualizados,
             'sin_cambios' => $sinCambios,
             'fallos' => $fallos,
         ]);
+    }
+
+    /**
+     * Marca updated_at en UNA sola query para todos los contratos sin cambios.
+     * Evita ~2,000 UPDATEs individuales en la corrida nocturna.
+     */
+    protected function aplicarBulkSinCambios(array $ocids): void
+    {
+        if (empty($ocids)) {
+            return;
+        }
+
+        ContratoMayor::whereIn('ocid', $ocids)->update(['updated_at' => now()]);
     }
 
     /**
