@@ -158,7 +158,7 @@ Schedule::job(new ImportarContratosMayoresJob(15, 20))
 | MADRUGADA (03:00): refresco COMPLETO de todos los contratos almacenados
 | vía /records?ocid=. Garantiza que cada día TODOS los estados estén
 | frescos sin importar cuántos días tenga el contrato.
-| Costo: ~2,100 llamadas HTTP en ~20 min (a las 3 AM, sin tráfico).
+| Costo: ~11,000 llamadas HTTP en ~1.8h (a las 3 AM, sin tráfico).
 |
 | DÍA (13:00, 18:00): refresco ligero rotativo de 300 contratos c/u.
 | Captura los cambios de estado ocurridos durante la mañana y la tarde.
@@ -166,10 +166,10 @@ Schedule::job(new ImportarContratosMayoresJob(15, 20))
 |
 | IMPORT (cada 3h): descubre contratos nuevos (15 páginas, 120 calls/día).
 |
-| Total combinado: ~2,820 llamadas HTTP/día, con frescura garantizada
+| Total combinado: ~11,700 llamadas HTTP/día, con frescura garantizada
 | cada 24h para TODOS los contratos.
 */
-Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(5000))
+Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(20000))
     ->cron('0 3 * * *')
     ->timezone('America/Lima')
     ->withoutOverlapping(180)
