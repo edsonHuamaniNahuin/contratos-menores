@@ -5,6 +5,71 @@
 
 ---
 
+## 2026-08-15 · Validación IA · (pendiente de commit)
+
+### Direccionamiento fallaba con "1 validation error for DireccionamientoAnalysisResponse hallazgos_criticos.0..."
+
+**Síntoma:** Al pedir "Detectar Direccionamiento" desde Telegram para el contrato `CM-67-2026-MP-FN-UEDFSMAR`, el análisis fallaba:
+
+```
+❌ Error al analizar direccionamiento: No se pudo completar el análisis...
+{"detail":"Respuesta del LLM no cumple esquema: 1 validation error for
+DireccionamientoAnalysisResponse\nhallazgos_criticos.0.de..."}
+```
+
+**Causa:** El schema Pydantic `DireccionamientoHallazgo` exige `descripcion_hallazgo` (min 10, max 500) y `red_flag_detectada` (min 5, max 300). Gemini a veces devuelve hallazgos con nombres de campo alternativos (`descripcion`, `detalle`, `red_flag`) o campos vacíos. El sanitizer `_sanitize_direccionamiento_payload` solo normalizaba `categoria` y `nivel_de_gravedad`, así que el hallazgo llegaba a validación sin `descripcion_hallazgo` → todo el análisis fallaba.
+
+**Solución:** Sanitizer robusto en `analyzer_service.py`:
+1. Mapear nombres alternativos: `descripcion_hallazgo ← descripcion|detalle|hallazgo`, `red_flag_detectada ← red_flag|senal_alerta|alerta|redflag`
+2. Si la descripción tiene < 10 chars → descartar ESE hallazgo (no romper todo el análisis)
+3. Si falta red flag → derivarla de la descripción
+4. Truncar a los máximos del schema (500/300)
+5. Construir dict limpio con SOLO los 4 campos del schema (elimina campos basura)
+
+**Lección:** Nunca confiar en que el LLM respete los nombres de campo exactos. El sanitizer debe ser defensivo: mapear alias, descartar lo insalvable y construir el payload limpio antes de validar con Pydantic.
+
+**Archivos:** `analizador-tdr/app/services/analyzer_service.py`
+
+---
+
+## 2026-08-15 · Notificaciones Mayores · (pendiente de commit)
+
+### Alertas duplicadas de "NUEVO CONTRATO MAYOR" — contratos de abril/junio notificados en agosto
+
+**Síntoma:** El usuario recibía en WhatsApp el mismo contrato múltiples veces (`CP-ABR-6-2026-FONAFE-1` publicado 23/06, `CONV-PROC-2-2026-PEJENP-PJ` publicado 27/04). Además recibía alertas de contratos de meses atrás como si fueran nuevos.
+
+**Causa raíz (2 bugs):**
+1. **Sin dedup**: `NotificarContratosMayoresJob` tenía un comment afirmando que usaba `notified_processes` + `notification_sends` para dedup, pero el código NUNCA llamaba al tracker. Contratos Menores sí lo usa (`ProcessNotificationTracker` en `ImportadorTdrEngine`).
+2. **Filtro de recencia equivocado**: usaba `created_at` (fecha de inserción en NUESTRA BD) en vez de `fecha_publicacion`. Cuando el escaneo global re-importó contratos viejos, `created_at` se actualizó a agosto → entraron en la ventana de 6h → notificados como "nuevos".
+
+**Solución:**
+1. **Dedup per-suscriptor**: inyectar `ProcessNotificationTracker` en el job. Antes de enviar: `wasAlreadyNotified(ocid, user_id, canal, recipientId)` → skip. Después de enviar: `recordNotification(...)`. La BD tiene constraint unique `uq_send_process_user_canal_recipient (notified_process_id, user_id, canal, recipient_id)` como red de seguridad final (imposible duplicar aunque 2 jobs corran en paralelo).
+2. **Filtro correcto**: `where('fecha_publicacion', '>=', $desde)` en vez de `created_at`.
+3. **Ventana 6h → 12h**: cubre el hueco nocturno (los runs son 06:00-20:00; con 12h el run de las 06:00 cubre desde las 18:00 del día anterior).
+4. **Log** `total_omitidos_dup` para monitorear duplicados bloqueados.
+
+**Verificación del dedup:** constraint unique verificado en producción: `uq_send_process_user_canal_recipient`.
+
+**Lección:** Un comment en el código NO garantiza que el código haga lo que dice. Y `created_at` es "cuándo lo guardamos", no "cuándo pasó el evento" — para filtrar eventos por recencia usar la fecha del evento (`fecha_publicacion`).
+
+**Archivos:** `app/Jobs/NotificarContratosMayoresJob.php`, `routes/console.php`
+
+---
+
+## 2026-08-15 · Telegram Bot · `ee84ed2a`
+
+### cURL error 28 recurrente en getUpdates (3+ veces por día)
+
+**Síntoma:** `Telegram Bot Listener Error {"exception":"cURL error 28: Operation timed out after 15001 milliseconds with 0 bytes received"}` cada pocas horas.
+
+**Causa:** El listener usaba `Http::timeout(15)` pero el long-poll de Telegram mantiene la conexión ~10s + latencia de red. Cuando Telegram excedía 15s, el cURL expiraba. El Admin Bot listener ya usaba 35s correctamente; el listener principal no.
+
+**Solución:** `Http::timeout(15)` → `Http::timeout(30)` — margen 3x sobre el long-poll de 10s, sin sacrificar respuesta a SIGTERM.
+
+**Archivos:** `app/Console/Commands/TelegramBotListener.php`
+
+---
+
 ## 2026-08-15 · Análisis IA WhatsApp · `907b65e8` + `ae414b79`
 
 ### TDR DOCX guardado con extensión .pdf rompía el análisis de direccionamiento ("The document has no pages")

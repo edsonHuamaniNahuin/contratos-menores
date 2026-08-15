@@ -122,10 +122,12 @@ Schedule::job(new NotificarEmailSuscriptoresJob())
 | Notificador de Contratos Mayores (Telegram + WhatsApp)
 |--------------------------------------------------------------------------
 | Cada 2 horas (06:00-20:00, igual que Menores).
-| Lee contratos_mayores recientes (últimas 6h), compara keywords de
-| suscriptores con recibir_mayores = true, y envía notificaciones.
+| Lee contratos_mayores publicados en las últimas 12h (ventana amplia para
+| cubrir el hueco nocturno 20:00-06:00), compara keywords y envía.
+| Dedup per-suscriptor vía ProcessNotificationTracker (notified_processes
+| + notification_sends): cada contrato se notifica UNA vez por canal/usuario.
 */
-Schedule::job(new NotificarContratosMayoresJob(6))
+Schedule::job(new NotificarContratosMayoresJob(12))
     ->everyTwoHours()
     ->between('06:00', '20:00')
     ->timezone('America/Lima')

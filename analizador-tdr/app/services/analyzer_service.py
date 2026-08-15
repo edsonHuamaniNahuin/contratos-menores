@@ -558,18 +558,54 @@ Separa estrictamente Requisitos de Calificación (Pasa/No Pasa) de Factores de E
         if not isinstance(payload.get("hallazgos_criticos"), list):
             payload["hallazgos_criticos"] = []
 
-        # Normalizar campos de cada hallazgo para que cumplan con el schema
+        # Normalizar campos de cada hallazgo para que cumplan con el schema.
+        # Gemini a veces devuelve nombres alternativos ("descripcion" en vez
+        # de "descripcion_hallazgo") o campos vacíos; aquí se reparan o se
+        # descartan hallazgos insalvables en vez de romper todo el análisis.
         sanitized_hallazgos = []
         for h in payload["hallazgos_criticos"][:8]:
             if not isinstance(h, dict):
                 continue
-            h["nivel_de_gravedad"] = self._normalize_gravedad(
-                str(h.get("nivel_de_gravedad", "Medio"))
+
+            # Mapear nombres alternativos comunes del LLM
+            descripcion = (
+                h.get("descripcion_hallazgo")
+                or h.get("descripcion")
+                or h.get("detalle")
+                or h.get("hallazgo")
+                or ""
             )
-            h["categoria"] = self._normalize_categoria(
-                str(h.get("categoria", "Otra"))
+            red_flag = (
+                h.get("red_flag_detectada")
+                or h.get("red_flag")
+                or h.get("senal_alerta")
+                or h.get("alerta")
+                or h.get("redflag")
+                or ""
             )
-            sanitized_hallazgos.append(h)
+
+            descripcion = str(descripcion).strip()
+            red_flag = str(red_flag).strip()
+
+            # Si la descripción no alcanza el mínimo del schema, descartar
+            # el hallazgo (mejor un hallazgo menos que fallar todo el análisis)
+            if len(descripcion) < 10:
+                continue
+
+            # Si no hay red flag, derivarla de la descripción
+            if len(red_flag) < 5:
+                red_flag = descripcion[:300]
+
+            # Construir el hallazgo limpio con SOLO los campos del schema
+            limpio = {
+                "categoria": self._normalize_categoria(str(h.get("categoria", "Otra"))),
+                "descripcion_hallazgo": descripcion[:500],
+                "red_flag_detectada": red_flag[:300],
+                "nivel_de_gravedad": self._normalize_gravedad(
+                    str(h.get("nivel_de_gravedad", "Medio"))
+                ),
+            }
+            sanitized_hallazgos.append(limpio)
         payload["hallazgos_criticos"] = sanitized_hallazgos
 
         if not payload.get("argumento_para_observacion"):

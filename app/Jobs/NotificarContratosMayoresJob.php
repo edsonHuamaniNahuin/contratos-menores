@@ -42,7 +42,8 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
     public function handle(
         TelegramNotificationService $telegram,
-        WhatsAppNotificationService $whatsappService
+        WhatsAppNotificationService $whatsappService,
+        \App\Services\ProcessNotificationTracker $tracker
     ): void {
         $timezone = 'America/Lima';
         $ahora = Carbon::now($timezone);
@@ -85,9 +86,12 @@ class NotificarContratosMayoresJob implements ShouldQueue
             'whatsapp' => $whatsappSubs->count(),
         ]);
 
-        // ── Contratos Mayores recientes desde la BD local ──
-        $contratos = ContratoMayor::where('created_at', '>=', $desde)
-            ->orderBy('created_at', 'desc')
+        // ── Contratos publicados en las últimas N horas ──
+        // Usar fecha_publicacion (cuándo SEACE publicó), NO created_at.
+        // created_at cambia al re-importar contratos viejos (escaneo global)
+        // y causaba alertas duplicadas de procesos de meses atrás.
+        $contratos = ContratoMayor::where('fecha_publicacion', '>=', $desde)
+            ->orderBy('fecha_publicacion', 'desc')
             ->limit(200)
             ->get();
 
@@ -101,12 +105,19 @@ class NotificarContratosMayoresJob implements ShouldQueue
         ]);
 
         $totalEnviados = 0;
+        $totalOmitidos = 0;
 
         foreach ($suscripciones as $sub) {
             $channel = $this->resolveChannel($sub, $telegram, $whatsappService);
             if (!$channel) {
                 continue;
             }
+
+            $canal = $channel->channelName();
+            $recipientId = $sub instanceof TelegramSubscription
+                ? $sub->chat_id
+                : $sub->phone_number;
+            $userId = $sub->user_id;
 
             $keywords = $sub->user?->subscriberProfile?->keywords ?? collect();
             $keywordList = $keywords->pluck('nombre')->filter()->map(fn ($k) => mb_strtolower($k))->toArray();
@@ -129,14 +140,48 @@ class NotificarContratosMayoresJob implements ShouldQueue
                     continue;
                 }
 
+                // ── Dedup per-suscriptor (igual que Contratos Menores) ──
+                // Un contrato se notifica UNA sola vez por (usuario, canal, destinatario).
+                if ($tracker->wasAlreadyNotified($contrato->ocid, $userId, $canal, $recipientId)) {
+                    $totalOmitidos++;
+                    continue;
+                }
+
                 $this->enviarNotificacion($channel, $sub, $contrato, $matched);
+
+                $tracker->recordNotification(
+                    $this->contratoToTrackerPayload($contrato),
+                    $contrato->ocid,
+                    $userId,
+                    $canal,
+                    $recipientId,
+                    $sub instanceof TelegramSubscription ? 'Telegram' : 'WhatsApp',
+                    array_values($matched)
+                );
+
                 $totalEnviados++;
             }
         }
 
         Log::info('NotificarContratosMayores: completado', [
             'total_enviados' => $totalEnviados,
+            'total_omitidos_dup' => $totalOmitidos,
         ]);
+    }
+
+    /**
+     * Mapea ContratoMayor al formato que espera el ProcessNotificationTracker.
+     */
+    protected function contratoToTrackerPayload(ContratoMayor $contrato): array
+    {
+        return [
+            'desContratacion'   => $contrato->nomenclatura,
+            'nomEntidad'        => $contrato->entidad_nombre,
+            'desObjetoContrato' => $contrato->descripcion_objeto,
+            'nomObjetoContrato' => $contrato->objeto_contratacion,
+            'montoReferencial'  => (string) $contrato->valor_referencial,
+            'fecPublica'        => $contrato->fecha_publicacion?->format('d/m/Y H:i'),
+        ];
     }
 
     protected function resolveChannel(
