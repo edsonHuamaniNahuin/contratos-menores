@@ -5,6 +5,88 @@
 
 ---
 
+## 2026-08-15 · Análisis IA WhatsApp · `907b65e8` + `ae414b79`
+
+### TDR DOCX guardado con extensión .pdf rompía el análisis de direccionamiento ("The document has no pages")
+
+**Síntoma:** Al presionar "🔍 Detectar Direccionamiento" en el bot de WhatsApp para el contrato `CP-ABR-6-2026-FONAFE-1`, devolvía:
+
+```
+❌ Error HTTP 400: {"detail":"Error en análisis direccionamiento PDF directo:
+400 INVALID_ARGUMENT. {'error': {'code': 400, 'message':
+'The document has no pages.', 'status': 'INVALID_ARGUMENT'}}"}
+```
+
+En los logs: `AnalizadorTDR: Error en direccionamiento {"file":"06be05fb....pdf", ...}`.
+
+**Causa raíz (2 capas):**
+1. El TDR descargado del SEACE era un **Microsoft Word 2007+ (DOCX)** pero el sistema lo guardaba SIEMPRE con extensión `.pdf` (hardcodeada en los bot listeners)
+2. El `gemini_client.py` hardcodeaba `mime_type="application/pdf"` al enviar el documento a Gemini multimodal. Gemini NO soporta DOCX → "no pages"
+3. Primer intento de fix (mandar MIME DOCX) falló también: `Unsupported MIME type: application/vnd.openxmlformats-officedocument.wordprocessingml.document` — Gemini directamente no acepta DOCX en modo multimodal
+
+**Solución (3 capas):**
+1. **Bots PHP** (`WhatsAppBotListener` + `TelegramBotListener`): helper `detectarExtensionDocumento()` que detecta el tipo real por **magic bytes** (`%PDF` → pdf, `PK` → docx, OLE2 → doc) y guarda el temp con la extensión real. También valida que la descarga no venga vacía.
+2. **Pipeline IA** (`analyzer_service.py`): en `analyze_direccionamiento_document()` y `generate_proforma_document()`, si los magic bytes indican Word (PK/OLE2), se **extrae texto con `_extract_docx_text()`** y se analiza por la ruta textual (RAG + prompt forense), NUNCA por multimodal.
+3. **Gemini client** (`gemini_client.py`): helper `_detect_document_mime()` por magic bytes como red de seguridad para PDFs con extensión incorrecta.
+
+**Verificación:** El archivo que fallaba ahora devuelve `score: 95, veredicto: ALTAMENTE DIRECCIONADO`.
+
+**Lección:** Nunca confiar en la extensión del archivo para determinar el formato. Los documentos del SEACE vienen en PDF y Word mezclados. Detectar por magic bytes (primeros 4-8 bytes) es la única forma confiable. Y recordar que Gemini multimodal solo soporta PDF/imágenes/audio/video — DOCX siempre debe ir por extracción de texto.
+
+**Archivos:** `analizador-tdr/app/services/llm/gemini_client.py`, `analizador-tdr/app/services/analyzer_service.py`, `app/Console/Commands/WhatsAppBotListener.php`, `app/Console/Commands/TelegramBotListener.php`
+
+---
+
+## 2026-08-14 · Monitoreo · `ffa8ba3e`
+
+### El item "Monitoreo del Sistema" no aparecía en el menú aunque el permiso estaba asignado
+
+**Síntoma:** El permiso `view-monitoreo-sistema` se creó vía migración y se asignó al rol admin, pero el item del menú no aparecía en `/dashboard` ni en localhost.
+
+**Causa:** El sistema de permisos usa `@can('slug')` en Blade, que consulta el **Gate de Laravel**. Cada permiso debe registrarse explícitamente con `Gate::define('slug', fn ($user) => $user->hasPermission('slug'))` en `AppServiceProvider::boot()`. Se creó el permiso en BD pero no se registró en el Gate → `@can` siempre devolvía false.
+
+**Solución:** Agregar `Gate::define('view-monitoreo-sistema', ...)` en `AppServiceProvider.php`.
+
+**Lección:** En este proyecto, crear un permiso nuevo requiere 4 pasos: (1) registro en BD, (2) `Gate::define` en AppServiceProvider, (3) item de menú con `@can`, (4) ruta con `middleware('can:...')`. Si falta el paso 2, todo lo demás falla silenciosamente.
+
+**Archivos:** `app/Providers/AppServiceProvider.php`, `app/Livewire/RolesPermisos.php`
+
+---
+
+## 2026-08-14 · Contratos Mayores · `1d21e1b0`, `11cf3d80`, `d3dc8f26`, `3ae4df83`, `6a4f772f`
+
+### Los estados de Contratos Mayores quedaban congelados para siempre (nunca se actualizaban)
+
+**Síntoma:** SEACE mostraba procesos con estado ADJUDICADO pero el portal los mostraba con el estado viejo. El usuario detectó que "como almacenamos los procesos en BD, los estados no cambian".
+
+**Causa raíz (investigación completa):**
+1. `ImportarContratosMayoresJob` solo hacía INSERT de contratos NUEVOS; los existentes se omitían para siempre (`if isset($storedMap[$ocid]) continue`)
+2. El endpoint `/releases` de la API OCDS solo expone los últimos ~2 días de eventos (10,000 releases, 500 páginas × 20). Un contrato que cambia de estado semanas después ya no está en la ventana
+3. El job escaneaba solo 80 páginas (~horas), ni siquiera el día completo
+
+**Descubrimientos clave de la API OCDS (contratacionesabiertas.oece.gob.pe):**
+- `/releases`: eventos completos pero SOLO última ventana de ~2 días. 500 páginas máximo (page 501 = 404). Ignora `limit`, `fechaDesde`, `dateFrom`
+- `/search`: 2,748,755 registros históricos, filtro `year` funciona (45,504 en 2026), pero el compiledRelease viene STRIPPED (sin items/status/awards) — inútil para estados
+- `/records?ocid=X`: devuelve el **compiledRelease completo** (con items, status, awards) de CUALQUIER contrato sin importar antigüedad — LA FUENTE DE VERDAD para refrescar
+
+**Solución (estrategia día/noche):**
+1. **Import incremental** cada 3h con 15 páginas: descubre contratos nuevos
+2. **`RefrescarEstadosContratosMayoresJob`** con filtro de antigüedad por `fecha_publicacion`:
+   - Madrugada 03:00: refresca los últimos 30 días (~3,899 contratos, ~38 min)
+   - Día 13:00 y 18:00: refresca los últimos 7 días, 300 c/u
+   - `antiguedadDias = 0` = escaneo global manual (solo bajo demanda)
+3. **Salvaguardas**: abort automático si la API cae (15 fallos seguidos), bulk UPDATE para sin-cambios, progreso cada 250, timeout 2h
+
+**Bug introducido durante el proceso:** Se despacharon 4 jobs globales con el constructor viejo (sin `antiguedadDias`) y luego se desplegó el constructor nuevo. Al re-hidratar, la propiedad tipada `$antiguedadDias` no existía en el payload serializado → `Typed property ... must not be accessed before initialization` → 3 jobs murieron (5,821 de 11,332 refrescados).
+
+**Fix:** `protected int $antiguedadDias = 30;` con valor por defecto en la propiedad.
+
+**Lección:** Nunca desplegar un job con una propiedad nueva sin valor por defecto mientras hay jobs serializados del constructor viejo en la cola.
+
+**Archivos:** `app/Jobs/ImportarContratosMayoresJob.php`, `app/Jobs/RefrescarEstadosContratosMayoresJob.php`, `app/Services/SeaceMayoresService.php`, `routes/console.php`
+
+---
+
 ## 2026-08-06 · SEO Regional · `3cae390c`
 
 ### Las 26 URLs regionales (`/buscador-publico/{dep}`) no se indexaban como páginas separadas
