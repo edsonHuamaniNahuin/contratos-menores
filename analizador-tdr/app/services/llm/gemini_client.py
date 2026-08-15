@@ -178,14 +178,8 @@ TDR:
             # ESTRATEGIA: Inline data (sin Files API)
             self.logger.info("📦 Preparando PDF inline para Gemini...")
 
-            # Detectar MIME type según extensión
-            ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'pdf'
-            mime_map = {
-                'pdf': 'application/pdf',
-                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'doc': 'application/msword',
-            }
-            mime_type = mime_map.get(ext, 'application/pdf')
+            # Detectar MIME type real por magic bytes (extensión puede mentir)
+            mime_type = self._detect_document_mime(pdf_bytes, filename)
 
             # Crear parte inline con el documento
             pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type=mime_type)
@@ -422,12 +416,43 @@ TDR:
                 "condiciones": [],
             }
 
+    def _detect_document_mime(self, pdf_bytes: bytes, filename: str = '') -> str:
+        """
+        Detecta el MIME real del documento por MAGIC BYTES, no por extensión.
+        Algunos TDR del SEACE son DOCX pero se guardan con extensión .pdf;
+        Gemini falla con "The document has no pages" si recibe el MIME equivocado.
+        """
+        if not pdf_bytes:
+            return 'application/pdf'
+
+        # PDF: "%PDF"
+        if pdf_bytes[:4] == b'%PDF':
+            return 'application/pdf'
+
+        # DOCX/XLSX/PPTX: contenedor ZIP (PK\x03\x04 o PK\x05\x06)
+        if pdf_bytes[:2] == b'PK':
+            return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+        # DOC/XLS clásico: OLE2 Compound File
+        if pdf_bytes[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1':
+            return 'application/msword'
+
+        # Fallback por extensión
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'pdf'
+        mime_map = {
+            'pdf': 'application/pdf',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'doc': 'application/msword',
+        }
+        return mime_map.get(ext, 'application/pdf')
+
     async def analyze_direccionamiento_from_pdf(self, pdf_bytes: bytes, filename: str) -> Dict:
         """Análisis forense de direccionamiento enviando el PDF directo a Gemini multimodal."""
         try:
-            self.logger.info(f"🔍📄 Direccionamiento multimodal con Gemini ({self.model_name})")
+            mime_type = self._detect_document_mime(pdf_bytes, filename)
+            self.logger.info(f"🔍📄 Direccionamiento multimodal con Gemini ({self.model_name}) — MIME: {mime_type}")
 
-            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
+            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type=mime_type)
 
             forensic_config = types.GenerateContentConfig(
                 temperature=0.15,
@@ -492,9 +517,10 @@ Reglas ESTRICTAS:
     ) -> Dict:
         """Genera proforma técnica enviando el PDF directo a Gemini multimodal."""
         try:
-            self.logger.info(f"📋📄 Proforma multimodal con Gemini ({self.model_name})")
+            mime_type = self._detect_document_mime(pdf_bytes, filename)
+            self.logger.info(f"📋📄 Proforma multimodal con Gemini ({self.model_name}) — MIME: {mime_type}")
 
-            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
+            pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type=mime_type)
 
             nombre_empresa = company_name.strip() or "Mi Empresa"
             entidad = ""

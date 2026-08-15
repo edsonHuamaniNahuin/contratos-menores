@@ -515,7 +515,14 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
 
             $analizador = new \App\Services\AnalizadorTDRService();
             $pdfBytes = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl)->body();
-            $tempPath = storage_path('app/temp/' . \Illuminate\Support\Str::uuid() . '.pdf');
+
+            if (empty($pdfBytes)) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ El documento descargado está vacío. Intentá de nuevo.');
+                return;
+            }
+
+            // Guardar con la extensión REAL (los TDR del SEACE a veces vienen DOCX con extensión .pdf)
+            $tempPath = storage_path('app/temp/' . \Illuminate\Support\Str::uuid() . '.' . $this->detectarExtensionDocumento($pdfBytes));
             file_put_contents($tempPath, $pdfBytes);
 
             $resultado = $analizador->analyzeDireccionamiento($tempPath, 'mayores');
@@ -558,7 +565,13 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             }
 
             $pdfBytes = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl)->body();
-            $tempPath = storage_path('app/temp/' . \Illuminate\Support\Str::uuid() . '.pdf');
+
+            if (empty($pdfBytes)) {
+                $this->whatsapp->enviarMensaje($phoneNumber, '❌ El documento descargado está vacío. Intentá de nuevo.');
+                return;
+            }
+
+            $tempPath = storage_path('app/temp/' . \Illuminate\Support\Str::uuid() . '.' . $this->detectarExtensionDocumento($pdfBytes));
             file_put_contents($tempPath, $pdfBytes);
 
             $resultado = $analizador->analyzeProforma($tempPath, $profile->company_name ?? '', $profile->company_copy, 'mayores');
@@ -576,6 +589,29 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         } catch (\Exception $e) {
             $this->whatsapp->enviarMensaje($phoneNumber, '❌ Error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Detecta la extensión real del documento por magic bytes.
+     * Los TDR del SEACE a veces son DOCX guardados con extensión .pdf,
+     * y Gemini rechaza documentos con MIME incorrecto ("no pages").
+     */
+    protected function detectarExtensionDocumento(string $bytes): string
+    {
+        if (str_starts_with($bytes, '%PDF')) {
+            return 'pdf';
+        }
+
+        if (str_starts_with($bytes, 'PK')) {
+            return 'docx';
+        }
+
+        // OLE2 Compound File (doc/xls clásico)
+        if (str_starts_with($bytes, "\xD0\xCF\x11\xE0")) {
+            return 'doc';
+        }
+
+        return 'pdf';
     }
 
     protected function postoresMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void
