@@ -171,10 +171,11 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
      */
     protected function getUpdates(string $token): array
     {
-        // timeout HTTP = 15s, long-poll Telegram = 10s
-        // Mantener corto para que SIGTERM se despache entre iteraciones.
-        // Telegram devuelve [] al expirar el long-poll (sin updates).
-        $response = Http::timeout(15)->get($this->buildTelegramUrl($token, 'getUpdates'), [
+        // timeout HTTP = 30s, long-poll Telegram = 10s
+        // Telegram long-polling mantiene la conexión ~10s + latencia de red.
+        // Con 15s de timeout HTTP, el cURL 28 (timeout) ocurría cuando Telegram
+        // excedía 15s. 30s da margen 3x sin sacrificar la respuesta a SIGTERM.
+        $response = Http::timeout(30)->get($this->buildTelegramUrl($token, 'getUpdates'), [
             'offset' => $this->lastUpdateId + 1,
             'timeout' => 10,
             'allowed_updates' => ['callback_query'],
