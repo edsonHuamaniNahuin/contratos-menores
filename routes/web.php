@@ -414,6 +414,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.analytics')
         ->middleware('can:view-consumo-ia');
 
+    Route::get('/admin/monitoreo', \App\Http\Controllers\AdminMonitoreoController::class)
+        ->name('admin.monitoreo')
+        ->middleware('can:view-monitoreo-sistema');
+
     // Rutas de gestión de cuentas SEACE
     Route::resource('cuentas', CuentaSeaceController::class)->middleware('can:view-cuentas');
 
