@@ -5,6 +5,35 @@
 
 ---
 
+## 2026-08-15 · Geografía Contratos Mayores · `823f2e61`
+
+### Tablas maestras de geografía + backfill + filtros cascada en buscador
+
+**Objetivo:** Soportar la exportación con filtros geográficos normalizados (departamento/provincia/distrito) pedida por el cliente, y añadir filtros de ubicación al buscador de Contratos Mayores.
+
+**Semántica confirmada de la API OCDS** (verificada con datos reales de producción — 11,386 contratos, 100% con `datos_raw`):
+- `parties[rol=buyer].address.department` → **departamento** (25 únicos)
+- `parties[rol=buyer].address.region` → **provincia** (194 únicos)
+- `parties[rol=buyer].address.locality` → **distrito** (1049 únicos)
+- Ejemplo real: `department=LORETO`, `region=UCAYALI` (Prov. de Ucayali-Loreto), `locality=CONTAMANA` ✓
+
+**Implementación:**
+1. **Migración** `2026_08_15_000001_create_geo_master_tables.php`: tablas `departamentos`/`provincias`/`distritos` (nombre único + FK jerárquico) y `contratos_mayores` gana `departamento_id`/`provincia_id`/`distrito_id` (nullable FK + índices). Tardó 1m30s en producción por los índices sobre 11K filas.
+2. **`GeoResolverService`**: firstOrCreate normalizado (trim + mb_strtoupper) + cache estático por proceso + listas para filtros con cache 1h.
+3. **`SeaceMayoresService::extraerGeografiaDeRelease()`** (público): extrae geografía del release; usado por `mapearRelease` y por el backfill.
+4. **`ImportarContratosMayoresJob`**: resuelve geo en `mapearCampos`, compara/actualiza IDs en `camposCambiados`/`actualizarContrato`, y mantiene `dbMap` con IDs.
+5. **`RefrescarEstadosContratosMayoresJob`**: `columnasCambiadas` compara/actualiza los 3 IDs geo (backfill gradual vía refresco).
+6. **`BackfillGeoContratosMayores`** (`php artisan backfill:geo-mayores`): llena IDs desde `datos_raw` SIN llamar a la API. Usa `chunkById` (no `chunk`, que desfasa la paginación al hacer UPDATEs). Resultado en producción: **11,386/11,386 con geo, 0 fallos** en ~45s.
+7. **`BuscadorMayores`**: filtros cascada (dep→prov→dist con reset) + rango de fechas de publicación, con `#[Url]` para deep-linking. Se añadieron a `contarFiltrosActivos` y a `limpiarFiltros`.
+
+**Deploy verificado:** migración OK, backfill OK, cachés (`optimize:clear` + `route:cache` + `config:cache`) OK, página pública responde con los 25 departamentos en el dropdown.
+
+**Lección:** Para backfill de una tabla con UPDATEs dentro del loop, usar `chunkById` — con `chunk()` (offset) los rows saltan. Y validar la semántica de campos de una API con datos reales antes de mapear (el orden dep/prov/dist NO es obvio: `department`/`region`/`locality`).
+
+**Archivos:** migración geo, 3 modelos nuevos, `GeoResolverService`, `SeaceMayoresService`, ambos jobs, `BuscadorMayores` + blade, `BackfillGeoContratosMayores`
+
+---
+
 ## 2026-08-15 · Validación IA · (pendiente de commit)
 
 ### Direccionamiento fallaba con "1 validation error for DireccionamientoAnalysisResponse hallazgos_criticos.0..."
