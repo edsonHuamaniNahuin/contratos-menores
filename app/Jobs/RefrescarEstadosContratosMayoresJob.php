@@ -39,8 +39,12 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
     /**
      * Antigüedad máxima en días para el filtro de fecha_publicacion.
      * 0 = sin filtro (escaneo global, solo manual).
+     *
+     * Debe tener valor por defecto: jobs serializados con constructores
+     * viejos no traen esta propiedad y causaban "must not be accessed
+     * before initialization" al re-hidratar.
      */
-    protected int $antiguedadDias;
+    protected int $antiguedadDias = 30;
 
     public function __construct(int $porCorrida = 300, int $antiguedadDias = 30)
     {
