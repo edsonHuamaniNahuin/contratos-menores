@@ -40,7 +40,7 @@ class ImportarContratosMayoresJob implements ShouldQueue
         $this->pageSize = $pageSize;
     }
 
-    public function handle(SeaceMayoresService $service): void
+    public function handle(SeaceMayoresService $service, \App\Services\GeoResolverService $geo): void
     {
         $cacheKey = 'contratos_mayores:ocids:' . now()->format('Y-m-d');
 
@@ -61,6 +61,7 @@ class ImportarContratosMayoresJob implements ShouldQueue
         $dbMap = ContratoMayor::get([
             'ocid', 'entidad_nombre', 'nomenclatura', 'estado', 'fecha_fin',
             'valor_referencial', 'proveedores', 'url_documento', 'metodo_contratacion',
+            'departamento_id', 'provincia_id', 'distrito_id',
         ])->keyBy('ocid')->map(fn ($r) => [
             'estado' => $r->estado,
             'fecha_fin' => optional($r->fecha_fin)->format('Y-m-d H:i:s'),
@@ -70,6 +71,9 @@ class ImportarContratosMayoresJob implements ShouldQueue
             'valor_referencial' => (float) $r->valor_referencial,
             'url_documento' => $r->url_documento,
             'metodo_contratacion' => $r->metodo_contratacion,
+            'departamento_id' => $r->departamento_id,
+            'provincia_id' => $r->provincia_id,
+            'distrito_id' => $r->distrito_id,
         ])->toArray();
 
         Log::info('ImportarContratosMayores: iniciando', [
@@ -105,7 +109,7 @@ class ImportarContratosMayoresJob implements ShouldQueue
                         continue;
                     }
 
-                    $mapped = $this->mapearCampos($contrato);
+                    $mapped = $this->mapearCampos($contrato, $geo);
 
                     // ¿Existe en BD (hoy o días anteriores)?
                     if (isset($dbMap[$ocid])) {
@@ -127,6 +131,9 @@ class ImportarContratosMayoresJob implements ShouldQueue
                             'valor_referencial' => (float) $mapped['valor_referencial'],
                             'url_documento' => $mapped['url_documento'],
                             'metodo_contratacion' => $mapped['metodo_contratacion'],
+                            'departamento_id' => $mapped['departamento_id'],
+                            'provincia_id' => $mapped['provincia_id'],
+                            'distrito_id' => $mapped['distrito_id'],
                         ];
                         continue;
                     }
@@ -227,6 +234,17 @@ class ImportarContratosMayoresJob implements ShouldQueue
             $cambiados[] = 'metodo_contratacion';
         }
 
+        // Geografía: si el ID resuelto difiere del guardado (o faltaba), actualizar
+        if ((int) ($db['departamento_id'] ?? 0) !== (int) ($nuevo['departamento_id'] ?? 0)) {
+            $cambiados[] = 'departamento_id';
+        }
+        if ((int) ($db['provincia_id'] ?? 0) !== (int) ($nuevo['provincia_id'] ?? 0)) {
+            $cambiados[] = 'provincia_id';
+        }
+        if ((int) ($db['distrito_id'] ?? 0) !== (int) ($nuevo['distrito_id'] ?? 0)) {
+            $cambiados[] = 'distrito_id';
+        }
+
         return $cambiados;
     }
 
@@ -245,6 +263,9 @@ class ImportarContratosMayoresJob implements ShouldQueue
             'valor_referencial' => $mapped['valor_referencial'] ?? 0,
             'url_documento' => $mapped['url_documento'] ?? '',
             'metodo_contratacion' => $mapped['metodo_contratacion'] ?? '',
+            'departamento_id' => $mapped['departamento_id'] ?? null,
+            'provincia_id' => $mapped['provincia_id'] ?? null,
+            'distrito_id' => $mapped['distrito_id'] ?? null,
         ];
 
         $update = array_intersect_key($todoMap, array_flip($cambiados));
@@ -271,7 +292,7 @@ class ImportarContratosMayoresJob implements ShouldQueue
         return $count;
     }
 
-    protected function mapearCampos(array $c): array
+    protected function mapearCampos(array $c, \App\Services\GeoResolverService $geo): array
     {
         $parseDate = function ($val): ?string {
             if (empty($val)) return null;
@@ -282,11 +303,21 @@ class ImportarContratosMayoresJob implements ShouldQueue
             }
         };
 
+        // Resolver geografía a IDs de tablas maestras
+        $geoIds = $geo->resolver(
+            (string) ($c['departamento'] ?? ''),
+            (string) ($c['provincia'] ?? ''),
+            (string) ($c['distrito'] ?? '')
+        );
+
         return [
             'ocid' => $c['ocid'] ?? '',
             'entidad_nombre' => $c['entidad_nombre'] ?? '',
             'entidad_ruc' => $c['entidad_ruc'] ?? '',
             'entidad_direccion' => $c['entidad_direccion'] ?? '',
+            'departamento_id' => $geoIds['departamento_id'],
+            'provincia_id' => $geoIds['provincia_id'],
+            'distrito_id' => $geoIds['distrito_id'],
             'nomenclatura' => $c['nomenclatura'] ?? '',
             'descripcion_objeto' => $c['descripcion_objeto'] ?? '',
             'objeto_contratacion' => $c['objeto_contratacion'] ?? '',

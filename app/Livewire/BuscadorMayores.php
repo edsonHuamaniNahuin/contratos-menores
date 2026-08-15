@@ -49,6 +49,27 @@ class BuscadorMayores extends Component
     public string $estado = '';
     public array $estadosDisponibles = [];
 
+    // ── Filtros de geografía (IDs de tablas maestras) ──────────────
+    #[Url(as: 'dep')]
+    public int $departamentoId = 0;
+
+    #[Url(as: 'prov')]
+    public int $provinciaId = 0;
+
+    #[Url(as: 'dist')]
+    public int $distritoId = 0;
+
+    public array $departamentosDisponibles = [];
+    public array $provinciasDisponibles = [];
+    public array $distritosDisponibles = [];
+
+    // ── Filtro de rango de fechas ──────────────────────────────────
+    #[Url(as: 'desde')]
+    public string $fechaDesde = '';
+
+    #[Url(as: 'hasta')]
+    public string $fechaHasta = '';
+
     #[Url]
     public int $pagina = 1;
 
@@ -85,6 +106,7 @@ class BuscadorMayores extends Component
     public function mount($initialEntidad = null): void
     {
         $this->cargarEstadosDisponibles();
+        $this->cargarGeografias();
 
         // Detectar modo regional: URL /buscador-contratos-mayores/{entidad}
         $path = request()->path();
@@ -126,6 +148,71 @@ class BuscadorMayores extends Component
                 ->pluck('estado')
                 ->toArray();
         });
+    }
+
+    private function cargarGeografias(): void
+    {
+        $geo = app(\App\Services\GeoResolverService::class);
+
+        $this->departamentosDisponibles = $geo->departamentosParaFiltro();
+
+        if ($this->departamentoId > 0) {
+            $this->provinciasDisponibles = $geo->provinciasParaFiltro($this->departamentoId);
+        }
+
+        if ($this->provinciaId > 0) {
+            $this->distritosDisponibles = $geo->distritosParaFiltro($this->provinciaId);
+        }
+    }
+
+    public function updatedDepartamentoId(): void
+    {
+        // Cascada: al cambiar departamento se resetea provincia y distrito
+        $this->provinciaId = 0;
+        $this->distritoId = 0;
+        $this->provinciasDisponibles = [];
+        $this->distritosDisponibles = [];
+
+        if ($this->departamentoId > 0) {
+            $geo = app(\App\Services\GeoResolverService::class);
+            $this->provinciasDisponibles = $geo->provinciasParaFiltro($this->departamentoId);
+        }
+
+        $this->pagina = 1;
+        $this->buscar(1);
+    }
+
+    public function updatedProvinciaId(): void
+    {
+        // Cascada: al cambiar provincia se resetea distrito
+        $this->distritoId = 0;
+        $this->distritosDisponibles = [];
+
+        if ($this->provinciaId > 0) {
+            $geo = app(\App\Services\GeoResolverService::class);
+            $this->distritosDisponibles = $geo->distritosParaFiltro($this->provinciaId);
+        }
+
+        $this->pagina = 1;
+        $this->buscar(1);
+    }
+
+    public function updatedDistritoId(): void
+    {
+        $this->pagina = 1;
+        $this->buscar(1);
+    }
+
+    public function updatedFechaDesde(): void
+    {
+        $this->pagina = 1;
+        $this->buscar(1);
+    }
+
+    public function updatedFechaHasta(): void
+    {
+        $this->pagina = 1;
+        $this->buscar(1);
     }
 
     // ══════════════════════════════════════════════════════
@@ -211,6 +298,11 @@ class BuscadorMayores extends Component
             'entidad' => $this->entidadFiltro,
             'objeto' => $this->objetoContratacion,
             'estado' => $this->estado,
+            'departamento_id' => $this->departamentoId,
+            'provincia_id' => $this->provinciaId,
+            'distrito_id' => $this->distritoId,
+            'fecha_desde' => $this->fechaDesde,
+            'fecha_hasta' => $this->fechaHasta,
         ]);
 
         if ($resultado['success']) {
@@ -276,15 +368,33 @@ class BuscadorMayores extends Component
         $this->entidadFiltro = '';
         $this->objetoContratacion = '';
         $this->estado = '';
+        $this->departamentoId = 0;
+        $this->provinciaId = 0;
+        $this->distritoId = 0;
+        $this->fechaDesde = '';
+        $this->fechaHasta = '';
+        $this->provinciasDisponibles = [];
+        $this->distritosDisponibles = [];
         $this->pagina = 1;
         $this->resultados = [];
         $this->paginacion = [];
         $this->mensajeError = '';
+        $this->buscar(1);
     }
 
     public function contarFiltrosActivos(): int
     {
-        return count(array_filter([$this->palabraClave, $this->entidadFiltro, $this->objetoContratacion, $this->estado]));
+        return count(array_filter([
+            $this->palabraClave,
+            $this->entidadFiltro,
+            $this->objetoContratacion,
+            $this->estado,
+            $this->departamentoId > 0 ? (string) $this->departamentoId : '',
+            $this->provinciaId > 0 ? (string) $this->provinciaId : '',
+            $this->distritoId > 0 ? (string) $this->distritoId : '',
+            $this->fechaDesde,
+            $this->fechaHasta,
+        ]));
     }
 
     // ══════════════════════════════════════════════════════

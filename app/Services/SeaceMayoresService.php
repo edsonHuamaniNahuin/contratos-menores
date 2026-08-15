@@ -98,9 +98,19 @@ class SeaceMayoresService
             $filtroEntidad = $params['entidad'] ?? '';
             $filtroObjeto = $params['objeto'] ?? '';
             $filtroEstado = $params['estado'] ?? '';
+            $filtroDepartamento = (int) ($params['departamento_id'] ?? 0);
+            $filtroProvincia = (int) ($params['provincia_id'] ?? 0);
+            $filtroDistrito = (int) ($params['distrito_id'] ?? 0);
+            $filtroFechaDesde = $params['fecha_desde'] ?? '';
+            $filtroFechaHasta = $params['fecha_hasta'] ?? '';
 
             // Siempre usar BD local (API OCDS no soporta búsqueda ni filtros)
-            return $this->buscarEnBaseDeDatos($keyword, $filtroEntidad, $filtroObjeto, $filtroEstado, $page, $perPage);
+            return $this->buscarEnBaseDeDatos(
+                $keyword, $filtroEntidad, $filtroObjeto, $filtroEstado,
+                $filtroDepartamento, $filtroProvincia, $filtroDistrito,
+                $filtroFechaDesde, $filtroFechaHasta,
+                $page, $perPage
+            );
         } catch (\Exception $e) {
             Log::error('SEACE Mayores BD: Excepción', ['error' => $e->getMessage()]);
             return [
@@ -116,7 +126,19 @@ class SeaceMayoresService
      * Buscar por keyword en la base de datos local.
      * La API OCDS no soporta búsqueda por texto.
      */
-    protected function buscarEnBaseDeDatos(string $keyword, string $filtroEntidad, string $filtroObjeto, string $filtroEstado, int $page, int $perPage): array
+    protected function buscarEnBaseDeDatos(
+        string $keyword,
+        string $filtroEntidad,
+        string $filtroObjeto,
+        string $filtroEstado,
+        int $filtroDepartamento,
+        int $filtroProvincia,
+        int $filtroDistrito,
+        string $filtroFechaDesde,
+        string $filtroFechaHasta,
+        int $page,
+        int $perPage
+    ): array
     {
         $query = \App\Models\ContratoMayor::query();
 
@@ -144,6 +166,33 @@ class SeaceMayoresService
         // ── Estado filter ──
         if (!empty($filtroEstado)) {
             $query->where('estado', $filtroEstado);
+        }
+
+        // ── Geografía (IDs de tablas maestras) ──
+        if ($filtroDepartamento > 0) {
+            $query->where('departamento_id', $filtroDepartamento);
+        }
+        if ($filtroProvincia > 0) {
+            $query->where('provincia_id', $filtroProvincia);
+        }
+        if ($filtroDistrito > 0) {
+            $query->where('distrito_id', $filtroDistrito);
+        }
+
+        // ── Rango de fechas de publicación ──
+        if ($filtroFechaDesde !== '') {
+            try {
+                $query->where('fecha_publicacion', '>=', \Carbon\Carbon::parse($filtroFechaDesde)->startOfDay());
+            } catch (\Throwable $e) {
+                // fecha inválida: ignorar filtro
+            }
+        }
+        if ($filtroFechaHasta !== '') {
+            try {
+                $query->where('fecha_publicacion', '<=', \Carbon\Carbon::parse($filtroFechaHasta)->endOfDay());
+            } catch (\Throwable $e) {
+                // fecha inválida: ignorar filtro
+            }
         }
 
         $total = $query->count();
@@ -266,8 +315,8 @@ class SeaceMayoresService
         $estadoVigencia = $vigente ? 'Vigente' : $razonNoVigente;
 
         // ── Resto del mapeo ──────────────────────────────────────────
+        $geo = $this->extraerGeografiaDeRelease($release);
         $ruc = '';
-        $address = '';
         foreach ($parties as $party) {
             if (in_array('buyer', $party['roles'] ?? [])) {
                 foreach ($party['additionalIdentifiers'] ?? [] as $id) {
@@ -276,13 +325,6 @@ class SeaceMayoresService
                         break 2;
                     }
                 }
-            }
-        }
-        foreach ($parties as $party) {
-            if (in_array('buyer', $party['roles'] ?? [])) {
-                $addr = $party['address'] ?? [];
-                $address = trim(($addr['streetAddress'] ?? '') . ', ' . ($addr['locality'] ?? '') . ', ' . ($addr['region'] ?? ''), ', ');
-                break;
             }
         }
 
@@ -305,7 +347,10 @@ class SeaceMayoresService
             'ocid' => $release['ocid'] ?? '',
             'entidad_nombre' => $buyer['name'] ?? '',
             'entidad_ruc' => $ruc,
-            'entidad_direccion' => $address,
+            'entidad_direccion' => $geo['direccion'],
+            'departamento' => $geo['departamento'],
+            'provincia' => $geo['provincia'],
+            'distrito' => $geo['distrito'],
             'nomenclatura' => $tender['title'] ?? '',
             'descripcion_objeto' => $tender['description'] ?? '',
             'objeto_contratacion' => $objetoMap[$mainCategory] ?? $mainCategory,
@@ -370,6 +415,40 @@ class SeaceMayoresService
             ]);
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Extraer geografía (departamento/provincia/distrito/dirección) de un
+     * release OCDS. Semántica confirmada de la API SEACE:
+     *   address.department → departamento (25 únicos)
+     *   address.region     → provincia  (194 únicos)
+     *   address.locality   → distrito   (1049 únicos)
+     */
+    public function extraerGeografiaDeRelease(array $release): array
+    {
+        $parties = $release['parties'] ?? [];
+        $direccion = '';
+        $departamento = '';
+        $provincia = '';
+        $distrito = '';
+
+        foreach ($parties as $party) {
+            if (in_array('buyer', $party['roles'] ?? [])) {
+                $addr = $party['address'] ?? [];
+                $direccion = trim(($addr['streetAddress'] ?? '') . ', ' . ($addr['locality'] ?? '') . ', ' . ($addr['region'] ?? ''), ', ');
+                $departamento = $addr['department'] ?? '';
+                $provincia = $addr['region'] ?? '';
+                $distrito = $addr['locality'] ?? '';
+                break;
+            }
+        }
+
+        return [
+            'direccion' => $direccion,
+            'departamento' => $departamento ?? '',
+            'provincia' => $provincia ?? '',
+            'distrito' => $distrito ?? '',
+        ];
     }
 
     /**

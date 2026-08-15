@@ -52,7 +52,7 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
         $this->antiguedadDias = $antiguedadDias;
     }
 
-    public function handle(SeaceMayoresService $service): void
+    public function handle(SeaceMayoresService $service, \App\Services\GeoResolverService $geo): void
     {
         $query = ContratoMayor::orderBy('updated_at', 'asc');
 
@@ -62,7 +62,7 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
 
         $contratos = $query
             ->limit($this->porCorrida)
-            ->get(['ocid', 'estado', 'fecha_fin', 'proveedores', 'nomenclatura', 'valor_referencial', 'url_documento', 'metodo_contratacion', 'entidad_nombre']);
+            ->get(['ocid', 'estado', 'fecha_fin', 'proveedores', 'nomenclatura', 'valor_referencial', 'url_documento', 'metodo_contratacion', 'entidad_nombre', 'departamento_id', 'provincia_id', 'distrito_id']);
 
         if ($contratos->isEmpty()) {
             Log::info('RefrescarEstadosContratosMayores: sin contratos almacenados, abortando.');
@@ -104,7 +104,7 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
             $fallosConsecutivos = 0;
 
             $fresh = $resultado['data'];
-            $update = $this->columnasCambiadas($contrato, $fresh);
+            $update = $this->columnasCambiadas($contrato, $fresh, $geo);
 
             if (empty($update)) {
                 // Sin cambios: marcar updated_at en bulk al final
@@ -160,7 +160,7 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
      * Compara el registro en BD contra el estado fresco de la API.
      * Devuelve solo las columnas que cambiaron.
      */
-    protected function columnasCambiadas(ContratoMayor $db, array $fresh): array
+    protected function columnasCambiadas(ContratoMayor $db, array $fresh, \App\Services\GeoResolverService $geo): array
     {
         $update = [];
 
@@ -200,6 +200,23 @@ class RefrescarEstadosContratosMayoresJob implements ShouldQueue
 
         if (($db->entidad_nombre ?? '') !== ($fresh['entidad_nombre'] ?? '')) {
             $update['entidad_nombre'] = $fresh['entidad_nombre'] ?? '';
+        }
+
+        // Geografía: resolver IDs y comparar con lo guardado (backfill)
+        $geoIds = $geo->resolver(
+            (string) ($fresh['departamento'] ?? ''),
+            (string) ($fresh['provincia'] ?? ''),
+            (string) ($fresh['distrito'] ?? '')
+        );
+
+        if ((int) ($db->departamento_id ?? 0) !== (int) ($geoIds['departamento_id'] ?? 0)) {
+            $update['departamento_id'] = $geoIds['departamento_id'];
+        }
+        if ((int) ($db->provincia_id ?? 0) !== (int) ($geoIds['provincia_id'] ?? 0)) {
+            $update['provincia_id'] = $geoIds['provincia_id'];
+        }
+        if ((int) ($db->distrito_id ?? 0) !== (int) ($geoIds['distrito_id'] ?? 0)) {
+            $update['distrito_id'] = $geoIds['distrito_id'];
         }
 
         return $update;

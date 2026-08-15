@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ContratoMayor extends Model
 {
@@ -16,6 +17,9 @@ class ContratoMayor extends Model
         'entidad_nombre',
         'entidad_ruc',
         'entidad_direccion',
+        'departamento_id',
+        'provincia_id',
+        'distrito_id',
         'nomenclatura',
         'descripcion_objeto',
         'objeto_contratacion',
@@ -56,5 +60,20 @@ class ContratoMayor extends Model
     public function scopePorObjeto($query, string $objeto)
     {
         return $query->where('objeto_contratacion', $objeto);
+    }
+
+    public function departamento(): BelongsTo
+    {
+        return $this->belongsTo(Departamento::class);
+    }
+
+    public function provincia(): BelongsTo
+    {
+        return $this->belongsTo(Provincia::class);
+    }
+
+    public function distrito(): BelongsTo
+    {
+        return $this->belongsTo(Distrito::class);
     }
 }

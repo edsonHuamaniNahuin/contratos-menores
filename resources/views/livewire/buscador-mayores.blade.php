@@ -181,6 +181,43 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Fila 2: geografía + fechas --}}
+            <div class="lg:col-span-3">
+                <label class="block text-xs font-medium mb-1.5 {{ $departamentoId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Departamento</label>
+                <select wire:model.live="departamentoId" class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $departamentoId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
+                    <option value="0">Todos</option>
+                    @foreach($departamentosDisponibles as $dep)
+                        <option value="{{ $dep['id'] }}">{{ $dep['nombre'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="lg:col-span-3">
+                <label class="block text-xs font-medium mb-1.5 {{ $provinciaId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Provincia</label>
+                <select wire:model.live="provinciaId" {{ $departamentoId === 0 ? 'disabled' : '' }} class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $provinciaId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }} {{ $departamentoId === 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
+                    <option value="0">Todas</option>
+                    @foreach($provinciasDisponibles as $prov)
+                        <option value="{{ $prov['id'] }}">{{ $prov['nombre'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="lg:col-span-3">
+                <label class="block text-xs font-medium mb-1.5 {{ $distritoId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Distrito</label>
+                <select wire:model.live="distritoId" {{ $provinciaId === 0 ? 'disabled' : '' }} class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $distritoId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }} {{ $provinciaId === 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
+                    <option value="0">Todos</option>
+                    @foreach($distritosDisponibles as $dist)
+                        <option value="{{ $dist['id'] }}">{{ $dist['nombre'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="lg:col-span-3">
+                <label class="block text-xs font-medium mb-1.5 {{ !empty($fechaDesde) || !empty($fechaHasta) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Publicado (rango)</label>
+                <div class="flex items-center gap-2">
+                    <input type="date" wire:model.live="fechaDesde" class="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ !empty($fechaDesde) ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
+                    <span class="text-neutral-400 text-xs">→</span>
+                    <input type="date" wire:model.live="fechaHasta" class="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ !empty($fechaHasta) ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
+                </div>
+            </div>
         </div>
 
         <div class="mt-4 flex items-center gap-3">
