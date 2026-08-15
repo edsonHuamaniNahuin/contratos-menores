@@ -379,6 +379,41 @@ Separa estrictamente Requisitos de Calificación (Pasa/No Pasa) de Factores de E
 
         llm_client = LLMFactory.create_client(llm_provider)
 
+        # ── DOCX/DOC detectado por MAGIC BYTES (Gemini multimodal no soporta
+        #    DOCX; los TDR del SEACE a veces vienen Word con extensión .pdf) ──
+        if pdf_bytes[:2] == b'PK' or pdf_bytes[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1':
+            self.logger.info("📝 Documento Word detectado (magic bytes) — extrayendo texto...")
+            docx_text = self._extract_docx_text(pdf_bytes)
+            if not docx_text:
+                raise ValueError("No se pudo extraer texto del documento Word. El archivo podría estar corrupto o protegido.")
+
+            self.logger.info(f"✓ DOCX: {len(docx_text)} chars extraídos")
+
+            if len(docx_text) < 5000:
+                context = f"DOCUMENTO COMPLETO DEL TDR:\n\n{docx_text}\n\n===== FIN DEL DOCUMENTO ====="
+            else:
+                fragments = self.rag_extractor.extract_relevant_fragments(docx_text)
+                context = self.rag_extractor.build_context_for_llm(fragments)
+
+            self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
+
+            es_mayor = (tipo_contrato == "mayores")
+            if es_mayor:
+                analysis_dict = await llm_client.analyze_direccionamiento_mayores(context)
+            else:
+                analysis_dict = await llm_client.analyze_direccionamiento(context)
+
+            self.last_token_usage = analysis_dict.pop('_token_usage', {})
+            analysis_dict = self._sanitize_direccionamiento_payload(analysis_dict)
+
+            try:
+                validated = DireccionamientoAnalysisResponse(**analysis_dict)
+                self.logger.info(f"✅ Direccionamiento DOCX — Score: {validated.score_riesgo_corrupcion}")
+                return validated
+            except Exception as e:
+                self.logger.error(f"Error al validar respuesta de direccionamiento DOCX: {str(e)}")
+                raise ValueError(f"Respuesta del LLM no cumple esquema: {str(e)}")
+
         # Paso 1: Detección ultrarrápida — PyMuPDF directo (~0.3s)
         self.logger.info("Paso 1: Detectando tipo de PDF (nativo vs escaneado)...")
         detect_text = self._extract_native_text(pdf_bytes)
@@ -563,6 +598,45 @@ Separa estrictamente Requisitos de Calificación (Pasa/No Pasa) de Factores de E
         self.logger.info("=== INICIANDO PIPELINE DE PROFORMA TÉCNICA ===")
 
         llm_client = LLMFactory.create_client(llm_provider)
+
+        # ── DOCX/DOC detectado por MAGIC BYTES (Gemini multimodal no soporta
+        #    DOCX; los TDR del SEACE a veces vienen Word con extensión .pdf) ──
+        if pdf_bytes[:2] == b'PK' or pdf_bytes[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1':
+            self.logger.info("📝 Documento Word detectado (magic bytes) — extrayendo texto...")
+            docx_text = self._extract_docx_text(pdf_bytes)
+            if not docx_text:
+                raise ValueError("No se pudo extraer texto del documento Word. El archivo podría estar corrupto o protegido.")
+
+            self.logger.info(f"✓ DOCX: {len(docx_text)} chars extraídos")
+
+            if len(docx_text) < 5000:
+                context = f"DOCUMENTO COMPLETO DEL TDR:\n\n{docx_text}\n\n===== FIN DEL DOCUMENTO ====="
+            else:
+                fragments = self.rag_extractor.extract_relevant_fragments(docx_text)
+                context = self.rag_extractor.build_context_for_llm(fragments)
+
+            self.logger.info(f"✓ Contexto construido: {len(context)} caracteres")
+
+            es_mayor = (tipo_contrato == "mayores")
+            if es_mayor:
+                raw = await llm_client.generate_proforma_mayores(
+                    context, company_name, company_copy, contrato_contexto,
+                )
+                self.last_token_usage = raw.pop('_token_usage', {})
+                return raw
+
+            raw = await llm_client.generate_proforma(
+                context, company_name, company_copy, contrato_contexto,
+            )
+            self.last_token_usage = raw.pop('_token_usage', {})
+            sanitized = self._sanitize_proforma_payload(raw)
+            try:
+                validated = ProformaResponse(**sanitized)
+                self.logger.info(f"✅ Proforma DOCX — {len(validated.items)} ítems")
+                return validated
+            except Exception as e:
+                self.logger.error(f"Error al validar proforma DOCX: {str(e)}")
+                raise ValueError(f"Respuesta del LLM no cumple esquema de proforma: {str(e)}")
 
         # Paso 1: Detección ultrarrápida — PyMuPDF directo (~0.3s)
         self.logger.info("Paso 1: Detectando tipo de PDF (nativo vs escaneado)...")
