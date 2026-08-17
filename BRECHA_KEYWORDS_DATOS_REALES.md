@@ -1,0 +1,581 @@
+# BRECHA DE KEYWORDS — DATOS REALES GOOGLE AUTOCOMPLETE (Peru)
+
+## Fuente: 7,983 sugerencias reales de Google (es-PE) cosechadas 15-08-2026, cruzadas contra tu GSC (661 queries)
+
+- Sugerencias relevantes al nicho: 4,363
+- Ya rankeas: 107
+- **No rankeas: 4,256**
+
+
+## Ley 32069 / Bases / Reglamento (145 keywords)
+
+- bases de contrataciones del estado
+- bases estandar ley 32069 enero 2026
+- bases estandar ley 32069 vigentes 2026
+- bases estándar ley 32069 word 2026
+- bases ley 32069 enero 2026
+- bases osce 2026
+- bases subasta inversa electronica 2025
+- bases subasta inversa electronica 2026
+- bases subasta inversa electronica ley 32069
+- compras menores a 8 uit ley 32069
+- contrataciones del estado ley 32069
+- contrataciones del estado ley n 32069
+- contrataciones del estado nueva ley 32069
+- contrataciones del estado reglamento
+- contrataciones del estado y su reglamento
+- contratos menores ley 32069
+- curso de contrataciones del estado ley 32069
+- desde cuando entró en vigencia la ley 32069
+- directiva compras menores ley 32069
+- directiva subasta inversa electronica ley 32069
+- estrategia de contratación ley 32069 formato
+- expediente tecnico vigencia
+- ley 32069 actualizado 2025
+- ley 32069 actualizado 2026
+- ley 32069 actualizado 2026 el peruano
+- ley 32069 actualizado 2026 pdf
+- ley 32069 ampliacion de plazo
+- ley 32069 como se llama
+- ley 32069 compras menores
+- ley 32069 compras menores a 8 uit
+- ley 32069 contratacion directa
+- ley 32069 contrataciones del estado
+- ley 32069 contrataciones publicas
+- ley 32069 contratos menores
+- ley 32069 contratos menores a 8 uit
+- ley 32069 cuando entra en vigencia
+- ley 32069 de contrataciones del estado
+- ley 32069 de contrataciones del estado 2025
+- ley 32069 de contrataciones del estado 2025 pdf
+- ley 32069 de contrataciones del estado 2025 reglamento
+- ley 32069 de contrataciones del estado 2026
+- ley 32069 de contrataciones del estado y su reglamento
+- ley 32069 de contrataciones publicas
+- ley 32069 desde cuando entró en vigencia
+- ley 32069 diario el peruano
+- ley 32069 diario oficial el peruano
+- ley 32069 el peruano
+- ley 32069 el peruano 2025
+- ley 32069 el peruano pdf
+- ley 32069 en el peruano
+- ley 32069 en peru
+- ley 32069 entra en vigencia
+- ley 32069 entrada en vigencia
+- ley 32069 entro en vigencia
+- ley 32069 fecha de vigencia
+- ley 32069 formatos
+- ley 32069 ley de contrataciones del estado
+- ley 32069 ley de contrataciones del estado y su reglamento
+- ley 32069 ley de contrataciones publicas
+- ley 32069 ley general de contrataciones públicas 2026
+
+## Compras / Contratos menores 8 UIT (184 keywords)
+
+- 8 uit contrataciones del estado 2025
+- 8 uit contrataciones del estado osce
+- buscador compras menores
+- buscador compras menores a 8 uit
+- buscador de licitaciones menores a 8 uit
+- buscar compras menores a 8 uit
+- cenares compras menores a 8 uit
+- compras directas menores a 8 uit
+- compras directas menores a 8 uit 2025
+- compras mayores a 8 uit
+- compras menores 8 uit
+- compras menores 8 uit osce
+- compras menores 8 uit poder judicial
+- compras menores 8 uit sunarp
+- compras menores 8 uits
+- compras menores a 8
+- compras menores a 8 uit
+- compras menores a 8 uit 2023
+- compras menores a 8 uit 2024
+- compras menores a 8 uit 2025
+- compras menores a 8 uit 2026
+- compras menores a 8 uit cuanto es
+- compras menores a 8 uit cusco
+- compras menores a 8 uit en la nueva ley de contrataciones
+- compras menores a 8 uit essalud
+- compras menores a 8 uit gobierno regional de ancash
+- compras menores a 8 uit gobierno regional de arequipa
+- compras menores a 8 uit ley
+- compras menores a 8 uit ley 32069
+- compras menores a 8 uit ley de contrataciones
+- compras menores a 8 uit mef
+- compras menores a 8 uit midagri
+- compras menores a 8 uit minedu
+- compras menores a 8 uit ministerio publico
+- compras menores a 8 uit minsa
+- compras menores a 8 uit monto
+- compras menores a 8 uit mtc
+- compras menores a 8 uit municipalidad de lima
+- compras menores a 8 uit nueva ley
+- compras menores a 8 uit opinion osce
+- compras menores a 8 uit osce
+- compras menores a 8 uit osce 2024
+- compras menores a 8 uit osce 2025
+- compras menores a 8 uit peru
+- compras menores a 8 uit pj
+- compras menores a 8 uit pnsr
+- compras menores a 8 uit poder judicial
+- compras menores a 8 uit proveedores
+- compras menores a 8 uit provias
+- compras menores a 8 uit provias nacional
+- compras menores a 8 uit san gaban
+- compras menores a 8 uit sbn
+- compras menores a 8 uit seace
+- compras menores a 8 uit sunarp
+- compras menores a 8 uit sutran
+- compras menores a 8 uit vivienda
+- compras menores a 8 uits
+- compras menores a 8 uits lima
+- compras menores a 8uit osce
+- compras menores a 9 uit 2023
+
+## Subasta inversa (64 keywords)
+
+- anexos subasta inversa electronica
+- bases subasta inversa electronica 2025
+- bases subasta inversa electronica 2026
+- bases subasta inversa electronica ley 32069
+- directiva subasta inversa electronica 2025
+- directiva subasta inversa electronica 2026
+- directiva subasta inversa electronica ley 32069
+- directiva subasta inversa electronica osce
+- flujograma subasta inversa electronica
+- formato subasta inversa
+- formularios subasta inversa electronica
+- instructivo subasta inversa electronica
+- ley 32069 subasta inversa electronica
+- manual subasta inversa electronica 2025
+- modelo de pliegos subasta inversa 2025
+- monto de subasta inversa 2026
+- plazos subasta inversa
+- que es subasta inversa en compras publicas
+- selección abreviada subasta inversa que es
+- subasta electronica inversa nuevo leon
+- subasta inversa como es
+- subasta inversa como funciona
+- subasta inversa compras publicas
+- subasta inversa corporativa de medicamentos fallida 2026
+- subasta inversa ejemplos
+- subasta inversa electronica
+- subasta inversa electronica 2024
+- subasta inversa electronica 2025
+- subasta inversa electronica 2025 peru
+- subasta inversa electronica 2025 plazos
+- subasta inversa electronica 2026
+- subasta inversa electronica bases
+- subasta inversa electronica bienes comunes
+- subasta inversa electronica catalogo
+- subasta inversa electronica como funciona
+- subasta inversa electronica de combustible
+- subasta inversa electronica directiva
+- subasta inversa electronica fichas
+- subasta inversa electronica fichas tecnicas
+- subasta inversa electronica guia
+- subasta inversa electronica ley 32069
+- subasta inversa electronica manual
+- subasta inversa electronica monto
+- subasta inversa electronica monto 2025
+- subasta inversa electronica normativa
+- subasta inversa electronica opinion osce
+- subasta inversa electronica peru compras
+- subasta inversa electronica plazos
+- subasta inversa electronica que es
+- subasta inversa electronica requisitos
+- subasta inversa electronica seace
+- subasta inversa electronica tiempo
+- subasta inversa electronica valor
+- subasta inversa electrónica ejemplo
+- subasta inversa guia
+- subasta inversa ley de compras publicas
+- subasta inversa peru
+- subasta inversa peru compras
+- subasta inversa que es
+- subasta inversa requisitos
+
+## TDR / Expediente tecnico (100 keywords)
+
+- aprobacion de expediente tecnico 2026
+- como elaborar un tdr
+- como hacer tdr peru
+- como tdr
+- expediente mayores metrados
+- expediente tecnico beca 18 2026
+- expediente tecnico colegio peru
+- expediente tecnico como hacer
+- expediente tecnico de cancha de grass sintetico peru
+- expediente tecnico de carreteras peru
+- expediente tecnico de mayores metrados
+- expediente tecnico de obra peru
+- expediente tecnico de obra publica peru
+- expediente tecnico de obra que es
+- expediente tecnico de una vivienda peru
+- expediente tecnico de vivienda multifamiliar peru
+- expediente tecnico formato
+- expediente tecnico hospital peru
+- expediente tecnico ley de contrataciones del estado
+- expediente tecnico modelo
+- expediente tecnico obras publicas
+- expediente tecnico peru
+- expediente tecnico peru pdf
+- expediente tecnico que es
+- expediente tecnico vigencia
+- expediente técnico de obra ejemplo
+- expediente técnico de obra pública ejemplo
+- expediente técnico ejemplo
+- expediente técnico ejemplo pdf
+- expediente técnico llamkasun peru
+- expediente técnico por administración directa
+- formato expediente tecnico reinfo
+- kepanjangan tdr perusahaan
+- ley de contrataciones del estado tdr
+- partes de un expediente tecnico peru
+- que es un expediente tecnico en arquitectura
+- tdr 2026 calcio
+- tdr 2026 calcio a 5
+- tdr 2026 catania
+- tdr 2026 ciclismo
+- tdr 2026 classement
+- tdr 2026 femminile
+- tdr 2026 futsal
+- tdr 2026 live
+- tdr 2026 modelo
+- tdr 2026 orbe
+- tdr 2026 pallavolo
+- tdr 2026 risultati
+- tdr 2026 rue vucherens
+- tdr 2026 volleyball
+- tdr 2026 yamaha
+- tdr apa 2026
+- tdr bachillerato ejemplos
+- tdr cist 2026
+- tdr como funciona
+- tdr como sacar
+- tdr como se hace
+- tdr compras publicas
+- tdr computadora que es
+- tdr contrataciones del estado
+
+## RNP / Inscripcion (99 keywords)
+
+- actualizar rnp 2026
+- categorias rnp 2026
+- consulta rnp 2026
+- descargar rnp peru
+- directiva rnp 2026
+- imprimir rnp peru
+- inscripcion como consultor de obras rnp
+- inscripcion consultor de obras rnp
+- inscripcion rnp 2025
+- inscripcion rnp consultor de obras 2025
+- inscripcion rnp consultor de obras persona juridica
+- inscripcion rnp consultor de obras persona natural
+- inscripcion rnp online
+- inscripcion rnp peru
+- osce como inscribirse en el rnp
+- osce como sacar rnp
+- osce inscripcion rnp
+- osce inscripcion rnp persona juridica
+- osce inscripcion rnp persona natural
+- osce peru rnp
+- pago rnp 2026
+- proveedor del estado rnp
+- requisitos para rnp consultor de obras
+- requisitos para ser consultor de obras rnp
+- rnp 2025 como obtener
+- rnp 2025 como obtener la constancia
+- rnp 2026 constancia
+- rnp 2026 imprimir
+- rnp 2026 tec
+- rnp actualizado
+- rnp casilla electronica
+- rnp como activar
+- rnp como consultor
+- rnp como consultor de obras
+- rnp como ejecutor de obras
+- rnp como hacer
+- rnp como inscribirse
+- rnp como pagar
+- rnp como persona natural
+- rnp como saber si esta activo
+- rnp como saber si tengo
+- rnp como sacar
+- rnp como sacar constancia
+- rnp como se saca
+- rnp como tramitar
+- rnp como ver
+- rnp consultor de obras precio
+- rnp consultor de obras requisitos
+- rnp contrataciones del estado
+- rnp cuanto se paga
+- rnp en cuanto tiempo sale
+- rnp estado de inscripcion
+- rnp estado peruano
+- rnp imprimir constancia de inscripcion
+- rnp inscripcion bienes y servicios
+- rnp inscripcion consultor de obras
+- rnp inscripcion gratis
+- rnp inscripcion persona juridica
+- rnp la ceiba registro nacional de las personas
+- rnp la lima registro nacional de las personas
+
+## Proveedor del estado (212 keywords)
+
+- alta como proveedor del estado
+- alta proveedor del estado
+- beneficios de ser proveedor del estado
+- buscar un proveedor del estado
+- carta de presentación como proveedor del estado peruano
+- certificado proveedor del estado
+- como consultar un proveedor del estado
+- como habilitarse como proveedor del estado
+- como proveedor del estado
+- como ser proveedor del estado argentino
+- como ser proveedor del estado de hidalgo
+- como ser proveedor del estado en peru
+- como ser proveedor del estado peru
+- como ser un proveedor del estado
+- como volverse proveedor del estado
+- compras menores a 8 uit proveedores
+- compras menores proveedores
+- constancia de proveedor del estado la rioja
+- consulta proveedor del estado mef
+- consulta proveedor del estado osce
+- contrataciones del estado proveedores
+- contratista o proveedor del estado
+- contratista o proveedor del estado cpe
+- contratos menores a 8 uit proveedores
+- contratos menores proveedores
+- contratos proveedores del estado
+- crear usuario proveedor del estado
+- cuanto gana un proveedor del estado
+- cómo ser proveedor del estado de la provincia de buenos aires
+- decálogo del buen proveedor del estado
+- el registro de proveedor del estado se vence
+- eres contratista o proveedor del estado
+- es usted proveedor del estado
+- estados del registro de proveedor del estado
+- ficha proveedor del estado
+- ficha unica proveedor del estado
+- formulario actualizacion proveedor del estado
+- formulario de vinculacion proveedor del estado
+- formulario proveedor del estado republica dominicana
+- formulario solicitud proveedor del estado
+- hacerse proveedor del estado
+- imprimir proveedor del estado
+- ingresar como proveedor del estado
+- inscribirse proveedor del estado
+- inscripcion para proveedor del estado
+- inscripcion proveedor del estado nacional
+- inscripcion proveedor del estado salta
+- inscripción como proveedor del estado
+- inscripción proveedor del estado provincia de buenos aires
+- logo proveedor del estado
+- monotributo proveedor del estado
+- número de proveedor del estado rpe
+- oficina proveedor del estado
+- oficina virtual proveedor del estado
+- osce buscador de proveedores del estado
+- osce como proveedor
+- osce como ser proveedor del estado
+- osce consulta proveedores del estado
+- osce ingresar como proveedor
+- osce proveedores del estado
+
+## Vender al estado (13 keywords)
+
+- como empezar a vender al estado
+- como puedo vender al estado
+- como vender al estado 2024
+- como vender al estado mypes
+- como vender al estado peruano 2023
+- como vender al estado peruano 2024
+- como vender al estado por peru compras
+- curso como vender al estado
+- pasos para vender al estado
+- que puedo vender al estado peruano
+- registro para vender al estado
+- requisitos para vender al estado
+- vender al estado como persona natural
+
+## OSCE / Capacitacion / Certificacion (171 keywords)
+
+- 8 uit contrataciones del estado osce
+- audiencias publicas osce
+- bases osce 2026
+- cas osce 2026
+- certificacion en contrataciones del estado osce
+- certificacion osce 2026
+- certificacion osce peru
+- certificado proveedor del estado
+- certificado seace 2026
+- certificado seace que es
+- compras menores 8 uit osce
+- compras menores a 8 uit opinion osce
+- compras menores a 8 uit osce
+- compras menores a 8 uit osce 2024
+- compras menores a 8 uit osce 2025
+- compras menores a 8uit osce
+- compras menores osce
+- consulta osce peru
+- consulta proveedor del estado osce
+- contrataciones del estado capacitacion
+- contrataciones del estado certificado
+- contrataciones del estado curso osce
+- contrataciones del estado osce
+- contrataciones del estado osce curso
+- contrataciones del estado osce seace
+- contrataciones menores a 8 uits osce
+- contrataciones publicas osce
+- contratos menores a 8 uit osce
+- contratos menores osce
+- convocatoria osce 2026
+- cursos gratis osce 2026
+- cursos osce 2026
+- diplomado en contrataciones del estado osce
+- directiva compras menores a 8 uit osce
+- directiva osce menores a 8 uit
+- directiva subasta inversa electronica osce
+- especialista en contrataciones del estado osce
+- examen osce 2026
+- examen osce 2026 cronograma
+- formatos osce 2025
+- formatos osce 2026
+- inscripcion consultor de obras osce
+- inscripcion consultor de obras osce persona natural
+- inscripcion para consultor de obras osce
+- ley de contrataciones del estado certificado
+- ley de contrataciones del estado osce
+- ley de contrataciones del estado osce 2025
+- licitaciones del estado osce
+- licitaciones osce 2026
+- licitaciones peru osce
+- licitaciones publicas osce 2025
+- manual de contrataciones del estado osce
+- mayores gastos generales osce
+- mayores metrados osce 2023
+- opinion osce mayores gastos generales
+- opinion osce mayores metrados
+- opinion osce mayores metrados en suma alzada
+- opinion osce menores a 8 uit
+- opinion osce menores metrados
+- opiniones osce 2026
+
+## Consultor de obras (50 keywords)
+
+- categoria consultor de obras 2026
+- como inscribirse como consultor de obras persona natural
+- como ser consultor de obras
+- consultor de obra peru
+- consultor de obras 2026
+- consultor de obras como persona natural
+- consultor de obras costo
+- consultor de obras inscripcion
+- consultor de obras precio
+- consultor de obras publicas
+- consultor de obras que es
+- consultor de obras requisitos
+- consultoria de obras menores a 8 uit
+- inscripcion como consultor de obras
+- inscripcion como consultor de obras rnp
+- inscripcion consultor de obras osce
+- inscripcion consultor de obras osce persona natural
+- inscripcion consultor de obras persona natural
+- inscripcion consultor de obras rnp
+- inscripcion de consultor de obras
+- inscripcion de consultor de obras persona natural
+- inscripcion para consultor de obras
+- inscripcion para consultor de obras osce
+- inscripcion rnp consultor de obras 2025
+- inscripcion rnp consultor de obras persona juridica
+- inscripcion rnp consultor de obras persona natural
+- que es un consultor de obras
+- registro como consultor de obras
+- registro consultor de obras
+- registro de consultor de obras
+- registro de consultor de obras osce
+- requisitos consultor de obras osce
+- requisitos consultor de obras persona natural
+- requisitos para consultor de obras
+- requisitos para consultor de obras osce
+- requisitos para consultor de obras osce 2024
+- requisitos para consultor de obras osce 2025
+- requisitos para consultor de obras osce 2026
+- requisitos para consultor de obras persona juridica
+- requisitos para consultor de obras persona natural
+- requisitos para inscripcion de consultor de obras osce
+- requisitos para rnp consultor de obras
+- requisitos para ser consultor de obras
+- requisitos para ser consultor de obras osce
+- requisitos para ser consultor de obras rnp
+- rnp como consultor
+- rnp como consultor de obras
+- rnp consultor de obras precio
+- rnp consultor de obras requisitos
+- rnp inscripcion consultor de obras
+
+## Licitaciones / Convocatorias / Buscador (155 keywords)
+
+- buscador compras menores
+- buscador compras menores a 8 uit
+- buscador de licitaciones menores a 8 uit
+- contrataciones del estado buscador
+- contrataciones del estado convocatoria
+- contrataciones del estado licitaciones
+- contrataciones del estado mis licitaciones
+- contratos del estado licitaciones
+- contratos licitaciones publicas
+- convocatoria osce 2026
+- convocatorias de compras menores o iguales a 8 uit
+- curso online licitaciones publicas
+- infosiscon licitaciones peru
+- licitaciones 2025 peru
+- licitaciones 2026 cdmx
+- licitaciones 2026 chiapas
+- licitaciones 2026 compras mx
+- licitaciones 2026 hidalgo
+- licitaciones 2026 jalisco
+- licitaciones 2026 oaxaca
+- licitaciones 2026 peru
+- licitaciones 2026 sesver
+- licitaciones 2026 siop
+- licitaciones 2026 uaeh
+- licitaciones arequipa 2026
+- licitaciones buap 2026
+- licitaciones centros de menores andalucia
+- licitaciones como funcionan
+- licitaciones como hacer
+- licitaciones como participar
+- licitaciones como postular
+- licitaciones como se escribe
+- licitaciones como se hacen
+- licitaciones comodoro rivadavia
+- licitaciones con el estado 2026
+- licitaciones con el estado menores a 8 uit
+- licitaciones con el estado peruano
+- licitaciones contratos menores
+- licitaciones contratos menores junta de andalucia
+- licitaciones cusco 2026
+- licitaciones de alimentos 2026
+- licitaciones de comedores 2026
+- licitaciones de kioscos en colegios 2026
+- licitaciones de obras publicas
+- licitaciones de transporte de carga 2026
+- licitaciones de vigilancia y seguridad privada 2026
+- licitaciones del estado
+- licitaciones del estado 2026
+- licitaciones del estado de jalisco
+- licitaciones del estado de puebla
+- licitaciones del estado iniciar sesion
+- licitaciones del estado menores a 8 uit
+- licitaciones del estado osce
+- licitaciones del estado peruano
+- licitaciones del estado peruano 2026
+- licitaciones del estado plataforma
+- licitaciones del estadoç
+- licitaciones ejemplos pdf
+- licitaciones en peru
+- licitaciones enami 2026

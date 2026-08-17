@@ -49,7 +49,7 @@ class ProformaController extends Controller
     }
 
     /**
-     * Descargar proforma como hoja de cálculo Excel (SpreadsheetML, sin librería externa).
+     * Descargar proforma como hoja de cálculo Excel (XLSX nativo via XlsxWriterService).
      */
     public function downloadExcel(Request $request, string $token): Response
     {
@@ -59,11 +59,11 @@ class ProformaController extends Controller
             abort(404, 'Proforma no encontrada o expirada.');
         }
 
-        $xml = $this->buildSpreadsheetML($proforma);
+        $contenido = $this->buildXlsx($proforma);
 
-        return response($xml, 200, [
-            'Content-Type'        => 'application/vnd.ms-excel',
-            'Content-Disposition' => 'attachment; filename="proforma-tecnica.xls"',
+        return response($contenido, 200, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="proforma-tecnica.xlsx"',
             'Cache-Control'       => 'no-cache, no-store, must-revalidate',
         ]);
     }
@@ -221,7 +221,11 @@ class ProformaController extends Controller
 HTML;
     }
 
-    private function buildSpreadsheetML(array $proforma): string
+    /**
+     * Genera el .xlsx real de la proforma (mismo layout y estilos que el
+     * SpreadsheetML anterior, ahora sin el aviso de Excel por extensión).
+     */
+    private function buildXlsx(array $proforma): string
     {
         $titulo     = $proforma['titulo_proceso'] ?? 'Proforma Técnica';
         $empresa    = $proforma['empresa_nombre'] ?? '';
@@ -235,96 +239,79 @@ HTML;
         $entidad    = $proforma['contexto_contrato']['entidad'] ?? '';
         $fecha      = now()->format('d/m/Y');
 
-        // Helpers para generar XML seguro
-        $esc  = fn(string $v) => htmlspecialchars($v, ENT_XML1, 'UTF-8');
-        $cell = function (mixed $v, string $t = 'String', string $style = '') use ($esc): string {
-            $sa = $style !== '' ? " ss:StyleID=\"{$style}\"" : '';
-            return "<Cell{$sa}><Data ss:Type=\"{$t}\">" . $esc((string) $v) . "</Data></Cell>";
-        };
-        $row   = fn(array $cells) => "<Row>" . implode('', $cells) . "</Row>\n";
-        $empty = "<Row/>\n";
+        // Helpers de celdas: [v, t, s]
+        $c = fn (mixed $v, string $t = 'string', string $s = '') => ['v' => $v, 't' => $t, 's' => $s];
+        $filas = [];
 
         // ── Encabezado informativo ──────────────────────────────────
-        $rows = '';
-        $rows .= $row([$cell('Proforma Técnica de Cotización', 'String', 'title')]);
-        $rows .= $empty;
-        $rows .= $row([$cell('Empresa:', 'String', 'label'), $cell($empresa), $cell('Fecha:', 'String', 'label'), $cell($fecha)]);
-        $rows .= $row([$cell('Rubro:', 'String', 'label'), $cell($rubro), $cell('Entidad:', 'String', 'label'), $cell($entidad)]);
-        $rows .= $row([$cell('Proceso:', 'String', 'label'), $cell($titulo)]);
-        $rows .= $empty;
+        $filas[] = [$c('Proforma Técnica de Cotización', 'string', 'title')];
+        $filas[] = [];
+        $filas[] = [$c('Empresa:', 'string', 'label'), $c($empresa), $c('Fecha:', 'string', 'label'), $c($fecha)];
+        $filas[] = [$c('Rubro:', 'string', 'label'), $c($rubro), $c('Entidad:', 'string', 'label'), $c($entidad)];
+        $filas[] = [$c('Proceso:', 'string', 'label'), $c($titulo)];
+        $filas[] = [];
 
         // ── Cabeceras de tabla ──────────────────────────────────────
-        $rows .= $row([
-            $cell('Ítem', 'String', 'header'),
-            $cell('Descripción', 'String', 'header'),
-            $cell('Unidad', 'String', 'header'),
-            $cell('Cantidad', 'String', 'header'),
-            $cell('Precio Unit. (S/)', 'String', 'header'),
-            $cell('Subtotal (S/)', 'String', 'header'),
-        ]);
+        $filas[] = [
+            $c('Ítem', 'string', 'header'),
+            $c('Descripción', 'string', 'header'),
+            $c('Unidad', 'string', 'header'),
+            $c('Cantidad', 'string', 'header'),
+            $c('Precio Unit. (S/)', 'string', 'header'),
+            $c('Subtotal (S/)', 'string', 'header'),
+        ];
 
         // ── Filas de ítems ──────────────────────────────────────────
         foreach ($items as $idx => $item) {
             $st = ($idx % 2 === 1) ? 'alt' : '';
-            $rows .= $row([
-                $cell((int) ($item['item'] ?? ($idx + 1)), 'Number', $st),
-                $cell($item['descripcion'] ?? '', 'String', $st),
-                $cell($item['unidad'] ?? '', 'String', $st),
-                $cell((float) ($item['cantidad'] ?? 0), 'Number', $st),
-                $cell((float) ($item['precio_unitario'] ?? 0), 'Number', $st),
-                $cell((float) ($item['subtotal'] ?? 0), 'Number', $st),
-            ]);
+            $filas[] = [
+                $c((int) ($item['item'] ?? ($idx + 1)), 'number', $st),
+                $c($item['descripcion'] ?? '', 'string', $st),
+                $c($item['unidad'] ?? '', 'string', $st),
+                $c((float) ($item['cantidad'] ?? 0), 'number', $st),
+                $c((float) ($item['precio_unitario'] ?? 0), 'number', $st),
+                $c((float) ($item['subtotal'] ?? 0), 'number', $st),
+            ];
         }
 
         // ── Fila TOTAL ──────────────────────────────────────────────
-        $rows .= $row([
-            $cell('', 'String', 'total'), $cell('', 'String', 'total'),
-            $cell('', 'String', 'total'), $cell('', 'String', 'total'),
-            $cell('TOTAL ESTIMADO:', 'String', 'total'),
-            $cell('S/ ' . number_format($total, 2), 'String', 'total'),
-        ]);
-        $rows .= $empty;
+        $filas[] = [
+            $c('', 'string', 'total'), $c('', 'string', 'total'),
+            $c('', 'string', 'total'), $c('', 'string', 'total'),
+            $c('TOTAL ESTIMADO:', 'string', 'total'),
+            $c('S/ ' . number_format($total, 2), 'string', 'total'),
+        ];
+        $filas[] = [];
 
         // ── Viabilidad ──────────────────────────────────────────────
         if ($viabilidad !== '') {
-            $rows .= $row([$cell('Análisis de Viabilidad Operativa', 'String', 'section')]);
-            $rows .= $row([$cell($viabilidad)]);
-            $rows .= $empty;
+            $filas[] = [$c('Análisis de Viabilidad Operativa', 'string', 'section')];
+            foreach (preg_split('/\r\n|\r|\n/', $viabilidad) ?: [] as $parrafo) {
+                $parrafo = trim($parrafo);
+                if ($parrafo !== '') {
+                    $filas[] = [$c($parrafo)];
+                }
+            }
+            $filas[] = [];
         }
 
         // ── Condiciones ─────────────────────────────────────────────
         if (!empty($condiciones)) {
-            $rows .= $row([$cell('Condiciones y Supuestos', 'String', 'section')]);
+            $filas[] = [$c('Condiciones y Supuestos', 'string', 'section')];
             foreach ($condiciones as $cond) {
-                $rows .= $row([$cell('• ' . $cond)]);
+                $filas[] = [$c('• ' . $cond)];
             }
-            $rows .= $empty;
+            $filas[] = [];
         }
 
         // ── Pie ─────────────────────────────────────────────────────
-        $rows .= $row([$cell("Generado con la inteligencia de LicitacionesMYPE.pe — {$fecha}", 'String', 'footer')]);
-        $rows .= $row([$cell('Este documento es un borrador de cotización con fines orientativos. Los precios son referenciales.', 'String', 'footer')]);
+        $filas[] = [$c("Generado con la inteligencia de LicitacionesMYPE.pe — {$fecha}", 'string', 'footer')];
+        $filas[] = [$c('Este documento es un borrador de cotización con fines orientativos. Los precios son referenciales.', 'string', 'footer')];
 
-        return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
-            . '<?mso-application progid="Excel.Sheet"?>' . "\n"
-            . '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n"
-            . '  xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n"
-            . '  xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n"
-            . '  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' . "\n"
-            . '  <Styles>' . "\n"
-            . '    <Style ss:ID="title"><Font ss:Bold="1" ss:Size="14" ss:Color="#1A3A5C"/></Style>' . "\n"
-            . '    <Style ss:ID="header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1A3A5C" ss:Pattern="Solid"/></Style>' . "\n"
-            . '    <Style ss:ID="total"><Font ss:Bold="1" ss:Color="#7D5800"/><Interior ss:Color="#FEF9E7" ss:Pattern="Solid"/></Style>' . "\n"
-            . '    <Style ss:ID="label"><Font ss:Bold="1" ss:Color="#444444"/></Style>' . "\n"
-            . '    <Style ss:ID="alt"><Interior ss:Color="#F5F8FC" ss:Pattern="Solid"/></Style>' . "\n"
-            . '    <Style ss:ID="section"><Font ss:Bold="1" ss:Size="11" ss:Color="#1A3A5C"/></Style>' . "\n"
-            . '    <Style ss:ID="footer"><Font ss:Italic="1" ss:Color="#999999" ss:Size="8"/></Style>' . "\n"
-            . '  </Styles>' . "\n"
-            . '  <Worksheet ss:Name="Proforma Técnica">' . "\n"
-            . '    <Table ss:DefaultColumnWidth="120">' . "\n"
-            . $rows
-            . '    </Table>' . "\n"
-            . '  </Worksheet>' . "\n"
-            . '</Workbook>';
+        return app(\App\Services\XlsxWriterService::class)->generar(
+            'Proforma Técnica',
+            $filas,
+            [1 => 12, 2 => 60, 3 => 12, 4 => 12, 5 => 18, 6 => 18]
+        );
     }
 }

@@ -123,24 +123,24 @@ class SeaceMayoresService
     }
 
     /**
-     * Buscar por keyword en la base de datos local.
-     * La API OCDS no soporta búsqueda por texto.
+     * Aplica los filtros del buscador a una query de ContratoMayor.
+     * Reutilizado por el buscador y por el exportador Excel.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param array $filtros query, entidad, objeto, estado, departamento_id,
+     *                        provincia_id, distrito_id, fecha_desde, fecha_hasta
      */
-    protected function buscarEnBaseDeDatos(
-        string $keyword,
-        string $filtroEntidad,
-        string $filtroObjeto,
-        string $filtroEstado,
-        int $filtroDepartamento,
-        int $filtroProvincia,
-        int $filtroDistrito,
-        string $filtroFechaDesde,
-        string $filtroFechaHasta,
-        int $page,
-        int $perPage
-    ): array
+    public function aplicarFiltros($query, array $filtros): void
     {
-        $query = \App\Models\ContratoMayor::query();
+        $keyword = trim((string) ($filtros['query'] ?? ''));
+        $filtroEntidad = (string) ($filtros['entidad'] ?? '');
+        $filtroObjeto = (string) ($filtros['objeto'] ?? '');
+        $filtroEstado = (string) ($filtros['estado'] ?? '');
+        $filtroDepartamento = (int) ($filtros['departamento_id'] ?? 0);
+        $filtroProvincia = (int) ($filtros['provincia_id'] ?? 0);
+        $filtroDistrito = (int) ($filtros['distrito_id'] ?? 0);
+        $filtroFechaDesde = (string) ($filtros['fecha_desde'] ?? '');
+        $filtroFechaHasta = (string) ($filtros['fecha_hasta'] ?? '');
 
         // ── Keyword search ──
         if (!empty($keyword)) {
@@ -194,6 +194,39 @@ class SeaceMayoresService
                 // fecha inválida: ignorar filtro
             }
         }
+    }
+
+    /**
+     * Buscar por keyword en la base de datos local.
+     * La API OCDS no soporta búsqueda por texto.
+     */
+    protected function buscarEnBaseDeDatos(
+        string $keyword,
+        string $filtroEntidad,
+        string $filtroObjeto,
+        string $filtroEstado,
+        int $filtroDepartamento,
+        int $filtroProvincia,
+        int $filtroDistrito,
+        string $filtroFechaDesde,
+        string $filtroFechaHasta,
+        int $page,
+        int $perPage
+    ): array
+    {
+        $query = \App\Models\ContratoMayor::query();
+
+        $this->aplicarFiltros($query, [
+            'query' => $keyword,
+            'entidad' => $filtroEntidad,
+            'objeto' => $filtroObjeto,
+            'estado' => $filtroEstado,
+            'departamento_id' => $filtroDepartamento,
+            'provincia_id' => $filtroProvincia,
+            'distrito_id' => $filtroDistrito,
+            'fecha_desde' => $filtroFechaDesde,
+            'fecha_hasta' => $filtroFechaHasta,
+        ]);
 
         $total = $query->count();
         $registros = $query->orderBy('fecha_publicacion', 'desc')

@@ -31,6 +31,7 @@ class BuscadorMayores extends Component
     use WithPagination;
 
     protected SeaceMayoresService $apiService;
+    protected \App\Services\ExportarContratosMayoresService $exportService;
 
     #[Url(as: 'q')]
     public string $palabraClave = '';
@@ -70,6 +71,9 @@ class BuscadorMayores extends Component
     #[Url(as: 'hasta')]
     public string $fechaHasta = '';
 
+    // Colapsable de filtros geográficos (mismo patrón que BuscadorPublico)
+    public bool $mostrarFiltrosAvanzados = false;
+
     #[Url]
     public int $pagina = 1;
 
@@ -98,9 +102,10 @@ class BuscadorMayores extends Component
     public bool $mostrarAccesoRestringido = false;
     public string $accesoRestringidoMensaje = '';
 
-    public function boot(SeaceMayoresService $apiService): void
+    public function boot(SeaceMayoresService $apiService, \App\Services\ExportarContratosMayoresService $exportService): void
     {
         $this->apiService = $apiService;
+        $this->exportService = $exportService;
     }
 
     public function mount($initialEntidad = null): void
@@ -162,6 +167,11 @@ class BuscadorMayores extends Component
 
         if ($this->provinciaId > 0) {
             $this->distritosDisponibles = $geo->distritosParaFiltro($this->provinciaId);
+        }
+
+        // Abrir filtros geográficos si hay algún filtro geo activo (URL o estado)
+        if ($this->departamentoId > 0 || $this->provinciaId > 0 || $this->distritoId > 0) {
+            $this->mostrarFiltrosAvanzados = true;
         }
     }
 
@@ -359,6 +369,98 @@ class BuscadorMayores extends Component
     public function irPagina(int $pagina): void
     {
         $this->buscar($pagina);
+    }
+
+    /**
+     * Exporta los resultados actuales a Excel con la plantilla del cliente
+     * elegida ('analitico' 30 cols | 'seguimiento' 12 cols) y la ventana de
+     * publicación ('hoy' | '7d' | '30d'). Exporta TODOS los registros que
+     * calzan con filtros + ventana, sin paginación.
+     */
+    public function exportarExcel(string $plantilla, string $ventana = '30d')
+    {
+        if (!$this->hasMayoresPermission('export-mayores')) {
+            return null;
+        }
+
+        if (!in_array($plantilla, ['analitico', 'seguimiento'], true)) {
+            $this->notify('Plantilla de exportación no válida.', 'error');
+            return null;
+        }
+
+        if (!in_array($ventana, ['hoy', '7d', '30d'], true)) {
+            $this->notify('Rango de fechas de exportación no válido.', 'error');
+            return null;
+        }
+
+        $filtros = [
+            'query' => $this->palabraClave,
+            'entidad' => $this->entidadFiltro,
+            'objeto' => $this->objetoContratacion,
+            'estado' => $this->estado,
+            'departamento_id' => $this->departamentoId,
+            'provincia_id' => $this->provinciaId,
+            'distrito_id' => $this->distritoId,
+            'fecha_desde' => $this->fechaDesde,
+            'fecha_hasta' => $this->fechaHasta,
+        ];
+
+        $resultado = $this->exportService->exportar($filtros, $plantilla, $ventana);
+
+        if (!$resultado['success']) {
+            $this->notify($resultado['message'] ?? 'No se pudo generar la exportación.', 'warning');
+            return null;
+        }
+
+        $nombrePlantilla = $plantilla === 'analitico' ? 'Analítico' : 'Seguimiento';
+        $nombreVentana = \App\Services\ExportarContratosMayoresService::VENTANAS[$ventana];
+
+        $this->notify("Exportando {$resultado['total']} contratos ({$nombreVentana}) con plantilla {$nombrePlantilla}...", 'info');
+
+        return response()->streamDownload(
+            fn () => print $resultado['contenido'],
+            $resultado['filename'],
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            ]
+        );
+    }
+
+    /**
+     * Conteos de registros exportables por ventana (hoy/7d/30d) con los
+     * filtros actuales. Se carga al abrir el dropdown del botón Exportar.
+     */
+    public array $conteosExportacion = [
+        'hoy' => null,
+        '7d' => null,
+        '30d' => null,
+    ];
+
+    public function cargarConteosExportacion(): void
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasPermission('export-mayores')) {
+            return;
+        }
+
+        $filtros = [
+            'query' => $this->palabraClave,
+            'entidad' => $this->entidadFiltro,
+            'objeto' => $this->objetoContratacion,
+            'estado' => $this->estado,
+            'departamento_id' => $this->departamentoId,
+            'provincia_id' => $this->provinciaId,
+            'distrito_id' => $this->distritoId,
+            'fecha_desde' => $this->fechaDesde,
+            'fecha_hasta' => $this->fechaHasta,
+        ];
+
+        $this->conteosExportacion = [
+            'hoy' => $this->exportService->contar($filtros, 'hoy'),
+            '7d' => $this->exportService->contar($filtros, '7d'),
+            '30d' => $this->exportService->contar($filtros, '30d'),
+        ];
     }
 
     public function limpiarFiltros(): void

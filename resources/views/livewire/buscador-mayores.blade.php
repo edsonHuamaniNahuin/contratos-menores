@@ -46,12 +46,105 @@
                     <span class="px-2.5 py-1 bg-secondary-500 text-white text-xs font-semibold rounded-full">{{ $this->contarFiltrosActivos() }}</span>
                 @endif
             </div>
-            @if($this->contarFiltrosActivos() > 0)
-                <button wire:click="limpiarFiltros" class="text-xs lg:text-sm text-red-500 hover:text-red-700 font-medium transition-colors flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    Limpiar todo
-                </button>
-            @endif
+            <div class="flex items-center gap-2">
+                @if(auth()->check() && (auth()->user()?->hasPermission('export-mayores') ?? false))
+                    <div class="relative" x-data="{ abierto: false, plantilla: 'analitico', ventana: '30d', exportar() { $wire.exportarExcel(this.plantilla, this.ventana); this.abierto = false; } }" @click.away="abierto = false">
+                        <button
+                            @click="abierto = !abierto; if (abierto) $wire.cargarConteosExportacion()"
+                            type="button"
+                            class="px-3.5 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+                            title="Exportar resultados a Excel"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Exportar Excel</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div
+                            x-show="abierto"
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 scale-95"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-95"
+                            class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-neutral-200 p-3 z-50"
+                            x-cloak
+                        >
+                            <p class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Exportar con los filtros actuales</p>
+
+                            {{-- Plantilla --}}
+                            <p class="px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Plantilla</p>
+                            <div class="grid grid-cols-2 gap-2 px-1">
+                                <button
+                                    type="button"
+                                    @click="plantilla = 'analitico'"
+                                    :class="plantilla === 'analitico' ? 'bg-primary-50 border-primary-500 text-primary-700 ring-1 ring-primary-200' : 'bg-neutral-50 border-neutral-100 text-neutral-600 hover:bg-neutral-100'"
+                                    class="border rounded-lg px-2.5 py-2 text-left transition-all"
+                                >
+                                    <span class="block text-xs font-bold">Analítico</span>
+                                    <span class="block text-[10px] text-neutral-400 leading-tight">Análisis comercial · 30 columnas</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="plantilla = 'seguimiento'"
+                                    :class="plantilla === 'seguimiento' ? 'bg-primary-50 border-primary-500 text-primary-700 ring-1 ring-primary-200' : 'bg-neutral-50 border-neutral-100 text-neutral-600 hover:bg-neutral-100'"
+                                    class="border rounded-lg px-2.5 py-2 text-left transition-all"
+                                >
+                                    <span class="block text-xs font-bold">Seguimiento</span>
+                                    <span class="block text-[10px] text-neutral-400 leading-tight">Seguimiento de postores · 12 columnas</span>
+                                </button>
+                            </div>
+
+                            {{-- Rango de publicación --}}
+                            <p class="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Procesos publicados</p>
+                            <div class="grid grid-cols-3 gap-2 px-1">
+                                <button
+                                    type="button"
+                                    @click="ventana = 'hoy'"
+                                    :class="ventana === 'hoy' ? 'bg-primary-50 border-primary-500 text-primary-700 ring-1 ring-primary-200' : 'bg-neutral-50 border-neutral-100 text-neutral-600 hover:bg-neutral-100'"
+                                    class="border rounded-lg px-2 py-2 text-center transition-all"
+                                >
+                                    <span class="block text-xs font-bold">Hoy</span>
+                                    <span class="block text-[10px] text-neutral-400">{{ $conteosExportacion['hoy'] !== null ? number_format($conteosExportacion['hoy']) . ' procesos' : '—' }}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="ventana = '7d'"
+                                    :class="ventana === '7d' ? 'bg-primary-50 border-primary-500 text-primary-700 ring-1 ring-primary-200' : 'bg-neutral-50 border-neutral-100 text-neutral-600 hover:bg-neutral-100'"
+                                    class="border rounded-lg px-2 py-2 text-center transition-all"
+                                >
+                                    <span class="block text-xs font-bold">7 días</span>
+                                    <span class="block text-[10px] text-neutral-400">{{ $conteosExportacion['7d'] !== null ? number_format($conteosExportacion['7d']) . ' procesos' : '—' }}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="ventana = '30d'"
+                                    :class="ventana === '30d' ? 'bg-primary-50 border-primary-500 text-primary-700 ring-1 ring-primary-200' : 'bg-neutral-50 border-neutral-100 text-neutral-600 hover:bg-neutral-100'"
+                                    class="border rounded-lg px-2 py-2 text-center transition-all"
+                                >
+                                    <span class="block text-xs font-bold">30 días</span>
+                                    <span class="block text-[10px] text-neutral-400">{{ $conteosExportacion['30d'] !== null ? number_format($conteosExportacion['30d']) . ' procesos' : '—' }}</span>
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                @click="exportar()"
+                                class="mt-3 w-full px-3 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                Descargar Excel
+                            </button>
+                        </div>
+                    </div>
+                @endif
+                @if($this->contarFiltrosActivos() > 0)
+                    <button wire:click="limpiarFiltros" class="text-xs lg:text-sm text-red-500 hover:text-red-700 font-medium transition-colors flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        Limpiar todo
+                    </button>
+                @endif
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4">
@@ -182,40 +275,81 @@
                 </div>
             </div>
 
-            {{-- Fila 2: geografía + fechas --}}
-            <div class="lg:col-span-3">
-                <label class="block text-xs font-medium mb-1.5 {{ $departamentoId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Departamento</label>
-                <select wire:model.live="departamentoId" class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $departamentoId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
-                    <option value="0">Todos</option>
-                    @foreach($departamentosDisponibles as $dep)
-                        <option value="{{ $dep['id'] }}">{{ $dep['nombre'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="lg:col-span-3">
-                <label class="block text-xs font-medium mb-1.5 {{ $provinciaId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Provincia</label>
-                <select wire:model.live="provinciaId" {{ $departamentoId === 0 ? 'disabled' : '' }} class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $provinciaId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }} {{ $departamentoId === 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
-                    <option value="0">Todas</option>
-                    @foreach($provinciasDisponibles as $prov)
-                        <option value="{{ $prov['id'] }}">{{ $prov['nombre'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="lg:col-span-3">
-                <label class="block text-xs font-medium mb-1.5 {{ $distritoId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Distrito</label>
-                <select wire:model.live="distritoId" {{ $provinciaId === 0 ? 'disabled' : '' }} class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $distritoId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }} {{ $provinciaId === 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
-                    <option value="0">Todos</option>
-                    @foreach($distritosDisponibles as $dist)
-                        <option value="{{ $dist['id'] }}">{{ $dist['nombre'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="lg:col-span-3">
-                <label class="block text-xs font-medium mb-1.5 {{ !empty($fechaDesde) || !empty($fechaHasta) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Publicado (rango)</label>
-                <div class="flex items-center gap-2">
-                    <input type="date" wire:model.live="fechaDesde" class="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ !empty($fechaDesde) ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
-                    <span class="text-neutral-400 text-xs">→</span>
-                    <input type="date" wire:model.live="fechaHasta" class="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ !empty($fechaHasta) ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
+            {{-- Fila 2: geografía + fechas (colapsable, mismo patrón que BuscadorPublico) --}}
+            <div class="lg:col-span-12 mt-3" x-data="{ mostrar: @entangle('mostrarFiltrosAvanzados') }">
+                <button
+                    @click="mostrar = !mostrar"
+                    type="button"
+                    class="text-xs lg:text-sm font-medium transition-colors flex items-center gap-2 {{ ($departamentoId > 0 || $provinciaId > 0 || $distritoId > 0 || !empty($fechaDesde) || !empty($fechaHasta)) ? 'text-primary-600 hover:text-primary-700' : 'text-neutral-600 hover:text-primary-500' }}"
+                >
+                    <svg
+                        class="w-4 h-4 transition-transform duration-200"
+                        :class="{ 'rotate-180': mostrar }"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                    @php
+                        $geoActivos = 0;
+                        if ($departamentoId > 0) $geoActivos++;
+                        if ($provinciaId > 0) $geoActivos++;
+                        if ($distritoId > 0) $geoActivos++;
+                        if (!empty($fechaDesde)) $geoActivos++;
+                        if (!empty($fechaHasta)) $geoActivos++;
+                    @endphp
+                    <span x-text="mostrar ? 'Ocultar filtros geográficos' : 'Mostrar filtros geográficos'"></span>
+                    @if($geoActivos > 0)
+                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-bold leading-none">{{ $geoActivos }}</span>
+                    @endif
+                </button>
+
+                <div
+                    x-show="mostrar"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 -translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 -translate-y-2"
+                    class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 mt-3"
+                >
+                    <div class="lg:col-span-3">
+                        <label class="block text-xs font-medium mb-1.5 {{ $departamentoId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Departamento</label>
+                        <select wire:model.live="departamentoId" class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $departamentoId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
+                            <option value="0">Todos</option>
+                            @foreach($departamentosDisponibles as $dep)
+                                <option value="{{ $dep['id'] }}">{{ $dep['nombre'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <label class="block text-xs font-medium mb-1.5 {{ $provinciaId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Provincia</label>
+                        <select wire:model.live="provinciaId" {{ $departamentoId === 0 ? 'disabled' : '' }} class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $provinciaId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }} {{ $departamentoId === 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
+                            <option value="0">Todas</option>
+                            @foreach($provinciasDisponibles as $prov)
+                                <option value="{{ $prov['id'] }}">{{ $prov['nombre'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <label class="block text-xs font-medium mb-1.5 {{ $distritoId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Distrito</label>
+                        <select wire:model.live="distritoId" {{ $provinciaId === 0 ? 'disabled' : '' }} class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ $distritoId > 0 ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }} {{ $provinciaId === 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
+                            <option value="0">Todos</option>
+                            @foreach($distritosDisponibles as $dist)
+                                <option value="{{ $dist['id'] }}">{{ $dist['nombre'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <label class="block text-xs font-medium mb-1.5 {{ !empty($fechaDesde) || !empty($fechaHasta) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Publicado (rango)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="date" wire:model.live="fechaDesde" class="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ !empty($fechaDesde) ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
+                            <span class="text-neutral-400 text-xs">→</span>
+                            <input type="date" wire:model.live="fechaHasta" class="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all {{ !empty($fechaHasta) ? 'bg-primary-50 border-2 border-primary-500 ring-2 ring-primary-100 font-medium' : 'bg-neutral-50 border border-neutral-100' }}">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

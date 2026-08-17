@@ -1,0 +1,753 @@
+# 🎯 KEYWORDS TRANSACCIONALES — VIGILANTE SEACE
+
+## Fuente: Google Autocomplete Peru (es-PE), cosecha del 16-08-2026
+Filtradas: sin keywords de otros paises, sin typos, sin las que ya rankeas en GSC.
+Son keywords donde el usuario busca COMPRAR/CONTRATAR una solucion, no el portal oficial.
+
+## 🔥 NIVEL 1 — ALTA INTENCION DE COMPRA (452 keywords)
+El usuario busca un proveedor de software/servicio YA. Estas son las que convierten a registro.
+
+- licitaciones publicas software
+- software costos y presupuestos peru
+- software de gestion de licitaciones
+- software de licitaciones
+- software gestion de licitaciones
+- software licitaciones publicas
+- software para hacer licitaciones
+- software para licitaciones publicas
+- software seace
+- software osce
+- contrataciones app
+- software de compras menores o iguales a 8 uit
+- software de contratos inteligentes
+- software para cotizacion
+- software para hacer cotizaciones
+- software para presupuestos de obra perú
+- licitacion sistemas
+- licitaciones servicios
+- licitaciones sistema de transporte colectivo metro
+- licitaciones sistema red
+- plataforma de licitaciones peru
+- plataforma para ver licitaciones publicas
+- sistema contrataciones del estado
+- sistema de adquisiciones y contrataciones
+- sistema de contratacion a costos unitarios
+- sistema de contratacion a todo costo
+- sistema de contratacion de obras publicas
+- sistema de contratacion de precios unitarios
+- sistema de contratacion precios unitarios osce
+- sistema de contrataciones del estado precios unitarios
+- sistema de contrataciones públicas de perú
+- sistema de gestion de licitaciones
+- sistema de licitaciones
+- sistema de licitaciones acp
+- sistema de licitaciones care compras
+- sistema de licitaciones en internet sli
+- sistema de licitaciones por internet
+- sistema de licitaciones por internet sli
+- sistema de licitaciones publicas
+- sistema informático del tribunal de contrataciones del estado
+- sistema nacional de adquisiciones y contrataciones publicas
+- sistema nacional de contratacion del estado
+- sistema nacional de licitaciones
+- sistema para licitaciones
+- sistema precios unitarios osce
+- monitoreo de licitaciones
+- sistema de monitoreo peru
+- sistema de monitoreo y seguimiento de los indicadores de los objetivos de desarrollo sostenible peru
+- sistema monitoreo inei
+- sistema compras y contrataciones san luis
+- sistema contrataciones del.estado
+- sistema contrataciones publicas
+- sistema de compras y contrataciones públicas
+- sistema de contrataciones
+- sistema de contrataciones administrativas electrónicas
+- sistema de contrataciones administrativas electrónicas siscae
+- sistema de contrataciones con el estado
+- sistema de contrataciones congreso
+- sistema de contrataciones del estado osce
+- sistema de contrataciones del estado peru
+- sistema de contrataciones del estado peruano
+- sistema de contrataciones del estado seace
+- sistema de contrataciones electronicas
+- sistema de contrataciones epsas
+- sistema de contrataciones estatales
+- sistema de contrataciones estatales sicoes
+- sistema de contrataciones ine
+- sistema de contrataciones menores
+- sistema de contrataciones menores a 8 uit
+- sistema de contrataciones osce
+- sistema de contrataciones peru
+- sistema de contrataciones publicas
+- sistema de contrataciones sicoes
+- sistema de contrataciones suma alzada
+- sistema de contrataciones y adquisiciones
+- sistema de contrataciones y adquisiciones del estado
+- sistema de contrataciones ypfb
+- sistema de contratación a tarifas
+- sistema de contratación mixto osce
+- sistema de contratación osce
+- sistema de contratación por tarifas osce
+- sistema de entrega contrataciones
+- sistema de entrega contrataciones del estado
+- sistema de gestion de contrataciones
+- sistema de información de contrataciones públicas
+- sistema de tarifas osce
+- sistema electronico contrataciones publicas
+- sistema electronico de contrataciones con el estado
+- sistema electronico de contrataciones publicas republica dominicana
+- sistema electronico de contrataciones publicas telefono
+- sistema electrónico de contrataciones con el estado
+- sistema electrónico de contrataciones con el estado seace
+- sistema electrónico de contrataciones públicas secp
+- sistema electrónico de contrataciones sec
+- sistema electrónico de contrataciones siscep
+- sistema nacional de contrataciones con el estado
+- sistema nacional de contrataciones públicas
+- sistema nacional de contrataciones públicas sncp
+- sistema nacional de contrataciones snc
+- sistemas de contratacion 2024
+- licitaciones plataforma contratacion sector publico
+- licitaciones plataforma de contratacion del estado
+- mis licitaciones plataforma contratacion
+- plataforma ariba licitaciones
+- plataforma contratacion licitaciones
+- plataforma contratacion mis licitaciones
+- plataforma contratacion sector publico licitaciones
+- plataforma contratación estado licitaciones
+- plataforma contratos seace
+- plataforma de contratacion del estado peruano
+- plataforma de contratación del sector público peru
+- plataforma de licitaciones
+- plataforma de licitaciones ariba
+- plataforma de licitaciones del sector publico
+- plataforma de licitaciones en méxico
+- plataforma de licitaciones privadas
+- plataforma de licitaciones publicas
+- plataforma de osce
+- plataforma del estado para licitaciones
+- plataforma digital de contrataciones públicas
+- plataforma digital para las contrataciones publicas
+- plataforma licitaciones codelco
+- plataforma licitaciones del estado
+- plataforma licitaciones estado
+- plataforma licitaciones gobierno vasco
+- plataforma licitaciones pais vasco
+- plataforma licitaciones privadas
+- plataforma licitaciones publicas
+- plataforma licitaciones públicas
+- plataforma licitaciones sector publico
+- plataforma lima compras
+- plataforma mx licitaciones
+- plataforma para licitaciones
+- plataforma para licitaciones privadas
+- plataforma para licitaciones publicas
+- nueva plataforma de contrataciones del estado
+- plataforma contrataciones con el estado
+- plataforma contrataciones del estado
+- plataforma contrataciones estado
+- plataforma contrataciones menores
+- plataforma contrataciones menores a 8 uit
+- plataforma contrataciones publicas
+- plataforma contrataciones sector publico
+- plataforma contratación estado no funciona hoy
+- plataforma contratación estatal
+- plataforma de contrataciones
+- plataforma de contrataciones abiertas
+- plataforma de contrataciones arcc
+- plataforma de contrataciones con el estado
+- plataforma de contrataciones del sector público
+- plataforma de contrataciones gobierno regional de ancash
+- plataforma de contrataciones menores
+- plataforma de contrataciones menores a 8 uit
+- plataforma de contrataciones publicas
+- plataforma de contrataciones sector publico
+- plataforma de contratación del estado peru
+- plataforma de contratos osce
+- plataforma digital de contrataciones
+- plataforma digital de contrataciones públicas compras mx
+- plataforma digital de contrataciones públicas de la administración pública federal
+- plataforma digital de contrataciones públicas de la administración pública federal compras mx
+- plataforma digital de contrataciones públicas dof
+- plataforma digital de contrataciones públicas méxico
+- plataforma digital de contrataciones públicas pladicop
+- plataforma digital nacional de contrataciones públicas
+- plataforma digital para contrataciones públicas
+- plataforma digital para contrataciones públicas pladicop
+- plataforma general de contrataciones del estado
+- plataforma nacional de contrataciones públicas
+- plataforma para contrataciones menores a 8 uit
+- app contrataciones
+- app contrataciones del estado
+- app de licitaciones
+- app ley de contrataciones del estado
+- app licitaciones
+- app obras publicas
+- app oportunidades de negocio osce
+- app para licitaciones
+- app para oportunidades de negocio osce
+- app.licitaciones publicas
+- licitaciones appa
+- app buscador seace
+- app de osce
+- app2 seace
+- portal app seace
+- app contrataciones rd
+- app contrataciones sas
+- licitaciones de servicio de transporte
+- licitaciones para servicio de limpieza
+- licitaciones para servicios de catering
+- licitaciones publicas servicios
+- licitaciones servicio andaluz de empleo
+- licitaciones servicio andaluz de salud
+- licitaciones servicio aragones de salud
+- licitaciones servicio canario de salud
+- licitaciones servicio cantabro de salud
+- licitaciones servicio de alimentacion
+- licitaciones servicio de aseo
+- licitaciones servicio de limpieza
+- licitaciones servicio de proteccion especializada
+- licitaciones servicio de salud
+- licitaciones servicio de salud atacama
+- licitaciones servicio de seguridad
+- licitaciones servicio de vigilancia
+- licitaciones servicio extremeño de salud
+- licitaciones servicio madrileño de salud
+- licitaciones servicio mejor niñez
+- licitaciones servicio murciano de salud
+- licitaciones servicio publico
+- licitaciones servicios generales
+- servicio canario de salud licitaciones
+- servicio cantabro de salud licitaciones
+- servicio de licitaciones
+- servicio de licitaciones publicas
+- servicio de licitación
+- servicio extremeño de salud licitaciones
+- servicio navarro de salud licitaciones
+- servicio riojano de salud licitaciones
+- seguimiento de licitaciones publicas
+- servicio monitoreo
+- servicio monitoreo ambiental
+- alertas licitaciones
+- alertas licitaciones publicas
+- consultoria de licitaciones
+- consultoria de obras seace
+- consultoria en contrataciones del estado
+- consultoria en licitaciones
+- consultoria en licitaciones publicas
+- consultoria licitaciones publicas
+- consultoria para el estado
+- consultoria para licitaciones
+- consultoria seace
+- consultorias publicadas
+- contratacion de consultorias
+- licitacion de consultoria
+- licitacion publica consultoria
+- asesoria contrataciones del estado
+- asesoria de licitaciones
+- asesoria en contrataciones con el estado
+- asesoria en contrataciones publicas
+- asesoria en licitaciones
+- asesoria en licitaciones publicas
+- asesoria licitacion
+- asesoria licitaciones publicas
+- asesoria osce
+- asesoria para licitaciones
+- asesoria para licitaciones publicas
+- asesoria peru compras
+- licitaciones asesoria juridica
+- asesor comercial de licitaciones
+- asesor de contrataciones
+- asesor de licitaciones
+- asesor de licitaciones publicas
+- asesor en contrataciones del estado
+- asesor en licitaciones
+- asesor legal en contrataciones del estado
+- empresa de licitaciones
+- empresa de licitaciones publicas
+- empresa gestion licitaciones
+- empresa licitaciones publicas
+- empresa memorias tecnicas licitaciones
+- empresa para licitaciones
+- empresa portuaria antofagasta licitaciones
+- empresa seace
+- empresas ganadoras de licitaciones publicas
+- empresas que ganaron licitaciones públicas
+- empresas que licitan con el estado
+- licitacion para empresas
+- licitacion para empresas privadas
+- licitaciones con empresas privadas
+- licitaciones de empresas privadas
+- licitaciones de empresas privadas perú
+- licitaciones empresa
+- licitaciones empresa de aseo
+- licitaciones empresa de limpieza
+- licitaciones empresa de seguridad
+- licitaciones empresa portuaria san antonio
+- licitaciones empresa privada
+- licitaciones empresas privadas 2024
+- licitaciones ganadas por empresas
+- licitaciones para empresa de limpieza
+- licitaciones para empresa de seguridad
+- licitaciones por empresa
+- abogado especialista en licitaciones
+- especialista de licitaciones
+- especialista en contrataciones publicas
+- especialista en contrataciones públicas
+- especialista en licitaciones
+- especialista en licitaciones computrabajo
+- especialista en licitaciones indeed
+- especialista en licitaciones publicas
+- especialista en licitaciones trabajo
+- especialista en seace
+- que es un especialista en licitaciones
+- que hace un especialista en licitaciones
+- trabajo especialista en licitaciones
+- licitaciones monitoreo
+- monitoreo 2024
+- monitoreo ambiental linkedin
+- monitoreo contraloria
+- monitoreo de obras
+- monitoreo de obras publicas
+- monitoreo mocca
+- monitoreo y seguimiento de contrataciones públicas de perú
+- monitoreos ambientales lima
+- mejor monitoreo
+- monitoreo ambiental inacal
+- monitoreo ambiental oefa
+- monitoreo ceplan
+- monitoreo de caudales senamhi
+- monitoreo de ejecucion de obra
+- monitoreo de lluvias senamhi
+- monitoreo de metas
+- monitoreo de un plan
+- monitoreo de una obra
+- monitoreo meteorologico senamhi
+- monitoreo pro
+- monitoreo satelital de bosques
+- monitoreo satelital serfor
+- monitoreo serfor
+- monitoreo sernanp
+- como saber cuantas licitaciones tiene una empresa
+- compranet seguimiento de licitaciones
+- seguimiento a licitaciones
+- seguimiento contrataciones
+- seguimiento de licitaciones
+- contratos app
+- contratos app peru
+- control y seguimiento de contratos en excel
+- control y seguimiento de contratos en excel gratis
+- dashboard seguimiento contratos
+- dashboard seguimiento de contratos
+- matriz de seguimiento de contratos
+- seguimiento a contratos
+- seguimiento concertado
+- seguimiento conectamef
+- seguimiento consulta mef
+- seguimiento consultas osce
+- seguimiento contraloria
+- seguimiento contraloria expediente
+- seguimiento contratos sepe
+- seguimiento contratos sic
+- seguimiento de contrataciones del estado
+- seguimiento de contratos
+- seguimiento de contratos dncp
+- seguimiento de contratos en excel
+- seguimiento de contratos menores a 8 uit
+- seguimiento de contratos osce
+- seguimiento de contratos seace
+- seguimiento de contratos sic
+- seguimiento de ejecucion contractual
+- seguimiento de obras contraloria
+- seguimiento evaluación y mejora continua
+- seguimiento informes contraloria
+- sistema de seguimiento de contratos
+- sistema de seguimiento de contratos dncp
+- alertas 2024
+- alertas ctvc
+- alertas de consumo
+- alertas de consumo indecopi
+- alertas de licitaciones
+- alertas digemid marzo 2024
+- alertas indecopi
+- alertas meteorológicas peru
+- alertas meteorológicas senamhi
+- alertas obant
+- alertas osinfor
+- alertas pcm
+- alertas tempranas nec
+- alertas 2023
+- alertas de control
+- alertas de control contraloria
+- alertas de digemid
+- alertas de indeci
+- alertas de senamhi
+- alertas digemid octubre 2023
+- alertas forestales osinfor
+- alertas indeci
+- alertas meteorologicas senamhi
+- alertas minecraft
+- alertas minsa
+- alertas sanitarias sanipes
+- alertas senamhi
+- alertas sunarp
+- alertas uns
+- notificaciones a traves del seace
+- notificaciones de oportunidades de negocio
+- notificaciones de oportunidades de negocio v 2.0
+- notificaciones electronicas osce
+- notificaciones en la ley de contrataciones del estado
+- notificaciones opinion osce
+- notificaciones osce
+- herramientas de peru compras
+- herramientas osce
+- licitaciones herramientas
+- buscar oportunidades de negocio
+- busqueda de oportunidades
+- busqueda de oportunidades de negocio
+- busqueda de oportunidades de negocio osce
+- busqueda de oportunidades emprendimiento
+- busqueda de oportunidades en el emprendimiento
+- busqueda de oportunidades en emprendimiento
+- busqueda oportunidades de negocio
+- técnicas de búsqueda de empleo y oportunidades de negocio
+- acceder a oportunidades de negocio con el estado
+- oportunidades de negocio 2023
+- oportunidades de negocio con el estado
+- oportunidades de negocio con el estado peruano
+- oportunidades de negocio del estado
+- oportunidades de negocio en el peru
+- oportunidades de negocio en peru 2023
+- oportunidades de negocio en peru 2024
+- licitaciones proforma
+- proforma de contrato osce
+- proforma del contrato
+- proforma lima
+- proforma peru compras
+- proforma precio
+- proforma tecnica
+- proformas de compras
+- proformas de proveedores
+- proformas peru
+- cotizacion licitacion
+- cotizacion lima
+- cotizacion sector publico
+- cotizacion ugel
+- cotizacion uniq
+- cotizacion unsaac
+- cotizacion unsaac 2023
+- cotizaciones en linea 2024
+- cotizaciones en linea peru
+- cotizaciones en línea perú
+- cotizaciones lima
+- cotizaciones linea
+- cotizaciones públicas
+- presupuesto adjudicado
+- presupuesto de obra en licitaciones
+- presupuesto licitacion publica
+- presupuesto lima
+- presupuesto lima 2024
+- presupuesto lima 2027
+- presupuesto online
+- presupuesto para un plan de mejora
+- presupuesto participativo 2025 lima
+- presupuesto participativo 2025 lima metropolitana
+- presupuesto participativo 2025 municipalidad de lima
+- presupuesto pliego
+- presupuesto y licitaciones
+- presupuestos de licitaciones
+- presupuestos y licitaciones
+- licitaciones de empresas de seguridad privada
+- vigilante convocatoria
+
+## ⚖️ NIVEL 2 — COMPARACION / EVALUACION (88 keywords)
+El usuario esta comparando soluciones. Landings de comparacion + prueba gratis.
+
+- contrataciones virtuales
+- licitaciones 2023
+- licitaciones 2024
+- licitaciones 2024 peru
+- licitaciones en peru
+- licitaciones perú
+- licitaciones públicas perú
+- todo licitaciones peru
+- licitaciones gps
+- licitaciones perú 2024
+- aplicativo seace
+- licitaciones mmg
+- seace licitaciones 2024
+- seace licitaciones publicas 2023
+- seace licitaciones publicas 2024
+- licitaciones con el estado 2024
+- consulta licitaciones osce
+- consulta licitaciones publicas
+- consultas licitaciones
+- licitaciones consultoría
+- licitaciones privadas perú
+- acceso a licitaciones
+- asistente legal licitaciones
+- asistente de licitaciones publicas
+- cuanto gana un asistente de licitaciones en el peru
+- licitaciones trabajo
+- capacitación acreditada en contrataciones públicas
+- capacitación acreditada en contrataciones públicas en general mínimo 12 horas
+- capacitación en contrataciones públicas
+- licitaciones públicas 2023 perú
+- licitaciones públicas vigentes
+- montos para licitaciones públicas
+- seace licitaciones 2022
+- seace licitaciones 2023
+- seace licitaciones públicas
+- consulta contratos seace
+- seace contratos del estado
+- alicorp licitaciones
+- licitaciones 2024 perú
+- licitaciones anuales
+- licitaciones corrupción
+- licitaciones hoy
+- licitaciones minem
+- licitaciones privadas 2024
+- licitaciones públicas
+- topes licitaciones 2024
+- verificar licitaciones publicas
+- licitaciones nuevas
+- licitaciones públicas 2024 perú
+- tdr editable
+- buscador de licitaciones peru
+- buscador de licitaciones seace
+- buscador licitaciones osce
+- buscar licitaciones peru
+- licitaciones publicas buscador
+- mejor buscador de licitaciones
+- alternativa convocatorias
+- seace comparación de precios
+- seace para que sirve
+- como hacer licitaciones
+- licitaciones cusco 2024
+- licitaciones que es
+- peru licitaciones 2024
+- proveedores de licitaciones
+- provias licitaciones 2023
+- elaboracion de licitaciones publicas
+- elaboracion de propuestas tecnicas
+- elaboracion de propuestas tecnicas y economicas
+- elaboración de propuestas para licitaciones
+- analisis costo beneficio contratacion publica
+- analisis de la contratacion publica
+- analisis de la contratacion publica en el peru
+- analisis de la nueva ley de contrataciones del estado 2024
+- analisis de una licitacion publica
+- analista de licitaciones computrabajo
+- analista en licitaciones
+- bases de licitaciones públicas
+- resultados de licitaciones públicas
+- revision de bases
+- revision de licitaciones
+- revision de ofertas osce
+- licitaciones perú 2023
+- peru licitaciones 2023
+- licitaciones públicas seguridad privada
+- licitaciones vigentes 2023
+- alerta legal otass
+- alerta temprana contratos nec
+- alerta temprana nec
+
+## 📥 NIVEL 3 — LEAD MAGNET (177 keywords)
+El usuario quiere descargar plantillas/modelos o capacitarse. Captura email.
+
+- sistema concurso oferta
+- curso de licitaciones
+- curso de licitaciones camara de comercio
+- curso de licitaciones con el estado
+- curso de licitaciones con el estado peru
+- curso de licitaciones de obra pública
+- curso de licitaciones gratis
+- curso de licitaciones osce
+- curso de licitaciones peru
+- curso de licitaciones privadas
+- curso de licitaciones publicas
+- curso de licitaciones publicas gratis peru
+- curso de licitaciones publicas y privadas
+- curso de licitaciones públicas gratis
+- curso de licitaciones públicas gratis méxico
+- curso de licitaciones públicas república dominicana
+- curso en licitaciones
+- curso en licitaciones publicas
+- curso experto en licitaciones públicas
+- curso ia para licitaciones
+- curso licitaciones compranet
+- curso licitaciones con el estado
+- curso licitaciones de obra
+- curso licitaciones fundae
+- curso licitaciones gratis
+- curso licitaciones internacionales
+- curso licitaciones mercado publico
+- curso licitaciones privadas
+- curso licitaciones publicas
+- curso licitaciones publicas fundae
+- curso licitaciones públicas gratis
+- curso licitaciones y compras publicas
+- curso online licitaciones
+- curso online licitaciones publicas
+- curso para licitaciones
+- curso para licitaciones publicas
+- curso presentación licitaciones
+- curso sobre licitaciones
+- curso sobre licitaciones públicas
+- curso tecnico licitaciones
+- curso tecnico licitaciones publicas
+- licitaciones en curso en san bartolome de tirajana
+- curso arbitraje en contrataciones del estado
+- curso contrataciones con el estado
+- curso contrataciones con el estado gratis
+- curso contrataciones con el estado osce
+- curso contrataciones con el estado peru
+- curso contrataciones con el estado upc
+- curso contrataciones del estado 2023
+- curso contrataciones del estado 2024
+- curso contrataciones del estado 2024 gratis
+- curso contrataciones del estado 2025
+- curso contrataciones del estado 2026
+- curso contrataciones del estado esan
+- curso contrataciones del estado gratis
+- curso contrataciones del estado ley 32069
+- curso contrataciones del estado osce
+- curso contrataciones del estado peru
+- curso contrataciones del estado presencial
+- curso contrataciones del estado pucp
+- curso contrataciones del estado universidad continental
+- curso contrataciones del estado unmsm
+- curso contrataciones del estado upc
+- curso contrataciones del estado upn
+- curso contrataciones en el estado
+- curso contrataciones y adquisiciones del estado
+- curso de contrataciones del estado
+- curso de contrataciones del estado 2025
+- curso de contrataciones del estado 2026
+- curso de contrataciones del estado esan
+- curso de contrataciones del estado gratis
+- curso de contrataciones del estado gratis 2026
+- curso de contrataciones del estado gratuitos 2025
+- curso de contrataciones del estado ley 32069
+- curso de contrataciones del estado nueva ley
+- curso de contrataciones del estado osce
+- curso de contrataciones del estado peru
+- curso de contrataciones del estado presencial
+- curso de contrataciones del estado pucp
+- curso de contrataciones del estado san marcos
+- curso de contrataciones del estado up
+- curso de especializacion en contrataciones del estado pucp
+- curso de gestion publica y contrataciones del estado
+- curso de ley de contrataciones del estado pucp
+- curso en contrataciones del estado
+- curso en contrataciones del estado 2025
+- curso en contrataciones del estado 2026
+- curso en contrataciones del estado pucp
+- curso en ley de contrataciones del estado
+- curso especialista en contrataciones del estado
+- curso especializado en contrataciones del estado
+- curso gratis de contrataciones y adquisiciones del estado
+- curso ley de contrataciones del estado 2026
+- curso ley de contrataciones del estado gratis
+- curso ley de contrataciones del estado osce
+- curso ley de contrataciones del estado y su reglamento
+- curso ley de contrataciones del estado y su reglamento gratis
+- curso nueva ley de contrataciones del estado 2025 gratis
+- curso nueva ley de contrataciones del estado 2025 osce
+- curso nueva ley de contrataciones del estado 2025 pucp
+- curso para contrataciones del estado
+- curso sobre contrataciones del estado
+- curso sobre la nueva ley de contrataciones del estado
+- curso sobre ley de contrataciones del estado
+- capacitacion contrataciones
+- capacitacion contrataciones con el estado
+- capacitacion contrataciones del estado
+- capacitacion contrataciones publicas
+- capacitacion en contrataciones
+- capacitacion en contrataciones del estado
+- capacitacion en contrataciones del estado 2024
+- capacitacion ley de contrataciones del estado
+- capacitacion ley de contrataciones del estado 2025
+- capacitacion nueva ley de contrataciones del estado
+- capacitacion osce
+- capacitaciones compras y contrataciones
+- plantilla para seguimiento de contratos
+- plantilla seguimiento de contratos
+- formato tdr 2024
+- plantillas de tdr
+- tdr plantillas
+- modelo de tdr
+- modelo de tdr 2024
+- modelo de tdr 2025
+- modelo de tdr 2026
+- modelo de tdr con la nueva ley
+- modelo de tdr con la nueva ley 32069
+- modelo de tdr de bienes
+- modelo de tdr de combustible
+- modelo de tdr de servicio de mantenimiento
+- modelo de tdr osce
+- modelo de tdr para adquisicion de bienes
+- modelo de tdr para alquiler de local
+- modelo de tdr para asistente administrativo
+- modelo de tdr para capacitacion
+- modelo de tdr para consultoria
+- modelo de tdr para contratar personal
+- modelo de tdr para elaboración de expediente técnico
+- modelo de tdr para estudio de suelos
+- modelo de tdr para residente de obra
+- modelo de tdr para servicio de internet
+- modelo de tdr para servicios
+- modelo de tdr para servicios 2025
+- modelo de tdr para servicios 2026
+- modelo de tdr para servicios osce
+- modelo de tdr segun ley 32069
+- modelo de tdr segun osce
+- modelo de tdr servicios
+- modelo de tdr simple
+- modelo de tdr word
+- modelo de un tdr
+- modelo tdr
+- modelo tdr 2025
+- modelo tdr 2026
+- modelo tdr asistente administrativo
+- modelo tdr consultoria
+- modelo tdr ley 32069
+- modelo tdr osce
+- modelo tdr osce 2025
+- modelo tdr servicios
+- modelo tdr servicios osce
+- tdr modelo en word
+- formato de tdr
+- formato de tdr 2025
+- formato de tdr 2026
+- formato de tdr osce
+- formato de tdr osce 2025
+- formato de un tdr
+- formato tdr
+- formato tdr 2025
+- formato tdr 2026
+- formato tdr ley 32069
+- formato tdr osce
+- nuevo formato de tdr 2025
+- formato terminos de referencia osce
+- licitaciones ejemplos pdf
+- modelos de propuestas para licitaciones
+
+---
+
+## ✅ COMO USAR ESTAS KEYWORDS
+
+### Para obtener volumenes GRATIS (Keyword Planner con ubicacion Peru):
+1. ads.google.com > Planificador > 'Obtener volumen de busqueda y previsiones'
+2. Cambiar ubicacion a PERU e idioma ESPAÑOL
+3. Pegar las keywords de NIVEL 1 primero (son las prioritarias)
+4. Exportar CSV
+
+### Keyword objetivo por pagina (sugerencia):
+| Pagina | Keywords NIVEL 1 |
+|---|---|
+| /software-licitaciones | software licitaciones, software seace, sistema licitaciones, plataforma licitaciones |
+| /monitoreo-licitaciones | monitoreo licitaciones, seguimiento licitaciones, alertas licitaciones, notificaciones |
+| /consultoria | consultoria licitaciones, asesoria licitaciones, especialista en licitaciones |
+| /plantillas-tdr | plantillas tdr, modelo tdr, formato tdr (LEAD MAGNET) |
+| /curso-contrataciones | curso contrataciones del estado, capacitacion contrataciones |
