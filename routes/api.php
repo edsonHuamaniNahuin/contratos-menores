@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ContratosMayoresController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\WebhookWhatsAppController;
 use App\Http\Controllers\SubscriptionController;
@@ -13,6 +14,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    // API de Contratos Mayores (SEACE 3.0) para sistemas del cliente
+    Route::get('/contratos-mayores', [ContratosMayoresController::class, 'index']);
+    Route::get('/contratos-mayores/geografia', [ContratosMayoresController::class, 'geografia']);
+    Route::get('/contratos-mayores/{ocid}', [ContratosMayoresController::class, 'show']);
 });
 
 // Webhook de Openpay (sin autenticación, firma verificada en controller)

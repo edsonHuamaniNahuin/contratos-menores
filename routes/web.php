@@ -418,6 +418,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.monitoreo')
         ->middleware('can:view-monitoreo-sistema');
 
+    Route::get('/admin/vigilancia-adjudicaciones', \App\Livewire\VigilanciaAdjudicacionesAdmin::class)
+        ->name('admin.vigilancia-adjudicaciones')
+        ->middleware('can:view-monitoreo-sistema');
+
     // Rutas de gestión de cuentas SEACE
     Route::resource('cuentas', CuentaSeaceController::class)->middleware('can:view-cuentas');
 

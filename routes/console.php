@@ -185,6 +185,24 @@ Schedule::job(new \App\Jobs\RefrescarEstadosContratosMayoresJob(300, 7))
 
 /*
 |--------------------------------------------------------------------------
+| Vigilancia de Adjudicaciones — Contratos Mayores >= S/ 1M
+|--------------------------------------------------------------------------
+| Cada 5 horas (00:00, 05:00, 10:00, 15:00, 20:00 — hora Lima).
+| 1. Registra los procesos >= umbral (vigilancia_monto_min, default 1M)
+|    que aún no están vigilados.
+| 2. Consulta 1x1 vía /records?ocid= el estado actual de los vigilados
+|    pendientes y, si detecta BUENA PRO (ADJUDICADO/CONSENTIDO/OTORGADO/
+|    CONTRATADO), notifica a los destinatarios (email y/o WhatsApp).
+| Cada proceso se notifica UNA sola vez (notificado_en).
+*/
+Schedule::job(new \App\Jobs\VigilarAdjudicacionesMayoresJob())
+    ->cron('0 */5 * * *')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(60)
+    ->appendOutputTo(storage_path('logs/vigilar-adjudicaciones-mayores.log'));
+
+/*
+|--------------------------------------------------------------------------
 | Limpieza de Cache Antiguo — Contratos Mayores
 |--------------------------------------------------------------------------
 | Diario a las 03:30 AM. Elimina keys de cache tipo

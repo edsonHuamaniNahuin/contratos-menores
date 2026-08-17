@@ -103,12 +103,15 @@ class SeaceMayoresService
             $filtroDistrito = (int) ($params['distrito_id'] ?? 0);
             $filtroFechaDesde = $params['fecha_desde'] ?? '';
             $filtroFechaHasta = $params['fecha_hasta'] ?? '';
+            $filtroMontoMin = (float) ($params['monto_min'] ?? 0);
+            $filtroMontoMax = (float) ($params['monto_max'] ?? 0);
 
             // Siempre usar BD local (API OCDS no soporta búsqueda ni filtros)
             return $this->buscarEnBaseDeDatos(
                 $keyword, $filtroEntidad, $filtroObjeto, $filtroEstado,
                 $filtroDepartamento, $filtroProvincia, $filtroDistrito,
                 $filtroFechaDesde, $filtroFechaHasta,
+                $filtroMontoMin, $filtroMontoMax,
                 $page, $perPage
             );
         } catch (\Exception $e) {
@@ -194,6 +197,17 @@ class SeaceMayoresService
                 // fecha inválida: ignorar filtro
             }
         }
+
+        // ── Rango de monto (valor_referencial) ──
+        $montoMin = (float) ($filtros['monto_min'] ?? 0);
+        $montoMax = (float) ($filtros['monto_max'] ?? 0);
+
+        if ($montoMin > 0) {
+            $query->where('valor_referencial', '>=', $montoMin);
+        }
+        if ($montoMax > 0) {
+            $query->where('valor_referencial', '<=', $montoMax);
+        }
     }
 
     /**
@@ -210,6 +224,8 @@ class SeaceMayoresService
         int $filtroDistrito,
         string $filtroFechaDesde,
         string $filtroFechaHasta,
+        float $filtroMontoMin,
+        float $filtroMontoMax,
         int $page,
         int $perPage
     ): array
@@ -226,6 +242,8 @@ class SeaceMayoresService
             'distrito_id' => $filtroDistrito,
             'fecha_desde' => $filtroFechaDesde,
             'fecha_hasta' => $filtroFechaHasta,
+            'monto_min' => $filtroMontoMin,
+            'monto_max' => $filtroMontoMax,
         ]);
 
         $total = $query->count();
@@ -281,6 +299,7 @@ class SeaceMayoresService
                 'current_page' => $page,
                 'total_pages' => max(1, $totalPages),
                 'per_page' => $perPage,
+                'total' => $total,
                 'has_next' => $page < $totalPages,
                 'has_prev' => $page > 1,
             ],
@@ -482,6 +501,33 @@ class SeaceMayoresService
             'provincia' => $provincia ?? '',
             'distrito' => $distrito ?? '',
         ];
+    }
+
+    /**
+     * Extrae la lista de documentos (Bases, Bases Integradas, acta de Buena
+     * Pro / awardNotice, informes, etc.) de un release OCDS.
+     *
+     * @return array<int, array{tipo: string, titulo: string, url: string, formato: string, fecha_publicacion: string}>
+     */
+    public function documentosDelRelease(array $release): array
+    {
+        $documentos = [];
+
+        foreach ($release['tender']['documents'] ?? [] as $doc) {
+            $url = (string) ($doc['url'] ?? '');
+            if ($url === '') {
+                continue;
+            }
+            $documentos[] = [
+                'tipo' => (string) ($doc['documentType'] ?? ''),
+                'titulo' => (string) ($doc['title'] ?? ''),
+                'url' => $url,
+                'formato' => (string) ($doc['format'] ?? ''),
+                'fecha_publicacion' => (string) ($doc['datePublished'] ?? ''),
+            ];
+        }
+
+        return $documentos;
     }
 
     /**
