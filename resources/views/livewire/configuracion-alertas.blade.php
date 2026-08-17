@@ -414,7 +414,8 @@
                 @endif
             </div>
 
-            {{-- Toggle Adjudicaciones (Buena Pro) --}}
+            {{-- Toggle Adjudicaciones (Buena Pro) — requiere permiso --}}
+            @if($canAlertaAdjudicaciones)
             <div wire:key="adjud-toggle-{{ $alertaAdjudicaciones ? '1' : '0' }}"
                  x-data="{ active: {{ $alertaAdjudicaciones ? 'true' : 'false' }} }"
                  class="flex items-center justify-between bg-amber-50/60 border border-amber-100 rounded-2xl px-4 py-3">
@@ -437,6 +438,7 @@
                           :class="active ? 'translate-x-5' : 'translate-x-0'"></span>
                 </button>
             </div>
+            @endif
         </div>
     </div>
 

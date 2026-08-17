@@ -32,6 +32,9 @@ class ConfiguracionAlertas extends Component
     public bool $canAddWhatsApp = false;
     public bool $canAddEmail = false;
 
+    // ── Permiso de alerta de adjudicaciones ────────────────────────
+    public bool $canAlertaAdjudicaciones = false;
+
     // ── Perfil unificado (company_name + company_copy + keywords) ────────────────
     public string $profile_company_name = '';
     public string $profile_company_copy = '';
@@ -83,6 +86,7 @@ class ConfiguracionAlertas extends Component
         $this->canAddTelegram = $user && $user->hasPermission('add-telegram-subscription');
         $this->canAddWhatsApp = $user && $user->hasPermission('add-whatsapp-subscription');
         $this->canAddEmail = $user && $user->hasPermission('add-email-subscription');
+        $this->canAlertaAdjudicaciones = $user && $user->hasPermission('alerta-adjudicaciones');
         $this->telegramBotUrl = SystemSetting::getValue('telegram_bot_url', '') ?? '';
 
         $this->loadKeywords();
@@ -116,9 +120,15 @@ class ConfiguracionAlertas extends Component
 
     /**
      * Activa/desactiva la alerta cuando un proceso vigilado pase a buena pro.
+     * Requiere el permiso 'alerta-adjudicaciones'.
      */
     public function toggleAlertaAdjudicaciones(): void
     {
+        if (!$this->canAlertaAdjudicaciones) {
+            session()->flash('error', 'Tu plan no incluye alertas de adjudicación. Mejora tu plan para activarlas.');
+            return;
+        }
+
         try {
             $profile = auth()->user()->getOrCreateSubscriberProfile();
             $nuevo = !$profile->alerta_adjudicaciones;
@@ -861,6 +871,7 @@ class ConfiguracionAlertas extends Component
             'canAddTelegram' => $this->canAddTelegram,
             'canAddWhatsApp' => $this->canAddWhatsApp,
             'canAddEmail' => $this->canAddEmail,
+            'canAlertaAdjudicaciones' => $this->canAlertaAdjudicaciones,
             'allWhatsAppSubscriptions' => $allWhatsAppSubscriptions,
             'allEmailSubscriptions' => $allEmailSubscriptions,
         ]);

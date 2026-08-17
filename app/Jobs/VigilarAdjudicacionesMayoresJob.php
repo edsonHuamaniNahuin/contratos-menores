@@ -286,6 +286,11 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
         foreach ($profiles as $profile) {
             $userId = $profile->user_id;
 
+            // Defensa en profundidad: si perdió el permiso, no notificar
+            if (!$profile->user?->hasPermission('alerta-adjudicaciones')) {
+                continue;
+            }
+
             // ── Telegram ──
             $tgSubs = TelegramSubscription::where('user_id', $userId)
                 ->where('activo', true)

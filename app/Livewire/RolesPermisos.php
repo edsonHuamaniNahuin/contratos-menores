@@ -159,7 +159,7 @@ class RolesPermisos extends Component
             'TDR y procesos' => ['import-tdr', 'analyze-tdr', 'follow-contracts', 'cotizar-seace', 'create-proforma',
                 'view-buscador-mayores', 'view-detalle-mayores', 'download-tdr-mayores',
                 'follow-mayores', 'analyze-tdr-mayores', 'detect-direccionamiento-mayores',
-                'create-proforma-mayores', 'view-partes-mayores', 'export-mayores'],
+                'create-proforma-mayores', 'view-partes-mayores', 'export-mayores', 'alerta-adjudicaciones'],
             'Administración' => ['manage-roles-permissions', 'view-consumo-ia', 'view-monitoreo-sistema'],
         ];
 
