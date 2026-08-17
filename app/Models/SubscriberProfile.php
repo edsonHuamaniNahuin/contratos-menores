@@ -15,6 +15,11 @@ class SubscriberProfile extends Model
         'user_id',
         'company_name',
         'company_copy',
+        'alerta_adjudicaciones',
+    ];
+
+    protected $casts = [
+        'alerta_adjudicaciones' => 'boolean',
     ];
 
     public function user(): BelongsTo

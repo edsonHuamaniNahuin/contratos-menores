@@ -413,6 +413,30 @@
                     <span class="text-[11px] text-neutral-400 italic">Configura un correo primero</span>
                 @endif
             </div>
+
+            {{-- Toggle Adjudicaciones (Buena Pro) --}}
+            <div wire:key="adjud-toggle-{{ $alertaAdjudicaciones ? '1' : '0' }}"
+                 x-data="{ active: {{ $alertaAdjudicaciones ? 'true' : 'false' }} }"
+                 class="flex items-center justify-between bg-amber-50/60 border border-amber-100 rounded-2xl px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200"
+                         :class="active ? 'bg-amber-500/20' : 'bg-neutral-200'">
+                        <svg class="w-4.5 h-4.5 transition-colors duration-200" :class="active ? 'text-amber-600' : 'text-neutral-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-neutral-900">Alertar cuando procesos se hayan adjudicado</p>
+                        <p class="text-[11px] text-neutral-400">Recibe aviso cuando un proceso vigilado (mayor a S/ 1M) pase a buena pro, por tus canales activos.</p>
+                    </div>
+                </div>
+                <button @click="active = !active; $wire.toggleAlertaAdjudicaciones()"
+                        class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none"
+                        :class="active ? 'bg-secondary-500' : 'bg-neutral-300'">
+                    <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                          :class="active ? 'translate-x-5' : 'translate-x-0'"></span>
+                </button>
+            </div>
         </div>
     </div>
 

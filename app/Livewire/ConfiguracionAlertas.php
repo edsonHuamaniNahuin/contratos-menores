@@ -41,6 +41,9 @@ class ConfiguracionAlertas extends Component
     public bool $showProfileForm = false;
     public array $availableKeywords = [];
 
+    // ── Alerta de adjudicaciones (buena pro de procesos vigilados) ──
+    public bool $alertaAdjudicaciones = false;
+
     // ── Telegram Modal ────────────────────────────────────────────
     public bool $showTelegramModal = false;
     public string $telegramBotUrl = '';
@@ -103,9 +106,35 @@ class ConfiguracionAlertas extends Component
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id)
                 ->toArray();
+            $this->alertaAdjudicaciones = (bool) $profile->alerta_adjudicaciones;
         } else {
             $this->profile_company_copy = '';
             $this->profile_keywords = [];
+            $this->alertaAdjudicaciones = false;
+        }
+    }
+
+    /**
+     * Activa/desactiva la alerta cuando un proceso vigilado pase a buena pro.
+     */
+    public function toggleAlertaAdjudicaciones(): void
+    {
+        try {
+            $profile = auth()->user()->getOrCreateSubscriberProfile();
+            $nuevo = !$profile->alerta_adjudicaciones;
+
+            $profile->update(['alerta_adjudicaciones' => $nuevo]);
+            $this->alertaAdjudicaciones = $nuevo;
+
+            $estado = $nuevo ? 'activadas' : 'desactivadas';
+            session()->flash('success', "✅ Alertas de adjudicación {$estado}.");
+            Log::info('Adjudicaciones: Toggle alerta', [
+                'user_id' => auth()->id(),
+                'activo' => $nuevo,
+            ]);
+        } catch (\Exception $e) {
+            session()->flash('error', '❌ Error: ' . $e->getMessage());
+            Log::error('Error al activar alerta de adjudicaciones', ['error' => $e->getMessage()]);
         }
     }
 

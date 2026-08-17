@@ -4,10 +4,16 @@ namespace App\Jobs;
 
 use App\Mail\AlertaAdjudicacion;
 use App\Models\ContratoMayor;
+use App\Models\EmailSubscription;
+use App\Models\SubscriberProfile;
 use App\Models\SystemSetting;
+use App\Models\TelegramSubscription;
 use App\Models\VigilanciaAdjudicacion;
 use App\Models\VigilanciaAdjudicacionDestinatario;
+use App\Models\WhatsAppSubscription;
+use App\Services\ProcessNotificationTracker;
 use App\Services\SeaceMayoresService;
+use App\Services\TelegramNotificationService;
 use App\Services\WhatsAppNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -196,13 +202,6 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
     ): void {
         $destinatarios = VigilanciaAdjudicacionDestinatario::activos()->get();
 
-        if ($destinatarios->isEmpty()) {
-            Log::warning('VigilarAdjudicacionesMayores: buena pro detectada pero SIN destinatarios configurados', [
-                'ocid' => $vig->ocid,
-            ]);
-            return;
-        }
-
         $proceso = [
             'nomenclatura' => $vig->nomenclatura,
             'entidad_nombre' => $vig->entidad_nombre,
@@ -215,40 +214,219 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
 
         $mensajeWhatsApp = $this->buildMensajeWhatsApp($proceso);
 
-        foreach ($destinatarios as $dest) {
-            if (!empty($dest->email)) {
+        if ($destinatarios->isEmpty()) {
+            Log::warning('VigilarAdjudicacionesMayores: buena pro detectada pero SIN destinatarios configurados', [
+                'ocid' => $vig->ocid,
+            ]);
+            // NO retornar: los usuarios opt-in de la plataforma siguen abajo
+        } else {
+            foreach ($destinatarios as $dest) {
+                if (!empty($dest->email)) {
+                    try {
+                        Mail::to($dest->email)->send(new AlertaAdjudicacion($proceso));
+                        Log::info('VigilarAdjudicacionesMayores: email enviado', [
+                            'ocid' => $vig->ocid,
+                            'email' => $dest->email,
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::error('VigilarAdjudicacionesMayores: fallo email', [
+                            'ocid' => $vig->ocid,
+                            'email' => $dest->email,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                if (!empty($dest->telefono)) {
+                    try {
+                        $whatsapp->enviarMensaje($dest->telefono, $mensajeWhatsApp);
+                        Log::info('VigilarAdjudicacionesMayores: whatsapp enviado', [
+                            'ocid' => $vig->ocid,
+                            'telefono' => $dest->telefono,
+                        ]);
+                        usleep(500_000); // margen entre envíos WhatsApp
+                    } catch (\Throwable $e) {
+                        Log::error('VigilarAdjudicacionesMayores: fallo whatsapp', [
+                            'ocid' => $vig->ocid,
+                            'telefono' => $dest->telefono,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Usuarios de la plataforma que activaron "alertar cuando procesos se hayan adjudicado"
+        $this->notificarUsuariosOptIn($vig, $proceso, $mensajeWhatsApp, $whatsapp);
+    }
+
+    /**
+     * Notifica a los usuarios que activaron la opción en /configuracion-alertas,
+     * por sus canales activos (Telegram/WhatsApp/Email), con dedup per-usuario.
+     */
+    protected function notificarUsuariosOptIn(
+        VigilanciaAdjudicacion $vig,
+        array $proceso,
+        string $mensajeWhatsApp,
+        WhatsAppNotificationService $whatsapp
+    ): void {
+        $profiles = SubscriberProfile::query()
+            ->where('alerta_adjudicaciones', true)
+            ->with('user')
+            ->get();
+
+        if ($profiles->isEmpty()) {
+            return;
+        }
+
+        $tracker = app(ProcessNotificationTracker::class);
+        $telegram = app(TelegramNotificationService::class);
+        $mensajeTelegram = $this->buildMensajeTelegram($proceso);
+
+        foreach ($profiles as $profile) {
+            $userId = $profile->user_id;
+
+            // ── Telegram ──
+            $tgSubs = TelegramSubscription::where('user_id', $userId)
+                ->where('activo', true)
+                ->get();
+
+            foreach ($tgSubs as $tg) {
+                if (!$tg->recibir_mayores) {
+                    continue;
+                }
+                $recipient = (string) $tg->chat_id;
+                if ($tracker->wasAlreadyNotified($vig->ocid, $userId, 'adj-telegram', $recipient)) {
+                    continue;
+                }
                 try {
-                    Mail::to($dest->email)->send(new AlertaAdjudicacion($proceso));
-                    Log::info('VigilarAdjudicacionesMayores: email enviado', [
-                        'ocid' => $vig->ocid,
-                        'email' => $dest->email,
-                    ]);
+                    $resultado = $telegram->enviarMensaje($tg->chat_id, $mensajeTelegram);
+                    if ($resultado['success'] ?? false) {
+                        $tracker->recordNotification(
+                            [
+                                'desContratacion' => $proceso['nomenclatura'],
+                                'nomEntidad' => $proceso['entidad_nombre'],
+                                'montoReferencial' => $proceso['valor_referencial'],
+                                'fecPublica' => $proceso['fecha_publicacion'],
+                                'nomObjetoContrato' => 'Buena Pro',
+                            ],
+                            $vig->ocid,
+                            $userId,
+                            'adj-telegram',
+                            $recipient,
+                            'alerta-adjudicacion'
+                        );
+                        Log::info('VigilarAdjudicacionesMayores: telegram usuario', [
+                            'ocid' => $vig->ocid,
+                            'user_id' => $userId,
+                        ]);
+                    }
                 } catch (\Throwable $e) {
-                    Log::error('VigilarAdjudicacionesMayores: fallo email', [
+                    Log::error('VigilarAdjudicacionesMayores: fallo telegram usuario', [
                         'ocid' => $vig->ocid,
-                        'email' => $dest->email,
+                        'user_id' => $userId,
                         'error' => $e->getMessage(),
                     ]);
                 }
             }
 
-            if (!empty($dest->telefono)) {
+            // ── WhatsApp ──
+            $wa = WhatsAppSubscription::where('user_id', $userId)
+                ->where('activo', true)
+                ->first();
+
+            if ($wa && $wa->recibir_mayores && !$tracker->wasAlreadyNotified($vig->ocid, $userId, 'adj-whatsapp', (string) $wa->phone_number)) {
                 try {
-                    $whatsapp->enviarMensaje($dest->telefono, $mensajeWhatsApp);
-                    Log::info('VigilarAdjudicacionesMayores: whatsapp enviado', [
-                        'ocid' => $vig->ocid,
-                        'telefono' => $dest->telefono,
-                    ]);
-                    usleep(500_000); // margen entre envíos WhatsApp
+                    $resultado = $whatsapp->enviarMensaje($wa->phone_number, $mensajeWhatsApp);
+                    if ($resultado['success'] ?? false) {
+                        $tracker->recordNotification(
+                            [
+                                'desContratacion' => $proceso['nomenclatura'],
+                                'nomEntidad' => $proceso['entidad_nombre'],
+                                'montoReferencial' => $proceso['valor_referencial'],
+                                'fecPublica' => $proceso['fecha_publicacion'],
+                                'nomObjetoContrato' => 'Buena Pro',
+                            ],
+                            $vig->ocid,
+                            $userId,
+                            'adj-whatsapp',
+                            (string) $wa->phone_number,
+                            'alerta-adjudicacion'
+                        );
+                        Log::info('VigilarAdjudicacionesMayores: whatsapp usuario', [
+                            'ocid' => $vig->ocid,
+                            'user_id' => $userId,
+                        ]);
+                    }
+                    usleep(300_000);
                 } catch (\Throwable $e) {
-                    Log::error('VigilarAdjudicacionesMayores: fallo whatsapp', [
+                    Log::error('VigilarAdjudicacionesMayores: fallo whatsapp usuario', [
                         'ocid' => $vig->ocid,
-                        'telefono' => $dest->telefono,
+                        'user_id' => $userId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // ── Email ──
+            $emailSub = EmailSubscription::where('user_id', $userId)
+                ->where('activo', true)
+                ->first();
+
+            if ($emailSub && !$tracker->wasAlreadyNotified($vig->ocid, $userId, 'adj-email', (string) $emailSub->email)) {
+                try {
+                    Mail::to($emailSub->email)->send(new AlertaAdjudicacion($proceso));
+                    $tracker->recordNotification(
+                        [
+                            'desContratacion' => $proceso['nomenclatura'],
+                            'nomEntidad' => $proceso['entidad_nombre'],
+                            'montoReferencial' => $proceso['valor_referencial'],
+                            'fecPublica' => $proceso['fecha_publicacion'],
+                            'nomObjetoContrato' => 'Buena Pro',
+                        ],
+                        $vig->ocid,
+                        $userId,
+                        'adj-email',
+                        (string) $emailSub->email,
+                        'alerta-adjudicacion'
+                    );
+                    Log::info('VigilarAdjudicacionesMayores: email usuario', [
+                        'ocid' => $vig->ocid,
+                        'user_id' => $userId,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('VigilarAdjudicacionesMayores: fallo email usuario', [
+                        'ocid' => $vig->ocid,
+                        'user_id' => $userId,
                         'error' => $e->getMessage(),
                     ]);
                 }
             }
         }
+    }
+
+    protected function buildMensajeTelegram(array $p): string
+    {
+        $mensaje = "🏆 <b>BUENA PRO DETECTADA</b>\n\n";
+        $mensaje .= "📋 <b>{$p['nomenclatura']}</b>\n";
+        $mensaje .= "🏢 {$p['entidad_nombre']}\n";
+        $mensaje .= "📌 Estado: <b>{$p['estado']}</b>\n";
+
+        if ($p['valor_referencial'] > 0) {
+            $mensaje .= '💰 Valor referencial: S/ ' . number_format($p['valor_referencial'], 2) . "\n";
+        }
+
+        if (!empty($p['proveedores'])) {
+            $mensaje .= '🤝 Proveedor: ' . implode(', ', array_slice($p['proveedores'], 0, 3)) . "\n";
+        }
+
+        if ($p['fecha_publicacion'] !== '') {
+            $mensaje .= "📅 Publicado: {$p['fecha_publicacion']}\n";
+        }
+
+        $mensaje .= "\n🔍 Revisa el detalle en licitacionesmype.pe/buscador-contratos-mayores";
+
+        return $mensaje;
     }
 
     protected function buildMensajeWhatsApp(array $p): string
