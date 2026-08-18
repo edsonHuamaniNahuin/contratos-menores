@@ -134,11 +134,27 @@ class EmailCampaigns extends Component
         $this->dispatch('notify', 'Plantilla guardada.', 'success');
     }
 
-    public function loadTemplate(int $id): void
+    /**
+     * Cargar plantilla en una campaña.
+     *
+     * Si $abrirCampana es true (botón "Usar en campaña"), abre el modal de
+     * nueva campaña con la plantilla precargada. Si es false (select dentro
+     * del modal), solo rellena asunto/cuerpo de la campaña en edición.
+     */
+    public function loadTemplate(int $id, bool $abrirCampana = false): void
     {
         $t = EmailTemplate::findOrFail($id);
+
+        if ($abrirCampana) {
+            $this->editingId = -1;
+            $this->resetForm();
+            $this->name = $t->name;
+        }
+
         $this->subject = $t->subject;
         $this->body = $t->body;
+
+        $this->dispatch('trix-cargar', inputId: 'trix-ta');
         $this->dispatch('notify', 'Plantilla cargada: ' . $t->name, 'info');
     }
 
