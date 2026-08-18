@@ -564,14 +564,6 @@
                 </div>
             </div>
                 </div>
-                @php $waBizPhone = config('services.whatsapp.business_phone', ''); @endphp
-                @if($waBizPhone)
-                <div class="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
-                    <svg class="w-4 h-4 shrink-0 mt-0.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Si dejas de enviar mensajes al bot por mas de 24 horas, las notificaciones se pausan.
-                    <a href="https://wa.me/{{ $waBizPhone }}" target="_blank" class="text-amber-800 font-semibold underline hover:text-amber-900">Envia "hola" al +{{ $waBizPhone }} para reactivar.</a></span>
-                </div>
-                @endif
                 <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 self-end md:self-auto">
                             <button wire:click="probarNotificacionSuscriptor({{ $suscripcion->id }})" title="Enviar prueba" class="p-2 hover:bg-white rounded-full transition-colors">
                                 <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
@@ -742,6 +734,18 @@
                             @endif
                             <span>📅 Desde: {{ $whatsappSubscription->created_at->format('d/m/Y') }}</span>
                         </div>
+                        @php
+                            $waBizPhone = config('services.whatsapp.business_phone', '');
+                            $waVentanaCerrada = !$whatsappSubscription->ultima_interaccion_at
+                                || $whatsappSubscription->ultima_interaccion_at->diffInHours(now()) >= 24;
+                        @endphp
+                        @if($waBizPhone && $waVentanaCerrada)
+                        <div class="mt-2 inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">
+                            <svg class="w-4 h-4 text-red-500 shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            <span class="text-xs font-semibold text-red-600">Notificaciones pausadas: mas de 24 horas sin mensajes al bot.</span>
+                            <a href="https://wa.me/{{ $waBizPhone }}?text=Hola%20Vigilante%20SEACE" target="_blank" class="text-xs font-bold text-red-700 underline hover:text-red-800">Envia "hola" al +{{ $waBizPhone }} para reactivar</a>
+                        </div>
+                        @endif
                     </div>
                 </div>
                 <div class="flex items-center gap-4 mt-4">
@@ -815,12 +819,16 @@
                         <th class="text-center py-2 pr-3">Menores</th>
                         <th class="text-center py-2 pr-3">Mayores</th>
                         <th class="text-right py-2 pr-3">Notif.</th>
-                        <th class="text-right py-2">Última</th>
+                        <th class="text-right py-2 pr-3">Última</th>
+                        <th class="text-center py-2">Ventana 24h</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-50">
                     @foreach($allWhatsAppSubscriptions as $wa)
-                    @php $u = $wa->user; @endphp
+                    @php
+                        $u = $wa->user;
+                        $waCerrada = !$wa->ultima_interaccion_at || $wa->ultima_interaccion_at->diffInHours(now()) >= 24;
+                    @endphp
                     <tr class="hover:bg-neutral-50 transition-colors">
                         <td class="py-2.5 pr-3 font-medium text-neutral-800">
                             {{ $u?->name ?? 'N/A' }}
@@ -855,6 +863,19 @@
                         <td class="py-2.5 pr-3 text-right tabular-nums font-medium text-neutral-700">{{ number_format($wa->notificaciones_recibidas) }}</td>
                         <td class="py-2.5 text-right text-xs text-neutral-400 whitespace-nowrap">
                             {{ $wa->ultima_notificacion_at ? $wa->ultima_notificacion_at->diffForHumans() : '—' }}
+                        </td>
+                        <td class="py-2.5 text-center">
+                            @if($wa->activo && $waCerrada)
+                                <span title="Ventana de 24h vencida: el usuario debe enviar 'hola' al bot para reactivar">
+                                    <svg class="w-4 h-4 text-red-500 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                </span>
+                            @elseif($wa->activo)
+                                <span title="Ventana abierta">
+                                    <svg class="w-4 h-4 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </span>
+                            @else
+                                <span class="text-neutral-300">—</span>
+                            @endif
                         </td>
                     </tr>
                     @endforeach
