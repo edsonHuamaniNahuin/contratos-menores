@@ -73,7 +73,7 @@
                 <select wire:model.live="estadoVigilancia" class="w-full px-3 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="todos">Todos</option>
                     <option value="pendientes">Pendientes (en vigilancia)</option>
-                    <option value="notificados">Con buena pro notificada</option>
+                    <option value="notificados">Resueltos (buena pro / cerrados)</option>
                 </select>
             </div>
             <div class="lg:col-span-3">
@@ -111,7 +111,7 @@
                 </thead>
                 <tbody>
                     @forelse($procesos as $p)
-                        @php $notif = $p->notificado_en ? ($p->estado_notificado ?: 'BUENA PRO') : null; @endphp
+                        @php $notif = null; @endphp
                         <tr class="border-b border-neutral-50 hover:bg-neutral-50/50">
                             <td class="py-3 pr-4 text-neutral-800 max-w-[220px] truncate">{{ $p->entidad_nombre }}</td>
                             <td class="py-3 pr-4 font-semibold text-neutral-900">{{ $p->nomenclatura }}</td>
@@ -125,8 +125,13 @@
                             <td class="py-3 pr-4 text-neutral-600">{{ $p->departamento?->nombre ?? '—' }}</td>
                             <td class="py-3 pr-4 text-neutral-600">{{ $p->fecha_publicacion?->format('d/m/Y') ?? '—' }}</td>
                             <td class="py-3">
-                                @if($notif)
-                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">🏆 {{ ucfirst(strtolower($notif)) }}</span>
+                                @php
+                                    $esBuenaPro = in_array(strtoupper($p->estado_notificado ?? ''), ['ADJUDICADO', 'CONSENTIDO', 'OTORGADO', 'CONTRATADO']);
+                                @endphp
+                                @if($p->notificado_en && $esBuenaPro)
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">🏆 {{ ucfirst(strtolower($p->estado_notificado)) }}</span>
+                                @elseif($p->notificado_en)
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-600">Cerrado · {{ ucfirst(strtolower($p->estado_notificado)) }}</span>
                                 @else
                                     <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-600">En vigilancia</span>
                                 @endif

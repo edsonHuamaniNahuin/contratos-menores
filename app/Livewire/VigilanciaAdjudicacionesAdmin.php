@@ -83,10 +83,8 @@ class VigilanciaAdjudicacionesAdmin extends Component
 
         $this->stats = [
             'vigilados' => VigilanciaAdjudicacion::count(),
-            'pendientes' => VigilanciaAdjudicacion::whereNull('notificado_en')
-                ->whereHas('contrato', fn ($q) => $q->whereNotIn('estado', VigilanciaAdjudicacion::ESTADOS_FINALES))
-                ->count(),
-            'notificados' => VigilanciaAdjudicacion::whereNotNull('notificado_en')->count(),
+            'pendientes' => VigilanciaAdjudicacion::whereNull('notificado_en')->count(),
+            'notificados' => VigilanciaAdjudicacion::whereIn('estado_notificado', VigilanciaAdjudicacion::ESTADOS_BUENA_PRO)->count(),
         ];
     }
 
@@ -174,7 +172,7 @@ class VigilanciaAdjudicacionesAdmin extends Component
             ])
             ->join('vigilancia_adjudicaciones', 'vigilancia_adjudicaciones.ocid', '=', 'contratos_mayores.ocid');
 
-        // Filtro por estado de la vigilancia (pendiente / notificada)
+        // Filtro por estado de la vigilancia (pendiente / resuelta)
         if ($this->estadoVigilancia === 'pendientes') {
             $query->whereNull('vigilancia_adjudicaciones.notificado_en');
         } elseif ($this->estadoVigilancia === 'notificados') {

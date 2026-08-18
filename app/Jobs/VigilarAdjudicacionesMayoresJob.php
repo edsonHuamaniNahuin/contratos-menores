@@ -94,6 +94,13 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
             ->pluck('ocid')
             ->flip();
 
+        // Estados actuales de los contratos candidatos: si un contrato NUEVO
+        // para la vigilancia ya está en estado final (buena pro o desierto/
+        // cancelado/nulo), se registra directamente como RESUELTO, sin alerta
+        // (no hubo transición observada por nosotros).
+        $estados = ContratoMayor::whereIn('ocid', $ocids)
+            ->pluck('estado', 'ocid');
+
         $nuevos = 0;
         $now = now();
 
@@ -103,8 +110,14 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
                 if (isset($existentes[$ocid])) {
                     continue;
                 }
+
+                $estado = $estados[$ocid] ?? null;
+                $final = in_array($estado, VigilanciaAdjudicacion::ESTADOS_FINALES, true);
+
                 $filas[] = [
                     'ocid' => $ocid,
+                    'estado_notificado' => $final ? $estado : null,
+                    'notificado_en' => $final ? $now : null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -129,9 +142,11 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
      */
     protected function escanearVigilados(SeaceMayoresService $service, WhatsAppNotificationService $whatsapp, float $umbral): void
     {
+        // Escanea TODOS los pendientes (sin filtrar por estado del contrato):
+        // un estado final detectado aquí SÍ fue una transición observada,
+        // así que se resuelve (y se alerta si es buena pro).
         $vigilados = VigilanciaAdjudicacion::query()
             ->whereNull('notificado_en')
-            ->whereHas('contrato', fn ($q) => $q->whereNotIn('estado', VigilanciaAdjudicacion::ESTADOS_FINALES))
             ->orderBy('updated_at', 'asc')
             ->limit(500)
             ->get(['id', 'ocid']);
@@ -198,6 +213,20 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
                 $buenaPro++;
 
                 Log::info('VigilarAdjudicacionesMayores: BUENA PRO detectada', [
+                    'ocid' => $vig->ocid,
+                    'nomenclatura' => $contrato->nomenclatura,
+                    'estado' => $nuevoEstado,
+                ]);
+            } elseif (in_array($nuevoEstado, VigilanciaAdjudicacion::ESTADOS_FINALES, true)) {
+                // Estado final sin buena pro (desierto, cancelado, nulo...):
+                // resolver sin alerta y dejar de vigilar.
+                $vig->update([
+                    'estado_notificado' => $nuevoEstado,
+                    'notificado_en' => now(),
+                ]);
+                $sinCambio++;
+
+                Log::info('VigilarAdjudicacionesMayores: proceso cerrado sin buena pro', [
                     'ocid' => $vig->ocid,
                     'nomenclatura' => $contrato->nomenclatura,
                     'estado' => $nuevoEstado,
