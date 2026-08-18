@@ -736,18 +736,36 @@
                         </div>
                         @php
                             $waBizPhone = config('services.whatsapp.business_phone', '');
-                            $waVentanaVencida = $whatsappSubscription->ultima_interaccion_at !== null
-                                && $whatsappSubscription->ultima_interaccion_at->diffInHours(now()) >= 24;
+                            $waInter = $whatsappSubscription->ultima_interaccion_at;
+                            $waFalla = $whatsappSubscription->ultima_entrega_fallida_at;
+                            $waVentanaVencida = false;
+                            if ($waFalla && (!$waInter || $waFalla->gt($waInter))) {
+                                $waVentanaVencida = true;
+                            } elseif ($waInter && $waInter->diffInHours(now()) >= 24) {
+                                $waVentanaVencida = true;
+                            }
                         @endphp
                         @if($waBizPhone && $waVentanaVencida)
                         <div class="mt-2 inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">
-                            <svg class="w-4 h-4 text-red-500 shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            <span class="relative group">
+                                <svg class="w-4 h-4 text-red-500 shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 hidden group-hover:block bg-red-600 text-white text-[11px] leading-snug rounded-xl px-3 py-2 shadow-lg z-20">
+                                    <p class="font-bold mb-0.5">⚠️ Ventana de 24 horas vencida</p>
+                                    Por políticas de Meta, WhatsApp solo permite enviarte notificaciones dentro de las 24 horas siguientes a tu último mensaje o respuesta a una alerta del bot. Los procesos pendientes se te enviarán al reactivar.
+                                </div>
+                            </span>
                             <span class="text-xs font-semibold text-red-600">Notificaciones pausadas: mas de 24 horas sin mensajes al bot.</span>
                             <a href="https://wa.me/{{ $waBizPhone }}?text=Hola%20Vigilante%20SEACE" target="_blank" class="text-xs font-bold text-red-700 underline hover:text-red-800">Envia "hola" al +{{ $waBizPhone }} para reactivar</a>
                         </div>
                         @elseif($waBizPhone)
                         <div class="mt-2 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-3 py-1.5">
-                            <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            <span class="relative group">
+                                <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 hidden group-hover:block bg-green-600 text-white text-[11px] leading-snug rounded-xl px-3 py-2 shadow-lg z-20">
+                                    <p class="font-bold mb-0.5">✓ Ventana de 24 horas activa</p>
+                                    Interactuaste con el bot hace menos de 24 horas. Responde las alertas para mantener la ventana abierta.
+                                </div>
+                            </span>
                             <span class="text-xs font-semibold text-green-600">Ventana activa</span>
                         </div>
                         @endif
@@ -832,8 +850,14 @@
                     @foreach($allWhatsAppSubscriptions as $wa)
                     @php
                         $u = $wa->user;
-                        $waVencida = $wa->ultima_interaccion_at !== null
-                            && $wa->ultima_interaccion_at->diffInHours(now()) >= 24;
+                        $waInter = $wa->ultima_interaccion_at;
+                        $waFalla = $wa->ultima_entrega_fallida_at;
+                        $waVencida = false;
+                        if ($waFalla && (!$waInter || $waFalla->gt($waInter))) {
+                            $waVencida = true;
+                        } elseif ($waInter && $waInter->diffInHours(now()) >= 24) {
+                            $waVencida = true;
+                        }
                     @endphp
                     <tr class="hover:bg-neutral-50 transition-colors">
                         <td class="py-2.5 pr-3 font-medium text-neutral-800">
@@ -872,12 +896,20 @@
                         </td>
                         <td class="py-2.5 text-center">
                             @if($wa->activo && $waVencida)
-                                <span title="Ventana de 24h vencida: el usuario debe enviar 'hola' al bot para reactivar">
+                                <span class="relative group inline-block">
                                     <svg class="w-4 h-4 text-red-500 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 hidden group-hover:block bg-red-600 text-white text-[11px] leading-snug rounded-xl px-3 py-2 shadow-lg z-20">
+                                        <p class="font-bold mb-0.5">⚠️ Ventana de 24 horas vencida</p>
+                                        Por políticas de Meta, WhatsApp solo permite enviar notificaciones dentro de las 24 horas siguientes al último mensaje o respuesta del usuario a una alerta del bot. Los procesos pendientes se reenviarán cuando el usuario reabra la ventana.
+                                    </div>
                                 </span>
                             @elseif($wa->activo)
-                                <span title="Ventana activa">
+                                <span class="relative group inline-block">
                                     <svg class="w-4 h-4 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 hidden group-hover:block bg-green-600 text-white text-[11px] leading-snug rounded-xl px-3 py-2 shadow-lg z-20">
+                                        <p class="font-bold mb-0.5">✓ Ventana de 24 horas activa</p>
+                                        El usuario interactuó con el bot hace menos de 24 horas. Responder alertas mantiene la ventana abierta.
+                                    </div>
                                 </span>
                             @else
                                 <span class="text-neutral-300">—</span>

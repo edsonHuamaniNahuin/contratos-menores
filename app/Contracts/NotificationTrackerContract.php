@@ -51,7 +51,8 @@ interface NotificationTrackerContract
         string $canal,
         string $recipientId,
         ?string $subscriptionLabel = null,
-        array $keywordsMatched = []
+        array $keywordsMatched = [],
+        ?string $wamid = null
     ): bool;
 
     /**

@@ -49,18 +49,19 @@ class ProcessNotificationTracker implements NotificationTrackerContract
         string $canal,
         string $recipientId,
         ?string $subscriptionLabel = null,
-        array $keywordsMatched = []
+        array $keywordsMatched = [],
+        ?string $wamid = null
     ): bool {
         try {
             return DB::transaction(function () use (
                 $contratoData, $seaceProcesoId, $userId, $canal,
-                $recipientId, $subscriptionLabel, $keywordsMatched
+                $recipientId, $subscriptionLabel, $keywordsMatched, $wamid
             ) {
                 // 1. Crear o encontrar el proceso (un solo INSERT por proceso único)
                 $process = NotifiedProcess::findOrCreateFromSeace($seaceProcesoId, $contratoData);
 
                 // 2. Registrar el envío (respeta unique constraint)
-                $created = NotificationSend::firstOrCreate(
+                $send = NotificationSend::firstOrCreate(
                     [
                         'notified_process_id' => $process->id,
                         'user_id' => $userId,
@@ -74,7 +75,13 @@ class ProcessNotificationTracker implements NotificationTrackerContract
                     ]
                 );
 
-                return $created->wasRecentlyCreated;
+                // 3. Asociar el wamid (id del mensaje en Meta) para
+                //    correlacionar con los estados de entrega del webhook.
+                if ($wamid !== null && $wamid !== '') {
+                    $send->update(['wamid' => $wamid]);
+                }
+
+                return $send->wasRecentlyCreated;
             });
         } catch (\Exception $e) {
             Log::warning('ProcessNotificationTracker: error al registrar envío', [

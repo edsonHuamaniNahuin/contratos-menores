@@ -37,11 +37,15 @@ class NotificationSend extends Model
         'subscription_label',
         'keywords_matched',
         'notified_at',
+        'wamid',
+        'estado_entrega',
+        'reenviado_at',
     ];
 
     protected $casts = [
         'keywords_matched' => 'array',
         'notified_at' => 'datetime',
+        'reenviado_at' => 'datetime',
     ];
 
     // ─── Relationships ──────────────────────────────────────────────

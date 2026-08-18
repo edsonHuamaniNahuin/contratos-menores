@@ -147,7 +147,7 @@ class NotificarContratosMayoresJob implements ShouldQueue
                     continue;
                 }
 
-                $this->enviarNotificacion($channel, $sub, $contrato, $matched);
+                $respuestaEnvio = $this->enviarNotificacion($channel, $sub, $contrato, $matched);
 
                 $tracker->recordNotification(
                     $this->contratoToTrackerPayload($contrato),
@@ -156,7 +156,8 @@ class NotificarContratosMayoresJob implements ShouldQueue
                     $canal,
                     $recipientId,
                     $sub instanceof TelegramSubscription ? 'Telegram' : 'WhatsApp',
-                    array_values($matched)
+                    array_values($matched),
+                    $canal === 'whatsapp' ? ($respuestaEnvio['wamid'] ?? null) : null
                 );
 
                 $totalEnviados++;
@@ -198,7 +199,7 @@ class NotificarContratosMayoresJob implements ShouldQueue
         return null;
     }
 
-    protected function enviarNotificacion($channel, $sub, ContratoMayor $contrato, array $keywords): void
+    protected function enviarNotificacion($channel, $sub, ContratoMayor $contrato, array $keywords): ?array
     {
         $recipientId = $sub instanceof TelegramSubscription
             ? $sub->chat_id
@@ -243,6 +244,8 @@ class NotificarContratosMayoresJob implements ShouldQueue
         }
 
         try {
+            $respuesta = null;
+
             if ($isTelegram) {
                 $buttons = [
                     [['text' => '🤖 Analizar con IA', 'callback_data' => 'mayor_analizar_' . $contrato->ocid]],
@@ -252,7 +255,7 @@ class NotificarContratosMayoresJob implements ShouldQueue
                     [['text' => '📎 Descargar TDR', 'callback_data' => 'mayor_descargar_' . $contrato->ocid]],
                 ];
                 $keyboard = ['inline_keyboard' => $buttons];
-                $channel->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
+                $respuesta = $channel->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
             } else {
                 $bodyWhatsApp = "NUEVO CONTRATO MAYOR\n\n"
                     . "Entidad: {$contrato->entidad_nombre}\n"
@@ -305,7 +308,7 @@ class NotificarContratosMayoresJob implements ShouldQueue
                         'sections' => [['title' => 'Acciones disponibles', 'rows' => $rows]],
                     ],
                 ];
-                $channel->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
+                $respuesta = $channel->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
             }
 
             Log::info('NotificarContratosMayores: notificación enviada', [
@@ -317,12 +320,16 @@ class NotificarContratosMayoresJob implements ShouldQueue
             if (method_exists($sub, 'registrarNotificacion')) {
                 $sub->registrarNotificacion();
             }
+
+            return $respuesta;
         } catch (\Exception $e) {
             Log::warning('NotificarContratosMayores: error al enviar', [
                 'canal' => $channel->channelName(),
                 'recipient' => $recipientId,
                 'error' => $e->getMessage(),
             ]);
+
+            return null;
         }
     }
 

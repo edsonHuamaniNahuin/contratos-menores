@@ -37,6 +37,7 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
         'subscrito_at',
         'ultima_notificacion_at',
         'ultima_interaccion_at',
+        'ultima_entrega_fallida_at',
         'notificaciones_recibidas',
     ];
 
@@ -48,6 +49,7 @@ class WhatsAppSubscription extends Model implements ChannelSubscriptionContract
         'subscrito_at' => 'datetime',
         'ultima_notificacion_at' => 'datetime',
         'ultima_interaccion_at' => 'datetime',
+        'ultima_entrega_fallida_at' => 'datetime',
     ];
 
     // ─── Relationships ──────────────────────────────────────────────

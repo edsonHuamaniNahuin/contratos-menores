@@ -193,7 +193,8 @@ class ImportadorTdrEngine
                             $canal,
                             $recipientId,
                             $nombreSuscriptor,
-                            $resultado['keywords']
+                            $resultado['keywords'],
+                            $canal === 'whatsapp' ? ($respuesta['wamid'] ?? null) : null
                         );
                     } else {
                         $enviosFallidos++;

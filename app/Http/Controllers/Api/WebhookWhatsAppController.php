@@ -97,6 +97,9 @@ class WebhookWhatsAppController extends Controller
 
     /**
      * Marcar la última interacción entrante del usuario (mensaje o botón).
+     *
+     * Además, al reabrirse la ventana de 24h, encolar el reenvío de los
+     * procesos cuya entrega había fallado por ventana cerrada.
      */
     protected function registrarInteraccion(array $payload): void
     {
@@ -123,13 +126,24 @@ class WebhookWhatsAppController extends Controller
             return;
         }
 
-        \App\Models\WhatsAppSubscription::whereIn('phone_number', $phones)
+        $updated = \App\Models\WhatsAppSubscription::whereIn('phone_number', $phones)
             ->update(['ultima_interaccion_at' => now()]);
+
+        // Solo encolar reenvíos si realmente hay suscripciones afectadas
+        if ($updated > 0) {
+            foreach ($phones as $phone) {
+                \App\Jobs\ReenviarWhatsAppPendientesJob::dispatch($phone)
+                    ->delay(now()->addSeconds(3));
+            }
+        }
     }
 
     /**
      * Registrar los cambios de estado de mensajes enviados (webhook de Meta).
-     * Solo se escribe si hay errores de entrega o si está en modo debug.
+     *
+     * - Actualiza el estado de entrega del envío en BD (correlación por wamid).
+     * - Si la entrega FALLA por ventana cerrada (131047), marca la suscripción
+     *   para alertar en la UI y dejar el proceso en cola de reenvío.
      */
     protected function logStatuses(array $payload): void
     {
@@ -139,15 +153,39 @@ class WebhookWhatsAppController extends Controller
 
                 foreach ($statuses as $status) {
                     $errors = $status['errors'] ?? [];
+                    $wamid = $status['id'] ?? null;
+                    $recipient = $status['recipient_id'] ?? null;
+                    $estado = $status['status'] ?? 'unknown';
 
                     if (!empty($errors) || config('services.whatsapp.debug_logs', false)) {
                         Log::info('WhatsApp Webhook: estado de mensaje', [
-                            'status' => $status['status'] ?? 'unknown',
-                            'recipient' => $status['recipient_id'] ?? null,
-                            'wamid' => $status['id'] ?? null,
+                            'status' => $estado,
+                            'recipient' => $recipient,
+                            'wamid' => $wamid,
                             'timestamp' => $status['timestamp'] ?? null,
                             'errors' => $errors,
                         ]);
+                    }
+
+                    // Correlacionar con el envío registrado (wamid)
+                    if ($wamid) {
+                        \App\Models\NotificationSend::where('wamid', $wamid)
+                            ->update(['estado_entrega' => $estado]);
+                    }
+
+                    // Falla por ventana cerrada → evidencia para la UI + cola de reenvío
+                    $esErrorVentana = false;
+                    foreach ($errors as $error) {
+                        if ((string) ($error['code'] ?? '') === '131047'
+                            || (string) ($error['code'] ?? '') === '130472') {
+                            $esErrorVentana = true;
+                            break;
+                        }
+                    }
+
+                    if ($esErrorVentana && $recipient) {
+                        \App\Models\WhatsAppSubscription::where('phone_number', $recipient)
+                            ->update(['ultima_entrega_fallida_at' => now()]);
                     }
                 }
             }
