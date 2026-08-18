@@ -1,12 +1,12 @@
-<div class="max-w-5xl mx-auto px-4 py-8">
+<div class="p-4 sm:p-6 flex flex-col gap-6 w-full max-w-full min-w-0">
     <div class="mb-8">
-        <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em]">Administración</p>
-        <h1 class="text-3xl font-black text-neutral-900">Vigilancia de Adjudicaciones</h1>
-        <p class="text-sm text-neutral-500 mt-2">Procesos mayores a S/ {{ number_format((float) $umbral, 0) }} se monitorean cada 5 horas contra la API OCDS. Al detectar buena pro se alerta a los destinatarios configurados.</p>
+        <p class="text-xs font-semibold uppercase text-neutral-400 tracking-[0.2em]">Vigilancia de Adjudicaciones</p>
+        <h1 class="text-3xl font-black text-neutral-900">Procesos en seguimiento</h1>
+        <p class="text-sm text-neutral-500 mt-2">Procesos mayores a S/ {{ number_format((float) $umbral, 0) }} monitoreados cada 5 horas. Al detectar buena pro se notifica a los destinatarios configurados.</p>
     </div>
 
     {{-- Estadísticas --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-2xl shadow-soft border border-neutral-200 p-5">
             <p class="text-xs font-semibold uppercase text-neutral-400">Vigilados</p>
             <p class="text-3xl font-black text-neutral-900 mt-1">{{ number_format($stats['vigilados']) }}</p>
@@ -24,75 +24,125 @@
         </div>
     </div>
 
-    {{-- Umbral --}}
-    <div class="bg-white rounded-2xl shadow-soft border border-neutral-200 p-5 mb-8">
-        <h2 class="text-lg font-bold text-neutral-900 mb-3">Umbral de vigilancia</h2>
-        <div class="flex flex-col sm:flex-row sm:items-end gap-3">
-            <div>
-                <label class="block text-xs font-medium text-neutral-600 mb-1.5">Monto mínimo (S/)</label>
-                <input type="number" min="1" step="1000" wire:model="umbral" class="w-full sm:w-64 px-4 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-            </div>
-            <button wire:click="guardarUmbral" class="px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-sm font-bold transition-colors">Guardar umbral</button>
-            <button wire:click="ejecutarAhora" wire:loading.attr="disabled" class="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-900 text-white rounded-xl text-sm font-bold transition-colors flex items-center gap-2">
-                <div wire:loading wire:target="ejecutarAhora" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Ejecutar job ahora
-            </button>
+    {{-- ═════════ BANDEJA ═════════ --}}
+    <div class="bg-white rounded-3xl shadow-soft p-4 lg:p-6 border border-neutral-200 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-neutral-900">Bandeja de procesos vigilados</h2>
+            @php
+                $filtrosActivos = array_filter([
+                    $palabraClave, $estado, $departamentoId > 0 ? '1' : '',
+                    $montoMin > 0 ? '1' : '', $montoMax > 0 ? '1' : '',
+                    $fechaDesde, $fechaHasta,
+                    $estadoVigilancia !== 'todos' ? '1' : '',
+                ]);
+            @endphp
+            @if(count($filtrosActivos) > 0)
+                <button wire:click="limpiarFiltros" class="text-xs text-red-500 hover:text-red-700 font-medium transition-colors flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Limpiar filtros
+                </button>
+            @endif
         </div>
-        <p class="text-xs text-neutral-400 mt-3">El job registra procesos nuevos &gt;= umbral y consulta 1x1 los pendientes. En producción corre cada 5 horas automáticamente.</p>
-    </div>
 
-    {{-- Destinatarios --}}
-    <div class="bg-white rounded-2xl shadow-soft border border-neutral-200 p-5">
-        <h2 class="text-lg font-bold text-neutral-900 mb-1">Destinatarios de alertas</h2>
-        <p class="text-sm text-neutral-500 mb-4">Recibirán email y/o WhatsApp cuando un proceso vigilado pase a buena pro.</p>
-
-        {{-- Formulario --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-            <div>
-                <label class="block text-xs font-medium text-neutral-600 mb-1.5">Email</label>
-                <input type="email" wire:model="nuevoEmail" placeholder="correo@empresa.com" class="w-full px-4 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+        {{-- Filtros --}}
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-5">
+            <div class="lg:col-span-3">
+                <label class="block text-xs font-medium mb-1.5 {{ !empty($palabraClave) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Palabra clave</label>
+                <input type="text" wire:model.live.debounce.400ms="palabraClave" placeholder="Entidad, nomenclatura, descripción..." class="w-full px-4 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
             </div>
-            <div>
-                <label class="block text-xs font-medium text-neutral-600 mb-1.5">WhatsApp (con código de país)</label>
-                <input type="text" wire:model="nuevoTelefono" placeholder="51998294604" class="w-full px-4 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <div class="lg:col-span-2">
+                <label class="block text-xs font-medium mb-1.5 {{ !empty($estado) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Estado del proceso</label>
+                <select wire:model.live="estado" class="w-full px-3 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">Todos</option>
+                    @foreach($estadosDisponibles as $edo)
+                        <option value="{{ $edo }}">{{ ucfirst(strtolower($edo)) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="lg:col-span-2">
+                <label class="block text-xs font-medium mb-1.5 {{ $departamentoId > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Departamento</label>
+                <select wire:model.live="departamentoId" class="w-full px-3 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="0">Todos</option>
+                    @foreach($departamentosDisponibles as $dep)
+                        <option value="{{ $dep['id'] }}">{{ $dep['nombre'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="lg:col-span-2">
+                <label class="block text-xs font-medium mb-1.5 {{ $estadoVigilancia !== 'todos' ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Vigilancia</label>
+                <select wire:model.live="estadoVigilancia" class="w-full px-3 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="todos">Todos</option>
+                    <option value="pendientes">Pendientes (en vigilancia)</option>
+                    <option value="notificados">Con buena pro notificada</option>
+                </select>
+            </div>
+            <div class="lg:col-span-3">
+                <label class="block text-xs font-medium mb-1.5 {{ $montoMin > 0 || $montoMax > 0 ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Monto (S/)</label>
+                <div class="flex items-center gap-2">
+                    <input type="number" min="0" step="1000" wire:model.live.debounce.500ms="montoMin" placeholder="Mín" class="w-full px-3 py-2.5 rounded-xl text-xs bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <span class="text-neutral-400 text-xs">→</span>
+                    <input type="number" min="0" step="1000" wire:model.live.debounce.500ms="montoMax" placeholder="Máx" class="w-full px-3 py-2.5 rounded-xl text-xs bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                </div>
+            </div>
+            <div class="lg:col-span-3">
+                <label class="block text-xs font-medium mb-1.5 {{ !empty($fechaDesde) || !empty($fechaHasta) ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Publicado (rango)</label>
+                <div class="flex items-center gap-2">
+                    <input type="date" wire:model.live="fechaDesde" class="w-full px-3 py-2.5 rounded-xl text-xs bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <span class="text-neutral-400 text-xs">→</span>
+                    <input type="date" wire:model.live="fechaHasta" class="w-full px-3 py-2.5 rounded-xl text-xs bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                </div>
             </div>
         </div>
-        <button wire:click="agregarDestinatario" class="px-4 py-2.5 bg-secondary-500 hover:bg-secondary-600 text-white rounded-xl text-sm font-bold transition-colors mb-6">Agregar destinatario</button>
 
-        {{-- Lista --}}
-        @if(empty($destinatarios))
-            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-                ⚠️ No hay destinatarios configurados. Las buenas pro se detectarán pero NO se enviarán alertas.
-            </div>
-        @else
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-neutral-100 text-left text-xs uppercase text-neutral-400">
-                            <th class="py-2 pr-4">Email</th>
-                            <th class="py-2 pr-4">WhatsApp</th>
-                            <th class="py-2 pr-4">Estado</th>
-                            <th class="py-2">Acciones</th>
+        {{-- Tabla --}}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-neutral-100 text-left text-xs uppercase text-neutral-400">
+                        <th class="py-2 pr-4">Entidad</th>
+                        <th class="py-2 pr-4">Nomenclatura</th>
+                        <th class="py-2 pr-4">Objeto</th>
+                        <th class="py-2 pr-4">Monto</th>
+                        <th class="py-2 pr-4">Estado</th>
+                        <th class="py-2 pr-4">Departamento</th>
+                        <th class="py-2 pr-4">Publicado</th>
+                        <th class="py-2">Vigilancia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($procesos as $p)
+                        @php $notif = $notificados[$p->ocid] ?? null; @endphp
+                        <tr class="border-b border-neutral-50 hover:bg-neutral-50/50">
+                            <td class="py-3 pr-4 text-neutral-800 max-w-[220px] truncate">{{ $p->entidad_nombre }}</td>
+                            <td class="py-3 pr-4 font-semibold text-neutral-900">{{ $p->nomenclatura }}</td>
+                            <td class="py-3 pr-4 text-neutral-600">{{ $p->objeto_contratacion }}</td>
+                            <td class="py-3 pr-4 text-neutral-800">{{ $p->valor_referencial > 0 ? 'S/ ' . number_format($p->valor_referencial, 2) : '—' }}</td>
+                            <td class="py-3 pr-4">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ in_array(strtoupper($p->estado ?? ''), ['ADJUDICADO', 'CONSENTIDO', 'OTORGADO', 'CONTRATADO']) ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-600' }}">
+                                    {{ ucfirst(strtolower($p->estado ?? '—')) }}
+                                </span>
+                            </td>
+                            <td class="py-3 pr-4 text-neutral-600">{{ $p->departamento?->nombre ?? '—' }}</td>
+                            <td class="py-3 pr-4 text-neutral-600">{{ $p->fecha_publicacion?->format('d/m/Y') ?? '—' }}</td>
+                            <td class="py-3">
+                                @if($notif)
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">🏆 {{ ucfirst(strtolower($notif)) }}</span>
+                                @else
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-600">En vigilancia</span>
+                                @endif
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($destinatarios as $d)
-                            <tr class="border-b border-neutral-50">
-                                <td class="py-3 pr-4 text-neutral-800">{{ $d['email'] ?: '—' }}</td>
-                                <td class="py-3 pr-4 text-neutral-800">{{ $d['telefono'] ?: '—' }}</td>
-                                <td class="py-3 pr-4">
-                                    <button wire:click="toggleActivo({{ $d['id'] }})" class="px-2.5 py-1 rounded-full text-xs font-semibold {{ $d['activo'] ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500' }}">
-                                        {{ $d['activo'] ? 'Activo' : 'Inactivo' }}
-                                    </button>
-                                </td>
-                                <td class="py-3">
-                                    <button wire:click="eliminarDestinatario({{ $d['id'] }})" wire:confirm="¿Eliminar este destinatario?" class="text-red-500 hover:text-red-700 text-xs font-semibold">Eliminar</button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
+                    @empty
+                        <tr>
+                            <td colspan="8" class="py-10 text-center text-neutral-400">No hay procesos vigilados con los filtros actuales.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+            {{ $procesos->links() }}
+        </div>
     </div>
 </div>

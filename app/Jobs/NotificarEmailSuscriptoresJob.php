@@ -198,6 +198,10 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
                     'error'    => $e->getMessage(),
                 ]);
             }
+
+            // Throttle entre envíos: evita el 421 "Service not available"
+            // del servidor SMTP cuando se envían ráfagas de correos.
+            usleep(750_000);
         }
 
         return $enviados;

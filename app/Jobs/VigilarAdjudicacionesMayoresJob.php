@@ -47,14 +47,27 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
 
     public function handle(SeaceMayoresService $service, WhatsAppNotificationService $whatsapp): void
     {
-        $umbral = (float) SystemSetting::getValue('vigilancia_monto_min', 1_000_000);
+        $umbralGlobal = (float) SystemSetting::getValue('vigilancia_monto_min', 1_000_000);
+
+        // Umbral de vigilancia = el MÍNIMO entre el global y los umbrales
+        // personalizados de los usuarios con alerta activa (unión de intereses).
+        // Al notificar, cada usuario filtra por SU propio umbral.
+        $umbralesUsuarios = SubscriberProfile::where('alerta_adjudicaciones', true)
+            ->pluck('alerta_adjudicaciones_umbral')
+            ->filter(fn ($v) => $v > 0);
+
+        $umbralVigilancia = $umbralesUsuarios->isEmpty()
+            ? $umbralGlobal
+            : min($umbralGlobal, $umbralesUsuarios->min());
 
         Log::info('VigilarAdjudicacionesMayores: iniciando', [
-            'umbral' => $umbral,
+            'umbral_global' => $umbralGlobal,
+            'umbral_vigilancia' => $umbralVigilancia,
+            'usuarios_opt_in' => $umbralesUsuarios->count(),
         ]);
 
-        $registrados = $this->sincronizarVigilados($umbral);
-        $this->escanearVigilados($service, $whatsapp, $umbral);
+        $registrados = $this->sincronizarVigilados($umbralVigilancia);
+        $this->escanearVigilados($service, $whatsapp, $umbralGlobal);
 
         Log::info('VigilarAdjudicacionesMayores: completado', [
             'nuevos_registrados' => $registrados,
@@ -63,36 +76,45 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
 
     /**
      * Registra en vigilancia los contratos >= umbral que aún no están.
+     * SOLO guarda el identificador (ocid); los datos viven en contratos_mayores.
      *
      * @return int cantidad de nuevos registros
      */
     protected function sincronizarVigilados(float $umbral): int
     {
-        $nuevos = 0;
-
-        ContratoMayor::query()
+        $ocids = ContratoMayor::query()
             ->where('valor_referencial', '>=', $umbral)
-            ->select(['id', 'ocid', 'nomenclatura', 'entidad_nombre', 'valor_referencial', 'estado', 'fecha_publicacion'])
-            ->orderBy('id')
-            ->chunkById(500, function ($chunk) use (&$nuevos) {
-                foreach ($chunk as $c) {
-                    $existe = VigilanciaAdjudicacion::where('ocid', $c->ocid)->exists();
-                    if ($existe) {
-                        continue;
-                    }
+            ->pluck('ocid');
 
-                    VigilanciaAdjudicacion::create([
-                        'ocid' => $c->ocid,
-                        'nomenclatura' => $c->nomenclatura,
-                        'entidad_nombre' => $c->entidad_nombre,
-                        'valor_referencial' => $c->valor_referencial,
-                        'estado' => $c->estado,
-                        'fecha_publicacion' => $c->fecha_publicacion,
-                    ]);
+        if ($ocids->isEmpty()) {
+            return 0;
+        }
 
-                    $nuevos++;
+        $existentes = VigilanciaAdjudicacion::whereIn('ocid', $ocids)
+            ->pluck('ocid')
+            ->flip();
+
+        $nuevos = 0;
+        $now = now();
+
+        foreach ($ocids->chunk(500) as $chunk) {
+            $filas = [];
+            foreach ($chunk as $ocid) {
+                if (isset($existentes[$ocid])) {
+                    continue;
                 }
-            });
+                $filas[] = [
+                    'ocid' => $ocid,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            if (!empty($filas)) {
+                VigilanciaAdjudicacion::insert($filas);
+                $nuevos += count($filas);
+            }
+        }
 
         if ($nuevos > 0) {
             Log::info('VigilarAdjudicacionesMayores: nuevos vigilados', ['nuevos' => $nuevos]);
@@ -109,10 +131,10 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
     {
         $vigilados = VigilanciaAdjudicacion::query()
             ->whereNull('notificado_en')
-            ->whereNotIn('estado', VigilanciaAdjudicacion::ESTADOS_FINALES)
+            ->whereHas('contrato', fn ($q) => $q->whereNotIn('estado', VigilanciaAdjudicacion::ESTADOS_FINALES))
             ->orderBy('updated_at', 'asc')
             ->limit(500)
-            ->get();
+            ->get(['id', 'ocid']);
 
         if ($vigilados->isEmpty()) {
             Log::info('VigilarAdjudicacionesMayores: sin vigilados pendientes de escaneo.');
@@ -129,6 +151,15 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
         $fallosConsecutivos = 0;
 
         foreach ($vigilados as $indice => $vig) {
+            $contrato = ContratoMayor::where('ocid', $vig->ocid)
+                ->select(['id', 'ocid', 'nomenclatura', 'entidad_nombre', 'valor_referencial', 'estado', 'fecha_publicacion'])
+                ->first();
+
+            if (!$contrato) {
+                Log::warning('VigilarAdjudicacionesMayores: vigilado sin contrato relacionado', ['ocid' => $vig->ocid]);
+                continue;
+            }
+
             $resultado = $service->fetchRecordPorOcid($vig->ocid);
 
             if (!$resultado['success']) {
@@ -151,24 +182,28 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
             $fresh = $resultado['data'];
             $nuevoEstado = strtoupper((string) ($fresh['estado'] ?? ''));
 
+            // Mantener actualizado el estado del proceso en contratos_mayores
+            if ($nuevoEstado !== '' && $nuevoEstado !== ($contrato->estado ?? '')) {
+                $contrato->update(['estado' => $nuevoEstado]);
+            }
+
             if (in_array($nuevoEstado, VigilanciaAdjudicacion::ESTADOS_BUENA_PRO, true)) {
                 // 🏆 BUENA PRO detectada → notificar UNA vez
                 $vig->update([
-                    'estado' => $nuevoEstado,
                     'estado_notificado' => $nuevoEstado,
                     'notificado_en' => now(),
                 ]);
 
-                $this->notificarDestinatarios($vig, $fresh, $whatsapp, $umbral);
+                $this->notificarDestinatarios($vig, $contrato, $fresh, $whatsapp, $umbral);
                 $buenaPro++;
 
                 Log::info('VigilarAdjudicacionesMayores: BUENA PRO detectada', [
                     'ocid' => $vig->ocid,
-                    'nomenclatura' => $vig->nomenclatura,
+                    'nomenclatura' => $contrato->nomenclatura,
                     'estado' => $nuevoEstado,
                 ]);
             } else {
-                $vig->update(['estado' => $nuevoEstado ?: $vig->estado]);
+                $vig->touch();
                 $sinCambio++;
             }
 
@@ -196,6 +231,7 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
      */
     protected function notificarDestinatarios(
         VigilanciaAdjudicacion $vig,
+        ContratoMayor $contrato,
         array $fresh,
         WhatsAppNotificationService $whatsapp,
         float $umbral
@@ -203,12 +239,12 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
         $destinatarios = VigilanciaAdjudicacionDestinatario::activos()->get();
 
         $proceso = [
-            'nomenclatura' => $vig->nomenclatura,
-            'entidad_nombre' => $vig->entidad_nombre,
-            'valor_referencial' => (float) ($vig->valor_referencial ?? 0),
+            'nomenclatura' => $contrato->nomenclatura,
+            'entidad_nombre' => $contrato->entidad_nombre,
+            'valor_referencial' => (float) ($contrato->valor_referencial ?? 0),
             'estado' => $fresh['estado'] ?? '',
             'proveedores' => $fresh['proveedores'] ?? [],
-            'fecha_publicacion' => $vig->fecha_publicacion?->format('d/m/Y') ?? '',
+            'fecha_publicacion' => $contrato->fecha_publicacion?->format('d/m/Y') ?? '',
             'umbral' => $umbral,
         ];
 
@@ -288,6 +324,12 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
 
             // Defensa en profundidad: si perdió el permiso, no notificar
             if (!$profile->user?->hasPermission('alerta-adjudicaciones')) {
+                continue;
+            }
+
+            // Filtrar por el umbral PERSONAL de este usuario
+            $umbralUsuario = (float) ($profile->alerta_adjudicaciones_umbral ?? 1_000_000);
+            if ($proceso['valor_referencial'] > 0 && $proceso['valor_referencial'] < $umbralUsuario) {
                 continue;
             }
 

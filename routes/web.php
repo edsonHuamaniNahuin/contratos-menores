@@ -418,6 +418,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.monitoreo')
         ->middleware('can:view-monitoreo-sistema');
 
+    Route::get('/vigilancia-adjudicaciones', function () {
+        return view('vigilancia-adjudicaciones');
+    })
+        ->name('vigilancia.adjudicaciones')
+        ->middleware('can:view-vigilancia-adjudicaciones');
+
     Route::get('/admin/vigilancia-adjudicaciones', \App\Livewire\VigilanciaAdjudicacionesAdmin::class)
         ->name('admin.vigilancia-adjudicaciones')
         ->middleware('can:view-monitoreo-sistema');

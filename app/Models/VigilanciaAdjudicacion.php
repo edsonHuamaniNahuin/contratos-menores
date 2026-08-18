@@ -4,11 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Proceso de Contrato Mayor en vigilancia automática (valor >= umbral).
- * El job VigilarAdjudicacionesMayoresJob consulta 1x1 su estado actual
- * contra la API OCDS y dispara alertas cuando llega la buena pro.
+ *
+ * SOLO almacena el identificador (ocid) del proceso; los datos viven en
+ * contratos_mayores y se consultan por la relación contrato().
+ *
+ * El job VigilarAdjudicacionesMayoresJob consulta 1x1 el estado actual
+ * contra la API y dispara alertas cuando llega la buena pro.
  */
 class VigilanciaAdjudicacion extends Model
 {
@@ -18,18 +23,11 @@ class VigilanciaAdjudicacion extends Model
 
     protected $fillable = [
         'ocid',
-        'nomenclatura',
-        'entidad_nombre',
-        'valor_referencial',
-        'estado',
-        'fecha_publicacion',
         'estado_notificado',
         'notificado_en',
     ];
 
     protected $casts = [
-        'valor_referencial' => 'decimal:2',
-        'fecha_publicacion' => 'datetime',
         'notificado_en' => 'datetime',
     ];
 
@@ -39,6 +37,14 @@ class VigilanciaAdjudicacion extends Model
         'ADJUDICADO', 'CONSENTIDO', 'OTORGADO', 'CONTRATADO',
         'DESIERTO', 'CANCELADO', 'NULO', 'SUSPENDIDO', 'ARCHIVADO',
     ];
+
+    /**
+     * Proceso relacionado en contratos_mayores (por ocid, no por id).
+     */
+    public function contrato(): BelongsTo
+    {
+        return $this->belongsTo(ContratoMayor::class, 'ocid', 'ocid');
+    }
 
     public function estaNotificado(): bool
     {

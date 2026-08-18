@@ -24,6 +24,12 @@ class RolesPermisos extends Component
     public array $userRoles = [];
     public ?string $errorMessage = null;
     public int $perPage = 8;
+    public string $busquedaUsuario = '';
+
+    public function updatedBusquedaUsuario(): void
+    {
+        $this->resetPage();
+    }
 
     public function mount(): void
     {
@@ -123,7 +129,18 @@ class RolesPermisos extends Component
 
     public function render()
     {
-        $users = User::with('roles')->orderBy('name')->paginate($this->perPage);
+        $busqueda = trim($this->busquedaUsuario);
+
+        $users = User::with('roles')
+            ->when($busqueda !== '', function ($q) use ($busqueda) {
+                $q->where(function ($sub) use ($busqueda) {
+                    $sub->where('name', 'like', "%{$busqueda}%")
+                        ->orWhere('email', 'like', "%{$busqueda}%");
+                });
+            })
+            ->orderBy('name')
+            ->paginate($this->perPage);
+
         $this->syncUserRoles($users->getCollection());
 
         return view('livewire.roles-permisos', [
@@ -159,7 +176,8 @@ class RolesPermisos extends Component
             'TDR y procesos' => ['import-tdr', 'analyze-tdr', 'follow-contracts', 'cotizar-seace', 'create-proforma',
                 'view-buscador-mayores', 'view-detalle-mayores', 'download-tdr-mayores',
                 'follow-mayores', 'analyze-tdr-mayores', 'detect-direccionamiento-mayores',
-                'create-proforma-mayores', 'view-partes-mayores', 'export-mayores', 'alerta-adjudicaciones'],
+                'create-proforma-mayores', 'view-partes-mayores', 'export-mayores', 'alerta-adjudicaciones',
+                'view-vigilancia-adjudicaciones'],
             'Administración' => ['manage-roles-permissions', 'view-consumo-ia', 'view-monitoreo-sistema'],
         ];
 

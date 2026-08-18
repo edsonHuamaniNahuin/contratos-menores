@@ -46,6 +46,7 @@ class ConfiguracionAlertas extends Component
 
     // ── Alerta de adjudicaciones (buena pro de procesos vigilados) ──
     public bool $alertaAdjudicaciones = false;
+    public int $alertaAdjudicacionesUmbral = 1000000;
 
     // ── Telegram Modal ────────────────────────────────────────────
     public bool $showTelegramModal = false;
@@ -111,10 +112,12 @@ class ConfiguracionAlertas extends Component
                 ->map(fn ($id) => (int) $id)
                 ->toArray();
             $this->alertaAdjudicaciones = (bool) $profile->alerta_adjudicaciones;
+            $this->alertaAdjudicacionesUmbral = (int) ($profile->alerta_adjudicaciones_umbral ?? 1000000);
         } else {
             $this->profile_company_copy = '';
             $this->profile_keywords = [];
             $this->alertaAdjudicaciones = false;
+            $this->alertaAdjudicacionesUmbral = 1000000;
         }
     }
 
@@ -133,7 +136,10 @@ class ConfiguracionAlertas extends Component
             $profile = auth()->user()->getOrCreateSubscriberProfile();
             $nuevo = !$profile->alerta_adjudicaciones;
 
-            $profile->update(['alerta_adjudicaciones' => $nuevo]);
+            $profile->update([
+                'alerta_adjudicaciones' => $nuevo,
+                'alerta_adjudicaciones_umbral' => max(1, $this->alertaAdjudicacionesUmbral),
+            ]);
             $this->alertaAdjudicaciones = $nuevo;
 
             $estado = $nuevo ? 'activadas' : 'desactivadas';
@@ -145,6 +151,31 @@ class ConfiguracionAlertas extends Component
         } catch (\Exception $e) {
             session()->flash('error', '❌ Error: ' . $e->getMessage());
             Log::error('Error al activar alerta de adjudicaciones', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Persiste el umbral personalizado cuando el usuario lo edita.
+     */
+    public function updatedAlertaAdjudicacionesUmbral(): void
+    {
+        if (!$this->canAlertaAdjudicaciones || !$this->alertaAdjudicaciones) {
+            return;
+        }
+
+        $umbral = max(1, (int) $this->alertaAdjudicacionesUmbral);
+        $this->alertaAdjudicacionesUmbral = $umbral;
+
+        try {
+            auth()->user()->getOrCreateSubscriberProfile()
+                ->update(['alerta_adjudicaciones_umbral' => $umbral]);
+
+            Log::info('Adjudicaciones: Umbral actualizado', [
+                'user_id' => auth()->id(),
+                'umbral' => $umbral,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar umbral de adjudicaciones', ['error' => $e->getMessage()]);
         }
     }
 

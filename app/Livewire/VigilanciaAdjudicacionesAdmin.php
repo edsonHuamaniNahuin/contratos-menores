@@ -2,115 +2,145 @@
 
 namespace App\Livewire;
 
-use App\Jobs\VigilarAdjudicacionesMayoresJob;
+use App\Models\ContratoMayor;
 use App\Models\SystemSetting;
 use App\Models\VigilanciaAdjudicacion;
-use App\Models\VigilanciaAdjudicacionDestinatario;
+use App\Services\SeaceMayoresService;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 /**
- * Administración de la vigilancia de adjudicaciones (procesos >= umbral):
- *  - Destinatarios de alertas (email y/o WhatsApp, 1 o varios)
- *  - Umbral de monto configurable
- *  - Ejecución manual del job
- *  - Estadísticas (vigilados, pendientes, notificados)
+ * Bandeja de vigilancia de adjudicaciones (procesos >= umbral, default S/ 1M).
+ *
+ * Muestra TODOS los procesos vigilados (relación por ocid a contratos_mayores,
+ * sin duplicar información) con filtros que atacan ÚNICAMENTE a ese universo.
+ *
+ * Debajo, la configuración administrativa: destinatarios de alertas, umbral
+ * y ejecución manual del job.
  */
 class VigilanciaAdjudicacionesAdmin extends Component
 {
-    public array $destinatarios = [];
-    public string $nuevoEmail = '';
-    public string $nuevoTelefono = '';
+    use WithPagination;
+
+    // ── Filtros de la bandeja ─────────────────────────────────────
+    public string $palabraClave = '';
+    public string $estado = '';
+    public int $departamentoId = 0;
+    public float $montoMin = 0;
+    public float $montoMax = 0;
+    public string $fechaDesde = '';
+    public string $fechaHasta = '';
+    public string $estadoVigilancia = 'todos'; // todos | pendientes | notificados
+    public int $registrosPorPagina = 15;
+
+    public array $estadosDisponibles = [];
+    public array $departamentosDisponibles = [];
+
+    // ── Config admin ──────────────────────────────────────────────
     public string $umbral = '1000000';
     public array $stats = [
         'vigilados' => 0,
         'pendientes' => 0,
         'notificados' => 0,
     ];
-    public bool $ejecutando = false;
+
+    protected SeaceMayoresService $seace;
+
+    public function boot(SeaceMayoresService $seace): void
+    {
+        $this->seace = $seace;
+    }
 
     public function mount(): void
     {
-        $this->cargar();
+        $this->cargarCatalogos();
+        $this->cargarConfig();
     }
 
-    public function cargar(): void
+    protected function cargarCatalogos(): void
     {
-        $this->destinatarios = VigilanciaAdjudicacionDestinatario::orderBy('id')
-            ->get()
-            ->map(fn ($d) => [
-                'id' => $d->id,
-                'email' => $d->email,
-                'telefono' => $d->telefono,
-                'activo' => (bool) $d->activo,
-            ])
-            ->toArray();
+        $this->estadosDisponibles = Cache::remember('vigilancia:estados-disponibles', 3600, function () {
+            return ContratoMayor::query()
+                ->whereExists(fn ($q) => $q->select('id')->from('vigilancia_adjudicaciones')
+                    ->whereColumn('vigilancia_adjudicaciones.ocid', 'contratos_mayores.ocid'))
+                ->select('estado')
+                ->distinct()
+                ->whereNotNull('estado')
+                ->where('estado', '!=', '')
+                ->orderBy('estado')
+                ->pluck('estado')
+                ->toArray();
+        });
 
+        $geo = app(\App\Services\GeoResolverService::class);
+        $this->departamentosDisponibles = $geo->departamentosParaFiltro();
+    }
+
+    protected function cargarConfig(): void
+    {
         $this->umbral = (string) SystemSetting::getValue('vigilancia_monto_min', 1_000_000);
 
         $this->stats = [
             'vigilados' => VigilanciaAdjudicacion::count(),
             'pendientes' => VigilanciaAdjudicacion::whereNull('notificado_en')
-                ->whereNotIn('estado', VigilanciaAdjudicacion::ESTADOS_FINALES)
+                ->whereHas('contrato', fn ($q) => $q->whereNotIn('estado', VigilanciaAdjudicacion::ESTADOS_FINALES))
                 ->count(),
             'notificados' => VigilanciaAdjudicacion::whereNotNull('notificado_en')->count(),
         ];
     }
 
-    public function agregarDestinatario(): void
+    public function updatedPalabraClave(): void
     {
-        $this->validate([
-            'nuevoEmail' => ['nullable', 'email', 'max:255'],
-            'nuevoTelefono' => ['nullable', 'string', 'max:20'],
-        ]);
-
-        if (empty($this->nuevoEmail) && empty($this->nuevoTelefono)) {
-            $this->notify('Ingresa un email y/o un teléfono.', 'warning');
-            return;
-        }
-
-        VigilanciaAdjudicacionDestinatario::create([
-            'email' => $this->nuevoEmail ?: null,
-            'telefono' => $this->nuevoTelefono ?: null,
-            'activo' => true,
-        ]);
-
-        $this->nuevoEmail = '';
-        $this->nuevoTelefono = '';
-        $this->cargar();
-        $this->notify('Destinatario agregado.', 'success');
+        $this->resetPage();
     }
 
-    public function eliminarDestinatario(int $id): void
+    public function updatedEstado(): void
     {
-        VigilanciaAdjudicacionDestinatario::where('id', $id)->delete();
-        $this->cargar();
-        $this->notify('Destinatario eliminado.', 'info');
+        $this->resetPage();
     }
 
-    public function toggleActivo(int $id): void
+    public function updatedDepartamentoId(): void
     {
-        $d = VigilanciaAdjudicacionDestinatario::find($id);
-        if ($d) {
-            $d->update(['activo' => !$d->activo]);
-        }
-        $this->cargar();
+        $this->resetPage();
     }
 
-    public function guardarUmbral(): void
+    public function updatedMontoMin(): void
     {
-        $this->validate([
-            'umbral' => ['required', 'numeric', 'min:1'],
-        ]);
-
-        SystemSetting::setValue('vigilancia_monto_min', (string) (float) $this->umbral);
-        $this->notify('Umbral actualizado: S/ ' . number_format((float) $this->umbral, 0), 'success');
-        $this->cargar();
+        $this->resetPage();
     }
 
-    public function ejecutarAhora(): void
+    public function updatedMontoMax(): void
     {
-        dispatch(new VigilarAdjudicacionesMayoresJob());
-        $this->notify('Job de vigilancia encolado. Revisa el log en unos minutos.', 'info');
+        $this->resetPage();
+    }
+
+    public function updatedFechaDesde(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFechaHasta(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedEstadoVigilancia(): void
+    {
+        $this->resetPage();
+    }
+
+    public function limpiarFiltros(): void
+    {
+        $this->palabraClave = '';
+        $this->estado = '';
+        $this->departamentoId = 0;
+        $this->montoMin = 0;
+        $this->montoMax = 0;
+        $this->fechaDesde = '';
+        $this->fechaHasta = '';
+        $this->estadoVigilancia = 'todos';
+        $this->resetPage();
     }
 
     protected function notify(string $message, string $type = 'info'): void
@@ -120,6 +150,48 @@ class VigilanciaAdjudicacionesAdmin extends Component
 
     public function render()
     {
-        return view('livewire.vigilancia-adjudicaciones-admin');
+        $query = ContratoMayor::query()
+            ->with(['departamento', 'provincia', 'distrito'])
+            ->whereExists(fn ($q) => $q->select('id')->from('vigilancia_adjudicaciones')
+                ->whereColumn('vigilancia_adjudicaciones.ocid', 'contratos_mayores.ocid'));
+
+        // Filtro por estado de la vigilancia (pendiente / notificada)
+        if ($this->estadoVigilancia === 'pendientes') {
+            $query->whereExists(fn ($q) => $q->select('id')->from('vigilancia_adjudicaciones')
+                ->whereColumn('vigilancia_adjudicaciones.ocid', 'contratos_mayores.ocid')
+                ->whereNull('notificado_en'));
+        } elseif ($this->estadoVigilancia === 'notificados') {
+            $query->whereExists(fn ($q) => $q->select('id')->from('vigilancia_adjudicaciones')
+                ->whereColumn('vigilancia_adjudicaciones.ocid', 'contratos_mayores.ocid')
+                ->whereNotNull('notificado_en'));
+        }
+
+        // Filtros del buscador reutilizados (atacan solo al universo vigilado)
+        $this->seace->aplicarFiltros($query, [
+            'query' => $this->palabraClave,
+            'entidad' => '',
+            'objeto' => '',
+            'estado' => $this->estado,
+            'departamento_id' => $this->departamentoId,
+            'provincia_id' => 0,
+            'distrito_id' => 0,
+            'fecha_desde' => $this->fechaDesde,
+            'fecha_hasta' => $this->fechaHasta,
+            'monto_min' => $this->montoMin,
+            'monto_max' => $this->montoMax,
+        ]);
+
+        $procesos = $query->orderBy('fecha_publicacion', 'desc')
+            ->paginate($this->registrosPorPagina);
+
+        // Marcar cuáles fueron notificados (buena pro detectada)
+        $notificados = VigilanciaAdjudicacion::whereNotNull('notificado_en')
+            ->whereIn('ocid', $procesos->pluck('ocid'))
+            ->pluck('estado_notificado', 'ocid');
+
+        return view('livewire.vigilancia-adjudicaciones-admin', [
+            'procesos' => $procesos,
+            'notificados' => $notificados,
+        ]);
     }
 }

@@ -16,10 +16,12 @@ class SubscriberProfile extends Model
         'company_name',
         'company_copy',
         'alerta_adjudicaciones',
+        'alerta_adjudicaciones_umbral',
     ];
 
     protected $casts = [
         'alerta_adjudicaciones' => 'boolean',
+        'alerta_adjudicaciones_umbral' => 'integer',
     ];
 
     public function user(): BelongsTo

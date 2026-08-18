@@ -68,6 +68,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('detect-direccionamiento-mayores', fn ($user) => $user->hasPermission('detect-direccionamiento-mayores'));
         Gate::define('create-proforma-mayores', fn ($user) => $user->hasPermission('create-proforma-mayores'));
         Gate::define('view-partes-mayores', fn ($user) => $user->hasPermission('view-partes-mayores'));
+        Gate::define('view-vigilancia-adjudicaciones', fn ($user) => $user->hasPermission('view-vigilancia-adjudicaciones'));
     }
 
     /**

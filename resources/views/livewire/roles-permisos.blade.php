@@ -19,10 +19,23 @@
     @endif
 
     <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
             <div>
                 <h2 class="text-xl font-bold text-neutral-900">Usuarios y roles</h2>
                 <p class="text-xs text-neutral-400 mt-1">Asigna un rol principal por usuario.</p>
+            </div>
+            <div class="relative w-full sm:w-80">
+                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text"
+                       wire:model.live.debounce.400ms="busquedaUsuario"
+                       placeholder="Buscar por nombre o email..."
+                       class="w-full pl-9 pr-8 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                @if($busquedaUsuario !== '')
+                    <button wire:click="$set('busquedaUsuario', '')" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                @endif
             </div>
         </div>
 
