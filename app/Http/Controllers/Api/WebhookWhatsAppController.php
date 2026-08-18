@@ -167,12 +167,6 @@ class WebhookWhatsAppController extends Controller
                         ]);
                     }
 
-                    // Correlacionar con el envío registrado (wamid)
-                    if ($wamid) {
-                        \App\Models\NotificationSend::where('wamid', $wamid)
-                            ->update(['estado_entrega' => $estado]);
-                    }
-
                     // Falla por ventana cerrada → evidencia para la UI + cola de reenvío
                     $esErrorVentana = false;
                     foreach ($errors as $error) {
@@ -181,6 +175,21 @@ class WebhookWhatsAppController extends Controller
                             $esErrorVentana = true;
                             break;
                         }
+                    }
+
+                    // Correlacionar con el envío registrado (wamid).
+                    // Si un reenvío vuelve a fallar por ventana cerrada, se
+                    // devuelve a la cola (reenviado_at = null) para reintentar
+                    // en la próxima apertura de ventana.
+                    if ($wamid) {
+                        $update = ['estado_entrega' => $estado];
+
+                        if ($esErrorVentana) {
+                            $update['reenviado_at'] = null;
+                        }
+
+                        \App\Models\NotificationSend::where('wamid', $wamid)
+                            ->update($update);
                     }
 
                     if ($esErrorVentana && $recipient) {
