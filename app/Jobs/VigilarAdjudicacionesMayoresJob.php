@@ -193,23 +193,30 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
             }
 
             if (in_array($nuevoEstado, VigilanciaAdjudicacion::ESTADOS_BUENA_PRO, true)) {
-                // 🏆 BUENA PRO detectada → notificar UNA vez y RETIRAR de vigilancia
+                // 🏆 BUENA PRO detectada → notificar UNA vez y marcar como
+                // RESUELTA (permanece en la tabla como historial)
                 $this->notificarDestinatarios($vig, $contrato, $fresh, $whatsapp, $umbral);
-                $vig->delete();
+                $vig->update([
+                    'estado_notificado' => $nuevoEstado,
+                    'notificado_en' => now(),
+                ]);
                 $buenaPro++;
 
-                Log::info('VigilarAdjudicacionesMayores: BUENA PRO detectada y retirada de vigilancia', [
+                Log::info('VigilarAdjudicacionesMayores: BUENA PRO detectada', [
                     'ocid' => $vig->ocid,
                     'nomenclatura' => $contrato->nomenclatura,
                     'estado' => $nuevoEstado,
                 ]);
             } elseif (in_array($nuevoEstado, VigilanciaAdjudicacion::ESTADOS_FINALES, true)) {
                 // Estado final sin buena pro (desierto, cancelado, nulo...):
-                // el proceso terminó — retirar de vigilancia sin alerta.
-                $vig->delete();
+                // resolver sin alerta y conservar como historial.
+                $vig->update([
+                    'estado_notificado' => $nuevoEstado,
+                    'notificado_en' => now(),
+                ]);
                 $sinCambio++;
 
-                Log::info('VigilarAdjudicacionesMayores: proceso terminado, retirado de vigilancia', [
+                Log::info('VigilarAdjudicacionesMayores: proceso terminado, resuelto sin buena pro', [
                     'ocid' => $vig->ocid,
                     'nomenclatura' => $contrato->nomenclatura,
                     'estado' => $nuevoEstado,

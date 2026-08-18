@@ -31,6 +31,7 @@ class VigilanciaAdjudicacionesAdmin extends Component
     public float $montoMax = 0;
     public string $fechaDesde = '';
     public string $fechaHasta = '';
+    public string $estadoVigilancia = 'todos'; // todos | pendientes | resueltos
     public int $registrosPorPagina = 15;
 
     public array $estadosDisponibles = [];
@@ -83,9 +84,10 @@ class VigilanciaAdjudicacionesAdmin extends Component
 
         $this->stats = [
             'vigilados' => VigilanciaAdjudicacion::count(),
-            'sobre_umbral' => ContratoMayor::where('valor_referencial', '>=', $umbralFloat)->count(),
-            'buena_pro' => ContratoMayor::where('valor_referencial', '>=', $umbralFloat)
-                ->whereIn('estado', VigilanciaAdjudicacion::ESTADOS_BUENA_PRO)
+            'pendientes' => VigilanciaAdjudicacion::whereNull('notificado_en')->count(),
+            'buena_pro' => VigilanciaAdjudicacion::whereIn('estado_notificado', VigilanciaAdjudicacion::ESTADOS_BUENA_PRO)->count(),
+            'cerrados' => VigilanciaAdjudicacion::whereNotNull('notificado_en')
+                ->whereNotIn('estado_notificado', VigilanciaAdjudicacion::ESTADOS_BUENA_PRO)
                 ->count(),
         ];
     }
@@ -125,6 +127,11 @@ class VigilanciaAdjudicacionesAdmin extends Component
         $this->resetPage();
     }
 
+    public function updatedEstadoVigilancia(): void
+    {
+        $this->resetPage();
+    }
+
     public function limpiarFiltros(): void
     {
         $this->palabraClave = '';
@@ -134,6 +141,7 @@ class VigilanciaAdjudicacionesAdmin extends Component
         $this->montoMax = 0;
         $this->fechaDesde = '';
         $this->fechaHasta = '';
+        $this->estadoVigilancia = 'todos';
         $this->resetPage();
     }
 
@@ -162,8 +170,17 @@ class VigilanciaAdjudicacionesAdmin extends Component
                 'contratos_mayores.departamento_id',
                 'contratos_mayores.provincia_id',
                 'contratos_mayores.distrito_id',
+                'vigilancia_adjudicaciones.notificado_en',
+                'vigilancia_adjudicaciones.estado_notificado',
             ])
             ->join('vigilancia_adjudicaciones', 'vigilancia_adjudicaciones.ocid', '=', 'contratos_mayores.ocid');
+
+        // Filtro por estado de la vigilancia (pendiente / resueltos)
+        if ($this->estadoVigilancia === 'pendientes') {
+            $query->whereNull('vigilancia_adjudicaciones.notificado_en');
+        } elseif ($this->estadoVigilancia === 'resueltos') {
+            $query->whereNotNull('vigilancia_adjudicaciones.notificado_en');
+        }
 
         // Filtros del buscador reutilizados (atacan solo al universo vigilado)
         $this->seace->aplicarFiltros($query, [

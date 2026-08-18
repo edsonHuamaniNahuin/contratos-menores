@@ -6,21 +6,26 @@
     </div>
 
     {{-- Estadísticas --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl shadow-soft border border-neutral-200 p-5">
+            <p class="text-xs font-semibold uppercase text-neutral-400">Registrados</p>
+            <p class="text-3xl font-black text-neutral-900 mt-1">{{ number_format($stats['vigilados']) }}</p>
+            <p class="text-xs text-neutral-400 mt-1">Historial completo de seguimiento</p>
+        </div>
         <div class="bg-white rounded-2xl shadow-soft border border-neutral-200 p-5">
             <p class="text-xs font-semibold uppercase text-neutral-400">En vigilancia</p>
-            <p class="text-3xl font-black text-neutral-900 mt-1">{{ number_format($stats['vigilados']) }}</p>
-            <p class="text-xs text-neutral-400 mt-1">Procesos pendientes de buena pro</p>
+            <p class="text-3xl font-black text-primary-600 mt-1">{{ number_format($stats['pendientes']) }}</p>
+            <p class="text-xs text-neutral-400 mt-1">Pendientes de buena pro</p>
         </div>
         <div class="bg-white rounded-2xl shadow-soft border border-neutral-200 p-5">
-            <p class="text-xs font-semibold uppercase text-neutral-400">Procesos &gt;= S/ {{ number_format((float) $umbral, 0) }}</p>
-            <p class="text-3xl font-black text-amber-600 mt-1">{{ number_format($stats['sobre_umbral']) }}</p>
-            <p class="text-xs text-neutral-400 mt-1">Universo total del SEACE</p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-soft border border-neutral-200 p-5">
-            <p class="text-xs font-semibold uppercase text-neutral-400">Buena pro (histórico)</p>
+            <p class="text-xs font-semibold uppercase text-neutral-400">Buena pro</p>
             <p class="text-3xl font-black text-emerald-600 mt-1">{{ number_format($stats['buena_pro']) }}</p>
-            <p class="text-xs text-neutral-400 mt-1">Procesos &gt;= umbral adjudicados</p>
+            <p class="text-xs text-neutral-400 mt-1">Adjudicados en seguimiento</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-soft border border-neutral-200 p-5">
+            <p class="text-xs font-semibold uppercase text-neutral-400">Cerrados</p>
+            <p class="text-3xl font-black text-neutral-500 mt-1">{{ number_format($stats['cerrados']) }}</p>
+            <p class="text-xs text-neutral-400 mt-1">Desierto, nulo, cancelado</p>
         </div>
     </div>
 
@@ -33,6 +38,7 @@
                     $palabraClave, $estado, $departamentoId > 0 ? '1' : '',
                     $montoMin > 0 ? '1' : '', $montoMax > 0 ? '1' : '',
                     $fechaDesde, $fechaHasta,
+                    $estadoVigilancia !== 'todos' ? '1' : '',
                 ]);
             @endphp
             @if(count($filtrosActivos) > 0)
@@ -65,6 +71,14 @@
                     @foreach($departamentosDisponibles as $dep)
                         <option value="{{ $dep['id'] }}">{{ $dep['nombre'] }}</option>
                     @endforeach
+                </select>
+            </div>
+            <div class="lg:col-span-2">
+                <label class="block text-xs font-medium mb-1.5 {{ $estadoVigilancia !== 'todos' ? 'text-brand-600 font-semibold' : 'text-neutral-600' }}">Vigilancia</label>
+                <select wire:model.live="estadoVigilancia" class="w-full px-3 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="todos">Todos</option>
+                    <option value="pendientes">Pendientes (en vigilancia)</option>
+                    <option value="resueltos">Resueltos (buena pro / cerrados)</option>
                 </select>
             </div>
             <div class="lg:col-span-3">
@@ -115,7 +129,16 @@
                             <td class="py-3 pr-4 text-neutral-600">{{ $p->departamento?->nombre ?? '—' }}</td>
                             <td class="py-3 pr-4 text-neutral-600">{{ $p->fecha_publicacion?->format('d/m/Y') ?? '—' }}</td>
                             <td class="py-3">
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-600">En vigilancia</span>
+                                @php
+                                    $esBuenaPro = in_array(strtoupper($p->estado_notificado ?? ''), ['ADJUDICADO', 'CONSENTIDO', 'OTORGADO', 'CONTRATADO']);
+                                @endphp
+                                @if($p->notificado_en && $esBuenaPro)
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">🏆 {{ ucfirst(strtolower($p->estado_notificado)) }}</span>
+                                @elseif($p->notificado_en)
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-600">Cerrado · {{ ucfirst(strtolower($p->estado_notificado)) }}</span>
+                                @else
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-600">En vigilancia</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
