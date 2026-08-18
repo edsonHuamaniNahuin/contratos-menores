@@ -152,6 +152,13 @@ class VigilanciaAdjudicacionesAdmin extends Component
     {
         $query = ContratoMayor::query()
             ->with(['departamento', 'provincia', 'distrito'])
+            // Solo columnas necesarias para la bandeja: evitar cargar `datos_raw`
+            // (JSON pesado) que revienta el sort buffer de MySQL (error 1038).
+            ->select([
+                'id', 'ocid', 'entidad_nombre', 'nomenclatura',
+                'objeto_contratacion', 'valor_referencial', 'estado',
+                'fecha_publicacion', 'departamento_id', 'provincia_id', 'distrito_id',
+            ])
             ->whereExists(fn ($q) => $q->select('id')->from('vigilancia_adjudicaciones')
                 ->whereColumn('vigilancia_adjudicaciones.ocid', 'contratos_mayores.ocid'));
 
