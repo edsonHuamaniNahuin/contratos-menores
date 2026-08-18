@@ -96,7 +96,8 @@
                         <th class="py-2 pr-4">Monto</th>
                         <th class="py-2 pr-4">Estado</th>
                         <th class="py-2 pr-4">Departamento</th>
-                        <th class="py-2">Publicado</th>
+                        <th class="py-2 pr-4">Publicado</th>
+                        <th class="py-2">Vigilancia</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -112,11 +113,14 @@
                                 </span>
                             </td>
                             <td class="py-3 pr-4 text-neutral-600">{{ $p->departamento?->nombre ?? '—' }}</td>
-                            <td class="py-3 text-neutral-600">{{ $p->fecha_publicacion?->format('d/m/Y') ?? '—' }}</td>
+                            <td class="py-3 pr-4 text-neutral-600">{{ $p->fecha_publicacion?->format('d/m/Y') ?? '—' }}</td>
+                            <td class="py-3">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-600">En vigilancia</span>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-10 text-center text-neutral-400">No hay procesos en vigilancia con los filtros actuales.</td>
+                            <td colspan="8" class="py-10 text-center text-neutral-400">No hay procesos en vigilancia con los filtros actuales.</td>
                         </tr>
                     @endforelse
                 </tbody>
