@@ -666,9 +666,10 @@ class BuscadorMayores extends Component
             return;
         }
 
-        if ($extr['modal'] ?? false) {
-            return;
-        }
+            if ($extr['modal'] ?? false) {
+                $this->analizandoDireccOcid = null;
+                return;
+            }
 
         $this->dispatchAnalisisMayor($ocid, $pdfUrl, $ctx, $user->id, $extr['path'], $extr['documento_id'] ?? null);
     }
@@ -1006,7 +1007,6 @@ class BuscadorMayores extends Component
                 'error' => $e->getMessage(),
             ]);
             $this->notify('Error al analizar direccionamiento: ' . $e->getMessage(), 'error');
-        } finally {
             $this->analizandoDireccOcid = null;
         }
     }
@@ -1024,7 +1024,6 @@ class BuscadorMayores extends Component
                 'error' => $e->getMessage(),
             ]);
             $this->notify('Error al analizar direccionamiento: ' . $e->getMessage(), 'error');
-        } finally {
             $this->analizandoDireccOcid = null;
         }
     }
@@ -1050,6 +1049,7 @@ class BuscadorMayores extends Component
                         'origin' => 'web',
                     ]
                 );
+                $this->analizandoDireccOcid = null;
                 $this->notify($resultado['error'] ?? 'Error al analizar direccionamiento.', 'error');
                 return;
             }
@@ -1067,6 +1067,7 @@ class BuscadorMayores extends Component
                 ]
             );
 
+            $this->analizandoDireccOcid = null;
             $this->resultadoDireccionamiento = $resultado['data'] ?? [];
             $this->notify('Análisis de direccionamiento completado.', 'success');
             return;
