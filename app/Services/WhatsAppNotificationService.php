@@ -45,6 +45,12 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     protected static array $ultimoEnvioPorDestinatario = [];
 
     /**
+     * Flag estático: template de notificación inexistente en la WABA.
+     * Evita spam de errores 132001 en la misma corrida del worker.
+     */
+    protected static bool $templateInvalido = false;
+
+    /**
      * Intervalo mínimo entre envíos al MISMO destinatario (microsegundos).
      */
     protected int $minIntervaloEnvio = 1500000; // 1.5 segundos
@@ -104,10 +110,14 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      * Enviar notificación de un proceso a un suscriptor de WhatsApp.
      *
      * Estrategia resiliente:
-     * 1. Intentar interactive list (funciona si hay ventana de conversación activa 24h).
-     * 2. Si falla por ventana cerrada (error 131047/130472), abrir conversación con
-     *    template message y reintentar el interactive list.
-     * 3. Fallback final: enviar como texto plano.
+     * 1. Si la ventana de conversación de 24h está CERRADA, enviar primero
+     *    como Template Message (entrega garantizada fuera de la ventana)
+     *    y luego el interactive list como follow-up (la ventana se reabre
+     *    con la entrega del template).
+     * 2. Si la ventana está ABIERTA, enviar directo el interactive list.
+     * 3. Si falla por ventana cerrada (error 131047/130472) en el envío
+     *    directo, abrir conversación con template y reintentar.
+     * 4. Fallback final: enviar como texto plano.
      */
     public function enviarProcesoASuscriptor(object $suscripcion, array $contratoData, array $matchedKeywords = []): array
     {
@@ -132,6 +142,39 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
 
         $keyboard = $this->buildDefaultKeyboard($contratoData);
 
+        // ── Paso 0: ventana 24h cerrada → template primero (entrega garantizada) ──
+        if (!$this->tieneVentanaAbierta($suscripcion) && !self::$templateInvalido) {
+            $templateResult = $this->enviarNotificacionComoTemplate($recipientId, $contratoData);
+
+            if ($templateResult !== null) {
+                if ($templateResult['success']) {
+                    Log::info('WhatsApp: notificación enviada como template (ventana cerrada)', [
+                        'to' => $recipientId,
+                    ]);
+
+                    // Follow-up interactive dentro de la ventana recién abierta
+                    if ($keyboard) {
+                        $this->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
+                    }
+
+                    if (method_exists($suscripcion, 'registrarNotificacion')) {
+                        $suscripcion->registrarNotificacion();
+                    }
+
+                    return $templateResult;
+                }
+
+                // Template inexistente/rechazado → deshabilitar template para esta corrida
+                if (str_contains((string) ($templateResult['message'] ?? ''), '132001')) {
+                    self::$templateInvalido = true;
+                    Log::warning('WhatsApp: template de notificación no existe en la WABA; usando flujo directo en esta corrida', [
+                        'template' => config('services.whatsapp.notification_template', ''),
+                        'error' => $templateResult['message'],
+                    ]);
+                }
+            }
+        }
+
         // ── Paso 1: Intentar envío directo (interactive list / texto) ──
         $resultado = $keyboard
             ? $this->enviarMensajeConBotones($recipientId, $mensaje, $keyboard)
@@ -151,6 +194,47 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         }
 
         return $resultado;
+    }
+
+    /**
+     * Enviar la notificación como Template Message personalizado.
+     *
+     * Devuelve null si no hay template configurado; de lo contrario,
+     * el resultado del envío (los templates se entregan siempre,
+     * incluso fuera de la ventana de 24h).
+     */
+    protected function enviarNotificacionComoTemplate(string $recipientId, array $contratoData): ?array
+    {
+        $templateName = config('services.whatsapp.notification_template', '');
+
+        if ($templateName === '') {
+            return null;
+        }
+
+        $components = $this->buildTemplateComponents($contratoData);
+
+        return $this->enviarTemplate($recipientId, $templateName, 'es', $components);
+    }
+
+    /**
+     * ¿La ventana de conversación de 24h está abierta para este suscriptor?
+     *
+     * Se considera abierta si el usuario interactuó (mensaje/botón) hace
+     * menos de 23 horas (margen de seguridad frente al corte de Meta).
+     */
+    protected function tieneVentanaAbierta(object $suscripcion): bool
+    {
+        if (!$suscripcion instanceof \App\Models\WhatsAppSubscription) {
+            return false;
+        }
+
+        $ultima = $suscripcion->ultima_interaccion_at;
+
+        if (!$ultima) {
+            return false;
+        }
+
+        return now()->diffInMinutes($ultima) < (23 * 60);
     }
 
     /**

@@ -80,6 +80,10 @@ class WebhookWhatsAppController extends Controller
         // Registrar estados de entrega (diagnóstico: delivered/read/failed)
         $this->logStatuses($payload);
 
+        // Actualizar última interacción de los suscriptores que escriben o
+        // tocan botones. Determina si la ventana de 24h está abierta.
+        $this->registrarInteraccion($payload);
+
         if (!$hasMessages) {
             // Status updates (delivered, read, etc.) - ack without processing
             return response()->json(['status' => 'ok'], 200);
@@ -89,6 +93,38 @@ class WebhookWhatsAppController extends Controller
         $this->enqueuePayload($payload);
 
         return response()->json(['status' => 'ok'], 200);
+    }
+
+    /**
+     * Marcar la última interacción entrante del usuario (mensaje o botón).
+     */
+    protected function registrarInteraccion(array $payload): void
+    {
+        $phones = [];
+
+        foreach (($payload['entry'] ?? []) as $entry) {
+            foreach (($entry['changes'] ?? []) as $change) {
+                $value = $change['value'] ?? [];
+
+                if (empty($value['messages'])) {
+                    continue;
+                }
+
+                $phone = $value['contacts'][0]['wa_id'] ?? null;
+                if ($phone) {
+                    $phones[] = $phone;
+                }
+            }
+        }
+
+        $phones = array_values(array_unique($phones));
+
+        if (empty($phones)) {
+            return;
+        }
+
+        \App\Models\WhatsAppSubscription::whereIn('phone_number', $phones)
+            ->update(['ultima_interaccion_at' => now()]);
     }
 
     /**
