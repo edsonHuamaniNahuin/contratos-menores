@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-08-18 · Producción · (commit pendiente)
+
+### Doble incidente: `fopen cache: Permission denied` + 421 SMTP MailerSend
+
+**Síntomas (producción, 18-08):**
+1. `ErrorException: fopen(/var/www/vigilante-seace/storage/framework/cache/data/68/b0/...): Failed to open stream: Permission denied` a las 06:00 y 08:00 (horas de los jobs de suscripciones).
+2. `NotificarEmailSuscriptoresJob: fallo al enviar email ... code "421" Service not available, closing transmission channel` — 13 fallos el mismo día, TODOS para `operaciones@corporacionfamod.com` (suscriptor con `notificar_todo=true`, recibe todos los procesos nuevos).
+
+**Causa 1 — Doble scheduler con permisos de root:**
+- Existía un **crontab de root** (`* * * * * php artisan schedule:run`) REDUNDANTE junto al servicio systemd `vigilante-scheduler` (que ya corre como `www-data` con `artisan schedule:work`).
+- Los jobs síncronos del schedule (`subscriptions:alerts`, `subscriptions:expire`) ejecutados vía el cron de root creaban directorios/archivos de cache (`storage/framework/cache/data/...`) como **root**.
+- Luego php-fpm/queue (`www-data`) intentaban escribir la misma cache → `Permission denied`.
+- Se agravó al migrar `CACHE_STORE=database` → `file` (antes los deadlocks de BD, ahora permisos de archivos).
+
+**Solución 1 (ops, sin código):**
+- Eliminar el crontab de root (`crontab -r` — solo contenía esa línea). El scheduler queda ÚNICAMENTE en systemd como www-data.
+- `chown -R www-data:www-data storage/framework/cache`.
+
+**Causa 2 — Rate limit de MailerSend (plan free):**
+- El throttle de 750ms ya estaba activo, pero las ráfagas (~13 correos en 2 min) superan el límite por hora del plan free de MailerSend (~100/hora).
+- Los correos fallidos NO se marcaban como enviados → reintentaban en cada corrida (2h) → se acumulaban fallos del mismo contrato.
+- Volumen: ~68 correos/día ≈ 2,000/mes — cerca del límite free (3,000/mes).
+
+**Solución 2 (código, `NotificarEmailSuscriptoresJob`):**
+1. Throttle 750ms → 2s entre envíos.
+2. Reintento con backoff: si el error SMTP es temporal (421/429/"Service not available"/"Too many"), espera 30s y reintenta UNA vez.
+3. Tope `MAX_ENVIOS_POR_CORRIDA=40` correos por suscriptor por corrida; el resto queda para la siguiente (el dedup evita duplicados).
+4. `$timeout` 300s → 900s (el backoff suma tiempo).
+
+**Lecciones:**
+- NUNCA tener dos schedulers (cron + systemd): además del doble gasto, si uno corre como root contamina los permisos de `storage/` del otro.
+- Tras cambiar el driver de cache, verificar propiedad de los directorios de escritura.
+- Con SMTP con rate limit, un "fallo" de envío no debe reintentarse en bucle eterno: backoff + tope por corrida + revisar el plan del proveedor (MailerSend free ≈ 3,000/mes).
+
+**Archivos:** `app/Jobs/NotificarEmailSuscriptoresJob.php`, ops en servidor (crontab root, chown cache).
+
+---
+
 ## 2026-08-15 · Geografía Contratos Mayores · `823f2e61`
 
 ### Tablas maestras de geografía + backfill + filtros cascada en buscador

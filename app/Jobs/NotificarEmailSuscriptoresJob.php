@@ -31,9 +31,15 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries   = 2;
-    public int $timeout = 300;
+    public int $timeout = 900; // 15 min: throttle 2s + reintentos con backoff
 
     protected int $limite;
+
+    /** Tope de correos por suscriptor por corrida (respeta límites SMTP). */
+    protected const MAX_ENVIOS_POR_CORRIDA = 40;
+
+    /** Segundos de pausa entre reintentos por error temporal SMTP. */
+    protected const BACKOFF_SEGUNDOS = 30;
 
     public function __construct(int $limite = 150)
     {
@@ -152,6 +158,14 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
         $enviados = 0;
 
         foreach ($procesos as $contrato) {
+            if ($enviados >= self::MAX_ENVIOS_POR_CORRIDA) {
+                Log::warning('NotificarEmailSuscriptoresJob: tope de envíos por corrida alcanzado', [
+                    'email' => $emailSub->email,
+                    'tope' => self::MAX_ENVIOS_POR_CORRIDA,
+                ]);
+                break;
+            }
+
             $contratoSeaceId = (int) ($contrato['idContrato'] ?? $contrato['id_contrato_seace'] ?? 0);
 
             // ── Dedup: no enviar si ya fue enviado ─────────
@@ -166,16 +180,43 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
                 continue;
             }
 
-            // ── Enviar email ───────────────────────────────
-            try {
-                $seguimientoUrl = route('buscador.publico');
+            // ── Enviar email con reintento por error temporal ──
+            $seguimientoUrl = route('buscador.publico');
+            $enviado = false;
+            $intentos = 0;
 
-                Mail::to($emailSub->email)->send(new NuevoProcesoSeace(
-                    contrato: $contrato,
-                    seguimientoUrl: $seguimientoUrl,
-                    matchedKeywords: $resultado['keywords'] ?? [],
-                ));
+            do {
+                try {
+                    Mail::to($emailSub->email)->send(new NuevoProcesoSeace(
+                        contrato: $contrato,
+                        seguimientoUrl: $seguimientoUrl,
+                        matchedKeywords: $resultado['keywords'] ?? [],
+                    ));
+                    $enviado = true;
+                } catch (Exception $e) {
+                    $intentos++;
+                    $temporal = $this->esErrorTemporalSmtp($e->getMessage());
 
+                    if (!$temporal || $intentos >= 2) {
+                        Log::error('NotificarEmailSuscriptoresJob: fallo al enviar email', [
+                            'email'    => $emailSub->email,
+                            'contrato' => $contrato['desContratacion'] ?? 'N/A',
+                            'error'    => $e->getMessage(),
+                        ]);
+                        break;
+                    }
+
+                    Log::warning('NotificarEmailSuscriptoresJob: error temporal SMTP, reintentando', [
+                        'email'    => $emailSub->email,
+                        'contrato' => $contrato['desContratacion'] ?? 'N/A',
+                        'intento'  => $intentos,
+                        'espera'   => self::BACKOFF_SEGUNDOS,
+                    ]);
+                    sleep(self::BACKOFF_SEGUNDOS);
+                }
+            } while (!$enviado && $intentos < 2);
+
+            if ($enviado) {
                 // ── Registrar envío (dedup) ────────────────
                 if ($contratoSeaceId > 0) {
                     $emailSub->registrarEnvio(
@@ -191,20 +232,25 @@ class NotificarEmailSuscriptoresJob implements ShouldQueue
                     'contrato' => $contrato['desContratacion'] ?? 'N/A',
                     'keywords' => $resultado['keywords'],
                 ]);
-            } catch (Exception $e) {
-                Log::error('NotificarEmailSuscriptoresJob: fallo al enviar email', [
-                    'email'    => $emailSub->email,
-                    'contrato' => $contrato['desContratacion'] ?? 'N/A',
-                    'error'    => $e->getMessage(),
-                ]);
             }
 
-            // Throttle entre envíos: evita el 421 "Service not available"
-            // del servidor SMTP cuando se envían ráfagas de correos.
-            usleep(750_000);
+            // Throttle entre envíos: respeta el límite por hora del SMTP
+            usleep(2_000_000);
         }
 
         return $enviados;
+    }
+
+    /**
+     * ¿El error SMTP es temporal (rate limit / servicio no disponible)?
+     * Errores 421/429 de MailerSend se recuperan esperando y reintentando.
+     */
+    protected function esErrorTemporalSmtp(string $mensaje): bool
+    {
+        return str_contains($mensaje, '421')
+            || str_contains($mensaje, '429')
+            || str_contains($mensaje, 'Service not available')
+            || str_contains($mensaje, 'Too many');
     }
 
     /**
