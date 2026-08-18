@@ -77,6 +77,9 @@ class WebhookWhatsAppController extends Controller
             }
         }
 
+        // Registrar estados de entrega (diagnóstico: delivered/read/failed)
+        $this->logStatuses($payload);
+
         if (!$hasMessages) {
             // Status updates (delivered, read, etc.) - ack without processing
             return response()->json(['status' => 'ok'], 200);
@@ -86,6 +89,33 @@ class WebhookWhatsAppController extends Controller
         $this->enqueuePayload($payload);
 
         return response()->json(['status' => 'ok'], 200);
+    }
+
+    /**
+     * Registrar los cambios de estado de mensajes enviados (webhook de Meta).
+     * Solo se escribe si hay errores de entrega o si está en modo debug.
+     */
+    protected function logStatuses(array $payload): void
+    {
+        foreach (($payload['entry'] ?? []) as $entry) {
+            foreach (($entry['changes'] ?? []) as $change) {
+                $statuses = $change['value']['statuses'] ?? [];
+
+                foreach ($statuses as $status) {
+                    $errors = $status['errors'] ?? [];
+
+                    if (!empty($errors) || config('services.whatsapp.debug_logs', false)) {
+                        Log::info('WhatsApp Webhook: estado de mensaje', [
+                            'status' => $status['status'] ?? 'unknown',
+                            'recipient' => $status['recipient_id'] ?? null,
+                            'wamid' => $status['id'] ?? null,
+                            'timestamp' => $status['timestamp'] ?? null,
+                            'errors' => $errors,
+                        ]);
+                    }
+                }
+            }
+        }
     }
 
     /**
