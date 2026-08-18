@@ -391,11 +391,7 @@
                         <p class="text-[11px] text-neutral-400">
                             @if($emailExists)
                                 {{ $emailSubscription->email }}
-                                @if($emailSubscription->notificar_todo)
-                                    · Todos los procesos
-                                @else
-                                    · Filtrado por keywords
-                                @endif
+                                · Filtrado por keywords
                             @else
                                 Sin correo registrado
                             @endif
@@ -983,11 +979,7 @@
                             @else
                                 <span class="px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded-full text-xs font-semibold">✗ Inactivo</span>
                             @endif
-                            @if($emailSubscription->notificar_todo)
-                                <span class="px-2 py-0.5 bg-primary-500/10 text-primary-500 rounded-full text-xs font-medium">📩 Todos los procesos</span>
-                            @else
-                                <span class="px-2 py-0.5 bg-primary-500/10 text-primary-500 rounded-full text-xs font-medium">🔍 Filtrado por keywords</span>
-                            @endif
+                            <span class="px-2 py-0.5 bg-primary-500/10 text-primary-500 rounded-full text-xs font-medium">🔍 Filtrado por keywords</span>
                         </div>
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-4 text-xs text-neutral-600">
                             <span>📊 {{ number_format($emailSubscription->notificaciones_enviadas) }} correos enviados</span>
@@ -1025,8 +1017,7 @@
          MODAL: Agregar/Editar Email
     ═══════════════════════════════════════════════════════════════ --}}
     @if($showEmailModal)
-    <div x-data="{ notificarTodo: @entangle('email_notificar_todo').live }"
-         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+    <div x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" @keydown.escape.window="$wire.toggleEmailModal()">
         <div @click.outside="$wire.toggleEmailModal()" class="bg-white rounded-3xl shadow-xl w-full max-w-md p-6 relative">
             <div class="flex items-center justify-between mb-5">
@@ -1053,21 +1044,13 @@
                 <div>
                     <label class="block text-xs font-medium text-neutral-600 mb-3">Tipo de notificacion</label>
                     <div class="flex flex-col gap-3">
-                        <button type="button" @click="notificarTodo = true"
-                                :class="notificarTodo ? 'bg-primary-500/10 border-primary-500 text-primary-500' : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300'"
-                                class="flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-sm font-medium transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            Recibir todos los procesos
-                        </button>
-                        <button type="button" @click="notificarTodo = false"
-                                :class="!notificarTodo ? 'bg-primary-500/10 border-primary-500 text-primary-500' : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300'"
-                                class="flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-sm font-medium transition-colors">
+                        <div class="flex items-center gap-2 px-4 py-2.5 rounded-2xl border bg-primary-500/10 border-primary-500 text-primary-500 text-sm font-medium">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                             Filtrar por palabras clave del perfil
-                        </button>
+                        </div>
                     </div>
                     <p class="text-[11px] text-neutral-400 mt-2">
-                        Si eliges "Filtrar", se usaran las palabras clave configuradas en tu perfil de empresa.
+                        Se usaran las palabras clave configuradas en tu perfil de empresa. Recibiras alertas solo de los procesos que coincidan con ellas.
                     </p>
                 </div>
             </div>

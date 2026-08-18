@@ -72,7 +72,6 @@ class ConfiguracionAlertas extends Component
     public bool $showEmailModal = false;
     public string $email_notificacion = '';
     public bool $email_activo = true;
-    public bool $email_notificar_todo = true;
     public ?int $editando_email_id = null;
 
     public function mount(): void
@@ -493,12 +492,10 @@ class ConfiguracionAlertas extends Component
         if ($emailSub) {
             $this->email_notificacion = $emailSub->email;
             $this->email_activo = $emailSub->activo;
-            $this->email_notificar_todo = $emailSub->notificar_todo;
             $this->editando_email_id = $emailSub->id;
         } else {
             $this->email_notificacion = auth()->user()->email ?? '';
             $this->email_activo = true;
-            $this->email_notificar_todo = true;
             $this->editando_email_id = null;
         }
     }
@@ -534,7 +531,7 @@ class ConfiguracionAlertas extends Component
                 [
                     'email' => $this->email_notificacion,
                     'activo' => $this->email_activo,
-                    'notificar_todo' => $this->email_notificar_todo,
+                    'notificar_todo' => false,
                 ]
             );
 
@@ -545,7 +542,7 @@ class ConfiguracionAlertas extends Component
             Log::info('Email: Suscripción guardada', [
                 'id' => $emailSub->id,
                 'email' => $emailSub->email,
-                'notificar_todo' => $this->email_notificar_todo,
+                'notificar_todo' => false,
             ]);
         } catch (\Exception $e) {
             session()->flash('email_error', '❌ Error: ' . $e->getMessage());
@@ -577,7 +574,6 @@ class ConfiguracionAlertas extends Component
             $this->editando_email_id = null;
             $this->email_notificacion = auth()->user()->email ?? '';
             $this->email_activo = true;
-            $this->email_notificar_todo = true;
             $this->showEmailModal = false;
 
             session()->flash('email_success', '✅ Suscripción de correo eliminada.');
@@ -941,3 +937,4 @@ class ConfiguracionAlertas extends Component
             : self::MAX_KEYWORDS;
     }
 }
+
