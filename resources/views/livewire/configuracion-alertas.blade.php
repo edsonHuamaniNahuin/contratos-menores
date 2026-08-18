@@ -736,14 +736,19 @@
                         </div>
                         @php
                             $waBizPhone = config('services.whatsapp.business_phone', '');
-                            $waVentanaCerrada = !$whatsappSubscription->ultima_interaccion_at
-                                || $whatsappSubscription->ultima_interaccion_at->diffInHours(now()) >= 24;
+                            $waVentanaVencida = $whatsappSubscription->ultima_interaccion_at !== null
+                                && $whatsappSubscription->ultima_interaccion_at->diffInHours(now()) >= 24;
                         @endphp
-                        @if($waBizPhone && $waVentanaCerrada)
+                        @if($waBizPhone && $waVentanaVencida)
                         <div class="mt-2 inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">
                             <svg class="w-4 h-4 text-red-500 shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                             <span class="text-xs font-semibold text-red-600">Notificaciones pausadas: mas de 24 horas sin mensajes al bot.</span>
                             <a href="https://wa.me/{{ $waBizPhone }}?text=Hola%20Vigilante%20SEACE" target="_blank" class="text-xs font-bold text-red-700 underline hover:text-red-800">Envia "hola" al +{{ $waBizPhone }} para reactivar</a>
+                        </div>
+                        @elseif($waBizPhone)
+                        <div class="mt-2 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-3 py-1.5">
+                            <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            <span class="text-xs font-semibold text-green-600">Ventana activa</span>
                         </div>
                         @endif
                     </div>
@@ -827,7 +832,8 @@
                     @foreach($allWhatsAppSubscriptions as $wa)
                     @php
                         $u = $wa->user;
-                        $waCerrada = !$wa->ultima_interaccion_at || $wa->ultima_interaccion_at->diffInHours(now()) >= 24;
+                        $waVencida = $wa->ultima_interaccion_at !== null
+                            && $wa->ultima_interaccion_at->diffInHours(now()) >= 24;
                     @endphp
                     <tr class="hover:bg-neutral-50 transition-colors">
                         <td class="py-2.5 pr-3 font-medium text-neutral-800">
@@ -865,12 +871,12 @@
                             {{ $wa->ultima_notificacion_at ? $wa->ultima_notificacion_at->diffForHumans() : '—' }}
                         </td>
                         <td class="py-2.5 text-center">
-                            @if($wa->activo && $waCerrada)
+                            @if($wa->activo && $waVencida)
                                 <span title="Ventana de 24h vencida: el usuario debe enviar 'hola' al bot para reactivar">
                                     <svg class="w-4 h-4 text-red-500 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                                 </span>
                             @elseif($wa->activo)
-                                <span title="Ventana abierta">
+                                <span title="Ventana activa">
                                     <svg class="w-4 h-4 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 </span>
                             @else
