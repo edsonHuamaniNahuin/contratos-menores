@@ -1316,6 +1316,7 @@
     {{-- Direccionamiento en progreso --}}
     @if($analizandoDireccOcid)
         <div class="fixed inset-0 z-[200] flex items-center justify-center px-4"
+             wire:poll.3s="checkDireccionamientoMayor"
              x-data="{ seconds: 0, timer: null, init() { this.timer = setInterval(() => this.seconds++, 1000); } }"
         >
             <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"></div>

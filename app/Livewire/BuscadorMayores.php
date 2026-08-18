@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Jobs\AnalizarTdrMayorJob;
+use App\Jobs\DireccionarTdrMayorJob;
 use App\Models\ContratoMayor;
 use App\Models\ContratoSeguimientoMayor;
 use App\Models\SubscriptionContractMatch;
@@ -956,6 +957,19 @@ class BuscadorMayores extends Component
             return;
         }
 
+        // Si ya hay un análisis de direccionamiento en curso (job async),
+        // no lanzar otro: solo retomar el polling.
+        $enCurso = TdrAnalisisMayor::where('ocid', $ocid)
+            ->where('tipo', TdrAnalisisMayor::TIPO_DIRECCIONAMIENTO)
+            ->where('estado', TdrAnalisisMayor::ESTADO_PENDIENTE)
+            ->exists();
+
+        if ($enCurso) {
+            $this->analizandoDireccOcid = $ocid;
+            $this->resultadoDireccionamiento = null;
+            return;
+        }
+
         $this->analizandoDireccOcid = $ocid;
         $this->resultadoDireccionamiento = null;
 
@@ -1017,41 +1031,94 @@ class BuscadorMayores extends Component
 
     private function ejecutarDireccionamientoInterno(string $ocid, string $pdfUrl, array $ctx, int $userId, string $localPath): void
     {
-        $analizador = new AnalizadorTDRService();
-        $resultado = $analizador->analyzeDireccionamiento($localPath, 'mayores');
+        // En local/dev o queue=sync: ejecutar sincrono para resultados inmediatos
+        if (config('queue.default') === 'sync' || app()->isLocal()) {
+            set_time_limit(600); // PDFs grandes con IA pueden tomar varios minutos
+            $analizador = new AnalizadorTDRService();
+            $resultado = $analizador->analyzeDireccionamiento($localPath, 'mayores');
 
-        if (!$resultado['success']) {
+            if (!$resultado['success']) {
+                TdrAnalisisMayor::updateOrCreate(
+                    ['ocid' => $ocid, 'tipo' => TdrAnalisisMayor::TIPO_DIRECCIONAMIENTO],
+                    [
+                        'url_documento' => $pdfUrl,
+                        'estado' => TdrAnalisisMayor::ESTADO_FALLIDO,
+                        'error' => $resultado['error'] ?? 'Error desconocido',
+                        'contexto_contrato' => $ctx,
+                        'analizado_en' => now(),
+                        'requested_by_user_id' => $userId,
+                        'origin' => 'web',
+                    ]
+                );
+                $this->notify($resultado['error'] ?? 'Error al analizar direccionamiento.', 'error');
+                return;
+            }
+
             TdrAnalisisMayor::updateOrCreate(
                 ['ocid' => $ocid, 'tipo' => TdrAnalisisMayor::TIPO_DIRECCIONAMIENTO],
                 [
                     'url_documento' => $pdfUrl,
-                    'estado' => TdrAnalisisMayor::ESTADO_FALLIDO,
-                    'error' => $resultado['error'] ?? 'Error desconocido',
+                    'estado' => TdrAnalisisMayor::ESTADO_EXITOSO,
                     'contexto_contrato' => $ctx,
+                    'payload' => $resultado,
                     'analizado_en' => now(),
                     'requested_by_user_id' => $userId,
                     'origin' => 'web',
                 ]
             );
-            $this->notify($resultado['error'] ?? 'Error al analizar direccionamiento.', 'error');
+
+            $this->resultadoDireccionamiento = $resultado['data'] ?? [];
+            $this->notify('Análisis de direccionamiento completado.', 'success');
             return;
         }
 
-        TdrAnalisisMayor::updateOrCreate(
+        // Produccion: crear registro pendiente y despachar job async.
+        // El analisis puede tardar varios minutos; el navegador hace polling
+        // (checkDireccionamientoMayor) en lugar de esperar el request HTTP
+        // (Cloudflare corta a los 100s -> 504).
+        TdrAnalisisMayor::firstOrCreate(
             ['ocid' => $ocid, 'tipo' => TdrAnalisisMayor::TIPO_DIRECCIONAMIENTO],
             [
                 'url_documento' => $pdfUrl,
-                'estado' => TdrAnalisisMayor::ESTADO_EXITOSO,
+                'estado' => TdrAnalisisMayor::ESTADO_PENDIENTE,
                 'contexto_contrato' => $ctx,
-                'payload' => $resultado,
-                'analizado_en' => now(),
                 'requested_by_user_id' => $userId,
                 'origin' => 'web',
             ]
         );
 
-        $this->resultadoDireccionamiento = $resultado['data'] ?? [];
+        DireccionarTdrMayorJob::dispatch($ocid, $pdfUrl, $ctx, $userId, $localPath);
+    }
+
+    /**
+     * Polling del direccionamiento en curso (job async en producción).
+     */
+    public function checkDireccionamientoMayor(): void
+    {
+        if (!$this->analizandoDireccOcid) {
+            return;
+        }
+
+        $terminado = TdrAnalisisMayor::where('ocid', $this->analizandoDireccOcid)
+            ->where('tipo', TdrAnalisisMayor::TIPO_DIRECCIONAMIENTO)
+            ->whereIn('estado', [TdrAnalisisMayor::ESTADO_EXITOSO, TdrAnalisisMayor::ESTADO_FALLIDO])
+            ->latest('analizado_en')
+            ->first();
+
+        if (!$terminado) {
+            return;
+        }
+
+        $this->analizandoDireccOcid = null;
+
+        if ($terminado->estado === TdrAnalisisMayor::ESTADO_FALLIDO) {
+            $this->notify('Error en el análisis de direccionamiento: ' . ($terminado->error ?: 'Error desconocido'), 'error');
+            return;
+        }
+
+        $this->resultadoDireccionamiento = $terminado->payload['data'] ?? $terminado->payload ?? [];
         $this->notify('Análisis de direccionamiento completado.', 'success');
+        $this->dispatch('scroll-to-analisis-mayor');
     }
 
     public function cerrarDireccionamiento(): void
