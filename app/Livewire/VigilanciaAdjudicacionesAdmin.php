@@ -31,7 +31,6 @@ class VigilanciaAdjudicacionesAdmin extends Component
     public float $montoMax = 0;
     public string $fechaDesde = '';
     public string $fechaHasta = '';
-    public string $estadoVigilancia = 'todos'; // todos | pendientes | notificados
     public int $registrosPorPagina = 15;
 
     public array $estadosDisponibles = [];
@@ -80,11 +79,14 @@ class VigilanciaAdjudicacionesAdmin extends Component
     protected function cargarConfig(): void
     {
         $this->umbral = (string) SystemSetting::getValue('vigilancia_monto_min', 1_000_000);
+        $umbralFloat = (float) $this->umbral;
 
         $this->stats = [
             'vigilados' => VigilanciaAdjudicacion::count(),
-            'pendientes' => VigilanciaAdjudicacion::whereNull('notificado_en')->count(),
-            'notificados' => VigilanciaAdjudicacion::whereIn('estado_notificado', VigilanciaAdjudicacion::ESTADOS_BUENA_PRO)->count(),
+            'sobre_umbral' => ContratoMayor::where('valor_referencial', '>=', $umbralFloat)->count(),
+            'buena_pro' => ContratoMayor::where('valor_referencial', '>=', $umbralFloat)
+                ->whereIn('estado', VigilanciaAdjudicacion::ESTADOS_BUENA_PRO)
+                ->count(),
         ];
     }
 
@@ -123,11 +125,6 @@ class VigilanciaAdjudicacionesAdmin extends Component
         $this->resetPage();
     }
 
-    public function updatedEstadoVigilancia(): void
-    {
-        $this->resetPage();
-    }
-
     public function limpiarFiltros(): void
     {
         $this->palabraClave = '';
@@ -137,7 +134,6 @@ class VigilanciaAdjudicacionesAdmin extends Component
         $this->montoMax = 0;
         $this->fechaDesde = '';
         $this->fechaHasta = '';
-        $this->estadoVigilancia = 'todos';
         $this->resetPage();
     }
 
@@ -148,9 +144,8 @@ class VigilanciaAdjudicacionesAdmin extends Component
 
     public function render()
     {
-        // JOIN 1:1 con vigilancia_adjudicaciones (ocid único): una sola
-        // consulta trae el estado de vigilancia sin consulta adicional,
-        // y el índice del JOIN evita el EXISTS por fila.
+        // JOIN 1:1 con vigilancia_adjudicaciones (ocid único): la tabla solo
+        // contiene procesos PENDIENTES (los terminales se retiran al detectarse).
         $query = ContratoMayor::query()
             ->with(['departamento', 'provincia', 'distrito'])
             // Solo columnas necesarias para la bandeja: sin `datos_raw`
@@ -167,17 +162,8 @@ class VigilanciaAdjudicacionesAdmin extends Component
                 'contratos_mayores.departamento_id',
                 'contratos_mayores.provincia_id',
                 'contratos_mayores.distrito_id',
-                'vigilancia_adjudicaciones.notificado_en',
-                'vigilancia_adjudicaciones.estado_notificado',
             ])
             ->join('vigilancia_adjudicaciones', 'vigilancia_adjudicaciones.ocid', '=', 'contratos_mayores.ocid');
-
-        // Filtro por estado de la vigilancia (pendiente / resuelta)
-        if ($this->estadoVigilancia === 'pendientes') {
-            $query->whereNull('vigilancia_adjudicaciones.notificado_en');
-        } elseif ($this->estadoVigilancia === 'notificados') {
-            $query->whereNotNull('vigilancia_adjudicaciones.notificado_en');
-        }
 
         // Filtros del buscador reutilizados (atacan solo al universo vigilado)
         $this->seace->aplicarFiltros($query, [

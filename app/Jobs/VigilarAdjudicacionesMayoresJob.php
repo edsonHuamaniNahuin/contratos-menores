@@ -75,8 +75,9 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
     }
 
     /**
-     * Registra en vigilancia los contratos >= umbral que aún no están.
-     * SOLO guarda el identificador (ocid); los datos viven en contratos_mayores.
+     * Registra en vigilancia los contratos >= umbral que aún no están y que
+     * NO están en estado terminal: la vigilancia es SOLO para pendientes.
+     * Si ya está adjudicado/desierto/nulo/etc. no se vigila.
      *
      * @return int cantidad de nuevos registros
      */
@@ -84,6 +85,7 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
     {
         $ocids = ContratoMayor::query()
             ->where('valor_referencial', '>=', $umbral)
+            ->whereNotIn('estado', VigilanciaAdjudicacion::ESTADOS_FINALES)
             ->pluck('ocid');
 
         if ($ocids->isEmpty()) {
@@ -93,13 +95,6 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
         $existentes = VigilanciaAdjudicacion::whereIn('ocid', $ocids)
             ->pluck('ocid')
             ->flip();
-
-        // Estados actuales de los contratos candidatos: si un contrato NUEVO
-        // para la vigilancia ya está en estado final (buena pro o desierto/
-        // cancelado/nulo), se registra directamente como RESUELTO, sin alerta
-        // (no hubo transición observada por nosotros).
-        $estados = ContratoMayor::whereIn('ocid', $ocids)
-            ->pluck('estado', 'ocid');
 
         $nuevos = 0;
         $now = now();
@@ -111,13 +106,8 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
                     continue;
                 }
 
-                $estado = $estados[$ocid] ?? null;
-                $final = in_array($estado, VigilanciaAdjudicacion::ESTADOS_FINALES, true);
-
                 $filas[] = [
                     'ocid' => $ocid,
-                    'estado_notificado' => $final ? $estado : null,
-                    'notificado_en' => $final ? $now : null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -203,30 +193,23 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
             }
 
             if (in_array($nuevoEstado, VigilanciaAdjudicacion::ESTADOS_BUENA_PRO, true)) {
-                // 🏆 BUENA PRO detectada → notificar UNA vez
-                $vig->update([
-                    'estado_notificado' => $nuevoEstado,
-                    'notificado_en' => now(),
-                ]);
-
+                // 🏆 BUENA PRO detectada → notificar UNA vez y RETIRAR de vigilancia
                 $this->notificarDestinatarios($vig, $contrato, $fresh, $whatsapp, $umbral);
+                $vig->delete();
                 $buenaPro++;
 
-                Log::info('VigilarAdjudicacionesMayores: BUENA PRO detectada', [
+                Log::info('VigilarAdjudicacionesMayores: BUENA PRO detectada y retirada de vigilancia', [
                     'ocid' => $vig->ocid,
                     'nomenclatura' => $contrato->nomenclatura,
                     'estado' => $nuevoEstado,
                 ]);
             } elseif (in_array($nuevoEstado, VigilanciaAdjudicacion::ESTADOS_FINALES, true)) {
                 // Estado final sin buena pro (desierto, cancelado, nulo...):
-                // resolver sin alerta y dejar de vigilar.
-                $vig->update([
-                    'estado_notificado' => $nuevoEstado,
-                    'notificado_en' => now(),
-                ]);
+                // el proceso terminó — retirar de vigilancia sin alerta.
+                $vig->delete();
                 $sinCambio++;
 
-                Log::info('VigilarAdjudicacionesMayores: proceso cerrado sin buena pro', [
+                Log::info('VigilarAdjudicacionesMayores: proceso terminado, retirado de vigilancia', [
                     'ocid' => $vig->ocid,
                     'nomenclatura' => $contrato->nomenclatura,
                     'estado' => $nuevoEstado,
