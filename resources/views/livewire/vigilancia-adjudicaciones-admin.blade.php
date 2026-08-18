@@ -111,7 +111,7 @@
                 </thead>
                 <tbody>
                     @forelse($procesos as $p)
-                        @php $notif = $notificados[$p->ocid] ?? null; @endphp
+                        @php $notif = $p->notificado_en ? ($p->estado_notificado ?: 'BUENA PRO') : null; @endphp
                         <tr class="border-b border-neutral-50 hover:bg-neutral-50/50">
                             <td class="py-3 pr-4 text-neutral-800 max-w-[220px] truncate">{{ $p->entidad_nombre }}</td>
                             <td class="py-3 pr-4 font-semibold text-neutral-900">{{ $p->nomenclatura }}</td>

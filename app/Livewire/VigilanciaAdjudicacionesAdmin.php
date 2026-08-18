@@ -150,27 +150,35 @@ class VigilanciaAdjudicacionesAdmin extends Component
 
     public function render()
     {
+        // JOIN 1:1 con vigilancia_adjudicaciones (ocid único): una sola
+        // consulta trae el estado de vigilancia sin consulta adicional,
+        // y el índice del JOIN evita el EXISTS por fila.
         $query = ContratoMayor::query()
             ->with(['departamento', 'provincia', 'distrito'])
-            // Solo columnas necesarias para la bandeja: evitar cargar `datos_raw`
-            // (JSON pesado) que revienta el sort buffer de MySQL (error 1038).
+            // Solo columnas necesarias para la bandeja: sin `datos_raw`
+            // (JSON pesado que reventaba el sort buffer de MySQL).
             ->select([
-                'id', 'ocid', 'entidad_nombre', 'nomenclatura',
-                'objeto_contratacion', 'valor_referencial', 'estado',
-                'fecha_publicacion', 'departamento_id', 'provincia_id', 'distrito_id',
+                'contratos_mayores.id',
+                'contratos_mayores.ocid',
+                'contratos_mayores.entidad_nombre',
+                'contratos_mayores.nomenclatura',
+                'contratos_mayores.objeto_contratacion',
+                'contratos_mayores.valor_referencial',
+                'contratos_mayores.estado',
+                'contratos_mayores.fecha_publicacion',
+                'contratos_mayores.departamento_id',
+                'contratos_mayores.provincia_id',
+                'contratos_mayores.distrito_id',
+                'vigilancia_adjudicaciones.notificado_en',
+                'vigilancia_adjudicaciones.estado_notificado',
             ])
-            ->whereExists(fn ($q) => $q->select('id')->from('vigilancia_adjudicaciones')
-                ->whereColumn('vigilancia_adjudicaciones.ocid', 'contratos_mayores.ocid'));
+            ->join('vigilancia_adjudicaciones', 'vigilancia_adjudicaciones.ocid', '=', 'contratos_mayores.ocid');
 
         // Filtro por estado de la vigilancia (pendiente / notificada)
         if ($this->estadoVigilancia === 'pendientes') {
-            $query->whereExists(fn ($q) => $q->select('id')->from('vigilancia_adjudicaciones')
-                ->whereColumn('vigilancia_adjudicaciones.ocid', 'contratos_mayores.ocid')
-                ->whereNull('notificado_en'));
+            $query->whereNull('vigilancia_adjudicaciones.notificado_en');
         } elseif ($this->estadoVigilancia === 'notificados') {
-            $query->whereExists(fn ($q) => $q->select('id')->from('vigilancia_adjudicaciones')
-                ->whereColumn('vigilancia_adjudicaciones.ocid', 'contratos_mayores.ocid')
-                ->whereNotNull('notificado_en'));
+            $query->whereNotNull('vigilancia_adjudicaciones.notificado_en');
         }
 
         // Filtros del buscador reutilizados (atacan solo al universo vigilado)
@@ -188,17 +196,11 @@ class VigilanciaAdjudicacionesAdmin extends Component
             'monto_max' => $this->montoMax,
         ]);
 
-        $procesos = $query->orderBy('fecha_publicacion', 'desc')
+        $procesos = $query->orderBy('contratos_mayores.fecha_publicacion', 'desc')
             ->paginate($this->registrosPorPagina);
-
-        // Marcar cuáles fueron notificados (buena pro detectada)
-        $notificados = VigilanciaAdjudicacion::whereNotNull('notificado_en')
-            ->whereIn('ocid', $procesos->pluck('ocid'))
-            ->pluck('estado_notificado', 'ocid');
 
         return view('livewire.vigilancia-adjudicaciones-admin', [
             'procesos' => $procesos,
-            'notificados' => $notificados,
         ]);
     }
 }
