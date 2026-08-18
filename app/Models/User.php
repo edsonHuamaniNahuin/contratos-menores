@@ -9,6 +9,7 @@ use App\Models\Subscription;
 use App\Models\ContratoSeguimiento;
 use App\Models\SubscriberProfile;
 use App\Models\TelegramSubscription;
+use App\Models\WhatsAppSubscription;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -67,6 +68,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function telegramSubscriptions(): HasMany
     {
         return $this->hasMany(TelegramSubscription::class);
+    }
+
+    public function whatsappSubscriptions(): HasMany
+    {
+        return $this->hasMany(WhatsAppSubscription::class);
     }
 
     public function subscriberProfile(): HasOne

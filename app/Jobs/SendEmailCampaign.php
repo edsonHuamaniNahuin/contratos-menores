@@ -97,6 +97,24 @@ class SendEmailCampaign implements ShouldQueue
                 $q->whereIn('slug', ['proveedor-premium', 'proveedor-premium-total', 'admin'])
             ),
             EmailCampaign::FILTRO_ESPECIFICO => $query->whereIn('id', (array) ($this->campaign->filtro_ids ?? [])),
+            EmailCampaign::FILTRO_WSP_VENTANA => $query->whereHas('whatsappSubscriptions', function ($q) {
+                $q->where('activo', true)
+                    ->where(function ($w) {
+                        // Ventana cerrada:
+                        // A) Meta rechazó una entrega (131047) y no hubo interacción posterior, o
+                        // B) la última interacción del usuario superó las 24 horas.
+                        $w->where(function ($a) {
+                            $a->whereNotNull('ultima_entrega_fallida_at')
+                                ->where(function ($a2) {
+                                    $a2->whereNull('ultima_interaccion_at')
+                                        ->orWhereColumn('ultima_entrega_fallida_at', '>', 'ultima_interaccion_at');
+                                });
+                        })->orWhere(function ($b) {
+                            $b->whereNotNull('ultima_interaccion_at')
+                                ->where('ultima_interaccion_at', '<', now()->subHours(24));
+                        });
+                    });
+            }),
             default => null,
         };
 

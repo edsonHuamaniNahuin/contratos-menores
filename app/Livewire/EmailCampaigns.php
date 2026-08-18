@@ -48,7 +48,7 @@ class EmailCampaigns extends Component
         'templateName' => 'required|string|max:255',
         'templateSubject' => 'required|string|max:255',
         'templateBody' => 'required|string|min:10',
-        'filtroTipo' => 'required|in:todos,premium,no-premium,especifico',
+        'filtroTipo' => 'required|in:todos,premium,no-premium,especifico,whatsapp-ventana',
         'scheduledAt' => 'nullable|date|after:now',
     ];
 
@@ -84,7 +84,7 @@ class EmailCampaigns extends Component
             'name' => 'required|string|max:255',
             'subject' => 'required|string|max:255',
             'body' => 'required|string|min:10',
-            'filtroTipo' => 'required|in:todos,premium,no-premium,especifico',
+            'filtroTipo' => 'required|in:todos,premium,no-premium,especifico,whatsapp-ventana',
             'scheduledAt' => 'nullable|date|after:now',
         ]);
 

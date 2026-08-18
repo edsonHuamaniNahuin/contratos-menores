@@ -19,6 +19,7 @@ class EmailCampaign extends Model
     public const FILTRO_PREMIUM = 'premium';
     public const FILTRO_NO_PREMIUM = 'no-premium';
     public const FILTRO_ESPECIFICO = 'especifico';
+    public const FILTRO_WSP_VENTANA = 'whatsapp-ventana';
 
     protected $fillable = [
         'name', 'subject', 'body', 'status',

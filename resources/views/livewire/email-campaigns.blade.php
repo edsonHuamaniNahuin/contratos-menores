@@ -54,7 +54,7 @@
             @foreach($this->campaigns as $c)
             <tr class="hover:bg-neutral-50/50">
                 <td class="px-4 py-3"><p class="font-semibold text-neutral-900">{{ $c->name }}</p><p class="text-xs text-neutral-400">{{ $c->subject }}</p></td>
-                <td class="px-4 py-3 text-xs text-neutral-600">@php $fm=['todos'=>'Todos','premium'=>'Premium','no-premium'=>'No-Premium','especifico'=>count($c->filtro_ids??[]).' usuarios']; @endphp {{ $fm[$c->filtro_tipo]??'-' }}</td>
+                <td class="px-4 py-3 text-xs text-neutral-600">@php $fm=['todos'=>'Todos','premium'=>'Premium','no-premium'=>'No-Premium','especifico'=>count($c->filtro_ids??[]).' usuarios','whatsapp-ventana'=>'WhatsApp: ventana 24h vencida']; @endphp {{ $fm[$c->filtro_tipo]??'-' }}</td>
                 <td class="px-4 py-3 text-center">@php $sc=['borrador'=>'bg-neutral-100 text-neutral-600','programada'=>'bg-blue-50 text-blue-700','enviando'=>'bg-amber-50 text-amber-700','enviada'=>'bg-green-50 text-green-700','error'=>'bg-red-50 text-red-600']; @endphp <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold {{ $sc[$c->status]??'' }}">{{ ucfirst($c->status) }}</span></td>
                 <td class="px-4 py-3 text-center text-xs text-neutral-500">@if($c->sent_at) {{ $c->sent_at->format('d/m/Y H:i') }} @elseif($c->scheduled_at) Prog: {{ $c->scheduled_at->format('d/m/Y H:i') }} @else {{ $c->created_at->format('d/m/Y') }} @endif</td>
                 <td class="px-4 py-3"><div class="flex items-center justify-center gap-1.5">
@@ -107,7 +107,7 @@
                     <div class="border-t border-neutral-100 pt-4">
                         <h3 class="text-sm font-bold text-neutral-900 mb-2">Destinatarios</h3>
                         <div class="flex flex-wrap gap-2 mb-3">
-                            @foreach(['todos'=>'Todos','premium'=>'Premium','no-premium'=>'No-Premium','especifico'=>'Específicos'] as $v=>$l)
+                            @foreach(['todos'=>'Todos','premium'=>'Premium','no-premium'=>'No-Premium','especifico'=>'Específicos','whatsapp-ventana'=>'WhatsApp: ventana 24h vencida'] as $v=>$l)
                                 <button type="button" wire:click="$set('filtroTipo','{{ $v }}')" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ $filtroTipo===$v?'bg-primary-500 text-white':'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}}">{{ $l }}</button>
                             @endforeach
                         </div>
