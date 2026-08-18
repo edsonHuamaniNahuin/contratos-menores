@@ -4,16 +4,13 @@ namespace App\Jobs;
 
 use App\Mail\AlertaAdjudicacion;
 use App\Models\ContratoMayor;
-use App\Models\EmailSubscription;
 use App\Models\SubscriberProfile;
 use App\Models\SystemSetting;
-use App\Models\TelegramSubscription;
 use App\Models\VigilanciaAdjudicacion;
 use App\Models\VigilanciaAdjudicacionDestinatario;
 use App\Models\WhatsAppSubscription;
 use App\Services\ProcessNotificationTracker;
 use App\Services\SeaceMayoresService;
-use App\Services\TelegramNotificationService;
 use App\Services\WhatsAppNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -316,8 +313,10 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
     }
 
     /**
-     * Notifica a los usuarios que activaron la opción en /configuracion-alertas,
-     * por sus canales activos (Telegram/WhatsApp/Email), con dedup per-usuario.
+     * Notifica a los usuarios que activaron la opción en /configuracion-alertas.
+     *
+     * Según el alcance acordado, la alerta de buena pro se envía SOLO por
+     * WhatsApp (no por Telegram ni Email), con dedup per-usuario.
      */
     protected function notificarUsuariosOptIn(
         VigilanciaAdjudicacion $vig,
@@ -335,8 +334,6 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
         }
 
         $tracker = app(ProcessNotificationTracker::class);
-        $telegram = app(TelegramNotificationService::class);
-        $mensajeTelegram = $this->buildMensajeTelegram($proceso);
 
         foreach ($profiles as $profile) {
             $userId = $profile->user_id;
@@ -352,51 +349,7 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
                 continue;
             }
 
-            // ── Telegram ──
-            $tgSubs = TelegramSubscription::where('user_id', $userId)
-                ->where('activo', true)
-                ->get();
-
-            foreach ($tgSubs as $tg) {
-                if (!$tg->recibir_mayores) {
-                    continue;
-                }
-                $recipient = (string) $tg->chat_id;
-                if ($tracker->wasAlreadyNotified($vig->ocid, $userId, 'adj-telegram', $recipient)) {
-                    continue;
-                }
-                try {
-                    $resultado = $telegram->enviarMensaje($tg->chat_id, $mensajeTelegram);
-                    if ($resultado['success'] ?? false) {
-                        $tracker->recordNotification(
-                            [
-                                'desContratacion' => $proceso['nomenclatura'],
-                                'nomEntidad' => $proceso['entidad_nombre'],
-                                'montoReferencial' => $proceso['valor_referencial'],
-                                'fecPublica' => $proceso['fecha_publicacion'],
-                                'nomObjetoContrato' => 'Buena Pro',
-                            ],
-                            $vig->ocid,
-                            $userId,
-                            'adj-telegram',
-                            $recipient,
-                            'alerta-adjudicacion'
-                        );
-                        Log::info('VigilarAdjudicacionesMayores: telegram usuario', [
-                            'ocid' => $vig->ocid,
-                            'user_id' => $userId,
-                        ]);
-                    }
-                } catch (\Throwable $e) {
-                    Log::error('VigilarAdjudicacionesMayores: fallo telegram usuario', [
-                        'ocid' => $vig->ocid,
-                        'user_id' => $userId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            // ── WhatsApp ──
+            // ── WhatsApp (único canal para alertas de buena pro) ──
             $wa = WhatsAppSubscription::where('user_id', $userId)
                 ->where('activo', true)
                 ->first();
@@ -433,66 +386,7 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
                     ]);
                 }
             }
-
-            // ── Email ──
-            $emailSub = EmailSubscription::where('user_id', $userId)
-                ->where('activo', true)
-                ->first();
-
-            if ($emailSub && !$tracker->wasAlreadyNotified($vig->ocid, $userId, 'adj-email', (string) $emailSub->email)) {
-                try {
-                    Mail::to($emailSub->email)->send(new AlertaAdjudicacion($proceso));
-                    $tracker->recordNotification(
-                        [
-                            'desContratacion' => $proceso['nomenclatura'],
-                            'nomEntidad' => $proceso['entidad_nombre'],
-                            'montoReferencial' => $proceso['valor_referencial'],
-                            'fecPublica' => $proceso['fecha_publicacion'],
-                            'nomObjetoContrato' => 'Buena Pro',
-                        ],
-                        $vig->ocid,
-                        $userId,
-                        'adj-email',
-                        (string) $emailSub->email,
-                        'alerta-adjudicacion'
-                    );
-                    Log::info('VigilarAdjudicacionesMayores: email usuario', [
-                        'ocid' => $vig->ocid,
-                        'user_id' => $userId,
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::error('VigilarAdjudicacionesMayores: fallo email usuario', [
-                        'ocid' => $vig->ocid,
-                        'user_id' => $userId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
         }
-    }
-
-    protected function buildMensajeTelegram(array $p): string
-    {
-        $mensaje = "🏆 <b>BUENA PRO DETECTADA</b>\n\n";
-        $mensaje .= "📋 <b>{$p['nomenclatura']}</b>\n";
-        $mensaje .= "🏢 {$p['entidad_nombre']}\n";
-        $mensaje .= "📌 Estado: <b>{$p['estado']}</b>\n";
-
-        if ($p['valor_referencial'] > 0) {
-            $mensaje .= '💰 Valor referencial: S/ ' . number_format($p['valor_referencial'], 2) . "\n";
-        }
-
-        if (!empty($p['proveedores'])) {
-            $mensaje .= '🤝 Proveedor: ' . implode(', ', array_slice($p['proveedores'], 0, 3)) . "\n";
-        }
-
-        if ($p['fecha_publicacion'] !== '') {
-            $mensaje .= "📅 Publicado: {$p['fecha_publicacion']}\n";
-        }
-
-        $mensaje .= "\n🔍 Revisa el detalle en licitacionesmype.pe/buscador-contratos-mayores";
-
-        return $mensaje;
     }
 
     protected function buildMensajeWhatsApp(array $p): string

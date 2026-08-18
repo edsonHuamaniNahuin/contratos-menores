@@ -425,7 +425,7 @@
                         </div>
                         <div>
                             <p class="text-sm font-semibold text-neutral-900">Alertar cuando procesos se hayan adjudicado</p>
-                            <p class="text-[11px] text-neutral-400">Recibe aviso cuando un proceso pase a buena pro, por tus canales activos.</p>
+                            <p class="text-[11px] text-neutral-400">Recibe aviso por WhatsApp cuando un proceso que vigiles pase a buena pro.</p>
                         </div>
                     </div>
                     <button @click="active = !active; $wire.toggleAlertaAdjudicaciones()"
