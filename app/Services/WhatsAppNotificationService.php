@@ -227,7 +227,19 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
 
         $components = $this->buildTemplateComponents($contratoData);
 
-        return $this->enviarTemplate($recipientId, $templateName, 'es', $components);
+        return $this->enviarTemplate($recipientId, $templateName, $this->templateLanguage(), $components);
+    }
+
+    /**
+     * Código de idioma del template de notificación.
+     *
+     * El template "nuevo_contrato" está registrado en Meta como es_PE
+     * (Español - Perú). Usar "es" devuelve error 132001 "does not exist
+     * in the translation".
+     */
+    protected function templateLanguage(): string
+    {
+        return config('services.whatsapp.template_language', 'es_PE');
     }
 
     /**
@@ -290,7 +302,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         // ── Opción A: Template personalizado con datos del contrato ──
         if ($templateName !== '') {
             $components = $this->buildTemplateComponents($contratoData);
-            $resultado = $this->enviarTemplate($recipientId, $templateName, 'es', $components);
+            $resultado = $this->enviarTemplate($recipientId, $templateName, $this->templateLanguage(), $components);
 
             if ($resultado['success']) {
                 Log::info('WhatsApp: notificación enviada como template personalizado', [
