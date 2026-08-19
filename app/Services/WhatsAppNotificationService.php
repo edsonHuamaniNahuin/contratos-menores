@@ -45,12 +45,6 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     protected static array $ultimoEnvioPorDestinatario = [];
 
     /**
-     * Flag estático: template de notificación inexistente en la WABA.
-     * Evita spam de errores 132001 en la misma corrida del worker.
-     */
-    protected static bool $templateInvalido = false;
-
-    /**
      * Intervalo mínimo entre envíos al MISMO destinatario (microsegundos).
      */
     protected int $minIntervaloEnvio = 1500000; // 1.5 segundos
@@ -107,6 +101,26 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     }
 
     /**
+     * ¿El template de notificación marcado como inexistente en la WABA?
+     *
+     * Se guarda en cache (12h) para que los jobs de corridas posteriores
+     * no reintenten el envío ni generen ruido en logs. Al expirar, se
+     * reintenta una vez (por si el template fue creado en Meta).
+     */
+    protected function templateInvalido(): bool
+    {
+        return (bool) Cache::get('whatsapp:template_invalido', false);
+    }
+
+    protected function marcarTemplateInvalido(): void
+    {
+        Cache::put('whatsapp:template_invalido', true, now()->addHours(12));
+        Log::warning('WhatsApp: template de notificación marcado como inexistente (12h)', [
+            'template' => config('services.whatsapp.notification_template', ''),
+        ]);
+    }
+
+    /**
      * Enviar notificación de un proceso a un suscriptor de WhatsApp.
      *
      * Estrategia resiliente:
@@ -143,7 +157,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         $keyboard = $this->buildDefaultKeyboard($contratoData);
 
         // ── Paso 0: ventana 24h cerrada → template primero (entrega garantizada) ──
-        if (!$this->tieneVentanaAbierta($suscripcion) && !self::$templateInvalido) {
+        if (!$this->tieneVentanaAbierta($suscripcion) && !$this->templateInvalido()) {
             $templateResult = $this->enviarNotificacionComoTemplate($recipientId, $contratoData);
 
             if ($templateResult !== null) {
@@ -164,10 +178,10 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                     return $templateResult;
                 }
 
-                // Template inexistente/rechazado → deshabilitar template para esta corrida
+                // Template inexistente/rechazado → deshabilitar template en cache
                 if (str_contains((string) ($templateResult['message'] ?? ''), '132001')) {
-                    self::$templateInvalido = true;
-                    Log::warning('WhatsApp: template de notificación no existe en la WABA; usando flujo directo en esta corrida', [
+                    $this->marcarTemplateInvalido();
+                    Log::warning('WhatsApp: template de notificación no existe en la WABA; usando flujo directo', [
                         'template' => config('services.whatsapp.notification_template', ''),
                         'error' => $templateResult['message'],
                     ]);
@@ -268,6 +282,11 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     {
         $templateName = config('services.whatsapp.notification_template', '');
 
+        // Si el template ya fue marcado inexistente, no reintentar: texto plano
+        if ($this->templateInvalido()) {
+            return $this->enviarMensaje($recipientId, $this->stripHtmlToWhatsApp($mensaje));
+        }
+
         // ── Opción A: Template personalizado con datos del contrato ──
         if ($templateName !== '') {
             $components = $this->buildTemplateComponents($contratoData);
@@ -285,6 +304,11 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                 }
 
                 return $resultado;
+            }
+
+            // Si el template no existe, marcarlo en cache para no reintentar
+            if (str_contains((string) ($resultado['message'] ?? ''), '132001')) {
+                $this->marcarTemplateInvalido();
             }
 
             Log::warning('WhatsApp: template personalizado falló, usando hello_world', [

@@ -20,6 +20,28 @@
         </div>
     @endif
 
+    {{-- Aviso: template de WhatsApp inexistente en Meta --}}
+    @if($templateWhatsAppInvalido)
+        <div class="bg-amber-50 border-l-4 border-amber-500 rounded-2xl p-5">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div class="flex-1">
+                    <p class="text-sm font-bold text-amber-800">Falta el template de WhatsApp en Meta</p>
+                    <p class="text-xs text-amber-700 mt-1 leading-relaxed">
+                        El template de notificación <code class="bg-white px-1 py-0.5 rounded font-mono">nuevo_contrato</code>
+                        no existe en tu cuenta de WhatsApp Business. Por eso las notificaciones a usuarios con la ventana de
+                        24h cerrada no se pueden entregar. Créalo en
+                        <a href="https://business.facebook.com" target="_blank" class="font-semibold underline">WhatsApp Manager</a>
+                        (nombre exacto <code class="bg-white px-1 py-0.5 rounded font-mono">nuevo_contrato</code>, idioma
+                        <strong>es</strong>, categoría Utility, cuerpo con 4 variables:
+                        {{ '{{1}}' }} tipo, {{ '{{2}}' }} entidad, {{ '{{3}}' }} código, {{ '{{4}}' }} objeto).
+                        El sistema lo detectará automáticamente.
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Configuración Telegram Bot --}}
     <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
         <div class="flex items-center justify-between mb-6">

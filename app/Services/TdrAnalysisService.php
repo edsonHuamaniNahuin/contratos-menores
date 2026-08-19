@@ -538,10 +538,10 @@ class TdrAnalysisService
                  . "Intenta nuevamente en unos minutos. (Ref: {$ref})";
         }
 
-        // Error HTTP 413 — archivo muy grande
+        // Error HTTP 413 — archivo muy grande (el microservicio ya intenta comprimir)
         if (str_contains($msg, 'error http 413') || str_contains($msg, 'payload too large')) {
-            return "El documento es demasiado grande para ser procesado. "
-                 . "El tamaño máximo permitido es 10 MB. (Ref: {$ref})";
+            return "El documento es demasiado grande para ser procesado incluso después de comprimirlo. "
+                 . "Intenta con una versión más ligera del TDR. (Ref: {$ref})";
         }
 
         // PDF corrupto / sin texto

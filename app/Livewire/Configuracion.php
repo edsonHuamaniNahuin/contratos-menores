@@ -345,4 +345,13 @@ class Configuracion extends Component
     {
         return view('livewire.configuracion');
     }
+
+    /**
+     * ¿El template de notificación de WhatsApp está marcado inexistente?
+     * (cache seteado por WhatsAppNotificationService ante error 132001)
+     */
+    public function getTemplateWhatsAppInvalidoProperty(): bool
+    {
+        return (bool) \Illuminate\Support\Facades\Cache::get('whatsapp:template_invalido', false);
+    }
 }

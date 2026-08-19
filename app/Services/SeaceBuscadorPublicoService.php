@@ -82,6 +82,18 @@ class SeaceBuscadorPublicoService
                 ->timeout(30)
                 ->get($url, $queryParams);
 
+            // Reintento único para errores 5xx transitorios del SEACE
+            if ($response->status() >= 500 && $response->status() <= 599) {
+                Log::warning('SEACE Público: 5xx, reintentando en 1.5s', [
+                    'status' => $response->status(),
+                    'url' => $url,
+                ]);
+                usleep(1_500_000);
+                $response = Http::withHeaders($this->getPublicHeaders())
+                    ->timeout(30)
+                    ->get($url, $queryParams);
+            }
+
             if (!$response->successful()) {
                 $errorMsg = 'Error al consultar el SEACE';
 

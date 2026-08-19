@@ -7,8 +7,15 @@ from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
+import io
 import logging
 from contextlib import asynccontextmanager
+
+try:
+    import fitz  # PyMuPDF
+    _HAS_FITZ = True
+except ImportError:
+    _HAS_FITZ = False
 
 from config import settings
 from app.models.schemas import (
@@ -34,6 +41,80 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _comprimir_pdf(pdf_bytes: bytes, limite_mb: float) -> bytes | None:
+    """
+    Comprime un PDF que excede el límite permitido.
+
+    Estrategia escalonada:
+      1. Limpieza + recompresión de streams (garbage=4, deflate).
+      2. Rasterización de páginas a JPEG (dpi escalonado 150→80) y reensamblado
+         — reduce 5-10x el peso de PDFs escaneados (caso típico de TDR pesados).
+
+    Devuelve los bytes comprimidos o None si no se pudo reducir al límite.
+    """
+    limite_bytes = limite_mb * 1024 * 1024
+    if len(pdf_bytes) <= limite_bytes or not _HAS_FITZ:
+        return pdf_bytes
+
+    # ── Intento 1: limpieza y recompresión de streams ──
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        out = io.BytesIO()
+        doc.save(out, garbage=4, deflate=True)
+        doc.close()
+        comprimido = out.getvalue()
+        if len(comprimido) < len(pdf_bytes) and len(comprimido) <= limite_bytes:
+            logger.info(f"📦 PDF comprimido (streams): {len(pdf_bytes)/1048576:.1f}MB → {len(comprimido)/1048576:.1f}MB")
+            return comprimido
+    except Exception as e:
+        logger.warning(f"Compresión por streams falló: {e}")
+
+    # ── Intento 2: rasterizar páginas a JPEG con dpi escalonado ──
+    for dpi in (150, 120, 100, 80):
+        try:
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            nuevo = fitz.open()
+            for page in doc:
+                pix = page.get_pixmap(dpi=dpi, colorspace=fitz.csRGB)
+                img_bytes = pix.tobytes("jpeg", jpg_quality=70)
+                rect = fitz.Rect(0, 0, pix.width / 72, pix.height / 72)
+                npage = nuevo.new_page(width=rect.width, height=rect.height)
+                npage.insert_image(rect, stream=img_bytes)
+            out = io.BytesIO()
+            nuevo.save(out, garbage=4, deflate=True)
+            nuevo.close()
+            doc.close()
+            comprimido = out.getvalue()
+            if len(comprimido) <= limite_bytes:
+                logger.info(f"📦 PDF rasterizado a {dpi}dpi: {len(pdf_bytes)/1048576:.1f}MB → {len(comprimido)/1048576:.1f}MB")
+                return comprimido
+        except Exception as e:
+            logger.warning(f"Rasterización a {dpi}dpi falló: {e}")
+
+    return None
+
+
+async def _leer_documento(file: UploadFile, limite_mb: float) -> bytes:
+    """
+    Lee el archivo subido y lo comprime si excede el límite del servicio.
+
+    Lanza 413 si el archivo no puede reducirse al tamaño permitido.
+    """
+    pdf_bytes = await file.read()
+    file_size_mb = len(pdf_bytes) / (1024 * 1024)
+
+    if file_size_mb > limite_mb:
+        comprimido = _comprimir_pdf(pdf_bytes, limite_mb)
+        if comprimido is None:
+            raise HTTPException(
+                status_code=413,
+                detail=f"El archivo excede el tamaño máximo permitido ({settings.max_file_size_mb}MB) y no pudo comprimirse"
+            )
+        pdf_bytes = comprimido
+
+    return pdf_bytes
 
 
 # Lifespan context manager para startup/shutdown
@@ -146,18 +227,10 @@ async def analyze_tdr(
                 detail=f"Formato no soportado: .{ext}. Use PDF, DOCX o DOC"
             )
 
-        # Leer contenido del archivo
-        pdf_bytes = await file.read()
+        # Leer contenido del archivo (comprime si excede el límite; 413 si no es posible)
+        pdf_bytes = await _leer_documento(file, settings.max_file_size_mb)
 
-        # Validar tamaño del archivo
-        file_size_mb = len(pdf_bytes) / (1024 * 1024)
-        if file_size_mb > settings.max_file_size_mb:
-            raise HTTPException(
-                status_code=413,
-                detail=f"El archivo excede el tamaño máximo permitido ({settings.max_file_size_mb}MB)"
-            )
-
-        logger.info(f"📄 Recibido: {file.filename} ({file_size_mb:.2f} MB) — tipo: {tipo_contrato}")
+        logger.info(f"📄 Recibido: {file.filename} — tipo: {tipo_contrato}")
 
         # Validar proveedor LLM si se especificó
         if llm_provider and llm_provider not in ["gemini", "openai", "anthropic"]:
@@ -222,16 +295,9 @@ async def analyze_direccionamiento(
         if ext not in ('pdf', 'docx', 'doc'):
             raise HTTPException(status_code=400, detail=f"Formato no soportado: .{ext}")
 
-        pdf_bytes = await file.read()
-        file_size_mb = len(pdf_bytes) / (1024 * 1024)
+        pdf_bytes = await _leer_documento(file, settings.max_file_size_mb)
 
-        if file_size_mb > settings.max_file_size_mb:
-            raise HTTPException(
-                status_code=413,
-                detail=f"Archivo excede tamaño máximo ({settings.max_file_size_mb}MB)"
-            )
-
-        logger.info(f"🔍 Direccionamiento: {file.filename} ({file_size_mb:.2f} MB) — tipo: {tipo_contrato}")
+        logger.info(f"🔍 Direccionamiento: {file.filename} — tipo: {tipo_contrato}")
 
         if llm_provider and llm_provider not in ["gemini", "openai", "anthropic"]:
             raise HTTPException(status_code=400, detail=f"Proveedor LLM no válido: {llm_provider}")
@@ -325,16 +391,9 @@ async def generate_proforma(
         if ext not in ('pdf', 'docx', 'doc'):
             raise HTTPException(status_code=400, detail=f"Formato no soportado: .{ext}")
 
-        pdf_bytes = await file.read()
-        file_size_mb = len(pdf_bytes) / (1024 * 1024)
+        pdf_bytes = await _leer_documento(file, settings.max_file_size_mb)
 
-        if file_size_mb > settings.max_file_size_mb:
-            raise HTTPException(
-                status_code=413,
-                detail=f"El archivo excede el tamaño máximo permitido ({settings.max_file_size_mb}MB)"
-            )
-
-        logger.info(f"📋 Proforma: {file.filename} ({file_size_mb:.2f} MB) — empresa: {company_name or '(sin nombre)'} — tipo: {tipo_contrato}")
+        logger.info(f"📋 Proforma: {file.filename} — empresa: {company_name or '(sin nombre)'} — tipo: {tipo_contrato}")
 
         result = await analyzer_service.generate_proforma_document(
             pdf_bytes=pdf_bytes,
