@@ -5,6 +5,271 @@
 
 ---
 
+## 2026-08-19 · WhatsApp · `3ac12c6e`
+
+### El template `nuevo_contrato` "no existía" — error 132001 "does not exist in the translation" (cada 2h)
+
+**Síntoma:** `WhatsApp: Error al enviar template {"template":"nuevo_contrato","error":"(#132001) Template name does not exist in the translation","status":404}` en cada corrida de jobs (06:00, 10:00, 14:00, 16:00, 18:00). Se concluyó erróneamente que el template faltaba y se pidió al usuario crearlo de nuevo.
+
+**Causa raíz (diagnóstico por fuerza bruta contra Graph API):** El template `nuevo_contrato` **SÍ existe** en la WABA, pero está registrado con idioma **`es_PE`** (Español – Perú). El código enviaba con idioma `es` → Meta busca la traducción `es` del template → no existe → 132001. Además se confirmó que el template espera EXACTAMENTE 4 parámetros (el payload del sistema ya envía 4: tipo, entidad, código, objeto). El fallback `hello_world` tampoco existe (solo disponible en números de prueba de Meta).
+
+**Solución:**
+1. `templateLanguage()` en `WhatsAppNotificationService` → `config('services.whatsapp.template_language', 'es_PE')` (configurable vía `WHATSAPP_TEMPLATE_LANGUAGE` en .env).
+2. Usado en `enviarNotificacionComoTemplate()` y en `enviarConTemplateFallback()` (Opción A).
+3. Cache `whatsapp:template_invalido` limpiado en producción (quedó marcado por tests).
+
+**Verificación end-to-end:** envío real del template a 51974570774 → webhook: `sent` → `delivered` → `read` ✓ (el mensaje llegó y fue leído).
+
+**Lección:** El error 132001 de Meta es "template name does not exist **in the translation**" — la palabra *translation* es la pista: el template puede existir pero no en el idioma solicitado. Antes de pedir crear un template, probar todas las variantes de idioma contra la API (diagnóstico: enviar con destinatario inexistente 51999999999 → 132001 = no existe / 132000 = parámetros incorrectos / 131049 = destinatario inválido pero template VÁLIDO).
+
+**Archivos:** `app/Services/WhatsAppNotificationService.php`, `config/services.php`
+
+---
+
+## 2026-08-19 · Análisis IA · `e0cbb8ea`
+
+### TDR >20MB → 413 "El archivo excede el tamaño máximo permitido" (contratos mayores con anexos)
+
+**Síntoma:** `MayoresTdr: excepción {"error":"Error HTTP 500: {\"detail\":\"Error interno al procesar el TDR: 413: El archivo excede el tamaño máximo permitido (20MB)\"}"}` — el análisis de un contrato mayor (OCDS-1242145, PDF de 38.5MB) fallaba.
+
+**Causa:** `analizador-tdr/.env` en producción tenía `MAX_FILE_SIZE_MB=20` (el `.env.example` sugiere 50). El microservicio rechazaba con 413 ANTES de analizar; Laravel lo traducía a 500 interno. Los TDRs de contratos mayores (planos, anexos escaneados) superan fácilmente 20MB.
+
+**Solución (escalable, en el microservicio — transparente para Laravel):**
+1. `MAX_FILE_SIZE_MB=50` en producción.
+2. Pipeline de compresión en `main.py` (`_comprimir_pdf` + `_leer_documento`), aplicado a los 3 endpoints (`/analyze`, `/analyze-direccionamiento`, `/generate-proforma`):
+   - Intento 1: `doc.save(garbage=4, deflate=True)` (limpieza de objetos + recompresión de streams).
+   - Intento 2: **rasterización a JPEG** con dpi escalonado (150→120→100→80) y reensamblado (reduce 5-10x PDFs escaneados).
+   - Si nada funciona: 413 con mensaje claro.
+3. Mensaje de error en `TdrAnalysisService.php` actualizado (decía "10 MB", número fijo y desactualizado).
+
+**Verificación con el archivo real del incidente (38.5MB):** con límite 50MB entra directo; forzando límite 10MB, la compresión lo redujo a **8.9MB (77% menos) a 120dpi**. ✓
+
+**Lección:** El límite de tamaño de un microservicio no debe ser un muro: comprimir/degrada antes de rechazar. PyMuPDF ya estaba en el venv — sin dependencias nuevas.
+
+**Archivos:** `analizador-tdr/main.py`, `app/Services/TdrAnalysisService.php`, `.env` del analizador (ops)
+
+---
+
+## 2026-08-19 · WhatsApp · `e0cbb8ea`
+
+### Ruido: error 132001 repetido en cada corrida de job (flag estático por proceso worker)
+
+**Síntoma:** El error de template se repetía 4+ veces al día, una por cada corrida programada (los workers se reinician entre corridas).
+
+**Causa:** `protected static bool $templateInvalido` era un flag **por proceso worker**. Cada corrida arranca un worker nuevo → el flag se resetea → reintenta el template → vuelve a fallar y loguear.
+
+**Solución:**
+1. Flag estático → **Cache** `whatsapp:template_invalido` con TTL 12h: al primer fallo 132001 se marca; las corridas siguientes NO intentan el template (cero spam, cero llamadas inútiles a Meta). Al expirar, reintenta una vez (por si el template fue creado).
+2. `enviarConTemplateFallback` también respeta el flag (si template inválido → texto plano directo).
+3. **Banner en `/configuracion` (admin)**: si el cache está activo, aviso ámbar con instrucciones para crear el template en WhatsApp Manager (visible sin depender de logs).
+
+**Archivos:** `app/Services/WhatsAppNotificationService.php`, `app/Livewire/Configuracion.php`, `resources/views/livewire/configuracion.blade.php`
+
+---
+
+## 2026-08-19 · Buscador público · `e0cbb8ea`
+
+### SEACE Público 500 en búsquedas en vivo (queries de terceros)
+
+**Síntoma:** `SEACE Público: Error en búsqueda {"status":500, ... "palabra_clave":"Which section of the Income Tax Act..."}` — 500 interno de la API pública del SEACE. Los params raros indican queries de **scrapers externos** (el endpoint es público).
+
+**Causa:** Error externo del SEACE (no nuestro). El código ya manejaba el fallo correctamente (log + `success:false` + error amigable).
+
+**Solución:** Retry único con backoff de 1.5s para errores 5xx transitorios en `SeaceBuscadorPublicoService::buscarContratos()` antes de devolver el error.
+
+**Archivos:** `app/Services/SeaceBuscadorPublicoService.php`
+
+---
+
+## 2026-08-19 · Ops (sin código)
+
+### Saturación del servidor (load 37) por procesos Python de diagnóstico — resuelto sin detener el servidor
+
+**Síntoma:** SSH con timeouts de handshake, `uptime` load average 37. Los usuarios siguieron operativos (Apache respondía).
+
+**Causa:** Tests de compresión PDF ejecutados vía heredoc (`python -`) en el servidor con generación de imágenes de alta resolución — quedaron consumiendo CPU.
+
+**Solución (sin stop del servidor):**
+1. Identificar los procesos: `ps aux | grep python` → solo los PIDs `python -` (heredocs de test).
+2. `kill` de los 2 PIDs culpables (no `uvicorn`, no `fail2ban`, no `frappe`, no servicios).
+3. Verificar: load 37 → 5.8 en minutos; `systemctl is-active` de los 8 servicios → todos active (solo `telegram-admin-bot.service` no existe como unit en el servidor — el bot admin de Telegram nunca se instaló; está solo en el repo `deploy/`).
+4. `curl` web 200 (137ms) y `/health` del analizador 200.
+
+**Lección:** Nunca ejecutar tests pesados de Python en el servidor de producción vía heredoc. Correrlos con `timeout` desde el primer intento, limitar resolución/tamaño, y matar el proceso si el comando MCP corta (el proceso hijo puede quedar vivo).
+
+---
+
+## 2026-08-19 · UI Direccionamiento · `cf4ecedc` + `19681048`
+
+### Gateway timeout 504 de Cloudflare al detectar direccionamiento en Contratos Mayores
+
+**Síntoma:** Al hacer clic en "Detectar Direccionamiento" en `/buscador-contratos-mayores`, el navegador recibía `504 Gateway Timeout` (Cloudflare corta a los 100s). El análisis en sí terminaba en ~3 min (score 85) pero el request ya había muerto. Los logs no mostraban error del analizador.
+
+**Causa (2 bugs):**
+1. El direccionamiento corría **síncrono dentro del request HTTP** del Livewire (`ejecutarDireccionamientoInterno` → `analyzeDireccionamiento`), a diferencia del análisis general que usa `AnalizarTdrMayorJob` async + polling.
+2. Tras pasarlo a job async, el `finally` de `detectarDireccionamiento`/`ejecutarDireccionamiento` hacía `analizandoDireccOcid = null` INMEDIATAMENTE después del dispatch → el modal se abría y se cerraba a ~1s (el poll nunca llegaba a ver el estado "en progreso").
+
+**Solución:**
+1. Nuevo **`DireccionarTdrMayorJob`** (timeout 600s): crea/actualiza `TdrAnalisisMayor` (tipo direccionamiento, estado EXITOSO/FALLIDO) en background — mismo patrón que `AnalizarTdrMayorJob`.
+2. `ejecutarDireccionamientoInterno` en producción: crea fila PENDIENTE (firstOrCreate) + `DireccionarTdrMayorJob::dispatch()`. En local/sync: comportamiento síncrono original.
+3. `checkDireccionamientoMayor()`: polling cada 3s (mismo patrón que `checkAnalisisMayor`) — detecta EXITOSO/FALLIDO y muestra el resultado.
+4. **Eliminados los `finally`** que reseteban `analizandoDireccOcid` — el estado persiste hasta que el poll detecta el resultado (o el job falla). Reset solo en: catch (error real), flujo síncrono, selector de documentos (ZIP/RAR), o cierre manual.
+5. Anti-duplicado: si ya hay un direccionamiento PENDIENTE para el OCID, no lanza otro (retoma el polling).
+6. Blade: `wire:poll.3s="checkDireccionamientoMayor"` en el modal de direccionamiento.
+
+**Lección:** Un `finally` que resetea estado de UI es correcto en flujos síncronos pero MATA los flujos async con polling. Al migrar a jobs, revisar cada reset de estado.
+
+**Archivos:** `app/Jobs/DireccionarTdrMayorJob.php` (nuevo), `app/Livewire/BuscadorMayores.php`, `resources/views/livewire/buscador-mayores.blade.php`
+
+---
+
+## 2026-08-19 · Ops Build
+
+### `npm run build` fallaba silenciosamente en producción (Vite 7 vs Node 20.11)
+
+**Síntoma:** El build no se ejecutaba en los deploys manuales; al ejecutarlo: `You are using Node.js 20.11.1. Vite requires Node.js version 20.19+` + `EACCES` en `node_modules/.vite-temp`. El manifest.json tenía días de antigüedad.
+
+**Causa:**
+1. Vite 7.3.1 (package-lock) exige Node ≥20.19 — el servidor tenía Node 20.11.1.
+2. `deploy/orchestrate.sh` hace `npm run build 2>&1 | tail -3` — el pipe **enmascara el exit code** (tail devuelve 0 aunque npm falle) → el script logueaba "Vite build completado" con build roto.
+3. `node_modules` es de root → el build como www-data daba EACCES.
+
+**Solución (ops, sin tocar repo):**
+1. Node 22.16.0 instalado en `/usr/local/node-v22` (tarball oficial) + symlinks en `/usr/local/bin` (node/npm/npx).
+2. Build ejecutado como root (igual que orchestrate.sh) → 5.2s exitoso, manifest actualizado, assets 200.
+
+**Pendiente (recomendado):** `orchestrate.sh` con `set -o pipefail` o `${PIPESTATUS[0]}` para que un build roto falle el deploy.
+
+---
+
+## 2026-08-18 · Vigilancia Adjudicaciones · `84821b29`
+
+### La alerta de buena pro decía "por tus canales activos" pero debía ser SOLO WhatsApp
+
+**Síntoma:** `/configuracion-alertas` → "Alertar cuando procesos se hayan adjudicado: Recibe aviso... **por tus canales activos**". El requisito del negocio: la alerta de adjudicación solo por WhatsApp.
+
+**Causa:** `VigilarAdjudicacionesMayoresJob::notificarUsuariosOptIn` notificaba por Telegram + WhatsApp + Email (con dedup `adj-telegram`/`adj-whatsapp`/`adj-email`). Además los fallos SMTP 421 del 18/08 15:02-15:06 (user_id 149) eran justamente de ese flujo email.
+
+**Solución:**
+1. `notificarUsuariosOptIn`: eliminados los bloques Telegram y Email — queda SOLO WhatsApp.
+2. Eliminados imports y método `buildMensajeTelegram` sin uso.
+3. UI: texto → "Recibe aviso por WhatsApp cuando un proceso que vigiles pase a buena pro."
+4. Los destinatarios del panel admin (`notificarDestinatarios`, configuración manual email/teléfono) se mantienen intactos.
+
+**Archivos:** `app/Jobs/VigilarAdjudicacionesMayoresJob.php`, `resources/views/livewire/configuracion-alertas.blade.php`
+
+---
+
+## 2026-08-18 · Campañas de correo · `bc22da88`
+
+### Botón "Usar en campaña" no hacía nada visible
+
+**Síntoma:** Al hacer clic en "Usar en campaña" (lista de plantillas en `/admin/correos`) no pasaba nada — el modal de campaña nunca se abría.
+
+**Causa:** `loadTemplate()` solo seteaba `subject`/`body` en silencio sin abrir el modal (`$editingId` seguía null).
+
+**Solución:**
+1. `loadTemplate(int $id, bool $abrirCampana = false)`: con `true` abre el modal de nueva campaña con la plantilla precargada (nombre + asunto + cuerpo). El select dentro del modal (rellenar sin abrir) mantiene su comportamiento.
+2. Evento `trix-cargar` + listener JS para sincronizar el editor Trix con el body (Livewire actualiza el textarea oculto pero Trix no se refresca solo).
+
+**Archivos:** `app/Livewire/EmailCampaigns.php`, `resources/views/livewire/email-campaigns.blade.php`
+
+---
+
+## 2026-08-18 · Campañas de correo · `2bcf2000`
+
+### No existía filtro para "usuarios con ventana WhatsApp vencida" ni plantilla de aviso
+
+**Síntoma:** Se necesitaba notificar por email a los usuarios cuya ventana de 24h de WhatsApp estaba vencida (no reciben alertas), pero el sistema de campañas solo filtraba por todos/premium/no-premium/específicos.
+
+**Solución:**
+1. Nuevo filtro `whatsapp-ventana` (`FILTRO_WSP_VENTANA`): usuarios con suscripción WhatsApp activa cuya ventana está cerrada — (A) Meta rechazó una entrega (131047) sin interacción posterior, o (B) última interacción >24h.
+2. Relación `User::whatsappSubscriptions()`.
+3. Plantilla seed "Ventana 24h WhatsApp vencida" (migración): explica la política de Meta y cómo reactivar (enviar "hola" o responder alertas).
+4. UI: botón de filtro + label en la tabla.
+
+**Verificación en producción:** el filtro resolvió 1 destinatario real (operaciones@corporacionfamod.com).
+
+**Archivos:** `app/Models/EmailCampaign.php`, `app/Jobs/SendEmailCampaign.php`, `app/Models/User.php`, `app/Livewire/EmailCampaigns.php`, blade, migración seed
+
+---
+
+## 2026-08-18 · WhatsApp · `81206d71` + `bd6965c6`
+
+### Notificaciones WhatsApp "enviadas" que nunca llegaban (ventana 24h cerrada)
+
+**Síntoma:** La API de Meta respondía 200 (success + wamid) pero los usuarios no recibían nada. Los logs no mostraban errores.
+
+**Causa (2 capas):**
+1. Meta **acepta** los mensajes free-form fuera de la ventana de 24h (200) y los rechaza **en la entrega** con 131047 "Re-engagement message" — el fallo solo es visible en los webhooks de estado (`statuses`), que el app ignoraba (ack sin log).
+2. El fallback a template existía pero (a) nunca se activaba (el error no llega en el request, llega en el webhook) y (b) el template `nuevo_contrato` fallaba por el idioma `es` (ver entrada del 19-08).
+
+**Solución:**
+1. **Tracking de entrega por wamid**: `notification_sends` gana `wamid` + `estado_entrega` (aceptado/delivered/read/failed) + `reenviado_at`. El webhook correlaciona cada estado con el envío.
+2. **Detección de ventana cerrada**: fallos 131047/130472 marcan `whatsapp_subscriptions.ultima_entrega_fallida_at` (evidencia real para la UI).
+3. **Cola de reenvío** (`ReenviarWhatsAppPendientesJob`): cuando el usuario interactúa (mensaje o botón → webhook), se reenvían los procesos fallidos (últimos 3 días, máx 30/corrida). Si un reenvío vuelve a fallar por ventana → vuelve a la cola.
+4. **Template-first cuando la ventana está cerrada**: si `ultima_interaccion_at` es reciente (<23h) → interactive directo; si no → template primero (entrega garantizada) + follow-up interactivo.
+5. `ultima_interaccion_at` en suscripciones: se actualiza con cada mensaje/botón entrante (webhook).
+6. `wamid` capturado en el engine (menores) y en `NotificarContratosMayoresJob` (mayores) y persistido vía `ProcessNotificationTracker::recordNotification(..., ?string $wamid)`.
+
+**Verificación:** ciclo completo probado en producción: envío → wamid → webhook failed 131047 → estado `failed` → interacción → reenvío → estado `aceptado`.
+
+**Lecciones:** (1) 200 de Meta ≠ entregado: monitorear los webhooks de `statuses`. (2) La ventana de 24h se abre con mensajes del usuario O con entrega de template; responder alertas (botones) también la renueva.
+
+**Archivos:** migración `2026_08_18_000003`, `WhatsAppNotificationService`, `WebhookWhatsAppController`, `ReenviarWhatsAppPendientesJob` (nuevo), `ProcessNotificationTracker`, `ImportadorTdrEngine`, `NotificarContratosMayoresJob`, modelos
+
+---
+
+## 2026-08-18 · UI WhatsApp · `77ba1871` + `22cca348`
+
+### Aviso de ventana 24h aparecía en la sección Telegram + campana roja para todos
+
+**Síntoma 1:** El mensaje "Si dejas de enviar mensajes al bot por mas de 24 horas..." se mostraba debajo de CADA suscriptor Telegram (estaba dentro del `@foreach` de Telegram en vez de la sección WhatsApp).
+
+**Síntoma 2:** Con la nueva columna `ultima_interaccion_at` (null para todos hasta que interactúen), la campana roja se mostraba para TODOS los suscriptores — falsos positivos.
+
+**Solución:**
+1. Aviso movido a la sección WhatsApp (fuera del foreach de Telegram).
+2. Lógica de estado: 🔴 roja SOLO con evidencia de ventana vencida — (A) `ultima_entrega_fallida_at` más reciente que la última interacción, o (B) interacción >24h. 🟢 verde en cualquier otro caso (incluido "sin evidencia").
+3. Tooltips explicativos (rojo: política de Meta, ventana se abre escribiendo o respondiendo alertas; verde: ventana activa).
+
+**Archivos:** `resources/views/livewire/configuracion-alertas.blade.php`
+
+---
+
+## 2026-08-18 · WhatsApp · `5a2270eb` + `922e9200`
+
+### Notificaciones no llegaban y no se sabía por qué (sin visibilidad de entrega)
+
+**Síntoma:** El usuario reportó que las notificaciones WhatsApp "ya no llegan". Los jobs logueaban envíos exitosos sin errores.
+
+**Causa:** Sin correlación entre envíos y estados de entrega; los webhooks de estado de Meta se ignoraban (solo ack 200).
+
+**Solución (paso previo al tracking completo):**
+1. `WebhookWhatsAppController::logStatuses()`: registrar estados `delivered/read/failed` con wamid, recipient y errores.
+2. Diagnosticar: test manual → API 200 + wamid → webhook `failed 131047` → causa raíz identificada (ventana 24h).
+3. `enviarProcesoASuscriptor` con template-first (ver entrada anterior).
+
+**Archivos:** `app/Http/Controllers/Api/WebhookWhatsAppController.php`, `app/Services/WhatsAppNotificationService.php`
+
+---
+
+## 2026-08-18 · Alertas Email · `db265ce3`
+
+### "Recibir todos los procesos" en alertas por correo saturaba MailerSend
+
+**Síntoma:** `operaciones@corporacionfamod.com` (con `notificar_todo=true`) recibía ~300 correos/día, consumiendo el límite free de MailerSend (~3,000/mes) y causando los 421.
+
+**Solución:** La opción "Recibir todos los procesos" se ELIMINA de `/configuracion-alertas` (queda solo "Filtrar por palabras clave del perfil"):
+1. Blade: quitado el radio "Recibir todos los procesos" del modal de email.
+2. Componente: `notificar_todo` siempre `false` al guardar.
+3. Backfill (migración `2026_08_18_000001`): todos los `email_subscriptions.notificar_todo=true` → `false`.
+4. Verificado en producción: 0 suscriptores con `notificar_todo=1`.
+
+**Archivos:** `resources/views/livewire/configuracion-alertas.blade.php`, `app/Livewire/ConfiguracionAlertas.php`, migración
+
+---
+
 ## 2026-08-18 · Producción · (commit pendiente)
 
 ### Doble incidente: `fopen cache: Permission denied` + 421 SMTP MailerSend
@@ -460,6 +725,8 @@ Cada página ahora tiene exactamente 1 `<h1>` semántico.
 
 | Issue | Prioridad | Notas |
 |---|---|---|
+| `deploy/orchestrate.sh`: `npm run build | tail -3` enmascara el exit code (build roto = deploy "exitoso") | Alta | Usar `set -o pipefail` o `${PIPESTATUS[0]}` |
+| `telegram-admin-bot.service` no instalado en producción | Media | La unit existe en `deploy/` pero nunca se instaló; el bot admin de Telegram no corre |
 | Sitemap: subir cache a 24h o pre-warm | Media | Riesgo bajo, 672 URLs es poco |
 | FAQ schema automatizado por post | Baja | Requiere parsear H2 del markdown |
 | Landing pages para keywords nuevas ("tdr que es", 258 imp) | Media | Fase 2 del plan SEO |
