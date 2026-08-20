@@ -412,7 +412,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/admin/analytics', \App\Http\Controllers\AdminAnalyticsController::class)
         ->name('admin.analytics')
-        ->middleware('can:view-consumo-ia');
+        ->middleware('can:view-analytics');
+
+    // Alias amigable: /analytics → /admin/analytics (evita 404)
+    Route::get('/analytics', function () {
+        return redirect()->route('admin.analytics');
+    })->middleware('can:view-analytics');
 
     Route::get('/admin/monitoreo', \App\Http\Controllers\AdminMonitoreoController::class)
         ->name('admin.monitoreo')

@@ -178,7 +178,7 @@ class RolesPermisos extends Component
                 'follow-mayores', 'analyze-tdr-mayores', 'detect-direccionamiento-mayores',
                 'create-proforma-mayores', 'view-partes-mayores', 'export-mayores', 'alerta-adjudicaciones',
                 'view-vigilancia-adjudicaciones'],
-            'Administración' => ['manage-roles-permissions', 'view-consumo-ia', 'view-monitoreo-sistema'],
+            'Administración' => ['manage-roles-permissions', 'view-consumo-ia', 'view-analytics', 'view-monitoreo-sistema'],
         ];
 
         $grouped = [];
