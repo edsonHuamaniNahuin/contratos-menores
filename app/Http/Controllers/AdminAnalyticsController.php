@@ -40,7 +40,14 @@ class AdminAnalyticsController extends Controller
         $data = json_decode($output, true);
         if (!$data || isset($data['error'])) return [];
 
-        return $data['rows'][0] ?? ($data['rows'] ?? []);
+        $rows = $data['rows'] ?? [];
+
+        // ga4_totals devuelve UNA fila de KPIs; el resto devuelve listas de filas.
+        if ($tool === 'ga4_totals') {
+            return $rows[0] ?? [];
+        }
+
+        return $rows;
     }
 
     private function pageViewsMap(): array

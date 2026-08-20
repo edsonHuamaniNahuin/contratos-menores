@@ -42,7 +42,7 @@
     <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6">
         <h3 class="text-sm font-bold text-neutral-900 mb-4">Paginas mas visitadas</h3>
         <div class="space-y-3">
-            @php $validPages = array_filter($topPages); $maxViews = count($validPages) > 0 ? max(array_column($validPages, 'screenPageViews')) : 1; @endphp
+            @php $validPages = array_values(array_filter($topPages)); $maxViews = count($validPages) > 0 ? max(array_column($validPages, 'screenPageViews')) : 1; @endphp
             @foreach($validPages as $page)
             <div class="flex items-center gap-3">
                 <span class="text-xs text-neutral-500 w-20 truncate" title="{{ $page['pageTitle'] }}">{{ Str::limit($page['pageTitle'], 25) }}</span>
