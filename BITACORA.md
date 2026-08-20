@@ -5,6 +5,74 @@
 
 ---
 
+## 2026-08-20 · Analytics GA4 · `e891ac40`
+
+### Error 500 en `/admin/analytics` — `max(): Argument #1 ($value) must contain at least one element`
+
+**Síntoma:** Al entrar a `/admin/analytics` → Error 500. En laravel.log: `max(): Argument #1 ($value) must contain at least one element (View: resources/views/admin/analytics.blade.php)`. El script GA4 respondía bien (rowCount: 59).
+
+**Causa:** `AdminAnalyticsController::queryGa4()` tenía `return $data['rows'][0] ?? ($data['rows'] ?? [])` — devolvía SOLO la **primera fila** como array asociativo en vez de todas las filas. Las secciones "Páginas más visitadas"/"Fuentes de tráfico" esperan listas; al recibir un array de escalares, `array_column($validPages, 'screenPageViews')` devolvía `[]` → `max([])` → ValueError en PHP 8. El error solo se veía al regenerarse la vista compilada (por eso "funcionaba antes").
+
+**Solución:**
+1. `queryGa4()` tool-aware: `ga4_totals` → fila única (`$rows[0]`); `ga4_top_pages`/`ga4_traffic_sources`/`ga4_all_events` → TODAS las filas.
+2. Defensa en la vista: `array_values(array_filter($topPages))`.
+
+**Verificación en producción (reflection):** top_pages → 3 filas; totals → keys correctas; traffic_sources → 10 filas.
+
+**Lección:** Al parsear una API, distinguir "una fila" vs "todas las filas" por endpoint, no con un `??` genérico. Y proteger los `max()/min()` sobre arrays derivados (PHP 8 lanza ValueError, no devuelve false).
+
+**Archivos:** `app/Http/Controllers/AdminAnalyticsController.php`, `resources/views/admin/analytics.blade.php`
+
+---
+
+## 2026-08-20 · Ops/Infra (sin código)
+
+### Telegram Bot Listener — `cURL error 28: Resolving timed out` (transitorio, 3 apariciones)
+
+**Síntoma:** `Telegram Bot Listener Error {"exception":"cURL error 28: Resolving timed out after 10000 milliseconds ... api.telegram.org/getUpdates"}` el 19/08 (21:37, 21:53) y 20/08 (07:20).
+
+**Causa:** Problema transitorio de **resolución DNS** del servidor hacia api.telegram.org. No es bug del código (el listener ya tiene timeout 30s; los resolving timeouts son del resolvers). El listener se recupera solo en el siguiente ciclo (getUpdates vuelve a conectarse).
+
+**Solución:** Ninguna requerida — evento transitorio (4 apariciones en 3 días, sin pérdida de funcionalidad: los mensajes entrantes se reprocesan en el siguiente poll). Si se vuelve frecuente (>5/día), revisar DNS (systemd-resolved/`/etc/resolv.conf`) o mover el listener a un entorno con DNS estable.
+
+---
+
+## 2026-08-20 · Externo SEACE (sin código)
+
+### SEACE Público 403 "SQLi Filters Categories" + 500 con queries de terceros
+
+**Síntoma:** `SEACE Público: Error en búsqueda {"status":403,"error":{"code":403,"message":"Forbidden - 9420000","details":"SQLi Filters Categories"}}` (19/08 22:36) con query en japonés; y 500s (18/08 18:08-18:09, 19/08 18:56, 20/08 08:22) con queries tipo "Which section of the Income Tax Act...".
+
+**Causa:** El endpoint público del SEACE es consumido por **scrapers externos** (cualquier persona puede llamarlo). El WAF del SEACE bloquea (403) o el backend falla (500) ante queries de terceros. No es nuestro tráfico ni nuestro bug — nuestro buscador ya maneja el fallo con error amigable + retry 5xx (desde `e0cbb8ea`).
+
+**Solución:** Ninguna en nuestro código (monitorear; los 403/500 externos no afectan usuarios de nuestra plataforma).
+
+---
+
+## 2026-08-20 · SMTP MailerSend (transitorio, recuperado)
+
+### 421 en una corrida puntual — mecanismo de reintento funcionó (evidencia)
+
+**Síntoma:** En el panel de monitoreo: `Expected response code "250/251/252" but got code "421", "421 Service not available, closing transmission channel."` (20/08 12:04:51).
+
+**Análisis:** El formato (mensaje crudo + stack vendor-only) es el log estándar de Laravel para un **job fallido con retry pendiente** — no es un fallo definitivo. En la corrida de las 12:00-12:04: 3 correos recibieron 421 transitorio → el mecanismo de reintento con backoff 30s los recuperó → **total_envios: 17, total_errores: 0** (12:04:20). El reintento del job fallido fue exitoso (no aparece en failed_jobs). Los mismos 421 crudos aparecieron el 14/08, 17/08 y 18/08 (mismo patrón transitorio).
+
+**Conclusión:** Evento transitorio de MailerSend, ya manejado por el diseño (throttle 2s + backoff 30s + tope 40/corrida). Sin acción.
+
+---
+
+## 2026-08-20 · WhatsApp (nota)
+
+### Entrega rechazada por "healthy ecosystem engagement" (131049)
+
+**Síntoma:** `WhatsApp Webhook: estado de mensaje {"status":"failed","recipient":"51974570774","errors":[{"code":131049,"title":"This message was not delivered to maintain healthy ecosystem engagement."}]}` (20/08 12:04:54).
+
+**Causa:** Política de Meta: rechaza la entrega a números con bajo engagement del ecosistema (el número no interactúa con el bot). No es un error del sistema — es política de entrega de Meta.
+
+**Solución:** Ninguna de código. Si se vuelve recurrente para un número: el usuario debe interactuar con el bot (enviar mensaje, responder alertas). El sistema ya reenvía pendientes cuando la ventana se reabre.
+
+---
+
 ## 2026-08-19 · WhatsApp · `3ac12c6e`
 
 ### El template `nuevo_contrato` "no existía" — error 132001 "does not exist in the translation" (cada 2h)
