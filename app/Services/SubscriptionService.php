@@ -606,6 +606,17 @@ class SubscriptionService
         if ($roleIds->isNotEmpty()) {
             $user->roles()->detach($roleIds->toArray());
         }
+
+        // Regla anti-deuda: los permisos DIRECTOS del usuario se limpian
+        // al perder el plan. Sin esto, un usuario moroso conservaría
+        // grants individuales (ej. alerta-adjudicaciones) sin pagar.
+        if ($user->directPermissions()->exists()) {
+            $user->directPermissions()->detach();
+            Log::info('Permisos directos removidos al expirar suscripción', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        }
     }
 
     /* ────────────────────────────────

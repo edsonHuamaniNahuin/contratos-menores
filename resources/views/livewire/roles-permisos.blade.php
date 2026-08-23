@@ -69,21 +69,30 @@
                                 </select>
                             </td>
                             <td class="py-3 px-4">
-                                @if($user->id !== auth()->id())
+                                <div class="flex items-center gap-2">
+                                    @if($user->id !== auth()->id())
+                                        <button
+                                            x-data
+                                            x-on:click="
+                                                if (confirm('¿Seguro que deseas dar de baja a {{ addslashes($user->name) }}? El usuario perderá acceso al sistema.')) {
+                                                    $wire.darDeBaja({{ $user->id }})
+                                                }
+                                            "
+                                            class="px-3 py-1.5 rounded-full border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors"
+                                        >
+                                            Dar de baja
+                                        </button>
+                                    @else
+                                        <span class="text-xs text-neutral-300 italic">Tú</span>
+                                    @endif
                                     <button
-                                        x-data
-                                        x-on:click="
-                                            if (confirm('¿Seguro que deseas dar de baja a {{ addslashes($user->name) }}? El usuario perderá acceso al sistema.')) {
-                                                $wire.darDeBaja({{ $user->id }})
-                                            }
-                                        "
-                                        class="px-3 py-1.5 rounded-full border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors"
+                                        wire:click="selectUsuarioPermisos({{ $user->id }})"
+                                        class="px-3 py-1.5 rounded-full border border-primary-200 text-primary-600 text-xs font-medium hover:bg-primary-50 transition-colors"
+                                        title="Gestionar permisos individuales de este usuario"
                                     >
-                                        Dar de baja
+                                        ⚙ Permisos
                                     </button>
-                                @else
-                                    <span class="text-xs text-neutral-300 italic">Tú</span>
-                                @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -114,6 +123,94 @@
             </div>
         </div>
     </div>
+
+    {{-- Gestor de permisos directos por usuario --}}
+    @if($permisosUsuarioId)
+        @php $usuarioPermisos = $users->getCollection()->firstWhere('id', $permisosUsuarioId); @endphp
+        <div class="bg-white rounded-3xl shadow-soft p-6 sm:p-8 border border-primary-200" wire:key="gestor-permisos-{{ $permisosUsuarioId }}">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-neutral-900">⚙ Permisos individuales</h2>
+                    <p class="text-xs text-neutral-400 mt-1">
+                        @if($usuarioPermisos)
+                            <strong class="text-neutral-700">{{ $usuarioPermisos->name }}</strong> — {{ $usuarioPermisos->email }}
+                        @endif
+                        · Los permisos directos se SUMAN a los del rol, no los reemplazan.
+                    </p>
+                </div>
+                <button wire:click="cerrarPermisosUsuario" class="px-4 py-2 text-xs font-semibold rounded-full border border-neutral-200 text-neutral-600 hover:text-neutral-900">
+                    Cerrar
+                </button>
+            </div>
+
+            {{-- Select search de permisos --}}
+            <div class="relative mb-5 max-w-md">
+                <div class="flex gap-2">
+                    <input
+                        type="text"
+                        wire:model.live.debounce.300ms="busquedaPermiso"
+                        placeholder="Buscar permiso por nombre (mín. 2 letras)..."
+                        class="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+
+                @if(count($this->permisosBusquedaResultados) > 0)
+                    <div class="absolute z-20 mt-1 w-full bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden">
+                        @foreach($this->permisosBusquedaResultados as $perm)
+                            <button
+                                wire:click="agregarPermisoDirecto({{ $perm['id'] }})"
+                                class="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm hover:bg-primary-50 transition-colors text-left"
+                            >
+                                <span>
+                                    <span class="font-medium text-neutral-900">{{ $perm['name'] }}</span>
+                                    <span class="block text-[10px] text-neutral-400 font-mono">{{ $perm['slug'] }}</span>
+                                </span>
+                                <span class="text-[11px] font-semibold text-primary-600 shrink-0">+ Agregar</span>
+                            </button>
+                        @endforeach
+                    </div>
+                @elseif(strlen(trim($busquedaPermiso)) >= 2)
+                    <p class="text-xs text-neutral-400 mt-1">Sin resultados (o el permiso ya lo tiene el usuario).</p>
+                @endif
+            </div>
+
+            {{-- Permisos actuales del usuario --}}
+            <div>
+                <p class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Permisos actuales ({{ count($permisosUsuarioActuales) }})</p>
+                @if(count($permisosUsuarioActuales) === 0)
+                    <p class="text-xs text-neutral-400">El usuario no tiene permisos asignados.</p>
+                @else
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($permisosUsuarioActuales as $perm)
+                            @if($perm['origen'] === 'directo')
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-green-50 text-green-700 border border-green-200">
+                                    {{ $perm['name'] }}
+                                    <button
+                                        wire:click="quitarPermisoDirecto({{ $perm['id'] }})"
+                                        title="Quitar permiso directo"
+                                        class="text-green-600 hover:text-red-600 transition-colors"
+                                    >
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-neutral-100 text-neutral-600 border border-neutral-200" title="Viene del rol asignado">
+                                    <svg class="w-3 h-3 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    {{ $perm['name'] }}
+                                </span>
+                            @endif
+                        @endforeach
+                    </div>
+                    <p class="text-[10px] text-neutral-400 mt-2">
+                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-neutral-300 inline-block"></span> del rol</span>
+                        ·
+                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> directo (solo este usuario)</span>
+                    </p>
+                @endif
+            </div>
+        </div>
+    @endif
 
     <div class="bg-white rounded-3xl shadow-soft p-8 border border-neutral-100">
         <div class="flex items-center justify-between mb-6">

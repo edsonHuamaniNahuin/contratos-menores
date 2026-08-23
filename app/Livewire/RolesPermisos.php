@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Services\PremiumAuditService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -25,6 +27,11 @@ class RolesPermisos extends Component
     public ?string $errorMessage = null;
     public int $perPage = 8;
     public string $busquedaUsuario = '';
+
+    // ── Gestor de permisos directos por usuario ──
+    public ?int $permisosUsuarioId = null;
+    public string $busquedaPermiso = '';
+    public array $permisosUsuarioActuales = [];
 
     public function updatedBusquedaUsuario(): void
     {
@@ -143,9 +150,150 @@ class RolesPermisos extends Component
 
         $this->syncUserRoles($users->getCollection());
 
+        if ($this->permisosUsuarioId) {
+            $this->cargarPermisosUsuario();
+        }
+
         return view('livewire.roles-permisos', [
             'users' => $users,
         ]);
+    }
+
+    // ── Gestor de permisos directos por usuario ────────────────────
+
+    public function selectUsuarioPermisos(int $userId): void
+    {
+        $this->permisosUsuarioId = $userId;
+        $this->busquedaPermiso = '';
+        $this->cargarPermisosUsuario();
+    }
+
+    public function cerrarPermisosUsuario(): void
+    {
+        $this->permisosUsuarioId = null;
+        $this->busquedaPermiso = '';
+        $this->permisosUsuarioActuales = [];
+    }
+
+    /**
+     * Cargar los permisos actuales del usuario seleccionado.
+     * Cada item: ['id', 'name', 'slug', 'origen' => 'rol'|'directo'].
+     */
+    protected function cargarPermisosUsuario(): void
+    {
+        $this->permisosUsuarioActuales = [];
+
+        if (!$this->permisosUsuarioId) {
+            return;
+        }
+
+        $user = User::with(['roles.permissions', 'directPermissions'])
+            ->find($this->permisosUsuarioId);
+
+        if (!$user) {
+            return;
+        }
+
+        $items = [];
+
+        foreach ($user->roles->flatMap(fn (Role $role) => $role->permissions) as $p) {
+            $items[] = ['id' => (int) $p->id, 'name' => $p->name, 'slug' => $p->slug, 'origen' => 'rol'];
+        }
+
+        foreach ($user->directPermissions as $p) {
+            $items[] = ['id' => (int) $p->id, 'name' => $p->name, 'slug' => $p->slug, 'origen' => 'directo'];
+        }
+
+        // Un permiso puede venir del rol Y ser directo: mostrar una sola vez (prioridad rol)
+        $this->permisosUsuarioActuales = collect($items)
+            ->unique('id')
+            ->sortBy('name')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Resultados del select-search de permisos (excluye los que ya tiene).
+     */
+    #[Computed]
+    public function permisosBusquedaResultados(): array
+    {
+        $busqueda = trim($this->busquedaPermiso);
+
+        if (strlen($busqueda) < 2 || !$this->permisosUsuarioId) {
+            return [];
+        }
+
+        $yaTiene = collect($this->permisosUsuarioActuales)->pluck('id')->all();
+
+        return Permission::where(function ($q) use ($busqueda) {
+            $q->where('name', 'like', "%{$busqueda}%")
+                ->orWhere('slug', 'like', "%{$busqueda}%");
+        })
+            ->whereNotIn('id', $yaTiene)
+            ->orderBy('name')
+            ->limit(8)
+            ->get(['id', 'name', 'slug'])
+            ->map(fn ($p) => ['id' => (int) $p->id, 'name' => $p->name, 'slug' => $p->slug])
+            ->all();
+    }
+
+    /**
+     * Otorgar un permiso DIRECTAMENTE al usuario (grant individual).
+     * Aditivo: no modifica los permisos del rol.
+     */
+    public function agregarPermisoDirecto(int $permissionId): void
+    {
+        if (!$this->permisosUsuarioId) {
+            return;
+        }
+
+        $user = User::findOrFail($this->permisosUsuarioId);
+        $perm = Permission::findOrFail($permissionId);
+
+        $yaExiste = $user->directPermissions()->where('permission_id', $permissionId)->exists();
+
+        if (!$yaExiste) {
+            $user->directPermissions()->attach($permissionId);
+
+            Log::info('RolesPermisos: permiso directo otorgado', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'permission' => $perm->slug,
+                'admin_id' => Auth::id(),
+            ]);
+
+            session()->flash('success', "✅ Permiso \"{$perm->name}\" otorgado a {$user->name} (solo a este usuario).");
+        }
+
+        $this->busquedaPermiso = '';
+        $this->cargarPermisosUsuario();
+    }
+
+    /**
+     * Revocar un permiso directo del usuario.
+     * Solo afecta permisos directos; los del rol se mantienen intactos.
+     */
+    public function quitarPermisoDirecto(int $permissionId): void
+    {
+        if (!$this->permisosUsuarioId) {
+            return;
+        }
+
+        $user = User::findOrFail($this->permisosUsuarioId);
+        $perm = Permission::findOrFail($permissionId);
+
+        $user->directPermissions()->detach($permissionId);
+
+        Log::info('RolesPermisos: permiso directo revocado', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'permission' => $perm->slug,
+            'admin_id' => Auth::id(),
+        ]);
+
+        session()->flash('success', "✅ Permiso \"{$perm->name}\" removido de {$user->name}.");
+        $this->cargarPermisosUsuario();
     }
 
     protected function loadRolesAndPermissions(): void

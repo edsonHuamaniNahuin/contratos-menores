@@ -155,6 +155,17 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Role::class)->withTimestamps();
     }
 
+    /**
+     * Permisos otorgados DIRECTAMENTE a este usuario (grants individuales).
+     *
+     * Semántica aditiva: se evalúan junto con los permisos del rol.
+     * No reemplazan ni modifican los permisos del rol.
+     */
+    public function directPermissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class)->withTimestamps();
+    }
+
     public function hasRole(string $slug): bool
     {
         $this->loadMissing('roles');
@@ -171,12 +182,28 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasRole('admin');
     }
 
+    /**
+     * Indica si el usuario tiene un permiso.
+     *
+     * Fuentes (aditivas, mismo modelo que Spatie):
+     *   1. Permisos asignados a sus roles.
+     *   2. Permisos otorgados directamente al usuario (permission_user).
+     *
+     * Los permisos directos NUNCA quitan permisos del rol: solo suman.
+     */
     public function hasPermission(string $slug): bool
     {
-        $this->loadMissing('roles.permissions');
+        $this->loadMissing(['roles.permissions', 'directPermissions']);
 
-        return $this->roles
+        $viaRol = $this->roles
             ->flatMap(fn (Role $role) => $role->permissions)
+            ->contains(fn (Permission $permission) => $permission->slug === $slug);
+
+        if ($viaRol) {
+            return true;
+        }
+
+        return $this->directPermissions
             ->contains(fn (Permission $permission) => $permission->slug === $slug);
     }
 
