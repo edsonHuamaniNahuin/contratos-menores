@@ -5,6 +5,25 @@
 
 ---
 
+## 2026-08-20 · RBAC · `e615794f`
+
+### Permisos directos por usuario (grants individuales) — caso cliente facturado
+
+**Contexto:** Un cliente facturado (bgmaxperu@gmail.com, plan S/68) necesitaba SOLO el permiso `alerta-adjudicaciones`, sin darlo a todo el rol premium+mayores. El RBAC solo permitía asignar permisos vía roles.
+
+**Implementación (modelo Spatie, sin librería):**
+1. Tabla `permission_user` (user_id, permission_id, unique) — migración `2026_08_20_000001`.
+2. `User::directPermissions()` + `hasPermission()` ahora evalúa **roles ∪ directos** (aditivo: los permisos directos NUNCA quitan permisos del rol).
+3. **Regla anti-deuda:** `SubscriptionService::revokePremiumRole()` limpia los permisos directos al expirar la suscripción (un moroso no conserva grants sin pagar).
+4. **Gestor en `/roles-permisos`**: botón "⚙ Permisos" por usuario → panel con select-search de permisos (+Agregar), chips de permisos actuales diferenciando **del rol** (gris) vs **directo** (verde con X para quitar).
+5. Auditoría: `Log::info` en cada grant/revoke (user, permission, admin_id).
+
+**Semántica verificada localmente:** usuario sin permiso → `false`; grant directo → `true`; revoke → `false`. El resto de la lógica RBAC (roles, matriz, Gate::define) intacta.
+
+**Archivos:** migración, `User.php`, `SubscriptionService.php`, `RolesPermisos.php` + blade
+
+---
+
 ## 2026-08-20 · Analytics GA4 · `e891ac40`
 
 ### Error 500 en `/admin/analytics` — `max(): Argument #1 ($value) must contain at least one element`
