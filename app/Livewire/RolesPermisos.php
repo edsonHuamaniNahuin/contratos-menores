@@ -213,29 +213,53 @@ class RolesPermisos extends Component
     }
 
     /**
-     * Resultados del select-search de permisos (excluye los que ya tiene).
+     * Todos los permisos agrupados por categoría, con el estado del usuario
+     * seleccionado (igual mecánica visual que "Permisos por rol").
+     *
+     * Cada item: ['id', 'name', 'slug', 'tiene' => bool, 'origen' => 'rol'|'directo'|null].
+     * Se filtra por $busquedaPermiso (>=2 letras).
      */
     #[Computed]
-    public function permisosBusquedaResultados(): array
+    public function permisosGruposUsuario(): array
     {
-        $busqueda = trim($this->busquedaPermiso);
-
-        if (strlen($busqueda) < 2 || !$this->permisosUsuarioId) {
+        if (!$this->permisosUsuarioId) {
             return [];
         }
 
-        $yaTiene = collect($this->permisosUsuarioActuales)->pluck('id')->all();
+        $busqueda = strtolower(trim($this->busquedaPermiso));
 
-        return Permission::where(function ($q) use ($busqueda) {
-            $q->where('name', 'like', "%{$busqueda}%")
-                ->orWhere('slug', 'like', "%{$busqueda}%");
-        })
-            ->whereNotIn('id', $yaTiene)
-            ->orderBy('name')
-            ->limit(8)
-            ->get(['id', 'name', 'slug'])
-            ->map(fn ($p) => ['id' => (int) $p->id, 'name' => $p->name, 'slug' => $p->slug])
-            ->all();
+        $mapa = collect($this->permisosUsuarioActuales)
+            ->mapWithKeys(fn ($p) => [$p['id'] => $p['origen']]);
+
+        $grupos = [];
+
+        foreach ($this->permissionGroups as $grupo) {
+            $items = [];
+
+            foreach ($grupo['permissions'] as $perm) {
+                if ($busqueda !== '' && strlen($busqueda) >= 2
+                    && !str_contains(strtolower($perm['name']), $busqueda)
+                    && !str_contains(strtolower($perm['slug']), $busqueda)) {
+                    continue;
+                }
+
+                $origen = $mapa[$perm['id']] ?? null;
+
+                $items[] = [
+                    'id' => $perm['id'],
+                    'name' => $perm['name'],
+                    'slug' => $perm['slug'],
+                    'tiene' => (bool) $origen,
+                    'origen' => $origen,
+                ];
+            }
+
+            if (!empty($items)) {
+                $grupos[] = ['name' => $grupo['name'], 'permissions' => $items];
+            }
+        }
+
+        return $grupos;
     }
 
     /**
