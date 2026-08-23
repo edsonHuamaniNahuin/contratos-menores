@@ -31,6 +31,7 @@ class RolesPermisos extends Component
     // ── Gestor de permisos directos por usuario ──
     public ?int $permisosUsuarioId = null;
     public string $busquedaPermiso = '';
+    public string $estadoFiltroPermisos = 'todos'; // todos | no-asignados | directos
     public array $permisosUsuarioActuales = [];
 
     public function updatedBusquedaUsuario(): void
@@ -165,6 +166,7 @@ class RolesPermisos extends Component
     {
         $this->permisosUsuarioId = $userId;
         $this->busquedaPermiso = '';
+        $this->estadoFiltroPermisos = 'todos';
         $this->cargarPermisosUsuario();
     }
 
@@ -172,6 +174,7 @@ class RolesPermisos extends Component
     {
         $this->permisosUsuarioId = null;
         $this->busquedaPermiso = '';
+        $this->estadoFiltroPermisos = 'todos';
         $this->permisosUsuarioActuales = [];
     }
 
@@ -216,8 +219,9 @@ class RolesPermisos extends Component
      * Todos los permisos agrupados por categoría, con el estado del usuario
      * seleccionado (igual mecánica visual que "Permisos por rol").
      *
-     * Cada item: ['id', 'name', 'slug', 'tiene' => bool, 'origen' => 'rol'|'directo'|null].
-     * Se filtra por $busquedaPermiso (>=2 letras).
+     * Filtros:
+     *  - $busquedaPermiso: texto (>=2 letras) sobre nombre/slug.
+     *  - $estadoFiltroPermisos: todos | no-asignados | directos.
      */
     #[Computed]
     public function permisosGruposUsuario(): array
@@ -227,6 +231,7 @@ class RolesPermisos extends Component
         }
 
         $busqueda = strtolower(trim($this->busquedaPermiso));
+        $soloBusqueda = $busqueda !== '' && strlen($busqueda) >= 2;
 
         $mapa = collect($this->permisosUsuarioActuales)
             ->mapWithKeys(fn ($p) => [$p['id'] => $p['origen']]);
@@ -237,13 +242,21 @@ class RolesPermisos extends Component
             $items = [];
 
             foreach ($grupo['permissions'] as $perm) {
-                if ($busqueda !== '' && strlen($busqueda) >= 2
+                if ($soloBusqueda
                     && !str_contains(strtolower($perm['name']), $busqueda)
                     && !str_contains(strtolower($perm['slug']), $busqueda)) {
                     continue;
                 }
 
                 $origen = $mapa[$perm['id']] ?? null;
+
+                if ($this->estadoFiltroPermisos === 'no-asignados' && $origen !== null) {
+                    continue;
+                }
+
+                if ($this->estadoFiltroPermisos === 'directos' && $origen !== 'directo') {
+                    continue;
+                }
 
                 $items[] = [
                     'id' => $perm['id'],
@@ -260,6 +273,21 @@ class RolesPermisos extends Component
         }
 
         return $grupos;
+    }
+
+    /**
+     * Conteo de permisos no asignados del usuario seleccionado (para la UI).
+     */
+    #[Computed]
+    public function permisosNoAsignadosCount(): int
+    {
+        if (!$this->permisosUsuarioId) {
+            return 0;
+        }
+
+        $idsTiene = collect($this->permisosUsuarioActuales)->pluck('id')->all();
+
+        return Permission::whereNotIn('id', $idsTiene)->count();
     }
 
     /**

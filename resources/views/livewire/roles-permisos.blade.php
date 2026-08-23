@@ -143,30 +143,63 @@
                 </button>
             </div>
 
-            {{-- Filtro (opcional) --}}
-            <div class="relative mb-5 max-w-md">
-                <input
-                    type="text"
-                    wire:model.live.debounce.300ms="busquedaPermiso"
-                    placeholder="Filtrar permisos por nombre (ej: 'adjudicación')..."
-                    class="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                @if($busquedaPermiso !== '')
-                    <button wire:click="$set('busquedaPermiso', '')" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            {{-- Filtros: texto + estado --}}
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+                <div class="relative flex-1 max-w-md">
+                    <input
+                        type="text"
+                        wire:model.live.debounce.300ms="busquedaPermiso"
+                        placeholder="Filtrar por nombre (ej: 'adjudicación')..."
+                        class="w-full pl-9 pr-8 py-2.5 rounded-xl text-sm bg-neutral-50 border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    @if($busquedaPermiso !== '')
+                        <button wire:click="$set('busquedaPermiso', '')" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    @endif
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button
+                        type="button"
+                        wire:click="$set('estadoFiltroPermisos', 'todos')"
+                        class="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors {{ $estadoFiltroPermisos === 'todos' ? 'bg-primary-500 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200' }}"
+                    >
+                        Todos
                     </button>
-                @endif
+                    <button
+                        type="button"
+                        wire:click="$set('estadoFiltroPermisos', 'no-asignados')"
+                        class="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors {{ $estadoFiltroPermisos === 'no-asignados' ? 'bg-amber-500 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200' }}"
+                        title="Solo los permisos que este usuario NO tiene (clic para agregar directo)"
+                    >
+                        No asignados ({{ $this->permisosNoAsignadosCount }})
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="$set('estadoFiltroPermisos', 'directos')"
+                        class="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors {{ $estadoFiltroPermisos === 'directos' ? 'bg-green-600 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200' }}"
+                        title="Solo los permisos otorgados directamente a este usuario"
+                    >
+                        Directos
+                    </button>
+                </div>
             </div>
 
             {{-- Permisos agrupados (misma mecánica que "Permisos por rol") --}}
             <div>
                 <p class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-                    Permisos ({{ collect($this->permisosGruposUsuario)->sum(fn($g) => count($g['permissions'])) }} mostrados · {{ count($permisosUsuarioActuales) }} tiene)
+                    Permisos ({{ collect($this->permisosGruposUsuario)->sum(fn($g) => count($g['permissions'])) }} mostrados · {{ count($permisosUsuarioActuales) }} tiene · {{ $this->permisosNoAsignadosCount }} no asignados)
                 </p>
 
                 @if(count($this->permisosGruposUsuario) === 0)
-                    <p class="text-xs text-neutral-400">Sin permisos para mostrar.</p>
+                    @if($estadoFiltroPermisos === 'no-asignados')
+                        <p class="text-xs text-neutral-400">Este usuario ya tiene todos los permisos del sistema, o ninguno coincide con tu búsqueda.</p>
+                    @elseif($estadoFiltroPermisos === 'directos')
+                        <p class="text-xs text-neutral-400">Este usuario no tiene permisos directos. Usa "No asignados" para agregarle uno.</p>
+                    @else
+                        <p class="text-xs text-neutral-400">Sin permisos para mostrar.</p>
+                    @endif
                 @else
                     <div class="space-y-5">
                         @foreach($this->permisosGruposUsuario as $grupo)
