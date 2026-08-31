@@ -5,6 +5,35 @@
 
 ---
 
+## 2026-08-31 · Scraper SEACE · `244894be` + `84a1c5c1` + `03211557`
+
+### Gap de latencia del OECE: procedimientos con días/semanas de retraso en el buscador de mayores
+
+**Síntoma (reporte de cliente):** El cliente reportó el 28/08 que el proceso `LP-ABR-1-2026-MDB-1` (MUNICIPALIDAD DISTRITAL DE BAMBAS, publicado en SEACE el 19/08 20:03) no aparecía en el buscador. Se confirmó que se importó recién el 31/08 12:09: **el ETL del OECE publicó el release OCDS con ~12 días de retraso**. Contratos del mismo rango de OCID entraron el 18/08 y otros (incluido Bambas) recién el 31/08 (lote de 192). No era bug del import: el dato NO existía en la API OCDS.
+
+**Investigación de fuentes alternativas (concluida):**
+- El buscador de Procedimientos de Selección del SEACE (prod2) es JSF + **reCAPTCHA v3** (invisible). No hay API REST limpia (el SPA nuevo de prod6 solo cubre contrataciones menores).
+- **El botón "Exportar a Excel" del buscador funciona**: POST JSF + token reCAPTCHA v3. El token v3 se genera automáticamente en el navegador (headless) sin interacción.
+- **Pruebas de viabilidad EXITOSAS** desde IP residencial y desde el servidor (datacenter): descarga `Lista-Procesos.xls` (Excel real, 10 columnas: entidad, fecha/hora, nomenclatura, objeto, descripción, VR, moneda, versión) y contiene el proceso de Bambas el mismo día de publicación.
+
+**Implementación:**
+1. `scripts/scrape-procesos-seace.cjs` — Puppeteer-core (chrome-headless-shell en `/opt/scraper-seace`) + SheetJS (`xlsx`): descarga el Excel del rango y escribe JSON.
+   - ⚠️ `.cjs` obligatorio: el `package.json` del repo tiene `"type": "module"` → un `.js` se trataría como ESM y `require()` no existe.
+   - `SCRAPE_CHROME_BIN` / `SCRAPE_NODE_MODULES` configurables (defaults para el servidor).
+2. `SeaceProcedimientosScraperService` — ejecuta node, parsea JSON, **dedupe por nomenclatura**: existente → actualiza campos (sin tocar OCID); nuevo → inserta con OCID sintético `ocds-scraped-{md5}` y estado `CONVOCADO`.
+3. `ScrapearProcedimientosSeaceJob` + schedule **12:00 y 21:00** (hora Lima).
+4. Resuelve el binario de node por ruta común (`/usr/local/bin/node`) — el PATH de www-data no lo incluye.
+
+**Verificación end-to-end en producción:** 51 procedimientos del día → **42 nuevos + 9 actualizados**. El pipeline OCDS sigue en paralelo (completa OCID real, estado, proveedores, URL, geo).
+
+**Beneficio colateral:** los procedimientos entran a `contratos_mayores` el mismo día → el job de vigilancia ≥S/1M (corre cada 5h sobre esa tabla) los detecta antes.
+
+**Riesgo asumido:** el reCAPTCHA v3 puede endurecerse; con 2 requests/día el riesgo es bajo. El job falla limpio y el pipeline OCDS es el respaldo.
+
+**Archivos:** `scripts/scrape-procesos-seace.cjs`, `app/Services/SeaceProcedimientosScraperService.php`, `app/Jobs/ScrapearProcedimientosSeaceJob.php`, `routes/console.php`; entorno: `/opt/scraper-seace` (node_modules + chrome-headless-shell).
+
+---
+
 ## 2026-08-30 · WhatsApp · `0184a433`
 
 ### Error #131056 "pair rate limit hit" en ráfaga (13+ fallos al mismo par)
