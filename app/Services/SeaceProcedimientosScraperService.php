@@ -24,6 +24,28 @@ class SeaceProcedimientosScraperService
     }
 
     /**
+     * Resolver el binario de Node.js (por env, by name o ruta común).
+     */
+    protected function resolverNodeBin(): string
+    {
+        $env = env('SCRAPE_NODE_BIN');
+
+        if ($env) {
+            return $env;
+        }
+
+        $comunes = ['/usr/local/bin/node', '/usr/bin/node', 'node'];
+
+        foreach ($comunes as $candidato) {
+            if ($candidato === 'node' || is_executable($candidato)) {
+                return $candidato;
+            }
+        }
+
+        return 'node';
+    }
+
+    /**
      * Ejecutar el scraping para el rango de fechas dado.
      *
      * @return array{success: bool, nuevos: int, actualizados: int, count: int, message: string}
@@ -35,9 +57,11 @@ class SeaceProcedimientosScraperService
 
         $salida = storage_path('logs/scrape-procesos-seace.json');
 
+        $nodeBin = $this->resolverNodeBin();
+
         $comando = sprintf(
             '%s %s %s %s %s 2>&1',
-            escapeshellarg(PHP_BINARY === '' ? 'node' : 'node'),
+            escapeshellarg($nodeBin),
             escapeshellarg($this->scriptPath),
             escapeshellarg($desde->format('d/m/Y')),
             escapeshellarg($hasta->format('d/m/Y')),
