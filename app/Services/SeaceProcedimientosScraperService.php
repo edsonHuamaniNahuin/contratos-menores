@@ -20,7 +20,9 @@ class SeaceProcedimientosScraperService
 
     public function __construct()
     {
-        $this->scriptPath = base_path('scripts/scrape-procesos-seace.js');
+        // .cjs: el package.json del repo tiene "type": "module" y Node trataría
+        // un .js como ES module (donde require() no existe).
+        $this->scriptPath = base_path('scripts/scrape-procesos-seace.cjs');
     }
 
     /**
