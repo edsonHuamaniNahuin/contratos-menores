@@ -36,18 +36,17 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     protected string $contratoCachePrefix;
 
     /**
-     * Throttle en memoria por destinatario (estático para sobrevivir
-     * múltiples instancias dentro del mismo proceso worker).
-     *
-     * WhatsApp Cloud API limita ~1 msg/seg por par (cuenta → usuario).
-     * Enviar en ráfaga provoca error #131056 "pair rate limit hit".
+     * Intervalo mínimo entre envíos al MISMO destinatario (microsegundos).
+     * Meta limita ~1 msg/seg por par, pero con margen de seguridad frente
+     * al error #131056: 3 segundos.
      */
-    protected static array $ultimoEnvioPorDestinatario = [];
+    protected int $minIntervaloEnvio = 3000000; // 3 segundos
 
     /**
-     * Intervalo mínimo entre envíos al MISMO destinatario (microsegundos).
+     * Duración del backoff por par tras un 131056 (segundos).
+     * Meta bloquea temporalmente el par cuando se supera su tasa.
      */
-    protected int $minIntervaloEnvio = 1500000; // 1.5 segundos
+    protected int $backoffSegundos = 90;
 
     public function __construct()
     {
@@ -77,22 +76,59 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     /**
      * Asegura un intervalo mínimo entre envíos al mismo destinatario.
      * Previene el error #131056 "pair rate limit hit" de WhatsApp.
+     *
+     * El throttle se guarda en CACHE (compartido entre procesos: worker de
+     * cola, bot listener y webhook), no solo en memoria estática del proceso.
+     * Con CACHE_STORE=file el lock es atómico (flock) en el mismo servidor.
      */
     protected function throttle(string $recipientId): void
     {
-        $now = microtime(true);
+        $lockKey = 'whatsapp:throttle:' . $recipientId;
+        $lastKey = 'whatsapp:ultimo_envio:' . $recipientId;
 
-        if (isset(self::$ultimoEnvioPorDestinatario[$recipientId])) {
-            $elapsed = ($now - self::$ultimoEnvioPorDestinatario[$recipientId]) * 1_000_000;
-            $espera = $this->minIntervaloEnvio - $elapsed;
+        // Lock exclusivo por destinatario (máx 3s de espera)
+        $lock = Cache::lock($lockKey, 5);
+        $lock->block(3);
+
+        try {
+            $ultimo = (float) (Cache::get($lastKey, 0.0));
+            $espera = $this->minIntervaloEnvio - (int) ((microtime(true) - $ultimo) * 1_000_000);
 
             if ($espera > 0) {
-                usleep((int) $espera);
-                $now = microtime(true);
+                usleep($espera);
             }
-        }
 
-        self::$ultimoEnvioPorDestinatario[$recipientId] = $now;
+            Cache::put($lastKey, (string) microtime(true), 300);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * ¿El par (cuenta→usuario) está en backoff por rate limit (#131056)?
+     * Durante el backoff NO se llama a la API: evita martillar a Meta.
+     */
+    protected function parEnBackoff(string $recipientId): bool
+    {
+        return (bool) Cache::get('whatsapp:par_backoff:' . $recipientId, false);
+    }
+
+    protected function marcarParBackoff(string $recipientId): void
+    {
+        Cache::put('whatsapp:par_backoff:' . $recipientId, true, now()->addSeconds($this->backoffSegundos));
+        Log::warning('WhatsApp: par en backoff por rate limit (131056)', [
+            'to' => $recipientId,
+            'segundos' => $this->backoffSegundos,
+        ]);
+    }
+
+    /**
+     * Detectar el error #131056 (pair rate limit) de Meta.
+     */
+    protected function isPairRateLimitError(string $errorMessage): bool
+    {
+        return str_contains($errorMessage, '131056')
+            || str_contains($errorMessage, 'pair rate limit');
     }
 
     public function channelName(): string
@@ -185,6 +221,12 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                         'template' => config('services.whatsapp.notification_template', ''),
                         'error' => $templateResult['message'],
                     ]);
+                }
+
+                // Rate limit del par (131056): NO continuar al interactive
+                // (evita un segundo golpe a la misma pareja en el mismo ciclo).
+                if ($this->isPairRateLimitError((string) ($templateResult['message'] ?? ''))) {
+                    return $templateResult;
                 }
             }
         }
@@ -399,6 +441,10 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
             ];
         }
 
+        if ($this->parEnBackoff($recipientId)) {
+            return ['success' => false, 'message' => 'Par en backoff por rate limit (131056), reintentar más tarde'];
+        }
+
         try {
             $this->throttle($recipientId);
 
@@ -431,6 +477,10 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                 'status' => $response->status(),
             ]);
 
+            if ($this->isPairRateLimitError($error)) {
+                $this->marcarParBackoff($recipientId);
+            }
+
             return ['success' => false, 'message' => $error];
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error de conexión: ' . $e->getMessage()];
@@ -450,6 +500,10 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                 'success' => false,
                 'message' => 'WhatsApp Bot está deshabilitado en la configuración',
             ];
+        }
+
+        if ($this->parEnBackoff($recipientId)) {
+            return ['success' => false, 'message' => 'Par en backoff por rate limit (131056), reintentar más tarde'];
         }
 
         try {
@@ -474,6 +528,10 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                     'error' => $error,
                     'status' => $response->status(),
                 ]);
+
+                if ($this->isPairRateLimitError($error)) {
+                    $this->marcarParBackoff($recipientId);
+                }
             }
 
             return [
@@ -812,6 +870,10 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
             ];
         }
 
+        if ($this->parEnBackoff($recipientId)) {
+            return ['success' => false, 'message' => 'Par en backoff por rate limit (131056), reintentar más tarde'];
+        }
+
         try {
             $this->throttle($recipientId);
 
@@ -852,6 +914,10 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
                 'error' => $error,
                 'status' => $response->status(),
             ]);
+
+            if ($this->isPairRateLimitError($error)) {
+                $this->marcarParBackoff($recipientId);
+            }
 
             return ['success' => false, 'message' => $error];
         } catch (Exception $e) {
