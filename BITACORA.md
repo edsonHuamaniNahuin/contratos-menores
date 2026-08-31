@@ -5,6 +5,50 @@
 
 ---
 
+## 2026-08-30 · WhatsApp · `0184a433`
+
+### Error #131056 "pair rate limit hit" en ráfaga (13+ fallos al mismo par)
+
+**Síntoma:** El 28/08 12:05-12:06, 25+ errores `(#131056) (Business Account, Consumer Account) pair rate limit hit` TODOS al mismo destinatario (51944427266): primero un template fallido (12:05:01) y luego decenas de interactive del job `ImportarTdrNotificarJob` (12:05:14+). El usuario del número desactivó sus canales (toggles en 12:05:36-39) mientras el job seguía martillando.
+
+**Causa (3 capas):**
+1. **El throttle era por proceso** (`static array` en memoria): el worker de cola, el bot listener y el webhook tienen procesos PHP distintos → cada uno con su propio contador → podían superar la tasa del par entre todos.
+2. **Intervalo insuficiente**: 1.5s por par — Meta, en ráfagas, bloquea el par temporalmente aunque los envíos estén espaciados (el 131056 dispara un enfriamiento del par).
+3. **Doble golpe por contrato**: `enviarProcesoASuscriptor` con ventana cerrada intenta template + luego interactive para CADA coincidencia → duplica las llamadas al par por contrato.
+
+**Solución (escalable):**
+1. **Throttle compartido entre procesos** vía Cache (file store, `Cache::lock` atómico con flock en el mismo servidor): clave por destinatario + timestamp del último envío en cache.
+2. **Intervalo 1.5s → 3s** por par.
+3. **Backoff por par al detectar 131056**: `whatsapp:par_backoff:{número}` por 90s — durante el backoff NO se llama a la API (retorna fallo limpio, el dedup/cola lo reenvía después).
+4. **Sin doble golpe**: si el template falla con 131056, `enviarProcesoASuscriptor` retorna sin intentar el interactive en ese ciclo.
+5. Backoff aplicado a los 3 métodos (`enviarMensaje`, `enviarMensajeConBotones`, `enviarTemplate`).
+
+**Lecciones:** (1) Los rate limits de Meta por par son por cuenta completa, no por proceso — cualquier throttle debe ser compartido (cache/redis), no estático en memoria. (2) Cuando un límite se dispara, Meta enfría el par: hay que esperar (backoff), no reintentar espaciado. (3) Evitar llamadas dobles al mismo par por unidad de trabajo.
+
+**Archivos:** `app/Services/WhatsAppNotificationService.php`
+
+---
+
+## 2026-08-30 · Ops/Infra (transitorio, sin código)
+
+### Telegram Bot Listener — `cURL error 28: Operation timed out after 10001ms` (30/08 14:31)
+
+**Síntoma:** Un solo error de timeout en getUpdates con 0 bytes recibidos a los ~10s (el long-poll de Telegram).
+
+**Análisis:** El listener ya usa `Http::timeout(30)` (fix `ee84ed2a`) — el corte a 10s proviene de la infraestructura de red (el long-poll mantiene la conexión 10s y el servidor/red no devolvió respuesta a tiempo). Evento transitorio: el listener se recupera solo en el siguiente ciclo. Sin pérdida de mensajes (getUpdates reprocesa).
+
+**Acción:** Ninguna (monitorear; si se vuelve frecuente >3/día, revisar DNS/resolvers del servidor).
+
+---
+
+## 2026-08-28 · Externo SEACE (sin código)
+
+### SEACE Público 500 (12:31 y 19:36)
+
+**Análisis:** Errores 500 transitorios de la API pública del SEACE (externa). El retry 5xx con backoff 1.5s ya está activo (`e0cbb8ea`); el log aparece cuando el retry también falla. Sin acción.
+
+---
+
 ## 2026-08-20 · RBAC · `e615794f`
 
 ### Permisos directos por usuario (grants individuales) — caso cliente facturado
