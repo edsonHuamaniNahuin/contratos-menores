@@ -128,20 +128,66 @@ async function run() {
     const sh = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sh, { header: 1 });
 
+    // ── Tratamiento de los datos del Excel ──
+    // El SEACE exporta celdas "sucias": entidades con "-" final, descripciones
+    // con saltos de línea, VR en formato texto con comas de miles o "---".
+    const limpiarEntidad = s => String(s || '')
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/\s+$/g, '')
+      .replace(/-+\s*$/g, '')   // quita el "-" final que agrega el SEACE
+      .trim();
+
+    const limpiarTexto = s => String(s || '')
+      .replace(/[\r\n\u2028\u2029\x0b\x0c]+/g, ' ') // saltos de línea/controles → espacio
+      .replace(/\s{2,}/g, ' ')                       // espacios múltiples → uno
+      .trim();
+
+    const parsearVR = raw => {
+      const s = String(raw || '').trim();
+      if (!s || s === '---' || s === '-') return null;
+
+      let t = s.replace(/S\//g, '').replace(/\s/g, '');
+
+      const tieneComa = t.includes(',');
+      const tienePunto = t.includes('.');
+
+      if (tieneComa && tienePunto) {
+        // 1.234.567,89 (miles con punto, decimal con coma) o 1,234,567.89
+        t = t.lastIndexOf(',') > t.lastIndexOf('.')
+          ? t.replace(/\./g, '').replace(',', '.')
+          : t.replace(/,/g, '');
+      } else if (tieneComa) {
+        const partes = t.split(',');
+        // Una sola coma con 1-2 decimales → decimal; si no → miles
+        t = (partes.length === 2 && partes[1].length <= 2)
+          ? t.replace(',', '.')
+          : t.replace(/,/g, '');
+      }
+
+      const n = Number(t);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+
+    const monedaISO = s => {
+      const m = String(s || '').toLowerCase();
+      if (m.includes('dol')) return 'USD';
+      if (m.includes('euro')) return 'EUR';
+      return 'PEN';
+    };
+
     const out = [];
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i];
       if (!r || !r[3]) continue;
-      const vrRaw = String(r[7] || '').replace(/[,\s]/g, '');
       out.push({
-        entidad: String(r[1] || '').replace(/\s+$/g, ''),
-        fecha: String(r[2] || ''),
+        entidad: limpiarEntidad(r[1]),
+        fecha: String(r[2] || '').trim(),
         nomenclatura: String(r[3] || '').trim(),
         reiniciado: String(r[4] || '').trim(),
         objeto: String(r[5] || '').trim(),
-        descripcion: String(r[6] || '').trim(),
-        vr: vrRaw && vrRaw !== '---' ? Number(vrRaw) : null,
-        moneda: String(r[8] || 'Soles').trim(),
+        descripcion: limpiarTexto(r[6]),
+        vr: parsearVR(r[7]),
+        moneda: monedaISO(r[8]),
         version: String(r[9] || '').trim(),
       });
     }

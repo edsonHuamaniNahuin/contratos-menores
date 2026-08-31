@@ -48,7 +48,18 @@ class SeaceProcedimientosScraperService
     }
 
     /**
+     * Límite de filas del reporte del SEACE (el Excel se trunca a 500).
+     * Umbral de división con margen (490): si el reporte llegó casi al
+     * límite, repartir en mitades para no perder filas por truncamiento.
+     */
+    protected int $limiteFilasSeace = 490;
+
+    /**
      * Ejecutar el scraping para el rango de fechas dado.
+     *
+     * Si el Excel llega al límite de filas del SEACE (500), el reporte pudo
+     * truncarse: se reparte la búsqueda en 2 mitades (00:00-11:59 y
+     * 12:00-23:59) y se combinan las filas.
      *
      * @return array{success: bool, nuevos: int, actualizados: int, count: int, message: string}
      */
@@ -57,6 +68,54 @@ class SeaceProcedimientosScraperService
         $desde = $desde ?? now()->startOfDay();
         $hasta = $hasta ?? now()->copy()->endOfDay();
 
+        $filas = $this->obtenerFilas($desde, $hasta);
+
+        if ($filas === null) {
+            return [
+                'success' => false,
+                'nuevos' => 0,
+                'actualizados' => 0,
+                'count' => 0,
+                'message' => 'Fallo al obtener los procedimientos del SEACE.',
+            ];
+        }
+
+        // El reporte del SEACE trunca a 500 filas: dividir en mitades para no perder datos
+        if (count($filas) >= $this->limiteFilasSeace) {
+            Log::warning('ScraperProcesos: reporte en límite de filas, dividiendo en mitades', [
+                'count' => count($filas),
+                'desde' => $desde->format('d/m/Y'),
+                'hasta' => $hasta->format('d/m/Y'),
+            ]);
+
+            $mitad = $desde->copy()->addHours(12)->subSecond();
+
+            $f1 = $this->obtenerFilas($desde, $mitad) ?? [];
+            $f2 = $this->obtenerFilas($mitad->copy()->addSecond(), $hasta) ?? [];
+
+            $filas = array_merge($f1, $f2);
+        }
+
+        if (empty($filas)) {
+            Log::info('ScraperProcesos: sin procedimientos en el rango');
+
+            return [
+                'success' => true,
+                'nuevos' => 0,
+                'actualizados' => 0,
+                'count' => 0,
+                'message' => 'Sin procedimientos en el rango.',
+            ];
+        }
+
+        return $this->importarFilas($filas);
+    }
+
+    /**
+     * Ejecutar el script Node y devolver las filas del Excel (o null si falla).
+     */
+    protected function obtenerFilas(Carbon $desde, Carbon $hasta): ?array
+    {
         $salida = storage_path('logs/scrape-procesos-seace.json');
 
         $nodeBin = $this->resolverNodeBin();
@@ -85,44 +144,24 @@ class SeaceProcedimientosScraperService
                 'output' => implode("\n", array_slice($output, -5)),
             ]);
 
-            return [
-                'success' => false,
-                'nuevos' => 0,
-                'actualizados' => 0,
-                'count' => 0,
-                'message' => 'Fallo al ejecutar el scraper (exit ' . $exitCode . '): ' . implode(' | ', array_slice($output, -3)),
-            ];
+            return null;
         }
 
         if (!file_exists($salida)) {
             Log::error('ScraperProcesos: sin archivo de salida');
 
-            return [
-                'success' => false,
-                'nuevos' => 0,
-                'actualizados' => 0,
-                'count' => 0,
-                'message' => 'No se generó el archivo de salida del scraper.',
-            ];
+            return null;
         }
 
         $payload = json_decode(file_get_contents($salida), true);
 
-        if (!($payload['success'] ?? false) || empty($payload['rows'])) {
-            Log::info('ScraperProcesos: sin procedimientos en el rango', [
-                'count' => $payload['count'] ?? 0,
-            ]);
+        if (!($payload['success'] ?? false)) {
+            Log::error('ScraperProcesos: payload sin exito');
 
-            return [
-                'success' => true,
-                'nuevos' => 0,
-                'actualizados' => 0,
-                'count' => $payload['count'] ?? 0,
-                'message' => 'Sin procedimientos en el rango.',
-            ];
+            return null;
         }
 
-        return $this->importarFilas($payload['rows']);
+        return $payload['rows'] ?? [];
     }
 
     /**
@@ -218,22 +257,28 @@ class SeaceProcedimientosScraperService
     }
 
     /**
-     * Parsear fecha del Excel (dd/mm/yyyy HH:mm).
+     * Parsear fecha del Excel (dd/mm/yyyy HH:mm o dd/mm/yyyy).
      */
     protected function parsearFecha(string $fecha): ?Carbon
     {
+        $fecha = trim($fecha);
+
         if ($fecha === '') {
             return null;
         }
 
-        try {
-            return Carbon::createFromFormat('d/m/Y H:i', $fecha);
-        } catch (\Throwable) {
+        foreach (['d/m/Y H:i', 'd/m/Y'] as $formato) {
             try {
-                return Carbon::parse($fecha);
+                return Carbon::createFromFormat($formato, $fecha);
             } catch (\Throwable) {
-                return null;
+                // siguiente formato
             }
+        }
+
+        try {
+            return Carbon::parse($fecha);
+        } catch (\Throwable) {
+            return null;
         }
     }
 }
