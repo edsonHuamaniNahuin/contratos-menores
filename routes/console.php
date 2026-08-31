@@ -5,6 +5,7 @@ use App\Jobs\ImportarContratosMayoresJob;
 use App\Jobs\ImportarTdrNotificarJob;
 use App\Jobs\NotificarContratosMayoresJob;
 use App\Jobs\NotificarEmailSuscriptoresJob;
+use App\Jobs\ScrapearProcedimientosSeaceJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -112,10 +113,33 @@ Schedule::command('subscriptions:alerts')
 Schedule::job(new NotificarEmailSuscriptoresJob())
     ->everyTwoHours()
     ->between('06:00', '20:00')
+->timezone('America/Lima')
+->withoutOverlapping(30)
+->onOneServer()
+->appendOutputTo(storage_path('logs/notificar-email-schedule.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Scraper de Procedimientos de Selección (Excel SEACE oficial)
+|--------------------------------------------------------------------------
+| 2 veces al día (12:00 y 21:00). Descarga el Excel de procedimientos del
+| día desde el buscador público del SEACE y sincroniza contratos_mayores.
+| Cubre el gap de latencia de la API OCDS del OECE (que puede publicar
+| releases con días/semanas de retraso).
+*/
+Schedule::job(new ScrapearProcedimientosSeaceJob())
+    ->dailyAt('12:00')
     ->timezone('America/Lima')
     ->withoutOverlapping(30)
     ->onOneServer()
-    ->appendOutputTo(storage_path('logs/notificar-email-schedule.log'));
+    ->appendOutputTo(storage_path('logs/scraper-procesos-schedule.log'));
+
+Schedule::job(new ScrapearProcedimientosSeaceJob())
+    ->dailyAt('21:00')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/scraper-procesos-schedule.log'));
 
 /*
 |--------------------------------------------------------------------------
