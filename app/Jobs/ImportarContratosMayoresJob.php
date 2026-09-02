@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -34,6 +35,12 @@ class ImportarContratosMayoresJob implements ShouldQueue
     protected int $pagesToScan;
     protected int $pageSize;
 
+    /**
+     * Mapa nomenclatura → OCID sintético (ocds-scraped-*) para migrar
+     * cuando la API OCDS publica el release real.
+     */
+    protected array $sinteticosPorNomenclatura = [];
+
     public function __construct(int $pagesToScan = 80, int $pageSize = 20)
     {
         $this->pagesToScan = $pagesToScan;
@@ -43,6 +50,13 @@ class ImportarContratosMayoresJob implements ShouldQueue
     public function handle(SeaceMayoresService $service, \App\Services\GeoResolverService $geo): void
     {
         $cacheKey = 'contratos_mayores:ocids:' . now()->format('Y-m-d');
+
+        // Mapa de OCIDs sintéticos del scraper (nomenclatura → ocid).
+        // Cuando la API OCDS publica el release REAL de un proceso que el
+        // scraper importó primero, se MIGRA el sintético en vez de duplicar.
+        $this->sinteticosPorNomenclatura = ContratoMayor::where('ocid', 'like', 'ocds-scraped-%')
+            ->pluck('ocid', 'nomenclatura')
+            ->all();
 
         $storedOcids = Cache::get($cacheKey);
 
@@ -85,6 +99,7 @@ class ImportarContratosMayoresJob implements ShouldQueue
 
         $totalRecibidos = 0;
         $nuevos = 0;
+        $migrados = 0;
         $actualizados = 0;
         $sinCambios = 0;
         $errores = 0;
@@ -138,6 +153,18 @@ class ImportarContratosMayoresJob implements ShouldQueue
                         continue;
                     }
 
+                    // ¿Existe un OCID sintético del scraper con la misma nomenclatura?
+                    // El release REAL llegó → migrar el sintético (no duplicar).
+                    $sintetico = $this->sinteticosPorNomenclatura[$mapped['nomenclatura'] ?? ''] ?? null;
+
+                    if ($sintetico && $sintetico !== $ocid) {
+                        $this->migrarSinteticoAReal($sintetico, $ocid, $mapped);
+                        unset($this->sinteticosPorNomenclatura[$mapped['nomenclatura'] ?? '']);
+                        $dbMap[$ocid] = true;
+                        $migrados++;
+                        continue;
+                    }
+
                     // Nuevo: insertar
                     $batchNuevos[] = $mapped;
                     $dbMap[$ocid] = true;
@@ -179,9 +206,48 @@ class ImportarContratosMayoresJob implements ShouldQueue
             'pages_error' => $errores,
             'total_api' => $totalRecibidos,
             'nuevos' => $nuevos,
+            'migrados_sinteticos' => $migrados,
             'actualizados' => $actualizados,
             'sin_cambios' => $sinCambios,
             'total_hoy' => count($storedOcids) + $nuevos,
+        ]);
+    }
+
+    /**
+     * Migrar un registro creado por el scraper (OCID sintético) al OCID real
+     * del release OCDS. Reasigna referencias (vigilancia, seguimientos,
+     * notificaciones) y actualiza los campos con los datos completos.
+     */
+    protected function migrarSinteticoAReal(string $ocidSintetico, string $ocidReal, array $mapped): void
+    {
+        // Reasignar referencias que apuntan al sintético
+        DB::table('vigilancia_adjudicaciones')->where('ocid', $ocidSintetico)->update(['ocid' => $ocidReal]);
+        DB::table('contrato_seguimientos_mayores')->where('ocid', $ocidSintetico)->update(['ocid' => $ocidReal]);
+
+        $realYaNotificado = DB::table('notified_processes')->where('seace_proceso_id', $ocidReal)->exists();
+        if (!$realYaNotificado) {
+            DB::table('notified_processes')->where('seace_proceso_id', $ocidSintetico)
+                ->update(['seace_proceso_id' => $ocidReal]);
+        }
+
+        // Actualizar el registro con el OCID real y los datos completos del release
+        $campos = array_intersect_key($mapped, array_flip([
+            'entidad_nombre', 'entidad_ruc', 'entidad_direccion', 'nomenclatura',
+            'descripcion_objeto', 'objeto_contratacion', 'valor_referencial',
+            'moneda', 'fecha_publicacion', 'fecha_inicio', 'fecha_fin',
+            'metodo_contratacion', 'estado', 'codigo_snip', 'proveedores',
+            'url_documento', 'cuantia', 'datos_raw',
+            'departamento_id', 'provincia_id', 'distrito_id',
+        ]));
+
+        $campos['ocid'] = $ocidReal;
+
+        ContratoMayor::where('ocid', $ocidSintetico)->update($campos);
+
+        Log::info('ImportarContratosMayores: sintético migrado a OCID real', [
+            'sintetico' => $ocidSintetico,
+            'real' => $ocidReal,
+            'nomenclatura' => $mapped['nomenclatura'] ?? null,
         ]);
     }
 
