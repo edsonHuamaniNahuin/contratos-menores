@@ -5,6 +5,30 @@
 
 ---
 
+## 2026-09-01 · Contratos Mayores · `8bd6cd77`
+
+### Error 500 al abrir el detalle de un contrato — `implode(): Argument #2 ($array) must be of type ?array, string given` (userId 149)
+
+**Síntoma:** 3 errores seguidos (11:58-12:00) al abrir el detalle de un contrato en `/buscador-contratos-mayores`: `implode(): Argument #2 ($array) must be of type ?array, string given (View: buscador-mayores.blade.php)` línea del bloque "Proveedores" (`implode(', ', $detalleContrato['proveedores'])`).
+
+**Causa raíz (doble codificación JSON):**
+1. El scraper de procedimientos insertaba `'proveedores' => '[]'` (**string**).
+2. El modelo `ContratoMayor` tiene cast `'proveedores' => 'array'` → al insertar un string con cast array, Eloquent lo serializa a `'"[]"'` (JSON de un string).
+3. Al leer, el cast devuelve el **string** `'[]'` (no array) → `!empty('[]')` es true (string no vacía) → `implode` explota.
+
+**Alcance:** **501 registros corruptos** en producción (JSON_TYPE(proveedores) = 'STRING') — no solo los 42 del scraper; el bug de doble codificación afectaba cualquier insert/update que pasara proveedores como string.
+
+**Solución:**
+1. **Reparación de datos**: `UPDATE contratos_mayores SET proveedores = CAST('[]' AS JSON) WHERE JSON_TYPE(proveedores)='STRING'` → 501 reparados, 0 restantes.
+2. **Scraper**: inserta `'proveedores' => []` (array real) — comentado el porqué en el código.
+3. **Defensa en la vista**: `@if(!empty(...) && is_array(...))`.
+
+**Lección:** Con una columna JSON + cast `array` en Eloquent, SIEMPRE pasar arrays PHP (nunca strings JSON pre-codificados) — el cast re-serializa y produce doble codificación que solo explota al leer (tipo string inesperado).
+
+**Archivos:** `app/Services/SeaceProcedimientosScraperService.php`, `resources/views/livewire/buscador-mayores.blade.php`; datos reparados vía SQL.
+
+---
+
 ## 2026-08-31 · Scraper SEACE · `244894be` + `84a1c5c1` + `03211557`
 
 ### Gap de latencia del OECE: procedimientos con días/semanas de retraso en el buscador de mayores
