@@ -235,7 +235,10 @@ class SeaceProcedimientosScraperService
                 'moneda' => $campos['moneda'],
                 'fecha_publicacion' => $campos['fecha_publicacion'],
                 'estado' => 'CONVOCADO',
-                'proveedores' => '[]',
+                // Array REAL: la columna es json con cast 'array' en el modelo;
+                // insertar el string '[]' causaría doble codificación ('"[]"')
+                // y rompería implode() en la vista (proveedores como string).
+                'proveedores' => [],
                 'datos_raw' => null,
             ]);
 

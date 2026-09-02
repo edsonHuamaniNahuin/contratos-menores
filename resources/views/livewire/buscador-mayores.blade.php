@@ -1698,7 +1698,7 @@
                     @if(!empty($detalleContrato['descripcion_objeto']))
                         <div><p class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Descripción</p><p class="text-sm text-neutral-700 leading-relaxed">{{ $detalleContrato['descripcion_objeto'] }}</p></div>
                     @endif
-                    @if(!empty($detalleContrato['proveedores']))
+                    @if(!empty($detalleContrato['proveedores']) && is_array($detalleContrato['proveedores']))
                         <div><p class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Proveedores</p><p class="text-sm text-neutral-700">{{ implode(', ', $detalleContrato['proveedores']) }}</p></div>
                     @endif
                     @if(!empty($documentosCarpeta))
