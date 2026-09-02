@@ -5,6 +5,26 @@
 
 ---
 
+## 2026-09-02 · Duplicidad contratos · `11a85e26`
+
+### El import OCDS duplicaba procesos que el scraper importó primero con OCID sintético
+
+**Síntoma (auditoría por pregunta del usuario "¿no estás duplicando data?"):** 32 registros duplicados — procesos con OCID sintético (`ocds-scraped-*`, creados por el scraper del Excel) que luego el import OCDS insertó de nuevo con su OCID real (misma nomenclatura).
+
+**Causa:** El scraper crea el registro con OCID sintético cuando el OECE aún no publicó el release. Cuando el OECE lo publica (días después), el import OCDS dedupe **solo por OCID** → el OCID real no existe en BD → lo INSERTA → duplicado por nomenclatura. (El scraper entre sus propias corridas NO duplica: dedupe por nomenclatura con `first()`.)
+
+**Solución (2 partes):**
+1. **Fusión de los 32 duplicados históricos**: por cada par (sintético, real con misma nomenclatura): reasignar `vigilancia_adjudicaciones` (41 filas), `contrato_seguimientos_mayores` y `notified_processes` al OCID real, y borrar el sintético (el real tiene datos completos del OCDS). Resultado: 0 duplicados.
+2. **Fix preventivo en `ImportarContratosMayoresJob`**: mapa `nomenclatura → ocid sintético` cargado al inicio; cuando un release real coincide con una nomenclatura sintética → **migrar** el registro (update OCID a real + datos completos del release + reasignación de referencias) en lugar de insertar. Contador `migrados_sinteticos` en el log del job.
+
+**Estado final:** 469 sintéticos restantes son LEGÍTIMOS (procesos cuyo release OCDS aún no llega; se migrarán automáticamente).
+
+**Lección:** Con dos fuentes de datos (scraper en vivo + API con lag) y OCID sintéticos, el dedupe por OCID no basta: hay que reconciliar por la clave de negocio estable (nomenclatura) y migrar, no insertar.
+
+**Archivos:** `app/Jobs/ImportarContratosMayoresJob.php`; datos fusionados vía script.
+
+---
+
 ## 2026-09-01 · Contratos Mayores · `8bd6cd77`
 
 ### Error 500 al abrir el detalle de un contrato — `implode(): Argument #2 ($array) must be of type ?array, string given` (userId 149)
