@@ -38,6 +38,100 @@ Route::get('/', function () {
     return view('landing');
 })->name('landing');
 
+Route::get('/alertas-licitaciones', function () {
+    $stats = ['procesos' => 0, 'alertas' => 0, 'monto' => 0, 'semana' => 0];
+    $demo = null;
+    $procesos = collect();
+    try {
+        $stats['procesos'] = (int) \App\Models\Contrato::count() + (int) \App\Models\ContratoMayor::count();
+        $stats['alertas'] = (int) \App\Models\NotificationSend::count();
+        $stats['monto'] = (float) \App\Models\ContratoMayor::where('valor_referencial', '>', 0)
+            ->sum('valor_referencial');
+        $stats['semana'] = (int) \App\Models\ContratoMayor::where('fecha_publicacion', '>=', now()->subDays(7))
+            ->count();
+        $demo = \App\Models\ContratoMayor::query()
+            ->whereNotNull('objeto_contratacion')
+            ->where('valor_referencial', '>', 0)
+            ->where(function ($q) {
+                $q->where('descripcion_objeto', 'like', '%eamiento%')
+                  ->orWhere('descripcion_objeto', 'like', '%construc%')
+                  ->orWhere('objeto_contratacion', 'like', '%obra%')
+                  ->orWhere('descripcion_objeto', 'like', '%vial%')
+                  ->orWhere('descripcion_objeto', 'like', '%carretera%');
+            })
+            ->orderByDesc('fecha_publicacion')
+            ->first(['entidad_nombre', 'nomenclatura', 'objeto_contratacion', 'descripcion_objeto', 'valor_referencial', 'fecha_publicacion', 'estado']);
+        if (!$demo) {
+            $demo = \App\Models\ContratoMayor::query()
+                ->whereNotNull('objeto_contratacion')
+                ->where('valor_referencial', '>', 0)
+                ->orderByDesc('fecha_publicacion')
+                ->first(['entidad_nombre', 'nomenclatura', 'objeto_contratacion', 'descripcion_objeto', 'valor_referencial', 'fecha_publicacion', 'estado']);
+        }
+        $procesos = \App\Models\ContratoMayor::query()
+            ->with('departamento:id,nombre')
+            ->whereNotNull('objeto_contratacion')
+            ->where('valor_referencial', '>', 0)
+            ->orderByDesc('fecha_publicacion')
+            ->limit(5)
+            ->get(['id', 'entidad_nombre', 'nomenclatura', 'objeto_contratacion', 'valor_referencial', 'fecha_publicacion', 'fecha_fin', 'estado', 'departamento_id']);
+    } catch (\Throwable $e) {
+    }
+    return view('alertas-licitaciones', compact('stats', 'demo', 'procesos'));
+})->name('landing.alertas')->middleware('demo.captcha');
+
+Route::get('/software-licitaciones', function () {
+    $stats = ['procesos' => 0, 'alertas' => 0, 'monto' => 0, 'semana' => 0];
+    $demo = null;
+    $procesos = collect();
+    try {
+        $stats['procesos'] = (int) \App\Models\Contrato::count() + (int) \App\Models\ContratoMayor::count();
+        $stats['alertas'] = (int) \App\Models\NotificationSend::count();
+        $stats['monto'] = (float) \App\Models\ContratoMayor::where('valor_referencial', '>', 0)
+            ->sum('valor_referencial');
+        $stats['semana'] = (int) \App\Models\ContratoMayor::where('fecha_publicacion', '>=', now()->subDays(7))
+            ->count();
+        $demo = \App\Models\ContratoMayor::query()
+            ->with('departamento:id,nombre')
+            ->whereNotNull('objeto_contratacion')
+            ->where('valor_referencial', '>', 0)
+            ->orderByDesc('fecha_publicacion')
+            ->first(['id', 'entidad_nombre', 'nomenclatura', 'objeto_contratacion', 'descripcion_objeto', 'valor_referencial', 'fecha_publicacion', 'estado', 'departamento_id']);
+        $procesos = \App\Models\ContratoMayor::query()
+            ->with('departamento:id,nombre')
+            ->whereNotNull('objeto_contratacion')
+            ->where('valor_referencial', '>', 0)
+            ->orderByDesc('fecha_publicacion')
+            ->limit(3)
+            ->get(['id', 'entidad_nombre', 'nomenclatura', 'objeto_contratacion', 'valor_referencial', 'fecha_publicacion', 'fecha_fin', 'estado', 'departamento_id']);
+    } catch (\Throwable $e) {
+    }
+    return view('software-licitaciones', compact('stats', 'demo', 'procesos'));
+})->name('landing.software')->middleware('demo.captcha');
+
+Route::post('/agendar-demo', [\App\Http\Controllers\DemoLeadController::class, 'store'])
+    ->name('landing.agendar-demo')
+    ->middleware('throttle:5,1');
+
+Route::get('/licitaciones-vigentes', function () {
+    $stats = ['convocados' => 0, 'entidades' => 0, 'monto' => 0];
+    $procesos = collect();
+    try {
+        $convocados = \App\Models\ContratoMayor::query()->where('estado', 'CONVOCADO');
+        $stats['convocados'] = (int) (clone $convocados)->count();
+        $stats['monto'] = (float) (clone $convocados)->where('valor_referencial', '>', 0)->sum('valor_referencial');
+        $stats['entidades'] = (int) (clone $convocados)->distinct('entidad_nombre')->count('entidad_nombre');
+        $procesos = (clone $convocados)
+            ->with('departamento:id,nombre')
+            ->where('valor_referencial', '>', 0)
+            ->orderByDesc('fecha_publicacion')
+            ->limit(8)
+            ->get(['id', 'ocid', 'entidad_nombre', 'nomenclatura', 'objeto_contratacion', 'descripcion_objeto', 'valor_referencial', 'fecha_publicacion', 'fecha_fin', 'departamento_id']);
+    } catch (\Throwable $e) {
+    }
+    return view('licitaciones-vigentes', compact('stats', 'procesos'));
+})->name('landing.vigentes')->middleware('demo.captcha');
+
 Route::get('/buscador-publico', function () {
     return view('buscador-publico');
 })->name('buscador.publico');

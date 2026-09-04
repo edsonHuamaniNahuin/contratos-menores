@@ -30,9 +30,23 @@ npm run build (como ROOT, no www-data — node_modules es root; node 22 en /usr/
 - Tinker en producción: `sudo -u www-data env HOME=/tmp XDG_CONFIG_HOME=/tmp php artisan tinker --execute='...'` (cuidado con comillas en PowerShell; usar archivos PHP base64 si es largo).
 
 ## 4. Estado de lo construido (últimos commits significativos)
+- (pendiente de commit) Landings E1 `/alertas-licitaciones`, E2 `/software-licitaciones`, E3 `/licitaciones-vigentes` + captura leads por correo (`demo_leads`, captcha dinámico) + fotos en public/images/landings/.
 - `0d35d2ca` docs reorganizados por objetivo (documents/) + README índice.
 - `341d3358` Skills S1-S3 creados en `.opencode/skills/` (mercado-vigilante, landing-vigilante, funnel-paid-vigilante).
 - `c7022a57` .md movidos de la raíz + candidatos a entrevista.
+- `11a85e26` Fix duplicidad: import OCDS migra OCIDs sintéticos del scraper → OCID real.
+- `8bd6cd77` Fix 500 detalle contrato (proveedores doble-codificación; 501 registros reparados).
+- `a83f5537` Tratamiento de datos del Excel scraper + división por mitades (límite 500 filas).
+- `244894be/84a1c5c1/03211557` Scraper de Procedimientos SEACE (script .cjs + job 12:00/21:00) — cubre gap de latencia del OECE (12 días).
+- `0184a433` WhatsApp 131056: throttle 3s compartido por cache + backoff 90s por par.
+- `3ac12c6e` Template WhatsApp `nuevo_contrato` idioma **es_PE** (config `WHATSAPP_TEMPLATE_LANGUAGE`).
+- `e0cbb8ea` Compresión PDF en microservicio (413) + retry SEACE 5xx + cache template 12h.
+- `19681048/cf4ecedc` Direccionamiento mayores async (job + polling) — fix 504.
+- `e891ac40` Fix 500 /admin/analytics (rows[0] vs todas las filas).
+- `0afe60a8` Permiso view-analytics + alias /analytics.
+- `e615794f/91a2efd9/690f613f/77ba1871...` Permisos directos por usuario (permission_user) + gestor en roles-permisos.
+- WhatsApp/email/vigilancia: tracking wamid, cola reenvío, solo-WhatsApp buena pro, cache template.
+- Scraper entorno: /opt/scraper-seace (node_modules puppeteer-core+xlsx + chrome-headless-shell).
 - `11a85e26` Fix duplicidad: import OCDS migra OCIDs sintéticos del scraper → OCID real.
 - `8bd6cd77` Fix 500 detalle contrato (proveedores doble-codificación; 501 registros reparados).
 - `a83f5537` Tratamiento de datos del Excel scraper + división por mitades (límite 500 filas).
@@ -55,9 +69,11 @@ npm run build (como ROOT, no www-data — node_modules es root; node 22 en /usr/
 - **Monitoreo:** /admin/monitoreo lee laravel.log (errores últimos 15).
 
 ## 6. TAREAS ACTIVAS (checklist)
-- [ ] **S1 mercado-vigilante:** armar guía de entrevista imprimible (7 preguntas + verbatim); usuario programa entrevistas (prioridad: Elsa/operaciones@corporacionfamod, Rodrigo Zavatec, Boris cancelado, Lisette/Honda). Lista en documents/03-clientes-investigacion/candidatos-entrevistas.md.
-- [ ] **P0 landings (tras S1):** /software-licitaciones, /monitoreo-licitaciones, /alertas-licitaciones, lead magnet /plantillas-tdr (todas 404 hoy). Usar skills landing-vigilante.
-- [ ] **P1:** /licitaciones-vigentes, internal linking, verificar tracking GA4 registro/pago, re-medir GSC.
+- [ ] **3 EMBUDOS + 3 CAMPAÑAS** (documents/02-marketing-adquisicion/EMBUDOS_3_CAMPANAS.md): E1=/alertas-licitaciones ✅, E2=/software-licitaciones ✅, E3=/licitaciones-vigentes ✅ (construidas 02/09). Objetivos: E1 VENTA / E2 REUNIÓN / E3 LEAD — reunión WhatsApp +51 918 874 873, SIN trial gratis. Leads por correo → BD demo_leads + email, con antibot (honeypot, captcha dinámico por sesión, rate-limit IP, blacklist desechables).
+- [ ] Siguiente: activar las 3 campañas Google Ads (keywords Nivel 1, negativos) y primera medición CPR/CAC/ROAS con datos de demo_leads.
+- [ ] **S1 mercado-vigilante:** guía de entrevista imprimible (7 preguntas); entrevistas (Elsa/Corporación Famod, Rodrigo/Zavatec, Boris cancelado, Lisette/Honda). Candidatos en documents/03-clientes-investigacion/candidatos-entrevistas.md.
+- [ ] **P0 landings:** ✅ /alertas-licitaciones, ✅ /software-licitaciones, ✅ /licitaciones-vigentes (feed real). Pendiente: lead magnet /plantillas-tdr.
+- [ ] **P1:** internal linking, verificar tracking GA4 registro/pago, re-medir GSC.
 - [ ] **P2:** verificar tráfico guía Ley 32069, Google Ads (S/500-1000), CWV.
 - [ ] **P3:** Live TikTok, FAQ schema, backlinks.
 - [ ] Pendiente técnico menor: `deploy/orchestrate.sh` pipefail (build roto no detectado); instalar telegram-admin-bot.service si se quiere.

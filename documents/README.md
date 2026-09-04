@@ -32,6 +32,9 @@
 | `TIKTOK_INTEGRATION.md` | Integración técnica TikTok |
 | `BROCHURE_CONTENIDO.md` | Contenido fuente del brochure comercial (Honda/corporativo) |
 | `PROMPT_BROCHURE_IA.md` | Prompt para IA generadora de brochures (+14 screenshots) |
+| `EMBUDOS_3_CAMPANAS.md` | **3 embudos + 3 campañas Google Ads** (E1 alertas, E2 software, E3 vigentes; CPR/CAC/ROAS por embudo) |
+| `VOC-DATOS-REALES` (en 03) | Keywords y descripción de empresa de usuarios reales → cluster A construcción = el que paga |
+| Landings E1/E2/E3 | `/alertas-licitaciones`, `/software-licitaciones`, `/licitaciones-vigentes` (rutas en web.php) |
 
 > Skills de marketing: `.opencode/skills/` (S1 mercado, S2 landing, S3 funnel-paid).
 
@@ -41,6 +44,7 @@
 | Documento | Objetivo |
 |---|---|
 | `candidatos-entrevistas.md` | Lista priorizada para entrevistas VoC (pagando / trials / cancelados) |
+| `voc-datos-reales.md` | **VoC desde BD**: keywords configuradas + descripción de empresa de usuarios reales (sustituto de entrevistas: cluster A construcción/ingeniería = el que paga) |
 | *(futuros)* `swipe-file-voc.md` · `objecciones.md` · `personas.md` | Entregables del skill mercado-vigilante |
 
 ## 📈 04-metricas-reportes
