@@ -5,6 +5,38 @@
 
 ---
 
+## 2026-09-16 · UI Configuración · (commit de esta sesión)
+
+### `/configuracion` con error 500 — `Unclosed '(' does not match '}'` (View: configuracion.blade.php)
+
+**Síntoma:** Al entrar a `/configuracion` (admin, userId 1) → Error 500. En el log: `Unclosed '(' does not match '}' (View: resources/views/livewire/configuracion.blade.php)` en la línea 37 del compilado.
+
+**Causa:** El banner del template WhatsApp usaba `{{ '{{1}}' }}` para imprimir llaves literales. Blade cierra la expresión en el **primer** `}}` que encuentra (no entiende de comillas) → compila `echo e('{{1');` → string/paréntesis sin cerrar → ParseError al compilar la vista. El bug existía desde el commit `e0cbb8ea` (19/08) pero **no se notaba porque la vista compilada cacheada era de antes del banner**: al limpiarse la cache de vistas en el deploy del 16/09, la vista se recompiló y explotó.
+
+**Solución:** `{{ '{{1}}' }}` → `@{{1}}` (sintaxis correcta de Blade para escapar llaves). Verificado: la vista compila y `/configuracion` responde 200.
+
+**Lección:** Para imprimir `{{algo}}` literal en Blade usar `@{{algo}}`, nunca `{{ '{{algo}}' }}`. Y ojo: un bug de compilación Blade puede estar latente en producción durante semanas si la vista permanece cacheada — limpiar cache de vistas en deploy es lo que lo revela.
+
+**Archivos:** `resources/views/livewire/configuracion.blade.php`
+
+---
+
+## 2026-09-15 · Telegram · (commit de esta sesión)
+
+### `AdminTelegram: Excepción al enviar mensaje` — cURL error 28 timeout 10s (ventana de red degradada)
+
+**Síntoma:** 15/09 10:07:17: `AdminTelegram: Excepción al enviar mensaje {"error":"cURL error 28: Operation timed out after 10001 milliseconds with 0 bytes received ... sendMessage"}`. En la misma ventana (10:05-10:06) el listener principal falló 4 veces con el mismo patrón (`getUpdates ... after 10001 milliseconds`).
+
+**Causa:** Ventana de latencia de red del servidor hacia api.telegram.org (~1 min). El `AdminTelegramNotificationService` tenía `Http::timeout(10)` — insuficiente en esa ventana (el listener principal ya se había subido a 30s en `ee84ed2a`).
+
+**Solución:** `AdminTelegramNotificationService::send()` timeout 10s → 30s (consistente con el estándar del fix `ee84ed2a`).
+
+**Nota (sin acción):** las ráfagas de `Telegram Bot Listener Error` del 13-15/09 (8 en 2 días, en grupos de 4 con ~13s de separación) son el mismo patrón transitorio de red ya documentado (2026-08-30/2026-08-20). El listener se recupera solo en el siguiente ciclo. Si se intensifica (>5/día), revisar DNS/resolvers del servidor.
+
+**Archivos:** `app/Services/AdminTelegramNotificationService.php`
+
+---
+
 ## 2026-09-02 · Duplicidad contratos · `11a85e26`
 
 ### El import OCDS duplicaba procesos que el scraper importó primero con OCID sintético

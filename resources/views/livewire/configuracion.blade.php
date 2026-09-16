@@ -34,7 +34,7 @@
                         <a href="https://business.facebook.com" target="_blank" class="font-semibold underline">WhatsApp Manager</a>
                         (nombre exacto <code class="bg-white px-1 py-0.5 rounded font-mono">nuevo_contrato</code>, idioma
                         <strong>es</strong>, categoría Utility, cuerpo con 4 variables:
-                        {{ '{{1}}' }} tipo, {{ '{{2}}' }} entidad, {{ '{{3}}' }} código, {{ '{{4}}' }} objeto).
+                        @{{1}} tipo, @{{2}} entidad, @{{3}} código, @{{4}} objeto).
                         El sistema lo detectará automáticamente.
                     </p>
                 </div>

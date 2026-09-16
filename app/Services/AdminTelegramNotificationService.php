@@ -110,7 +110,7 @@ class AdminTelegramNotificationService
         try {
             $url = sprintf('%s/bot%s/sendMessage', $this->apiBase, $this->botToken);
 
-            $response = Http::timeout(10)->post($url, [
+            $response = Http::timeout(30)->post($url, [
                 'chat_id'    => $this->chatId,
                 'text'       => $message,
                 'parse_mode' => 'Markdown',
