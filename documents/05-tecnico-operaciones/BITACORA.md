@@ -7,6 +7,20 @@
 
 ## 2026-09-18 · Buscador Contratos Mayores · (commit de esta sesión)
 
+### Aviso "TDR pendiente" se desborda del menú de acciones (`white-space: nowrap` heredado)
+
+**Síntoma:** En el menú de acciones (⋯) de un proceso sin TDR, el aviso "El TDR de este proceso aún no está publicado por el OECE..." salía en **una sola línea** y se desbordaba del menú (y de la pantalla): `scrollWidth 494px` vs `clientWidth 206px`.
+
+**Causa:** El menú desplegable vive dentro del `<td class="... whitespace-nowrap">` de la columna Acciones. `white-space` es una propiedad **heredada** → el `<p>` del aviso heredaba `nowrap` y no envolvía el texto (el fix previo de opciones no lo contempló porque el modal sí envuelve bien, al estar fuera de la tabla).
+
+**Solución:** `whitespace-normal` en el aviso del menú (desktop y móvil) y en el párrafo del modal (defensivo). Verificado en producción: `scrollWidth 494 → 206` (envuelve dentro del menú).
+
+**Archivos:** `resources/views/livewire/buscador-mayores.blade.php`
+
+---
+
+## 2026-09-18 · Buscador Contratos Mayores · (commit de esta sesión)
+
 ### Procesos sin opciones en `/buscador-contratos-mayores` (solo "Ver detalle" y "Ver Partes")
 
 **Síntoma:** Muchos procesos del buscador mostraban solo "Ver detalle" y "Ver Partes"; otros mostraban todas las opciones (Descargar TDR, Seguimiento, Analizar con IA, Direccionamiento, Crear Proforma). En los últimos 3 días: 824 procesos, de los cuales ~90% sin opciones.

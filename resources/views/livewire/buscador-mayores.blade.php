@@ -671,7 +671,7 @@
                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                                     <span>Crear Proforma</span>
                                                 </button>
-                                                <p class="px-3.5 pb-1 text-[10px] leading-snug text-neutral-400">El TDR de este proceso aún no está publicado por el OECE. Las herramientas se habilitarán automáticamente.</p>
+                                                <p class="px-3.5 pb-1 text-[10px] leading-snug text-neutral-400 whitespace-normal">El TDR de este proceso aún no está publicado por el OECE. Las herramientas se habilitarán automáticamente.</p>
                                                 @endif
                                             </div>
                                         </div>
@@ -776,7 +776,7 @@
                                         <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-secondary-500 opacity-60 hover:bg-secondary-50 transition-colors">
                                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Proforma
                                         </button>
-                                        <p class="px-3 pb-1.5 text-[10px] leading-snug text-neutral-400">TDR pendiente de publicación en el OECE.</p>
+                                        <p class="px-3 pb-1.5 text-[10px] leading-snug text-neutral-400 whitespace-normal">TDR pendiente de publicación en el OECE.</p>
                                     @endif
                                     <button wire:click="verPartesMayor('{{ $c['ocid'] }}'); open = false"
                                         class="w-full flex items-center gap-2 px-3 py-2 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors"
@@ -1772,7 +1772,7 @@
                             <button wire:click="detectarDireccionamiento('{{ $detalleContrato['url_documento'] }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-red-500/40 text-red-600 bg-red-50 hover:bg-red-100 text-sm font-semibold transition-colors">Direccionamiento</button>
                             <button wire:click="generarProformaTecnicaMayor('{{ $detalleContrato['url_documento'] }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-secondary-500/40 text-secondary-600 bg-secondary-50 hover:bg-secondary-100 text-sm font-semibold transition-colors">Crear Proforma</button>
                         @else
-                            <p class="w-full text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">⏳ El TDR de este proceso aún no está publicado por el OECE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán automáticamente cuando el documento esté disponible.</p>
+                            <p class="w-full text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 whitespace-normal">⏳ El TDR de este proceso aún no está publicado por el OECE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán automáticamente cuando el documento esté disponible.</p>
                         @endif
                         <button wire:click="verPartesMayor('{{ $detalleContrato['ocid'] ?? '' }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-indigo-500/40 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 text-sm font-semibold transition-colors">Ver Partes</button>
                     </div>
