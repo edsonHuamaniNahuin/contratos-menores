@@ -172,6 +172,17 @@ class SeaceProcedimientosScraperService
         $nuevos = 0;
         $actualizados = 0;
 
+        // Mapa normalizado (sin espacios ni signos): el scraper y la API OCDS
+        // escriben la nomenclatura con puntuación distinta, y sin esto se
+        // crearían duplicados del mismo proceso.
+        $existentesNormalizados = [];
+        foreach (ContratoMayor::get(['id', 'ocid', 'nomenclatura']) as $registro) {
+            $clave = $this->normalizarNomenclatura($registro->nomenclatura);
+            if ($clave !== '') {
+                $existentesNormalizados[$clave] = $registro;
+            }
+        }
+
         foreach ($rows as $row) {
             $nomenclatura = $row['nomenclatura'] ?? '';
 
@@ -195,6 +206,19 @@ class SeaceProcedimientosScraperService
             ];
 
             $existente = ContratoMayor::where('nomenclatura', $nomenclatura)->first();
+
+            if (!$existente) {
+                $clave = $this->normalizarNomenclatura($nomenclatura);
+                $candidato = $clave !== '' ? ($existentesNormalizados[$clave] ?? null) : null;
+
+                // Si el release OCDS ya importó el proceso, no duplicar:
+                // los datos del OCDS (con documento) son la fuente completa.
+                if ($candidato && !str_starts_with((string) $candidato->ocid, 'ocds-scraped-')) {
+                    continue;
+                }
+
+                $existente = $candidato;
+            }
 
             if ($existente) {
                 $cambiados = [];
@@ -257,6 +281,15 @@ class SeaceProcedimientosScraperService
             'count' => count($rows),
             'message' => "{$nuevos} nuevos, {$actualizados} actualizados de " . count($rows) . ' procedimientos.',
         ];
+    }
+
+    /**
+     * Normalizar nomenclatura para comparar scraper vs OCDS:
+     * minúsculas y solo caracteres alfanuméricos.
+     */
+    protected function normalizarNomenclatura(?string $nomenclatura): string
+    {
+        return preg_replace('/[^a-z0-9]/', '', mb_strtolower($nomenclatura ?? '')) ?? '';
     }
 
     /**

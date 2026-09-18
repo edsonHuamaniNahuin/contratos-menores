@@ -162,20 +162,34 @@ Schedule::job(new NotificarContratosMayoresJob(12))
 |--------------------------------------------------------------------------
 | Importador de Contratos Mayores (API OCDS → BD)
 |--------------------------------------------------------------------------
-| Cada 3 horas. Escanea 15 páginas (page_size=20, ~300 releases ≈ últimas
-| 2-3 horas de eventos) y persiste los nuevos en contratos_mayores.
-| También actualiza cambios recientes (estado/proveedores/fechas).
+| Cada 3 horas. Escanea 40 páginas (page_size=20, ~800 releases) y persiste
+| los nuevos en contratos_mayores. También actualiza cambios recientes
+| (estado/proveedores/fechas) y fusiona los registros del scraper con su
+| release OCDS real (nomenclatura normalizada).
 |
 | El refresco de estados ANTIGUOS lo hace RefrescarEstadosContratosMayoresJob
 | (abajo) vía /records?ocid=, por eso este job puede ser liviano.
 |
-| Costo: 15 páginas × 8 corridas/día = 120 llamadas HTTP/día.
+| Costo: 40 páginas × 8 corridas/día = 320 llamadas HTTP/día.
 */
-Schedule::job(new ImportarContratosMayoresJob(15, 20))
+Schedule::job(new ImportarContratosMayoresJob(40, 20))
     ->cron('0 0,3,6,9,12,15,18,21 * * *')
     ->timezone('America/Lima')
     ->withoutOverlapping(30)
     ->appendOutputTo(storage_path('logs/importar-contratos-mayores.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Reconciliación Scraper ↔ OCDS — Contratos Mayores
+|--------------------------------------------------------------------------
+| Fusiona los registros sintéticos del scraper que ya tienen su release
+| OCDS en BD pero con la nomenclatura escrita distinto (puntuación), para
+| que el proceso recupere el TDR y todas sus opciones en el buscador.
+*/
+Schedule::command('contratos-mayores:reconciliar-sinteticos')
+    ->dailyAt('05:30')
+    ->timezone('America/Lima')
+    ->withoutOverlapping(30);
 
 /*
 |--------------------------------------------------------------------------

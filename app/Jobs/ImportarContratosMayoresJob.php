@@ -54,9 +54,16 @@ class ImportarContratosMayoresJob implements ShouldQueue
         // Mapa de OCIDs sintéticos del scraper (nomenclatura → ocid).
         // Cuando la API OCDS publica el release REAL de un proceso que el
         // scraper importó primero, se MIGRA el sintético en vez de duplicar.
-        $this->sinteticosPorNomenclatura = ContratoMayor::where('ocid', 'like', 'ocds-scraped-%')
-            ->pluck('ocid', 'nomenclatura')
-            ->all();
+        // La clave se normaliza (sin espacios ni signos) porque el scraper y
+        // la API escriben la nomenclatura con puntuación distinta:
+        //   scraper: "LP-ABR-1-2026-MDH/CS.-1"  vs  OCDS: "LP-ABR-1-2026-MDH/CS-1"
+        $this->sinteticosPorNomenclatura = [];
+        foreach (ContratoMayor::where('ocid', 'like', 'ocds-scraped-%')->get(['ocid', 'nomenclatura']) as $sintetico) {
+            $clave = $this->normalizarNomenclatura($sintetico->nomenclatura);
+            if ($clave !== '') {
+                $this->sinteticosPorNomenclatura[$clave] = $sintetico->ocid;
+            }
+        }
 
         $storedOcids = Cache::get($cacheKey);
 
@@ -155,11 +162,14 @@ class ImportarContratosMayoresJob implements ShouldQueue
 
                     // ¿Existe un OCID sintético del scraper con la misma nomenclatura?
                     // El release REAL llegó → migrar el sintético (no duplicar).
-                    $sintetico = $this->sinteticosPorNomenclatura[$mapped['nomenclatura'] ?? ''] ?? null;
+                    $claveSintetico = $this->normalizarNomenclatura($mapped['nomenclatura'] ?? '');
+                    $sintetico = $claveSintetico !== ''
+                        ? ($this->sinteticosPorNomenclatura[$claveSintetico] ?? null)
+                        : null;
 
                     if ($sintetico && $sintetico !== $ocid) {
                         $this->migrarSinteticoAReal($sintetico, $ocid, $mapped);
-                        unset($this->sinteticosPorNomenclatura[$mapped['nomenclatura'] ?? '']);
+                        unset($this->sinteticosPorNomenclatura[$claveSintetico]);
                         $dbMap[$ocid] = true;
                         $migrados++;
                         continue;
@@ -211,6 +221,15 @@ class ImportarContratosMayoresJob implements ShouldQueue
             'sin_cambios' => $sinCambios,
             'total_hoy' => count($storedOcids) + $nuevos,
         ]);
+    }
+
+    /**
+     * Normalizar nomenclatura para comparar scraper vs OCDS:
+     * minúsculas y solo caracteres alfanuméricos.
+     */
+    protected function normalizarNomenclatura(?string $nomenclatura): string
+    {
+        return preg_replace('/[^a-z0-9]/', '', mb_strtolower($nomenclatura ?? '')) ?? '';
     }
 
     /**

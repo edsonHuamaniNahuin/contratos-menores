@@ -606,13 +606,21 @@
                                                 </button>
                                             </div>
                                             {{-- Sección: Documento --}}
-                                            @if(!empty($c['url_documento']))
                                             <div class="py-1">
+                                                @if(!empty($c['url_documento']))
                                                 <a href="{{ $c['url_documento'] }}" target="_blank" rel="noopener" @click="open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
                                                     @mouseenter="showTooltip('Descargar TDR original del SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                                     <svg class="w-4 h-4 shrink-0 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                                     <span>Descargar TDR</span>
                                                 </a>
+                                                @else
+                                                <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-400 hover:bg-neutral-50 transition-colors"
+                                                    @mouseenter="showTooltip('El TDR aún no está publicado por el OECE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                                    <span>Descargar TDR</span>
+                                                    <span class="ml-auto text-[9px] font-bold text-amber-500">PENDIENTE</span>
+                                                </button>
+                                                @endif
                                                 <button wire:click="hacerSeguimiento('{{ $c['ocid'] }}'); open = false" wire:loading.attr="disabled" wire:target="hacerSeguimiento('{{ $c['ocid'] }}')"
                                                     class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm {{ !empty($seguimientosActivos[$c['ocid']]) ? 'text-primary-600 font-medium bg-primary-50' : 'text-neutral-700 hover:bg-neutral-50' }} transition-colors"
                                                     @mouseenter="showTooltip('{{ !empty($seguimientosActivos[$c['ocid']]) ? 'Ya estás siguiendo' : 'Activar notificaciones' }}', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
@@ -628,6 +636,7 @@
                                                 <div class="px-3.5 pb-1 pt-0.5">
                                                     <span class="text-[9px] font-bold text-purple-400 uppercase tracking-widest">Herramientas IA</span>
                                                 </div>
+                                                @if(!empty($c['url_documento']))
                                                 <button wire:click="analizarTdr('{{ $c['url_documento'] }}'); open = false" wire:loading.attr="disabled" wire:target="analizarTdr('{{ $c['url_documento'] }}')" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors"
                                                     data-ga-event="mayores_analizar_click"
                                                     @mouseenter="showTooltip('Extraer requisitos, plazos y penalidades con IA', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
@@ -645,8 +654,26 @@
                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                                     <span>Crear Proforma</span>
                                                 </button>
+                                                @else
+                                                <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium text-purple-500 opacity-60 hover:bg-purple-50 transition-colors"
+                                                    @mouseenter="showTooltip('Disponible cuando el OECE publique el TDR', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+                                                    <span>Analizar con IA</span>
+                                                    <span class="ml-auto text-[9px] font-bold text-purple-300">PRO</span>
+                                                </button>
+                                                <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-500 opacity-60 hover:bg-red-50 transition-colors"
+                                                    @mouseenter="showTooltip('Disponible cuando el OECE publique el TDR', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                                                    <span>Direccionamiento</span>
+                                                </button>
+                                                <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-secondary-500 opacity-60 hover:bg-secondary-50 transition-colors"
+                                                    @mouseenter="showTooltip('Disponible cuando el OECE publique el TDR', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                    <span>Crear Proforma</span>
+                                                </button>
+                                                <p class="px-3.5 pb-1 text-[10px] leading-snug text-neutral-400">El TDR de este proceso aún no está publicado por el OECE. Las herramientas se habilitarán automáticamente.</p>
+                                                @endif
                                             </div>
-                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -739,6 +766,17 @@
                                             @mouseenter="showTooltip('Genera proforma tecnica de cotizacion', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Proforma
                                         </button>
+                                    @else
+                                        <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary-500 opacity-60 hover:bg-primary-50 transition-colors">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg> Analizar IA
+                                        </button>
+                                        <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 opacity-60 hover:bg-red-50 transition-colors">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg> Direccionamiento
+                                        </button>
+                                        <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-secondary-500 opacity-60 hover:bg-secondary-50 transition-colors">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Proforma
+                                        </button>
+                                        <p class="px-3 pb-1.5 text-[10px] leading-snug text-neutral-400">TDR pendiente de publicación en el OECE.</p>
                                     @endif
                                     <button wire:click="verPartesMayor('{{ $c['ocid'] }}'); open = false"
                                         class="w-full flex items-center gap-2 px-3 py-2 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors"
@@ -799,6 +837,11 @@
                                         @mouseenter="showTooltip('Descargar TDR', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                     </a>
+                                @else
+                                    <button type="button" wire:click="tdrPendiente()" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-neutral-300 hover:text-amber-500 hover:border-amber-300 transition-colors" title="El TDR aún no está publicado por el OECE"
+                                        @mouseenter="showTooltip('El TDR aún no está publicado por el OECE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                    </button>
                                 @endif
                                 <button wire:click="hacerSeguimiento('{{ $c['ocid'] }}')" wire:loading.attr="disabled" wire:target="hacerSeguimiento('{{ $c['ocid'] }}')"
                                     class="inline-flex items-center justify-center w-7 h-7 rounded-lg border {{ !empty($seguimientosActivos[$c['ocid']]) ? 'border-primary-300 bg-primary-50 text-primary-600' : 'border-neutral-200 text-neutral-500 hover:text-brand-600 hover:border-primary-400' }} transition-colors" title="{{ !empty($seguimientosActivos[$c['ocid']]) ? 'Siguiendo' : 'Seguimiento' }}"
@@ -810,6 +853,11 @@
                                         class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-purple-200 text-purple-500 hover:bg-purple-50 transition-colors" title="Analizar con IA"
                                         data-ga-event="mayores_analizar_click"
                                         @mouseenter="showTooltip('Analizar con IA', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+                                    </button>
+                                @else
+                                    <button type="button" wire:click="tdrPendiente()" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-purple-100 text-purple-300 hover:bg-purple-50 transition-colors" title="Disponible cuando el OECE publique el TDR"
+                                        @mouseenter="showTooltip('Disponible cuando el OECE publique el TDR', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
                                     </button>
                                 @endif
@@ -1723,6 +1771,8 @@
                             <button wire:click="analizarTdr('{{ $detalleContrato['url_documento'] }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-400 transition-colors shadow-sm">Analizar con IA</button>
                             <button wire:click="detectarDireccionamiento('{{ $detalleContrato['url_documento'] }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-red-500/40 text-red-600 bg-red-50 hover:bg-red-100 text-sm font-semibold transition-colors">Direccionamiento</button>
                             <button wire:click="generarProformaTecnicaMayor('{{ $detalleContrato['url_documento'] }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-secondary-500/40 text-secondary-600 bg-secondary-50 hover:bg-secondary-100 text-sm font-semibold transition-colors">Crear Proforma</button>
+                        @else
+                            <p class="w-full text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">⏳ El TDR de este proceso aún no está publicado por el OECE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán automáticamente cuando el documento esté disponible.</p>
                         @endif
                         <button wire:click="verPartesMayor('{{ $detalleContrato['ocid'] ?? '' }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-indigo-500/40 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 text-sm font-semibold transition-colors">Ver Partes</button>
                     </div>

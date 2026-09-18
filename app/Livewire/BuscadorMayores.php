@@ -594,6 +594,15 @@ class BuscadorMayores extends Component
     public ?string $extraccionAccion = null;
     public array $seguimientosActivos = [];
 
+    /**
+     * Aviso cuando el proceso aún no tiene TDR publicado por el OECE.
+     * Ocurre en registros importados por el scraper (previos al release OCDS).
+     */
+    public function tdrPendiente(): void
+    {
+        $this->notify('El TDR de este proceso aún no está publicado por el OECE. Se habilitará automáticamente cuando el documento esté disponible.', 'info');
+    }
+
     public function analizarTdr(string $pdfUrl): void
     {
         set_time_limit(600); // PDFs grandes pueden tardar

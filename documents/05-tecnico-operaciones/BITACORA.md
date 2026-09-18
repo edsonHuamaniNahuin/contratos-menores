@@ -5,6 +5,26 @@
 
 ---
 
+## 2026-09-18 · Buscador Contratos Mayores · (commit de esta sesión)
+
+### Procesos sin opciones en `/buscador-contratos-mayores` (solo "Ver detalle" y "Ver Partes")
+
+**Síntoma:** Muchos procesos del buscador mostraban solo "Ver detalle" y "Ver Partes"; otros mostraban todas las opciones (Descargar TDR, Seguimiento, Analizar con IA, Direccionamiento, Crear Proforma). En los últimos 3 días: 824 procesos, de los cuales ~90% sin opciones.
+
+**Causa:** Los procesos recién publicados se importan desde el Excel del SEACE (`ScraperProcedimientos`) con OCID sintético `ocds-scraped-*` y **sin `url_documento`** (el Excel no trae el enlace al TDR; la API OCDS publica el release con documento días/semanas después). La vista ocultaba todo el bloque de documento/IA cuando `url_documento` estaba vacío (`@if(!empty($c['url_documento']))`). Además, cuando el release OCDS llegaba, la fusión scraper→OCDS fallaba porque la nomenclatura difiere en puntuación (scraper `LP-ABR-1-2026-MDH/CS.-1` vs OCDS `LP-ABR-1-2026-MDH/CS-1`), generando duplicados (33 pares detectados) y dejando el registro sin documento.
+
+**Solución:**
+1. UI: "Seguimiento" ahora se muestra siempre (no depende del documento); para procesos sin TDR las opciones de documento/IA se muestran con aviso "pendiente de publicación en el OECE" (clic → mensaje informativo) en tabla, móvil, cuadrícula y modal de detalle.
+2. Matching: normalización de nomenclatura (minúsculas, solo alfanumérico) en `ImportarContratosMayoresJob` (fusión scraper→OCDS) y en `SeaceProcedimientosScraperService` (dedupe anti-duplicados).
+3. Comando nuevo `contratos-mayores:reconciliar-sinteticos` (dry-run disponible) + schedule diario 05:30 para fusionar pares existentes (33 hoy) y futuros.
+4. Importación OCDS: ventana 15 → 40 páginas por corrida (~800 releases) para mayor cobertura.
+
+**Verificación:** `view:cache` OK; dry-run en producción: 33 registros fusionables (recuperan TDR y opciones), 2,752 pendientes de que el OECE publique el release.
+
+**Archivos:** `resources/views/livewire/buscador-mayores.blade.php`, `app/Livewire/BuscadorMayores.php`, `app/Jobs/ImportarContratosMayoresJob.php`, `app/Services/SeaceProcedimientosScraperService.php`, `app/Console/Commands/ReconciliarContratosMayoresCommand.php`, `routes/console.php`
+
+---
+
 ## 2026-09-16 · UI Configuración · (commit de esta sesión)
 
 ### `/configuracion` con error 500 — `Unclosed '(' does not match '}'` (View: configuracion.blade.php)
