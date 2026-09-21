@@ -624,7 +624,7 @@
                                                 @endforeach
                                                 @else
                                                 <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-400 hover:bg-neutral-50 transition-colors"
-                                                    @mouseenter="showTooltip('El TDR aún no está publicado por el OECE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    @mouseenter="showTooltip('Aún no capturado. Ver ficha en SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                                     <svg class="w-4 h-4 shrink-0 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                                     <span>Descargar TDR</span>
                                                     <span class="ml-auto text-[9px] font-bold text-amber-500">PENDIENTE</span>
@@ -694,7 +694,7 @@
                                                     @if(!empty($c['documentos']))
                                                         Documentos descargables desde el SEACE. Las herramientas IA se habilitarán cuando el OECE publique el release.
                                                     @else
-                                                        El TDR de este proceso aún no está publicado por el OECE. Las herramientas se habilitarán automáticamente.
+                                                        Aún no capturamos los documentos de este proceso. Ábrelo en SEACE para verlos (se actualizan solos).
                                                     @endif
                                                 </p>
                                                 @endif
@@ -830,7 +830,7 @@
                                             @if(!empty($c['documentos']))
                                                 Documentos descargables desde el SEACE. Herramientas IA al publicarse el release del OECE.
                                             @else
-                                                TDR pendiente de publicación en el OECE.
+                                                Aún no capturado. Ver ficha en SEACE.
                                             @endif
                                         </p>
                                     @endif
@@ -899,8 +899,8 @@
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                     </a>
                                 @else
-                                    <button type="button" wire:click="tdrPendiente()" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-neutral-300 hover:text-amber-500 hover:border-amber-300 transition-colors" title="El TDR aún no está publicado por el OECE"
-                                        @mouseenter="showTooltip('El TDR aún no está publicado por el OECE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                    <button type="button" wire:click="tdrPendiente()" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-neutral-300 hover:text-amber-500 hover:border-amber-300 transition-colors" title="Aún no capturado. Ver ficha en SEACE"
+                                        @mouseenter="showTooltip('Aún no capturado. Ver ficha en SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                     </button>
                                 @endif
@@ -1841,7 +1841,7 @@
                             @endforeach
                             <p class="w-full text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-3 whitespace-normal">Documentos capturados de la Ficha de Selección del SEACE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán cuando el OECE publique el release.</p>
                         @else
-                            <p class="w-full text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 whitespace-normal">⏳ El TDR de este proceso aún no está publicado por el OECE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán automáticamente cuando el documento esté disponible.</p>
+                            <p class="w-full text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-3 whitespace-normal">Aún no capturamos los documentos de este proceso. Puedes verlos en la ficha del SEACE; las herramientas IA se habilitarán automáticamente al capturarlos.</p>
                         @endif
                         @if(!empty($detalleContrato['items_count']))
                             <div class="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 space-y-1.5">
