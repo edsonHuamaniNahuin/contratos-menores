@@ -152,6 +152,19 @@ Schedule::job(new ScrapearProcedimientosSeaceJob(
     ->appendOutputTo(storage_path('logs/scraper-procesos-schedule.log'));
 
 /*
+| Re-alerta de TDR: procesos que ya se alertaron pero que AHORA sí tienen
+| documento (capturado por el scraper o publicado por el OCDS). Sin esto, el
+| cliente que recibió la alerta sin TDR nunca se enteraba de que salió.
+| Idempotente (marca tdr_aviso_at) y acotado a 7 días.
+*/
+Schedule::job(new NotificarContratosMayoresJob(168, true))
+    ->everyTwoHours()
+    ->timezone('America/Lima')
+    ->withoutOverlapping(20)
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/scraper-procesos-schedule.log'));
+
+/*
 |--------------------------------------------------------------------------
 | Notificador de Contratos Mayores (Telegram + WhatsApp)
 |--------------------------------------------------------------------------

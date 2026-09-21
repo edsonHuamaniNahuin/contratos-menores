@@ -35,9 +35,17 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
     protected int $horasRecientes;
 
-    public function __construct(int $horasRecientes = 6)
+    /**
+     * Modo re-alerta: procesos ya alertados antes que AHORA sí tienen
+     * documento (TDR) → aviso de seguimiento. Evita el problema de "me
+     * alertaron sin TDR y nunca me avisaron cuando salió".
+     */
+    public bool $soloTdrNuevos;
+
+    public function __construct(int $horasRecientes = 6, bool $soloTdrNuevos = false)
     {
         $this->horasRecientes = $horasRecientes;
+        $this->soloTdrNuevos = $soloTdrNuevos;
     }
 
     public function handle(
@@ -91,7 +99,18 @@ class NotificarContratosMayoresJob implements ShouldQueue
         // created_at cambia al re-importar contratos viejos (escaneo global)
         // y causaba alertas duplicadas de procesos de meses atrás.
         $contratos = ContratoMayor::with('documentos')
-            ->where('fecha_publicacion', '>=', $desde)
+            ->when($this->soloTdrNuevos, function ($q) {
+                // Re-alerta: ya tiene documento y aún no avisamos del TDR
+                $q->whereNull('tdr_aviso_at')
+                    ->where('fecha_publicacion', '>=', now()->subDays(7))
+                    ->where(function ($q2) {
+                        $q2->where(function ($q3) {
+                            $q3->whereNotNull('url_documento')->where('url_documento', '!=', '');
+                        })->orWhereHas('documentos');
+                    });
+            }, function ($q) use ($desde) {
+                $q->where('fecha_publicacion', '>=', $desde);
+            })
             ->orderBy('fecha_publicacion', 'desc')
             ->limit(200)
             ->get();
@@ -107,6 +126,7 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
         $totalEnviados = 0;
         $totalOmitidos = 0;
+        $ocidsAvisadosTdr = [];
 
         foreach ($suscripciones as $sub) {
             $channel = $this->resolveChannel($sub, $telegram, $whatsappService);
@@ -143,7 +163,10 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
                 // ── Dedup per-suscriptor (igual que Contratos Menores) ──
                 // Un contrato se notifica UNA sola vez por (usuario, canal, destinatario).
-                if ($tracker->wasAlreadyNotified($contrato->ocid, $userId, $canal, $recipientId)) {
+                // En modo TDR se usa una clave distinta: es un aviso de seguimiento.
+                $claveDedup = $this->soloTdrNuevos ? 'tdr:' . $contrato->ocid : $contrato->ocid;
+
+                if ($tracker->wasAlreadyNotified($claveDedup, $userId, $canal, $recipientId)) {
                     $totalOmitidos++;
                     continue;
                 }
@@ -152,7 +175,7 @@ class NotificarContratosMayoresJob implements ShouldQueue
 
                 $tracker->recordNotification(
                     $this->contratoToTrackerPayload($contrato),
-                    $contrato->ocid,
+                    $claveDedup,
                     $userId,
                     $canal,
                     $recipientId,
@@ -162,12 +185,21 @@ class NotificarContratosMayoresJob implements ShouldQueue
                 );
 
                 $totalEnviados++;
+                $ocidsAvisadosTdr[$contrato->ocid] = true;
             }
+        }
+
+        // Marcar los procesos cuyo aviso de TDR ya salió (no repetir el scan)
+        if ($this->soloTdrNuevos && !empty($ocidsAvisadosTdr)) {
+            ContratoMayor::whereIn('ocid', array_keys($ocidsAvisadosTdr))
+                ->update(['tdr_aviso_at' => now()]);
         }
 
         Log::info('NotificarContratosMayores: completado', [
             'total_enviados' => $totalEnviados,
             'total_omitidos_dup' => $totalOmitidos,
+            'modo_tdr' => $this->soloTdrNuevos,
+            'tdr_marcados' => count($ocidsAvisadosTdr),
         ]);
     }
 
@@ -207,8 +239,8 @@ class NotificarContratosMayoresJob implements ShouldQueue
             : $sub->phone_number;
 
         $isTelegram = $sub instanceof TelegramSubscription;
-        $tipoLabel = $isTelegram
-            ? "🔔 NUEVO CONTRATO MAYOR"
+        $tipoLabel = $this->soloTdrNuevos
+            ? "📎 TDR YA DISPONIBLE"
             : "🔔 NUEVO CONTRATO MAYOR";
 
         $webUrl = config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($contrato->ocid);
