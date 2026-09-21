@@ -640,6 +640,16 @@
                                                     @endif
                                                 </button>
                                             </div>
+                                            @if(!empty($c['ficha_url']))
+                                            {{-- Sección: Ficha completa en SEACE (on-demand) --}}
+                                            <div class="py-1">
+                                                <a href="{{ $c['ficha_url'] }}" target="_blank" rel="noopener" @click="open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                                                    @mouseenter="showTooltip('Cronograma, ítems, contratos e historial en el SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                                    <span>Ver ficha en SEACE</span>
+                                                </a>
+                                            </div>
+                                            @endif
                                             {{-- Sección: Herramientas IA --}}
                                             <div class="py-1 bg-purple-50/30">
                                                 <div class="px-3.5 pb-1 pt-0.5">
@@ -784,6 +794,14 @@
                                                 <span class="ml-auto text-[9px] font-bold text-green-600 shrink-0">SEACE</span>
                                             </a>
                                         @endforeach
+                                    @endif
+                                    @if(!empty($c['ficha_url']))
+                                        <a href="{{ $c['ficha_url'] }}" target="_blank" rel="noopener" @click="open = false"
+                                            class="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors"
+                                            @mouseenter="showTooltip('Cronograma, ítems, contratos e historial en el SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                            <svg class="w-3.5 h-3.5 shrink-0 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            <span>Ver ficha en SEACE</span>
+                                        </a>
                                     @endif
                                     @if(!empty($c['url_documento']))
                                         <button wire:click="analizarTdr('{{ $c['url_documento'] }}'); open = false" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary-600 hover:bg-primary-50 transition-colors"
@@ -1824,6 +1842,12 @@
                             <p class="w-full text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-3 whitespace-normal">Documentos capturados de la Ficha de Selección del SEACE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán cuando el OECE publique el release.</p>
                         @else
                             <p class="w-full text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 whitespace-normal">⏳ El TDR de este proceso aún no está publicado por el OECE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán automáticamente cuando el documento esté disponible.</p>
+                        @endif
+                        @if(!empty($detalleContrato['ficha_url']))
+                            <a href="{{ $detalleContrato['ficha_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary-300 text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                Ver ficha completa en SEACE
+                            </a>
                         @endif
                         <button wire:click="verPartesMayor('{{ $detalleContrato['ocid'] ?? '' }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-indigo-500/40 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 text-sm font-semibold transition-colors">Ver Partes</button>
                     </div>

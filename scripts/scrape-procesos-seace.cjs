@@ -146,6 +146,11 @@ async function extraerDocumentos(page, clavesFiltro = null) {
       await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => null);
       await sleep(1200);
 
+      // Id de la ficha (deep-link público): con esto el buscador enlaza a
+      // SEACE on-demand (cronograma, ítems, contratos, historial) sin
+      // almacenar el contenido.
+      const fichaId = (page.url().match(/[?&]id=([a-f0-9-]{36})/i) || [])[1] || null;
+
       const parsed = await page.evaluate(() => {
         const doc = document;
         const txt = (doc.body ? doc.body.innerText : '').replace(/\s+/g, ' ');
@@ -195,7 +200,7 @@ async function extraerDocumentos(page, clavesFiltro = null) {
       ok++;
       seguidosFallos = 0;
       if (!parsed.docs.length) sinDocs++;
-      documentos.push({ nomenclatura: parsed.nomenclatura || nom, clave, documentos: parsed.docs });
+      documentos.push({ nomenclatura: parsed.nomenclatura || nom, clave, fichaId, documentos: parsed.docs });
       await sleep(pausa);
     }
 

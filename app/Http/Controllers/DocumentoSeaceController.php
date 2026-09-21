@@ -36,4 +36,23 @@ class DocumentoSeaceController extends Controller
 
         return redirect()->away($url);
     }
+
+    /**
+     * Deep-link público a la Ficha de Selección del SEACE (cronograma, ítems,
+     * contratos, historial). No se almacena su contenido: se consulta allá.
+     */
+    public function ficha(string $fichaId)
+    {
+        if (!preg_match('/^[a-f0-9-]{36}$/i', $fichaId)) {
+            abort(404);
+        }
+
+        if (!\App\Models\ContratoMayor::where('ficha_seace_id', $fichaId)->exists()) {
+            abort(404);
+        }
+
+        return redirect()->away(
+            'https://prod2.seace.gob.pe/seacebus-uiwd-pub/fichaSeleccion/fichaSeleccion.xhtml?id=' . $fichaId . '&ptoRetorno=LOCAL'
+        );
+    }
 }

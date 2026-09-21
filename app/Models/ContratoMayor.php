@@ -35,6 +35,7 @@ class ContratoMayor extends Model
         'codigo_snip',
         'proveedores',
         'url_documento',
+        'ficha_seace_id',
         'datos_raw',
     ];
 

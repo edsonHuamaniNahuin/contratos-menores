@@ -293,6 +293,10 @@ class SeaceMayoresService
             ];
 
             $contrato['documentos'] = $documentos;
+            $contrato['ficha_seace_id'] = $c->ficha_seace_id;
+            $contrato['ficha_url'] = $c->ficha_seace_id
+                ? route('ficha.seace.ver', $c->ficha_seace_id)
+                : null;
 
             return $contrato;
         })->toArray();

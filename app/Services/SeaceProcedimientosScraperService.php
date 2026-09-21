@@ -183,14 +183,20 @@ class SeaceProcedimientosScraperService
         $actualizados = 0;
         $docsGuardados = 0;
 
-        // Documentos por clave normalizada de nomenclatura
+        // Documentos y ficha (id) por clave normalizada de nomenclatura
         $docsPorClave = [];
+        $fichasPorClave = [];
         foreach ($documentos as $entrada) {
             $clave = $entrada['clave'] ?? $this->normalizarNomenclatura($entrada['nomenclatura'] ?? '');
-            if ($clave === '' || empty($entrada['documentos'])) {
+            if ($clave === '') {
                 continue;
             }
-            $docsPorClave[$clave] = $entrada['documentos'];
+            if (!empty($entrada['documentos'])) {
+                $docsPorClave[$clave] = $entrada['documentos'];
+            }
+            if (!empty($entrada['fichaId'])) {
+                $fichasPorClave[$clave] = $entrada['fichaId'];
+            }
         }
 
         // Mapa normalizado (sin espacios ni signos): el scraper y la API OCDS
@@ -228,6 +234,7 @@ class SeaceProcedimientosScraperService
 
             $claveDoc = $this->normalizarNomenclatura($nomenclatura);
             $docs = $claveDoc !== '' ? ($docsPorClave[$claveDoc] ?? []) : [];
+            $fichaId = $claveDoc !== '' ? ($fichasPorClave[$claveDoc] ?? null) : null;
 
             $existente = ContratoMayor::where('nomenclatura', $nomenclatura)->first();
 
@@ -240,6 +247,7 @@ class SeaceProcedimientosScraperService
                 // Igual se le adjuntan los documentos capturados de la ficha.
                 if ($candidato && !str_starts_with((string) $candidato->ocid, 'ocds-scraped-')) {
                     $docsGuardados += $this->guardarDocumentos($candidato, $docs, $claveDoc);
+                    $this->guardarFichaId($candidato, $fichaId);
 
                     continue;
                 }
@@ -274,6 +282,7 @@ class SeaceProcedimientosScraperService
                 }
 
                 $docsGuardados += $this->guardarDocumentos($existente, $docs, $claveDoc);
+                $this->guardarFichaId($existente, $fichaId);
 
                 continue;
             }
@@ -296,6 +305,7 @@ class SeaceProcedimientosScraperService
             ]);
 
             $docsGuardados += $this->guardarDocumentos($contrato, $docs, $claveDoc);
+            $this->guardarFichaId($contrato, $fichaId);
 
             $nuevos++;
         }
@@ -353,6 +363,28 @@ class SeaceProcedimientosScraperService
         }
 
         return $guardados;
+    }
+
+    /**
+     * Guardar solo el `id` de la Ficha de Selección (deep-link público).
+     * El contenido de la ficha no se almacena: se consulta en SEACE.
+     */
+    protected function guardarFichaId(ContratoMayor $contrato, ?string $fichaId): void
+    {
+        $fichaId = trim((string) $fichaId);
+
+        if ($fichaId === '' || $contrato->ficha_seace_id === $fichaId) {
+            return;
+        }
+
+        try {
+            $contrato->update(['ficha_seace_id' => $fichaId]);
+        } catch (\Throwable $e) {
+            Log::warning('ScraperProcesos: no se pudo guardar ficha_seace_id', [
+                'ocid' => $contrato->ocid,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
