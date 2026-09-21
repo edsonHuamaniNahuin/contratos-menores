@@ -121,28 +121,26 @@ class SeaceProcedimientosScraperService
      * Captura on-demand de los documentos de UN proceso (botón "Buscar
      * documentos ahora" de la web y de los bots).
      *
-     * Reutiliza el scraper headless: si hay `ficha_seace_id` navega directo a
-     * la Ficha de Selección (rápido); si no, busca la nomenclatura en el
-     * listado del día de publicación (±1 día). Cachea el resultado 10 min y
-     * serializa ejecuciones con lock para no levantar varios navegadores por
-     * clics repetidos.
+     * Reutiliza el scraper headless: busca la nomenclatura en el listado del
+     * día de publicación (±1 día) y captura su Ficha de Selección. Cachea el
+     * resultado 10 min y serializa ejecuciones con lock para no levantar
+     * varios navegadores por clics repetidos.
      *
      * @return array{success: bool, estado: string, message: string, documentos?: int, cache?: bool}
      */
     public function capturarDocumentosDeProceso(ContratoMayor $contrato): array
     {
         $clave = $this->normalizarNomenclatura($contrato->nomenclatura);
-        $fichaId = trim((string) $contrato->ficha_seace_id);
 
-        if ($clave === '' && $fichaId === '') {
+        if ($clave === '') {
             return [
                 'success' => false,
                 'estado' => 'error',
-                'message' => 'El proceso no tiene nomenclatura ni ficha del SEACE para buscarlo.',
+                'message' => 'El proceso no tiene nomenclatura para buscarlo en el SEACE.',
             ];
         }
 
-        $sufijo = $clave !== '' ? $clave : md5($fichaId);
+        $sufijo = $clave;
         $cacheKey = 'captura-docs-seace:' . $sufijo;
 
         $previo = Cache::get($cacheKey);
@@ -172,7 +170,7 @@ class SeaceProcedimientosScraperService
             }
 
             try {
-                $resultado = $this->ejecutarCapturaFicha($contrato, $clave, $fichaId);
+                $resultado = $this->ejecutarCapturaFicha($contrato, $clave);
                 $resultado['cache'] = false;
 
                 Cache::put($cacheKey, ['at' => now()->timestamp, 'resultado' => $resultado], now()->addMinutes(10));
@@ -200,7 +198,7 @@ class SeaceProcedimientosScraperService
     /**
      * Ejecutar el scraper en modo ficha única e importar lo capturado a la DB.
      */
-    protected function ejecutarCapturaFicha(ContratoMayor $contrato, string $clave, string $fichaId): array
+    protected function ejecutarCapturaFicha(ContratoMayor $contrato, string $clave): array
     {
         $salida = storage_path('logs/scrape-ficha-' . md5((string) $contrato->ocid) . '.json');
         @unlink($salida);
@@ -209,14 +207,10 @@ class SeaceProcedimientosScraperService
         $desde = $contrato->fecha_publicacion?->copy()->subDay() ?? now()->subDays(7);
         $hasta = $contrato->fecha_publicacion?->copy()->addDay() ?? now();
 
-        $env = [];
-        if ($fichaId !== '') {
-            $env[] = 'SCRAPE_FICHA_ID=' . escapeshellarg($fichaId);
-        }
-        if ($clave !== '') {
-            $env[] = 'SCRAPE_FICHA_CLAVE=' . escapeshellarg($clave);
-        }
-        $env[] = 'SCRAPE_DOCS_BUDGET=240000';
+        $env = [
+            'SCRAPE_FICHA_CLAVE=' . escapeshellarg($clave),
+            'SCRAPE_DOCS_BUDGET=240000',
+        ];
 
         // Tope duro para no dejar la request web colgada (Cloudflare corta a
         // los 100s). En Windows no existe `timeout` de coreutils.
@@ -233,7 +227,7 @@ class SeaceProcedimientosScraperService
 
         Log::info('ScraperProcesos: captura on-demand', [
             'ocid' => $contrato->ocid,
-            'directo_por_ficha' => $fichaId !== '',
+            'clave' => $clave,
             'desde' => $desde->format('d/m/Y'),
             'hasta' => $hasta->format('d/m/Y'),
         ]);

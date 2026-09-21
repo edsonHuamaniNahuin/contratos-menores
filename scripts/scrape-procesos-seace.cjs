@@ -14,10 +14,8 @@
  *   SCRAPE_DOCS            "0" desactiva la captura de documentos de las fichas
  *   SCRAPE_DOCS_BUDGET     Presupuesto en ms para la captura de documentos
  *   SCRAPE_DOCS_PAUSA      Pausa en ms entre fichas (cortesía con el SEACE)
- *   SCRAPE_FICHA_ID        On-demand: captura SOLO esa ficha (UUID) y termina
- *   SCRAPE_FICHA_CLAVE     On-demand: busca esa nomenclatura normalizada en el
- *                          listado y captura SOLO su ficha (con ID hace fallback
- *                          a búsqueda si el ID ya no es válido)
+ *   SCRAPE_FICHA_CLAVE     On-demand: busca esa nomenclatura normalizada en
+ *                          el listado y captura SOLO su ficha, sin exportar
  *
  * Salida: { success, count, rows: [{entidad, fecha, nomenclatura, reiniciado,
  *           objeto, descripcion, vr, moneda, version}],
@@ -35,7 +33,6 @@ const puppeteer = req('puppeteer-core');
 const XLSX = req('xlsx');
 
 const URL = 'https://prod2.seace.gob.pe/seacebus-uiwd-pub/buscadorPublico/buscadorPublico.xhtml';
-const URL_FICHA = 'https://prod2.seace.gob.pe/seacebus-uiwd-pub/fichaSeleccion/fichaSeleccion.xhtml';
 
 function detectChrome() {
   if (process.env.SCRAPE_CHROME_BIN && fs.existsSync(process.env.SCRAPE_CHROME_BIN)) {
@@ -149,56 +146,16 @@ async function parseFichaActual(page) {
  * sin navegar) y se parsea la tabla `tbFicha:dtDocumentos` de la ficha.
  * El `fileCode` obtenido resuelve la descarga on-demand (el ticket expira).
  */
-async function extraerDocumentos(page, clavesFiltro = null, fichaIdDirecta = null) {
+async function extraerDocumentos(page, clavesFiltro = null) {
   const presupuesto = parseInt(process.env.SCRAPE_DOCS_BUDGET || '900000', 10);
   const pausa = parseInt(process.env.SCRAPE_DOCS_PAUSA || '400', 10);
   const filtrar = clavesFiltro instanceof Set && clavesFiltro.size > 0;
-  const fichaIdObjetivo = String(fichaIdDirecta || '').trim();
 
   const documentos = [];
   const vistos = new Set();
   let ok = 0, fallos = 0, sinDocs = 0, seguidosFallos = 0, presupuestoAgotado = false, filasListado = 0;
   let fichaObjetivoLista = false;
   const tFichas = Date.now();
-
-  // ── On-demand: ir directo a la ficha por id (deep-link público) ──
-  // Si el id ya no es válido y hay nomenclatura, se continúa con la
-  // búsqueda por listado (misma sesión del navegador).
-  if (fichaIdObjetivo) {
-    await page.goto(`${URL_FICHA}?id=${encodeURIComponent(fichaIdObjetivo)}&ptoRetorno=LOCAL`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 45000,
-    }).catch(() => null);
-
-    for (let w = 0; w < 20; w++) {
-      await sleep(750);
-      const listo = await page.evaluate(() => /Ficha de Seleccion/i.test(document.body ? document.body.innerText : '')).catch(() => false);
-      if (listo) break;
-    }
-
-    const parsed = await parseFichaActual(page).catch(() => null);
-
-    if (parsed && parsed.esFicha) {
-      console.log(JSON.stringify({
-        docs_ficha_directa: 1,
-        docs_encontrados: parsed.docs.length,
-        items_encontrados: (parsed.items || []).length,
-      }));
-      return [{
-        nomenclatura: parsed.nomenclatura || '',
-        clave: filtrar ? [...clavesFiltro][0] : '',
-        fichaId: fichaIdObjetivo,
-        items: parsed.items || [],
-        documentos: parsed.docs,
-      }];
-    }
-
-    console.log('DOCS_FICHA_DIRECTA_FALLO:', JSON.stringify({ url: page.url().slice(0, 120) }));
-
-    // El fallback a búsqueda por nomenclatura lo decide run() (necesita
-    // volver a cargar el listado del buscador).
-    return [];
-  }
 
   // Procesos ya cubiertos por barridos previos (ficha/documentos capturados):
   // no se vuelven a navegar. El servicio escribe la lista (DB = fuente de verdad).
@@ -449,35 +406,19 @@ async function run() {
 
     // ── On-demand: captura de una sola ficha, sin export del Excel ──
     const fichaClaveModo = (process.env.SCRAPE_FICHA_CLAVE || '').trim();
-    const fichaIdModo = (process.env.SCRAPE_FICHA_ID || '').trim();
 
-    if (fichaClaveModo || fichaIdModo) {
+    if (fichaClaveModo) {
       let documentos = [];
       try {
-        if (fichaIdModo) {
-          documentos = await extraerDocumentos(
-            page,
-            fichaClaveModo ? new Set([fichaClaveModo]) : null,
-            fichaIdModo
-          );
-        }
-
-        // Fallback: el id de ficha ya no es válido → buscar por nomenclatura
-        // en el listado (rango = fecha de publicación ±1 día, lo fija Laravel).
-        if (!documentos.length && fichaClaveModo) {
-          await prepararBuscador(page, desde, hasta);
-          documentos = await extraerDocumentos(page, new Set([fichaClaveModo]));
-        }
+        // Rango de fechas = publicación ±1 día (lo fija Laravel en los args).
+        await prepararBuscador(page, desde, hasta);
+        documentos = await extraerDocumentos(page, new Set([fichaClaveModo]));
       } catch (e) {
         console.error('DOCS_ERROR:', e.message);
       }
 
       fs.writeFileSync(salida, JSON.stringify({ success: true, count: 0, rows: [], documentos }));
-      console.log(JSON.stringify({
-        success: true,
-        modo: fichaIdModo ? 'ficha' : 'busqueda',
-        documentos: documentos.length,
-      }));
+      console.log(JSON.stringify({ success: true, modo: 'busqueda', documentos: documentos.length }));
       return;
     }
 
