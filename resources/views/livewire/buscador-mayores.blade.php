@@ -613,6 +613,15 @@
                                                     <svg class="w-4 h-4 shrink-0 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                                     <span>Descargar TDR</span>
                                                 </a>
+                                                @elseif(!empty($c['documentos']))
+                                                @foreach($c['documentos'] as $doc)
+                                                <a href="{{ $doc['url'] }}" target="_blank" rel="noopener" @click="open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                                                    @mouseenter="showTooltip('Descargar documento publicado en el SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                                    <span class="truncate">{{ str()->limit($doc['nombre'] ?: 'Documento', 28) }}</span>
+                                                    <span class="ml-auto text-[9px] font-bold text-green-600 shrink-0">SEACE</span>
+                                                </a>
+                                                @endforeach
                                                 @else
                                                 <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-400 hover:bg-neutral-50 transition-colors"
                                                     @mouseenter="showTooltip('El TDR aún no está publicado por el OECE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
@@ -671,7 +680,13 @@
                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                                     <span>Crear Proforma</span>
                                                 </button>
-                                                <p class="px-3.5 pb-1 text-[10px] leading-snug text-neutral-400 whitespace-normal">El TDR de este proceso aún no está publicado por el OECE. Las herramientas se habilitarán automáticamente.</p>
+                                                <p class="px-3.5 pb-1 text-[10px] leading-snug text-neutral-400 whitespace-normal">
+                                                    @if(!empty($c['documentos']))
+                                                        Documentos descargables desde el SEACE. Las herramientas IA se habilitarán cuando el OECE publique el release.
+                                                    @else
+                                                        El TDR de este proceso aún no está publicado por el OECE. Las herramientas se habilitarán automáticamente.
+                                                    @endif
+                                                </p>
                                                 @endif
                                             </div>
                                         </div>
@@ -724,6 +739,12 @@
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                     <span>TDR</span>
                                 </a>
+                            @elseif(!empty($c['documentos']))
+                                <a href="{{ $c['documentos'][0]['url'] }}" target="_blank" rel="noopener"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-green-200 text-xs font-semibold text-green-700 hover:bg-green-50 hover:border-green-300 transition-colors" title="Descargar documento publicado en el SEACE">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                    <span>{{ str()->limit($c['documentos'][0]['nombre'] ?: 'Documento', 16) }}</span>
+                                </a>
                             @endif
                             <div class="relative ml-auto" x-data="{ open: false }">
                                 <button @click="
@@ -753,6 +774,17 @@
                                             <svg class="w-3 h-3 ml-auto text-primary-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                                         @endif
                                     </button>
+                                    @if(empty($c['url_documento']) && !empty($c['documentos']))
+                                        @foreach($c['documentos'] as $doc)
+                                            <a href="{{ $doc['url'] }}" target="_blank" rel="noopener" @click="open = false"
+                                                class="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors"
+                                                @mouseenter="showTooltip('Descargar documento publicado en el SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                <svg class="w-3.5 h-3.5 shrink-0 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                                <span class="truncate">{{ str()->limit($doc['nombre'] ?: 'Documento', 24) }}</span>
+                                                <span class="ml-auto text-[9px] font-bold text-green-600 shrink-0">SEACE</span>
+                                            </a>
+                                        @endforeach
+                                    @endif
                                     @if(!empty($c['url_documento']))
                                         <button wire:click="analizarTdr('{{ $c['url_documento'] }}'); open = false" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary-600 hover:bg-primary-50 transition-colors"
                                             @mouseenter="showTooltip('Analiza con IA: requisitos, plazos, penalidades', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
@@ -776,7 +808,13 @@
                                         <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-secondary-500 opacity-60 hover:bg-secondary-50 transition-colors">
                                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Proforma
                                         </button>
-                                        <p class="px-3 pb-1.5 text-[10px] leading-snug text-neutral-400 whitespace-normal">TDR pendiente de publicación en el OECE.</p>
+                                        <p class="px-3 pb-1.5 text-[10px] leading-snug text-neutral-400 whitespace-normal">
+                                            @if(!empty($c['documentos']))
+                                                Documentos descargables desde el SEACE. Herramientas IA al publicarse el release del OECE.
+                                            @else
+                                                TDR pendiente de publicación en el OECE.
+                                            @endif
+                                        </p>
                                     @endif
                                     <button wire:click="verPartesMayor('{{ $c['ocid'] }}'); open = false"
                                         class="w-full flex items-center gap-2 px-3 py-2 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors"
@@ -835,6 +873,11 @@
                                 @if(!empty($c['url_documento']))
                                     <a href="{{ $c['url_documento'] }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-neutral-500 hover:text-brand-600 hover:border-primary-400 transition-colors" title="Descargar TDR"
                                         @mouseenter="showTooltip('Descargar TDR', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                    </a>
+                                @elseif(!empty($c['documentos']))
+                                    <a href="{{ $c['documentos'][0]['url'] }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 transition-colors" title="Descargar documento publicado en el SEACE"
+                                        @mouseenter="showTooltip('Descargar documento del SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                     </a>
                                 @else
@@ -1771,6 +1814,14 @@
                             <button wire:click="analizarTdr('{{ $detalleContrato['url_documento'] }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-400 transition-colors shadow-sm">Analizar con IA</button>
                             <button wire:click="detectarDireccionamiento('{{ $detalleContrato['url_documento'] }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-red-500/40 text-red-600 bg-red-50 hover:bg-red-100 text-sm font-semibold transition-colors">Direccionamiento</button>
                             <button wire:click="generarProformaTecnicaMayor('{{ $detalleContrato['url_documento'] }}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-secondary-500/40 text-secondary-600 bg-secondary-50 hover:bg-secondary-100 text-sm font-semibold transition-colors">Crear Proforma</button>
+                        @elseif(!empty($detalleContrato['documentos']))
+                            @foreach($detalleContrato['documentos'] as $doc)
+                                <a href="{{ $doc['url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-green-300 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                    {{ $doc['nombre'] ?: 'Documento' }}
+                                </a>
+                            @endforeach
+                            <p class="w-full text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-3 whitespace-normal">Documentos capturados de la Ficha de Selección del SEACE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán cuando el OECE publique el release.</p>
                         @else
                             <p class="w-full text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 whitespace-normal">⏳ El TDR de este proceso aún no está publicado por el OECE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán automáticamente cuando el documento esté disponible.</p>
                         @endif

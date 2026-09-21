@@ -474,6 +474,13 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
     protected function descargarMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void
     {
         $pdfUrl = $contrato->url_documento;
+
+        // Fallback: documentos capturados de la Ficha de Selección del SEACE
+        // (cubre los procesos que el release OCDS aún no publica).
+        if (empty($pdfUrl)) {
+            $pdfUrl = app(\App\Services\DocumentoSeaceService::class)->urlParaContrato($contrato);
+        }
+
         if (empty($pdfUrl)) {
             $this->whatsapp->enviarMensaje($phoneNumber, '❌ Este contrato no tiene documento TDR.');
             return;
@@ -488,7 +495,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 return;
             }
 
-            $filename = 'TDR_' . ($contrato->nomenclatura ?? $contrato->ocid) . '.pdf';
+            $filename = 'TDR_' . ($contrato->nomenclatura ?? $contrato->ocid) . '.' . $this->detectarExtensionDocumento($response->body());
             $filename = preg_replace('/[^A-Za-z0-9_.-]/', '_', $filename);
             $resultado = $this->whatsapp->enviarDocumento($phoneNumber, $response->body(), $filename);
 

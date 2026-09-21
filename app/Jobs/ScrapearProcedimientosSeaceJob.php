@@ -16,13 +16,17 @@ use Illuminate\Support\Facades\Log;
  * Descarga el Excel de Procedimientos de Selección del SEACE (2x/día:
  * 12:00 y 21:00) e importa a contratos_mayores los que la API OCDS del
  * OECE aún no ha publicado (gap de latencia de hasta semanas).
+ *
+ * Además captura los documentos (Bases, TDR, ...) de la Ficha de Selección
+ * de cada proceso, con presupuesto propio (SCRAPE_DOCS_BUDGET): por eso el
+ * timeout es amplio.
  */
 class ScrapearProcedimientosSeaceJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $timeout = 600;
-    public int $tries = 2;
+    public int $timeout = 1800;
+    public int $tries = 1;
 
     public function __construct(
         public ?string $desde = null,

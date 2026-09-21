@@ -90,7 +90,8 @@ class NotificarContratosMayoresJob implements ShouldQueue
         // Usar fecha_publicacion (cuándo SEACE publicó), NO created_at.
         // created_at cambia al re-importar contratos viejos (escaneo global)
         // y causaba alertas duplicadas de procesos de meses atrás.
-        $contratos = ContratoMayor::where('fecha_publicacion', '>=', $desde)
+        $contratos = ContratoMayor::with('documentos')
+            ->where('fecha_publicacion', '>=', $desde)
             ->orderBy('fecha_publicacion', 'desc')
             ->limit(200)
             ->get();
@@ -291,7 +292,7 @@ class NotificarContratosMayoresJob implements ShouldQueue
             $rows = [
                 ['id' => 'mayor_analizar_' . $this->sanitizeOcid($contrato->ocid), 'title' => '🤖 Analizar con IA', 'description' => 'Requisitos, plazos y penalidades'],
             ];
-            if (!empty($contrato->url_documento)) {
+            if (!empty($contrato->url_documento) || $contrato->documentos->isNotEmpty()) {
                 $rows[] = ['id' => 'mayor_descargar_' . $this->sanitizeOcid($contrato->ocid), 'title' => '📎 Descargar TDR', 'description' => 'Documento de bases'];
             }
             $rows[] = ['id' => 'mayor_direccionar_' . $this->sanitizeOcid($contrato->ocid), 'title' => '🔍 Direccionamiento', 'description' => 'Auditar el TDR'];

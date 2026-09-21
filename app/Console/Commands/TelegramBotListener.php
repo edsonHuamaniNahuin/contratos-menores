@@ -498,13 +498,21 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
     {
         $this->answerCallbackQuery($callbackId, '📥 Preparando descarga...', $token);
         $pdfUrl = $c->url_documento;
+
+        // Fallback: documentos capturados de la Ficha de Selección del SEACE
+        // (cubre los procesos que el release OCDS aún no publica).
+        if (empty($pdfUrl)) {
+            $pdfUrl = app(\App\Services\DocumentoSeaceService::class)->urlParaContrato($c);
+        }
+
         if (empty($pdfUrl)) { $this->sendMessage($chatId, '❌ Sin documento TDR.', $token); return; }
         $this->sendMessage($chatId, '📥 Descargando TDR...', $token);
 
         try {
             $response = \Illuminate\Support\Facades\Http::timeout(60)->get($pdfUrl);
             if (!$response->successful()) { $this->sendMessage($chatId, '❌ No se pudo descargar.', $token); return; }
-            $filename = preg_replace('/[^A-Za-z0-9_.-]/', '_', 'TDR_' . $c->nomenclatura) . '.pdf';
+            $ext = $this->detectarExtensionDocumento($response->body());
+            $filename = preg_replace('/[^A-Za-z0-9_.-]/', '_', 'TDR_' . $c->nomenclatura) . '.' . $ext;
             $this->sendDocument($chatId, $response->body(), $filename, "📎 {$c->nomenclatura}\n🏢 {$c->entidad_nombre}", $token);
         } catch (\Exception $e) {
             $this->sendMessage($chatId, "📎 Descargalo aquí:\n{$pdfUrl}", $token);

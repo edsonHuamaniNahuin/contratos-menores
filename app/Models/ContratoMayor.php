@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ContratoMayor extends Model
 {
@@ -75,5 +76,15 @@ class ContratoMayor extends Model
     public function distrito(): BelongsTo
     {
         return $this->belongsTo(Distrito::class);
+    }
+
+    /**
+     * Documentos del proceso capturados desde la Ficha de Selección del SEACE
+     * (Bases, TDR, etc.). Disponibles aunque el OECE aún no publique el release
+     * OCDS con `url_documento`.
+     */
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(ContratoMayorDocumento::class, 'contrato_mayor_id');
     }
 }

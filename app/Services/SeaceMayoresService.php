@@ -247,7 +247,7 @@ class SeaceMayoresService
         ]);
 
         $total = $query->count();
-        $registros = $query->orderBy('fecha_publicacion', 'desc')
+        $registros = $query->with('documentos')->orderBy('fecha_publicacion', 'desc')
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
             ->get();
@@ -257,7 +257,18 @@ class SeaceMayoresService
             if (is_string($release)) {
                 $release = json_decode($release, true) ?? [];
             }
-            return $release ? $this->mapearRelease($release) : [
+
+            // Documentos capturados de la Ficha de Selección del SEACE
+            // (Bases, TDR, ...): cubren los procesos que el OCDS no publica.
+            $documentos = $c->relationLoaded('documentos')
+                ? $c->documentos->map(fn ($d) => [
+                    'nombre' => $d->nombre,
+                    'etapa' => $d->etapa,
+                    'url' => route('documentos.seace.descargar', $d->file_code),
+                ])->values()->toArray()
+                : [];
+
+            $contrato = $release ? $this->mapearRelease($release) : [
                 'ocid' => $c->ocid,
                 'entidad_nombre' => $c->entidad_nombre,
                 'entidad_ruc' => $c->entidad_ruc,
@@ -280,6 +291,10 @@ class SeaceMayoresService
                 'cuantia' => $c->cuantia,
                 'datos_raw' => $c->datos_raw,
             ];
+
+            $contrato['documentos'] = $documentos;
+
+            return $contrato;
         })->toArray();
 
         $totalPages = (int) ceil($total / $perPage);

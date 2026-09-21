@@ -200,6 +200,13 @@ Route::get('/buscador-contratos-mayores/{entidad}', function ($entidadSlug) {
     ]);
 })->name('buscador.mayores.departamental');
 
+// Descarga de documentos (Bases, TDR, ...) capturados de la Ficha de Selección
+// del SEACE: resuelve el ticket del CMS on-demand y redirige. Público (el
+// documento es público en el SEACE) con throttle anti-abuso.
+Route::get('/documentos-seace/{fileCode}', [\App\Http\Controllers\DocumentoSeaceController::class, 'descargar'])
+    ->middleware('throttle:30,1')
+    ->name('documentos.seace.descargar');
+
 Route::get('/planes', function () {
     return view('planes');
 })->name('planes');

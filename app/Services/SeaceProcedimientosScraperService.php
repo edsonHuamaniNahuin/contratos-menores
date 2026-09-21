@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ContratoMayor;
+use App\Models\ContratoMayorDocumento;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -68,9 +69,9 @@ class SeaceProcedimientosScraperService
         $desde = $desde ?? now()->startOfDay();
         $hasta = $hasta ?? now()->copy()->endOfDay();
 
-        $filas = $this->obtenerFilas($desde, $hasta);
+        $resultado = $this->obtenerFilas($desde, $hasta);
 
-        if ($filas === null) {
+        if ($resultado === null) {
             return [
                 'success' => false,
                 'nuevos' => 0,
@@ -79,6 +80,9 @@ class SeaceProcedimientosScraperService
                 'message' => 'Fallo al obtener los procedimientos del SEACE.',
             ];
         }
+
+        $filas = $resultado['rows'];
+        $documentos = $resultado['documentos'];
 
         // El reporte del SEACE trunca a 500 filas: dividir en mitades para no perder datos
         if (count($filas) >= $this->limiteFilasSeace) {
@@ -90,10 +94,11 @@ class SeaceProcedimientosScraperService
 
             $mitad = $desde->copy()->addHours(12)->subSecond();
 
-            $f1 = $this->obtenerFilas($desde, $mitad) ?? [];
-            $f2 = $this->obtenerFilas($mitad->copy()->addSecond(), $hasta) ?? [];
+            $f1 = $this->obtenerFilas($desde, $mitad) ?? ['rows' => [], 'documentos' => []];
+            $f2 = $this->obtenerFilas($mitad->copy()->addSecond(), $hasta) ?? ['rows' => [], 'documentos' => []];
 
-            $filas = array_merge($f1, $f2);
+            $filas = array_merge($f1['rows'], $f2['rows']);
+            $documentos = array_merge($f1['documentos'], $f2['documentos']);
         }
 
         if (empty($filas)) {
@@ -108,11 +113,12 @@ class SeaceProcedimientosScraperService
             ];
         }
 
-        return $this->importarFilas($filas);
+        return $this->importarFilas($filas, $documentos);
     }
 
     /**
-     * Ejecutar el script Node y devolver las filas del Excel (o null si falla).
+     * Ejecutar el script Node y devolver las filas del Excel + documentos
+     * de las fichas (o null si falla).
      */
     protected function obtenerFilas(Carbon $desde, Carbon $hasta): ?array
     {
@@ -161,16 +167,31 @@ class SeaceProcedimientosScraperService
             return null;
         }
 
-        return $payload['rows'] ?? [];
+        return [
+            'rows' => $payload['rows'] ?? [],
+            'documentos' => $payload['documentos'] ?? [],
+        ];
     }
 
     /**
-     * Importar las filas con dedupe por nomenclatura.
+     * Importar las filas con dedupe por nomenclatura y guardar los documentos
+     * capturados de las fichas (Bases, TDR, ...).
      */
-    protected function importarFilas(array $rows): array
+    protected function importarFilas(array $rows, array $documentos = []): array
     {
         $nuevos = 0;
         $actualizados = 0;
+        $docsGuardados = 0;
+
+        // Documentos por clave normalizada de nomenclatura
+        $docsPorClave = [];
+        foreach ($documentos as $entrada) {
+            $clave = $entrada['clave'] ?? $this->normalizarNomenclatura($entrada['nomenclatura'] ?? '');
+            if ($clave === '' || empty($entrada['documentos'])) {
+                continue;
+            }
+            $docsPorClave[$clave] = $entrada['documentos'];
+        }
 
         // Mapa normalizado (sin espacios ni signos): el scraper y la API OCDS
         // escriben la nomenclatura con puntuación distinta, y sin esto se
@@ -205,6 +226,9 @@ class SeaceProcedimientosScraperService
                 'fecha_publicacion' => $fechaPublicacion,
             ];
 
+            $claveDoc = $this->normalizarNomenclatura($nomenclatura);
+            $docs = $claveDoc !== '' ? ($docsPorClave[$claveDoc] ?? []) : [];
+
             $existente = ContratoMayor::where('nomenclatura', $nomenclatura)->first();
 
             if (!$existente) {
@@ -213,7 +237,10 @@ class SeaceProcedimientosScraperService
 
                 // Si el release OCDS ya importó el proceso, no duplicar:
                 // los datos del OCDS (con documento) son la fuente completa.
+                // Igual se le adjuntan los documentos capturados de la ficha.
                 if ($candidato && !str_starts_with((string) $candidato->ocid, 'ocds-scraped-')) {
+                    $docsGuardados += $this->guardarDocumentos($candidato, $docs, $claveDoc);
+
                     continue;
                 }
 
@@ -246,10 +273,12 @@ class SeaceProcedimientosScraperService
                     $actualizados++;
                 }
 
+                $docsGuardados += $this->guardarDocumentos($existente, $docs, $claveDoc);
+
                 continue;
             }
 
-            ContratoMayor::create([
+            $contrato = ContratoMayor::create([
                 'ocid' => 'ocds-scraped-' . md5($nomenclatura),
                 'entidad_nombre' => $campos['entidad_nombre'],
                 'nomenclatura' => $nomenclatura,
@@ -266,12 +295,15 @@ class SeaceProcedimientosScraperService
                 'datos_raw' => null,
             ]);
 
+            $docsGuardados += $this->guardarDocumentos($contrato, $docs, $claveDoc);
+
             $nuevos++;
         }
 
         Log::info('ScraperProcesos: importación completada', [
             'nuevos' => $nuevos,
             'actualizados' => $actualizados,
+            'documentos_guardados' => $docsGuardados,
         ]);
 
         return [
@@ -279,8 +311,70 @@ class SeaceProcedimientosScraperService
             'nuevos' => $nuevos,
             'actualizados' => $actualizados,
             'count' => count($rows),
-            'message' => "{$nuevos} nuevos, {$actualizados} actualizados de " . count($rows) . ' procedimientos.',
+            'message' => "{$nuevos} nuevos, {$actualizados} actualizados de " . count($rows) . " procedimientos ({$docsGuardados} documentos).",
         ];
+    }
+
+    /**
+     * Guardar los documentos capturados de la ficha (upsert por file_code).
+     *
+     * @return int cantidad de documentos guardados
+     */
+    protected function guardarDocumentos(ContratoMayor $contrato, array $docs, string $clave): int
+    {
+        $guardados = 0;
+
+        foreach ($docs as $doc) {
+            $fileCode = trim((string) ($doc['fileCode'] ?? ''));
+            if ($fileCode === '') {
+                continue;
+            }
+
+            try {
+                ContratoMayorDocumento::updateOrCreate(
+                    ['file_code' => $fileCode],
+                    [
+                        'contrato_mayor_id' => $contrato->id,
+                        'nomenclatura_normalizada' => $clave,
+                        'nombre' => mb_substr(trim((string) ($doc['nombre'] ?? '')) ?: 'Documento', 0, 250),
+                        'etapa' => mb_substr(trim((string) ($doc['etapa'] ?? '')), 0, 250) ?: null,
+                        'tipo' => mb_substr(trim((string) ($doc['tipo'] ?? '')), 0, 20) ?: null,
+                        'filename' => mb_substr(trim((string) ($doc['filename'] ?? '')), 0, 250) ?: null,
+                        'fecha_documento' => $this->parsearFechaDocumento($doc['fecha'] ?? ''),
+                    ]
+                );
+                $guardados++;
+            } catch (\Throwable $e) {
+                Log::warning('ScraperProcesos: no se pudo guardar documento', [
+                    'file_code' => $fileCode,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $guardados;
+    }
+
+    /**
+     * Parsear la fecha del documento de la ficha (dd/mm/yyyy HH:mm).
+     */
+    protected function parsearFechaDocumento(string $fecha): ?string
+    {
+        $fecha = trim($fecha);
+
+        if ($fecha === '') {
+            return null;
+        }
+
+        foreach (['d/m/Y H:i', 'd/m/Y'] as $formato) {
+            try {
+                return Carbon::createFromFormat($formato, $fecha)->format('Y-m-d');
+            } catch (\Throwable) {
+                // siguiente formato
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -11,9 +11,14 @@
  * Env:
  *   SCRAPE_CHROME_BIN      Ruta del binario de chrome/chrome-headless-shell
  *   SCRAPE_NODE_MODULES    Carpeta con node_modules (puppeteer-core, xlsx)
+ *   SCRAPE_DOCS            "0" desactiva la captura de documentos de las fichas
+ *   SCRAPE_DOCS_BUDGET     Presupuesto en ms para la captura de documentos
+ *   SCRAPE_DOCS_PAUSA      Pausa en ms entre fichas (cortesía con el SEACE)
  *
  * Salida: { success, count, rows: [{entidad, fecha, nomenclatura, reiniciado,
- *           objeto, descripcion, vr, moneda, version}] }
+ *           objeto, descripcion, vr, moneda, version}],
+ *           documentos: [{nomenclatura, clave, documentos: [{nombre, etapa,
+ *           tipo, fileCode, filename, href, fecha}]}] }
  */
 const path = require('path');
 const fs = require('fs');
@@ -42,6 +47,193 @@ function detectChrome() {
     if (fs.existsSync(c)) return c;
   }
   return null;
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * Captura los documentos (Bases, TDR, ...) de la Ficha de Selección de cada
+ * proceso listado. Cubre los procesos cuyo release OCDS aún no publica el
+ * link del documento (o no lo publicará nunca: el OCDS solo cubre una parte
+ * de los procedimientos del SEACE).
+ *
+ * Cómo funciona: la tabla de resultados expone por fila un submit con
+ * nidProceso/nidConvocatoria. Se replica ese POST con fetch (misma sesión,
+ * sin navegar) y se parsea la tabla `tbFicha:dtDocumentos` de la ficha.
+ * El `fileCode` obtenido resuelve la descarga on-demand (el ticket expira).
+ */
+async function extraerDocumentos(page, clavesFiltro = null) {
+  const presupuesto = parseInt(process.env.SCRAPE_DOCS_BUDGET || '900000', 10);
+  const pausa = parseInt(process.env.SCRAPE_DOCS_PAUSA || '400', 10);
+  const filtrar = clavesFiltro instanceof Set && clavesFiltro.size > 0;
+
+  const documentos = [];
+  const vistos = new Set();
+  let ok = 0, fallos = 0, sinDocs = 0, seguidosFallos = 0, presupuestoAgotado = false, filasListado = 0;
+  const tFichas = Date.now();
+
+  // La tabla de resultados se procesa PÁGINA POR PÁGINA: el ViewState del
+  // servidor solo conserva la página actual; si se recolectan todas las filas
+  // y recién al final se postean, los botones de páginas anteriores ya no
+  // existen en el view y el POST solo re-renderiza el buscador.
+  let riPrimero = null;
+
+  const diag = await page.evaluate(() => {
+    const f = document.querySelector('form[id*="idFormBuscarProceso"]');
+    return {
+      url: location.href.slice(0, 160),
+      form: !!f,
+      action: f ? (f.getAttribute('action') || '').slice(0, 160) : null,
+      rows: document.querySelectorAll('tbody tr[data-ri]').length,
+    };
+  });
+  console.log('DOCS_DIAG:', JSON.stringify(diag));
+
+  for (let pag = 1; pag <= 60; pag++) {
+    const lote = await page.evaluate(() => {
+      const cont = document.querySelector('[id*="pnlGrdResultadosProcesos"]') || document;
+      const res = [];
+      cont.querySelectorAll('tbody tr[data-ri]').forEach(tr => {
+        const a = tr.querySelector('a[onclick*="ptoRetorno"]');
+        if (!a) return;
+        const celdas = Array.from(tr.querySelectorAll('td')).map(td => (td.innerText || '').replace(/\s+/g, ' ').trim());
+        res.push({ ri: tr.getAttribute('data-ri'), celdas, onclick: a.getAttribute('onclick') || '' });
+      });
+      return res;
+    });
+
+    if (!lote.length) break;
+    if (lote[0].ri === riPrimero) break; // el paginador no avanzó
+    riPrimero = lote[0].ri;
+    filasListado += lote.length;
+
+    // ── Fichas de la página actual ──
+    for (const fila of lote) {
+      if (Date.now() - tFichas > presupuesto) { presupuestoAgotado = true; break; }
+
+      const nom = fila.celdas.find(c => /^[A-Z]{2,6}-[A-Z0-9]{2,6}-\d+-\d{4}/.test(c)) || '';
+      const clave = norm(nom);
+      if (!clave || vistos.has(clave) || (filtrar && !clavesFiltro.has(clave))) continue;
+      vistos.add(clave);
+
+      const m = (fila.onclick || '').match(/addSubmitParam\('[^']+',(\{.*?\})\)/s);
+      if (!m) continue;
+      let params;
+      try { params = JSON.parse(m[1].replace(/'/g, '"')); } catch (e) { continue; }
+
+      // Navegación real a la ficha (spike verificado): se inyectan los params
+      // como campos ocultos y se hace submit del formulario; el POST completo
+      // desde la página no es posible (fetch/XHR mueren a nivel red).
+      const disparo = await page.evaluate((p) => {
+        const f = document.querySelector('form[id*="idFormBuscarProceso"]');
+        if (!f) return false;
+        f.querySelectorAll('input[data-qa-ficha]').forEach(el => el.remove());
+        for (const [k, v] of Object.entries(p)) {
+          const i = document.createElement('input');
+          i.type = 'hidden';
+          i.name = k;
+          i.value = v;
+          i.setAttribute('data-qa-ficha', '1');
+          f.appendChild(i);
+        }
+        f.submit();
+        return true;
+      }, params);
+
+      if (!disparo) { fallos++; seguidosFallos++; if (seguidosFallos >= 5) break; continue; }
+
+      await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => null);
+      await sleep(1200);
+
+      const parsed = await page.evaluate(() => {
+        const doc = document;
+        const txt = (doc.body ? doc.body.innerText : '').replace(/\s+/g, ' ');
+        const tbody = doc.getElementById('tbFicha:dtDocumentos_data');
+        const docs = [];
+        if (tbody) {
+          tbody.querySelectorAll('tr[data-ri]').forEach(tr => {
+            const tds = tr.querySelectorAll('td');
+            const a = tr.querySelector('a[onclick*="descarga"], a[href*="download"], a[href*="fileCode"]');
+            let fileCode = '', tipo = '', filename = '', href = '';
+            if (a) {
+              href = a.getAttribute('href') || '';
+              const mm = (a.getAttribute('onclick') || '').match(/descarga[A-Za-z]*\('([^']+)','([^']+)','([^']*)'\)/);
+              if (mm) { fileCode = mm[1]; tipo = mm[2]; filename = mm[3]; }
+            }
+            docs.push({
+              etapa: (tds[1] ? tds[1].innerText : '').replace(/\s+/g, ' ').trim(),
+              nombre: (tds[2] ? tds[2].innerText : '').replace(/\s+/g, ' ').trim(),
+              fileCode, tipo, filename, href,
+              fecha: (tds[4] ? tds[4].innerText : '').replace(/\s+/g, ' ').trim(),
+            });
+          });
+        }
+        const mn = txt.match(/Nomenclatura:\s*([A-Z0-9][A-Za-z0-9./_ -]{3,60})/);
+        return {
+          esFicha: /Ficha de Seleccion/i.test(txt),
+          nomenclatura: mn ? mn[1].trim() : '',
+          docs: docs.filter(d => d.fileCode || d.href),
+        };
+      });
+
+      // Volver al listado de resultados para la siguiente fila
+      await page.goBack({ waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => null);
+      await sleep(1200);
+
+      const volvio = await page.evaluate(() => !!document.querySelector('form[id*="idFormBuscarProceso"]')).catch(() => false);
+
+      if (!parsed || !parsed.esFicha) {
+        fallos++;
+        if (fallos <= 3) console.log('DOCS_NOFICHA:', JSON.stringify({ url: page.url().slice(0, 120), volvio }));
+        seguidosFallos++;
+        if (seguidosFallos >= 5) break;
+        await sleep(pausa);
+        continue;
+      }
+
+      ok++;
+      seguidosFallos = 0;
+      if (!parsed.docs.length) sinDocs++;
+      documentos.push({ nomenclatura: parsed.nomenclatura || nom, clave, documentos: parsed.docs });
+      await sleep(pausa);
+    }
+
+    if (presupuestoAgotado || seguidosFallos >= 5) break;
+
+    // ── Siguiente página ──
+    const avanzo = await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('.ui-paginator-next'));
+      const btn = btns.find(b => ((b.closest('.ui-paginator') || {}).id || '').includes('Procesos')) || btns[0];
+      if (!btn || btn.classList.contains('ui-state-disabled')) return false;
+      btn.click();
+      return true;
+    });
+    if (!avanzo) break;
+
+    // Esperar a que la tabla cambie de página (poll hasta 8s)
+    const riEsperado = riPrimero;
+    for (let w = 0; w < 26; w++) {
+      await sleep(300);
+      const actual = await page.evaluate(() => {
+        const cont = document.querySelector('[id*="pnlGrdResultadosProcesos"]') || document;
+        const tr = cont.querySelector('tbody tr[data-ri]');
+        return tr ? tr.getAttribute('data-ri') : null;
+      });
+      if (actual && actual !== riEsperado) break;
+    }
+  }
+
+  console.log(JSON.stringify({
+    docs_procesos: ok,
+    docs_encontrados: documentos.reduce((n, d) => n + d.documentos.length, 0),
+    docs_sin_documentos: sinDocs,
+    docs_fallos: fallos,
+    filas_listado: filasListado,
+    docs_presupuesto_agotado: presupuestoAgotado,
+  }));
+
+  return documentos;
 }
 
 async function run() {
@@ -106,6 +298,19 @@ async function run() {
       if (b) b.click();
     });
     await new Promise(r => setTimeout(r, 25000));
+
+    // ── Documentos por proceso (Ficha de Selección) ──
+    // Se ejecuta ANTES del export del Excel: el export deja la página en un
+    // estado donde fetch() falla ("Failed to fetch"), y la captura de fichas
+    // necesita postear desde la propia página (misma sesión y ViewState).
+    let documentos = [];
+    if (process.env.SCRAPE_DOCS !== '0') {
+      try {
+        documentos = await extraerDocumentos(page);
+      } catch (e) {
+        console.error('DOCS_ERROR:', e.message);
+      }
+    }
 
     await page.evaluate(() => {
       const b = document.querySelector('#tbBuscador\\:idFormBuscarProceso\\:btnExportar');
@@ -192,9 +397,9 @@ async function run() {
       });
     }
 
-    fs.writeFileSync(salida, JSON.stringify({ success: true, count: out.length, rows: out }));
+    fs.writeFileSync(salida, JSON.stringify({ success: true, count: out.length, rows: out, documentos }));
 
-    console.log(JSON.stringify({ success: true, count: out.length, archivo }));
+    console.log(JSON.stringify({ success: true, count: out.length, archivo, documentos: documentos.length }));
   } finally {
     await browser.close();
     fs.rmSync(dlDir, { recursive: true, force: true });
