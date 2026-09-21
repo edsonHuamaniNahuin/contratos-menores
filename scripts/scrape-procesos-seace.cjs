@@ -175,10 +175,27 @@ async function extraerDocumentos(page, clavesFiltro = null) {
           });
         }
         const mn = txt.match(/Nomenclatura:\s*([A-Z0-9][A-Za-z0-9./_ -]{3,60})/);
+
+        // Ítems del proceso (resumen compacto): tabla cuya id/encabezado
+        // apunta a ítems. Máx. 50 filas y 120 chars por celda (escalado).
+        let items = [];
+        const tablas = Array.from(doc.querySelectorAll('table[id*="Item"], table[id*="item"]'));
+        for (const t of tablas) {
+          const filas = Array.from(t.querySelectorAll('tbody tr[data-ri]'));
+          if (!filas.length) continue;
+          const head = (t.querySelector('thead') ? t.querySelector('thead').innerText : '').toLowerCase();
+          if (!/cantidad|unidad|valor|descrip/.test(head) && !/item/i.test(t.id)) continue;
+          items = filas.slice(0, 50).map(tr =>
+            Array.from(tr.querySelectorAll('td')).map(td => (td.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 120))
+          ).filter(c => c.join('').trim() !== '');
+          if (items.length) break;
+        }
+
         return {
           esFicha: /Ficha de Seleccion/i.test(txt),
           nomenclatura: mn ? mn[1].trim() : '',
           docs: docs.filter(d => d.fileCode || d.href),
+          items,
         };
       });
 
@@ -200,7 +217,7 @@ async function extraerDocumentos(page, clavesFiltro = null) {
       ok++;
       seguidosFallos = 0;
       if (!parsed.docs.length) sinDocs++;
-      documentos.push({ nomenclatura: parsed.nomenclatura || nom, clave, fichaId, documentos: parsed.docs });
+      documentos.push({ nomenclatura: parsed.nomenclatura || nom, clave, fichaId, items: parsed.items || [], documentos: parsed.docs });
       await sleep(pausa);
     }
 

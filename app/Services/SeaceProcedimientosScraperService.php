@@ -186,6 +186,7 @@ class SeaceProcedimientosScraperService
         // Documentos y ficha (id) por clave normalizada de nomenclatura
         $docsPorClave = [];
         $fichasPorClave = [];
+        $itemsPorClave = [];
         foreach ($documentos as $entrada) {
             $clave = $entrada['clave'] ?? $this->normalizarNomenclatura($entrada['nomenclatura'] ?? '');
             if ($clave === '') {
@@ -196,6 +197,9 @@ class SeaceProcedimientosScraperService
             }
             if (!empty($entrada['fichaId'])) {
                 $fichasPorClave[$clave] = $entrada['fichaId'];
+            }
+            if (!empty($entrada['items'])) {
+                $itemsPorClave[$clave] = $entrada['items'];
             }
         }
 
@@ -235,6 +239,7 @@ class SeaceProcedimientosScraperService
             $claveDoc = $this->normalizarNomenclatura($nomenclatura);
             $docs = $claveDoc !== '' ? ($docsPorClave[$claveDoc] ?? []) : [];
             $fichaId = $claveDoc !== '' ? ($fichasPorClave[$claveDoc] ?? null) : null;
+            $items = $claveDoc !== '' ? ($itemsPorClave[$claveDoc] ?? []) : [];
 
             $existente = ContratoMayor::where('nomenclatura', $nomenclatura)->first();
 
@@ -248,6 +253,7 @@ class SeaceProcedimientosScraperService
                 if ($candidato && !str_starts_with((string) $candidato->ocid, 'ocds-scraped-')) {
                     $docsGuardados += $this->guardarDocumentos($candidato, $docs, $claveDoc);
                     $this->guardarFichaId($candidato, $fichaId);
+                    $this->guardarItems($candidato, $items);
 
                     continue;
                 }
@@ -283,6 +289,7 @@ class SeaceProcedimientosScraperService
 
                 $docsGuardados += $this->guardarDocumentos($existente, $docs, $claveDoc);
                 $this->guardarFichaId($existente, $fichaId);
+                $this->guardarItems($existente, $items);
 
                 continue;
             }
@@ -306,6 +313,7 @@ class SeaceProcedimientosScraperService
 
             $docsGuardados += $this->guardarDocumentos($contrato, $docs, $claveDoc);
             $this->guardarFichaId($contrato, $fichaId);
+            $this->guardarItems($contrato, $items);
 
             $nuevos++;
         }
@@ -381,6 +389,32 @@ class SeaceProcedimientosScraperService
             $contrato->update(['ficha_seace_id' => $fichaId]);
         } catch (\Throwable $e) {
             Log::warning('ScraperProcesos: no se pudo guardar ficha_seace_id', [
+                'ocid' => $contrato->ocid,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Guardar el resumen de ítems del proceso (máx. 50 filas, ya acotado por
+     * el scraper). Solo se actualiza si cambió: evita escrituras inútiles.
+     */
+    protected function guardarItems(ContratoMayor $contrato, array $items): void
+    {
+        if (empty($items)) {
+            return;
+        }
+
+        $compacto = array_slice($items, 0, 50);
+
+        if ($contrato->items_seace === $compacto) {
+            return;
+        }
+
+        try {
+            $contrato->update(['items_seace' => $compacto]);
+        } catch (\Throwable $e) {
+            Log::warning('ScraperProcesos: no se pudo guardar items_seace', [
                 'ocid' => $contrato->ocid,
                 'error' => $e->getMessage(),
             ]);

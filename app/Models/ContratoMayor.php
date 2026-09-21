@@ -36,6 +36,7 @@ class ContratoMayor extends Model
         'proveedores',
         'url_documento',
         'ficha_seace_id',
+        'items_seace',
         'datos_raw',
     ];
 
@@ -47,6 +48,7 @@ class ContratoMayor extends Model
         'cuantia' => 'decimal:2',
         'datos_raw' => 'array',
         'proveedores' => 'array',
+        'items_seace' => 'array',
     ];
 
     public function scopeRecientes($query)

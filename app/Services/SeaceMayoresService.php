@@ -297,6 +297,11 @@ class SeaceMayoresService
             $contrato['ficha_url'] = $c->ficha_seace_id
                 ? route('ficha.seace.ver', $c->ficha_seace_id)
                 : null;
+            // Escalado: a la lista solo va el conteo + vista previa corta,
+            // no el JSON completo de ítems.
+            $items = is_array($c->items_seace) ? $c->items_seace : [];
+            $contrato['items_count'] = count($items);
+            $contrato['items_preview'] = array_slice($items, 0, 5);
 
             return $contrato;
         })->toArray();

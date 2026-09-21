@@ -1843,6 +1843,17 @@
                         @else
                             <p class="w-full text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 whitespace-normal">⏳ El TDR de este proceso aún no está publicado por el OECE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán automáticamente cuando el documento esté disponible.</p>
                         @endif
+                        @if(!empty($detalleContrato['items_count']))
+                            <div class="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 space-y-1.5">
+                                <p class="text-xs font-bold text-neutral-700">📦 {{ $detalleContrato['items_count'] }} ítems del proceso</p>
+                                @foreach(($detalleContrato['items_preview'] ?? []) as $item)
+                                    <p class="text-[11px] text-neutral-600 leading-snug">{{ implode(' · ', array_slice(array_filter((array) $item, fn ($v) => $v !== ''), 0, 5)) }}</p>
+                                @endforeach
+                                @if($detalleContrato['items_count'] > 5)
+                                    <p class="text-[10px] text-neutral-400">Ver el detalle completo en la ficha del SEACE.</p>
+                                @endif
+                            </div>
+                        @endif
                         @if(!empty($detalleContrato['ficha_url']))
                             <a href="{{ $detalleContrato['ficha_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary-300 text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
