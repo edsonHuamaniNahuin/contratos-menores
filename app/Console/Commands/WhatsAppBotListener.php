@@ -624,7 +624,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
 
     /**
      * URL del documento para análisis IA: release OCDS o documento capturado
-     * de la Ficha de Selección del SEACE (ruta pública de descarga).
+     * de la Ficha de Selección del SEACE (URL directa del CMS, cacheada).
      */
     protected function resolverUrlDocumentoMayor(\App\Models\ContratoMayor $contrato): ?string
     {
@@ -632,9 +632,9 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             return $contrato->url_documento;
         }
 
-        $documento = app(\App\Services\DocumentoSeaceService::class)->primerDocumento($contrato);
-
-        return $documento ? route('documentos.seace.descargar', $documento->file_code) : null;
+        // No usar route(): el server resuelve su propio dominio a 127.0.0.1
+        // (/etc/hosts) y el certificado de origen no valida en curl.
+        return app(\App\Services\DocumentoSeaceService::class)->urlParaContrato($contrato);
     }
 
     /**
