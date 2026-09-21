@@ -37,6 +37,7 @@ class ContratoMayor extends Model
         'url_documento',
         'ficha_seace_id',
         'items_seace',
+        'tdr_aviso_at',
         'datos_raw',
     ];
 
@@ -49,6 +50,7 @@ class ContratoMayor extends Model
         'datos_raw' => 'array',
         'proveedores' => 'array',
         'items_seace' => 'array',
+        'tdr_aviso_at' => 'datetime',
     ];
 
     public function scopeRecientes($query)
