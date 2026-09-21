@@ -623,11 +623,16 @@
                                                 </a>
                                                 @endforeach
                                                 @else
-                                                <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-neutral-400 hover:bg-neutral-50 transition-colors"
-                                                    @mouseenter="showTooltip('Aún no capturado. Ver ficha en SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
-                                                    <svg class="w-4 h-4 shrink-0 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
-                                                    <span>Descargar TDR</span>
-                                                    <span class="ml-auto text-[9px] font-bold text-amber-500">PENDIENTE</span>
+                                                <button type="button"
+                                                    wire:click="buscarDocumentosAhora('{{ $c['ocid'] }}')"
+                                                    wire:loading.attr="disabled"
+                                                    wire:target="buscarDocumentosAhora('{{ $c['ocid'] }}')"
+                                                    class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50 transition-colors"
+                                                    data-ga-event="mayores_buscar_docs_click"
+                                                    @mouseenter="showTooltip('Consultar la ficha del proceso en el SEACE y capturar sus documentos (40-60s)', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                                    <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                                    <span>Buscar documentos ahora</span>
+                                                    <span class="ml-auto text-[9px] font-bold text-amber-500">SEACE</span>
                                                 </button>
                                                 @endif
                                                 <button wire:click="hacerSeguimiento('{{ $c['ocid'] }}'); open = false" wire:loading.attr="disabled" wire:target="hacerSeguimiento('{{ $c['ocid'] }}')"
@@ -694,7 +699,7 @@
                                                     @if(!empty($c['documentos']))
                                                         Documentos descargables desde el SEACE. Las herramientas IA se habilitarán cuando el OECE publique el release.
                                                     @else
-                                                        Aún no capturamos los documentos de este proceso. Ábrelo en SEACE para verlos (se actualizan solos).
+                                                        Aún no capturamos los documentos de este proceso. Usa «Buscar documentos ahora» o ábrelo en SEACE.
                                                     @endif
                                                 </p>
                                                 @endif
@@ -817,6 +822,12 @@
                                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Proforma
                                         </button>
                                     @else
+                                        <button type="button" wire:click="buscarDocumentosAhora('{{ $c['ocid'] }}'); open = false" wire:loading.attr="disabled" wire:target="buscarDocumentosAhora('{{ $c['ocid'] }}')"
+                                            class="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 transition-colors"
+                                            data-ga-event="mayores_buscar_docs_click"
+                                            @mouseenter="showTooltip('Buscar documentos en la ficha del SEACE (40-60s)', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                            <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Buscar documentos ahora
+                                        </button>
                                         <button type="button" wire:click="tdrPendiente(); open = false" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary-500 opacity-60 hover:bg-primary-50 transition-colors">
                                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg> Analizar IA
                                         </button>
@@ -830,7 +841,7 @@
                                             @if(!empty($c['documentos']))
                                                 Documentos descargables desde el SEACE. Herramientas IA al publicarse el release del OECE.
                                             @else
-                                                Aún no capturado. Ver ficha en SEACE.
+                                                Aún no capturado. Usa «Buscar documentos ahora» o ver ficha en SEACE.
                                             @endif
                                         </p>
                                     @endif
@@ -899,9 +910,10 @@
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
                                     </a>
                                 @else
-                                    <button type="button" wire:click="tdrPendiente()" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-neutral-200 text-neutral-300 hover:text-amber-500 hover:border-amber-300 transition-colors" title="Aún no capturado. Ver ficha en SEACE"
-                                        @mouseenter="showTooltip('Aún no capturado. Ver ficha en SEACE', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+                                    <button type="button" wire:click="buscarDocumentosAhora('{{ $c['ocid'] }}')" wire:loading.attr="disabled" wire:target="buscarDocumentosAhora('{{ $c['ocid'] }}')" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-amber-200 text-amber-500 hover:bg-amber-50 hover:border-amber-300 transition-colors" title="Buscar documentos ahora"
+                                        data-ga-event="mayores_buscar_docs_click"
+                                        @mouseenter="showTooltip('Buscar documentos en la ficha del SEACE (40-60s)', $event)" @mouseleave="hideTooltip()" @mousemove="moveTooltip($event)">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                     </button>
                                 @endif
                                 <button wire:click="hacerSeguimiento('{{ $c['ocid'] }}')" wire:loading.attr="disabled" wire:target="hacerSeguimiento('{{ $c['ocid'] }}')"
@@ -1021,6 +1033,38 @@
             </div>
         </div>
     @endif
+
+    {{-- Buscando documentos en el SEACE (on-demand, 40-60s) --}}
+    <div
+        wire:loading.flex
+        wire:target="buscarDocumentosAhora"
+        class="fixed inset-0 z-[200] items-center justify-center px-4"
+        style="display: none"
+        x-data="{ seconds: 0, timer: null, init() {
+            new MutationObserver(() => {
+                if (this.$el.style.display !== 'none') { this.seconds = 0; this.timer = setInterval(() => this.seconds++, 1000); }
+                else if (this.timer) { clearInterval(this.timer); this.timer = null; }
+            }).observe(this.$el, { attributes: true, attributeFilter: ['style'] });
+        }}"
+    >
+        <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-[2rem] shadow-soft p-8 max-w-sm w-full text-center">
+            <div class="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-5">
+                <svg class="w-8 h-8 text-amber-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+            </div>
+            <p class="text-base font-semibold text-neutral-900" x-text="seconds >= 50 ? 'Casi listo...' : seconds >= 25 ? 'Revisando la ficha del proceso...' : seconds >= 8 ? 'Abriendo el buscador del SEACE...' : 'Conectando con el SEACE...'"></p>
+            <p class="text-sm text-neutral-400 mt-2 leading-relaxed" x-text="seconds >= 50 ? 'Guardando los documentos encontrados.' : seconds >= 25 ? 'Extrayendo la lista de documentos de la ficha.' : seconds >= 8 ? 'Buscando el proceso y su Ficha de Selección.' : 'Puede tardar entre 40 y 60 segundos.'"></p>
+            <p class="text-xs text-neutral-400/70 mt-4">Tiempo: <span x-text="seconds + 's'"></span></p>
+            <div class="flex justify-center gap-1.5 mt-4">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0s"></span>
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0.15s"></span>
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0.3s"></span>
+            </div>
+        </div>
+    </div>
 
     {{-- Analisis en progreso --}}
     @if($analizandoOcid)
@@ -1841,7 +1885,12 @@
                             @endforeach
                             <p class="w-full text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-3 whitespace-normal">Documentos capturados de la Ficha de Selección del SEACE. Las herramientas de análisis (IA, direccionamiento, proforma) se habilitarán cuando el OECE publique el release.</p>
                         @else
-                            <p class="w-full text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-3 whitespace-normal">Aún no capturamos los documentos de este proceso. Puedes verlos en la ficha del SEACE; las herramientas IA se habilitarán automáticamente al capturarlos.</p>
+                            <button wire:click="buscarDocumentosAhora('{{ $detalleContrato['ocid'] ?? '' }}')" wire:loading.attr="disabled" wire:target="buscarDocumentosAhora('{{ $detalleContrato['ocid'] ?? '' }}')" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-amber-500 text-white text-sm font-semibold hover:bg-amber-400 transition-colors shadow-sm"
+                                data-ga-event="mayores_buscar_docs_click">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                Buscar documentos ahora (40-60s)
+                            </button>
+                            <p class="w-full text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-3 whitespace-normal">Aún no capturamos los documentos de este proceso. Podemos consultar su ficha en el SEACE ahora mismo; las herramientas IA se habilitarán al capturarlos.</p>
                         @endif
                         @if(!empty($detalleContrato['items_count']))
                             <div class="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 space-y-1.5">

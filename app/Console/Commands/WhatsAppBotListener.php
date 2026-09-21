@@ -404,6 +404,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                     'direccionar' => $this->direccionarMayorParaUsuario($phoneNumber, $contrato),
                     'proforma' => $this->generarProformaMayorParaUsuario($phoneNumber, $contrato),
                     'postores' => $this->postoresMayorParaUsuario($phoneNumber, $contrato),
+                    'buscardocs' => $this->buscarDocumentosMayorParaUsuario($phoneNumber, $contrato),
                     'verweb' => $this->whatsapp->enviarMensaje($phoneNumber,
                         "🌐 {$contrato->nomenclatura}\n🏢 {$contrato->entidad_nombre}\n\nAbrí en la web:\n" . config('app.url') . '/buscador-contratos-mayores?query=' . urlencode($ocid)),
                     default => $this->whatsapp->enviarMensaje($phoneNumber, '❌ Acción no reconocida.'),
@@ -424,7 +425,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $this->whatsapp->enviarMensaje($phoneNumber, '⏳ Analizando TDR con IA...');
 
         try {
-            $pdfUrl = $contrato->url_documento;
+            $pdfUrl = $this->resolverUrlDocumentoMayor($contrato);
             if (empty($pdfUrl)) {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Este contrato no tiene documento TDR disponible.');
                 return;
@@ -514,7 +515,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $this->whatsapp->enviarMensaje($phoneNumber, '🔍 Analizando direccionamiento...');
 
         try {
-            $pdfUrl = $contrato->url_documento;
+            $pdfUrl = $this->resolverUrlDocumentoMayor($contrato);
             if (empty($pdfUrl)) {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Sin documento TDR.');
                 return;
@@ -565,7 +566,7 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             }
 
             $analizador = new \App\Services\AnalizadorTDRService();
-            $pdfUrl = $contrato->url_documento;
+            $pdfUrl = $this->resolverUrlDocumentoMayor($contrato);
             if (empty($pdfUrl)) {
                 $this->whatsapp->enviarMensaje($phoneNumber, '❌ Sin documento TDR.');
                 return;
@@ -619,6 +620,44 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         }
 
         return 'pdf';
+    }
+
+    /**
+     * URL del documento para análisis IA: release OCDS o documento capturado
+     * de la Ficha de Selección del SEACE (ruta pública de descarga).
+     */
+    protected function resolverUrlDocumentoMayor(\App\Models\ContratoMayor $contrato): ?string
+    {
+        if (!empty($contrato->url_documento)) {
+            return $contrato->url_documento;
+        }
+
+        $documento = app(\App\Services\DocumentoSeaceService::class)->primerDocumento($contrato);
+
+        return $documento ? route('documentos.seace.descargar', $documento->file_code) : null;
+    }
+
+    /**
+     * Captura on-demand de los documentos del proceso en la ficha del SEACE
+     * (40-60s). Reutiliza el scraper headless.
+     */
+    protected function buscarDocumentosMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void
+    {
+        $this->whatsapp->enviarMensaje($phoneNumber, '🔎 Consultando la ficha del proceso en el SEACE. Puede tardar hasta 1 minuto...');
+
+        try {
+            $res = app(\App\Services\SeaceProcedimientosScraperService::class)
+                ->capturarDocumentosDeProceso($contrato);
+
+            if (($res['estado'] ?? '') === 'encontrado') {
+                $this->whatsapp->enviarMensaje($phoneNumber,
+                    "✅ *Documentos encontrados*\n\n📋 {$contrato->nomenclatura}\n{$res['message']}\n\nYa podés usar 📎 Descargar TDR o 🤖 Analizar con IA.");
+            } else {
+                $this->whatsapp->enviarMensaje($phoneNumber, 'ℹ️ ' . ($res['message'] ?? 'No se encontraron documentos.'));
+            }
+        } catch (\Throwable $e) {
+            $this->whatsapp->enviarMensaje($phoneNumber, '❌ No se pudo buscar documentos: ' . $e->getMessage());
+        }
     }
 
     protected function postoresMayorParaUsuario(string $phoneNumber, \App\Models\ContratoMayor $contrato): void

@@ -280,13 +280,21 @@ class NotificarContratosMayoresJob implements ShouldQueue
             $respuesta = null;
 
             if ($isTelegram) {
+                $tieneDocumento = !empty($contrato->url_documento) || $contrato->documentos->isNotEmpty();
+
                 $buttons = [
                     [['text' => '🤖 Analizar con IA', 'callback_data' => 'mayor_analizar_' . $contrato->ocid]],
                     [['text' => '🔍 Detectar Direccionamiento', 'callback_data' => 'mayor_direccionar_' . $contrato->ocid]],
                     [['text' => '📋 Crear Proforma', 'callback_data' => 'mayor_proforma_' . $contrato->ocid]],
                     [['text' => '👥 Ver Postores', 'callback_data' => 'mayor_postores_' . $contrato->ocid]],
-                    [['text' => '📎 Descargar TDR', 'callback_data' => 'mayor_descargar_' . $contrato->ocid]],
                 ];
+
+                if ($tieneDocumento) {
+                    $buttons[] = [['text' => '📎 Descargar TDR', 'callback_data' => 'mayor_descargar_' . $contrato->ocid]];
+                } else {
+                    $buttons[] = [['text' => '🔎 Buscar documentos ahora', 'callback_data' => 'mayor_buscardocs_' . $contrato->ocid]];
+                }
+
                 $keyboard = ['inline_keyboard' => $buttons];
                 $respuesta = $channel->enviarMensajeConBotones($recipientId, $mensaje, $keyboard);
             } else {
@@ -326,6 +334,8 @@ class NotificarContratosMayoresJob implements ShouldQueue
             ];
             if (!empty($contrato->url_documento) || $contrato->documentos->isNotEmpty()) {
                 $rows[] = ['id' => 'mayor_descargar_' . $this->sanitizeOcid($contrato->ocid), 'title' => '📎 Descargar TDR', 'description' => 'Documento de bases'];
+            } else {
+                $rows[] = ['id' => 'mayor_buscardocs_' . $this->sanitizeOcid($contrato->ocid), 'title' => '🔎 Buscar documentos', 'description' => 'Consultar la ficha en el SEACE (40-60s)'];
             }
             $rows[] = ['id' => 'mayor_direccionar_' . $this->sanitizeOcid($contrato->ocid), 'title' => '🔍 Direccionamiento', 'description' => 'Auditar el TDR'];
             $rows[] = ['id' => 'mayor_proforma_' . $this->sanitizeOcid($contrato->ocid), 'title' => '📋 Crear Proforma', 'description' => 'Cotización y costos'];

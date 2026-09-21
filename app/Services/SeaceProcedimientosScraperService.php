@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ContratoMayor;
 use App\Models\ContratoMayorDocumento;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -114,6 +115,187 @@ class SeaceProcedimientosScraperService
         }
 
         return $this->importarFilas($filas, $documentos);
+    }
+
+    /**
+     * Captura on-demand de los documentos de UN proceso (botón "Buscar
+     * documentos ahora" de la web y de los bots).
+     *
+     * Reutiliza el scraper headless: si hay `ficha_seace_id` navega directo a
+     * la Ficha de Selección (rápido); si no, busca la nomenclatura en el
+     * listado del día de publicación (±1 día). Cachea el resultado 10 min y
+     * serializa ejecuciones con lock para no levantar varios navegadores por
+     * clics repetidos.
+     *
+     * @return array{success: bool, estado: string, message: string, documentos?: int, cache?: bool}
+     */
+    public function capturarDocumentosDeProceso(ContratoMayor $contrato): array
+    {
+        $clave = $this->normalizarNomenclatura($contrato->nomenclatura);
+        $fichaId = trim((string) $contrato->ficha_seace_id);
+
+        if ($clave === '' && $fichaId === '') {
+            return [
+                'success' => false,
+                'estado' => 'error',
+                'message' => 'El proceso no tiene nomenclatura ni ficha del SEACE para buscarlo.',
+            ];
+        }
+
+        $sufijo = $clave !== '' ? $clave : md5($fichaId);
+        $cacheKey = 'captura-docs-seace:' . $sufijo;
+
+        $previo = Cache::get($cacheKey);
+        if (is_array($previo) && ($previo['at'] ?? 0) >= now()->subMinutes(10)->timestamp) {
+            return array_merge($previo['resultado'] ?? [], ['cache' => true]);
+        }
+
+        $lock = Cache::lock('captura-docs-seace-lock:' . $sufijo, 150);
+        $lockGlobal = Cache::lock('captura-docs-seace-global', 180);
+
+        // Un solo navegador headless a la vez en todo el sistema (memoria).
+        if (!$lockGlobal->get()) {
+            return [
+                'success' => false,
+                'estado' => 'en_curso',
+                'message' => 'Hay otra búsqueda de documentos en curso. Espera unos segundos y reintenta.',
+            ];
+        }
+
+        try {
+            if (!$lock->get()) {
+                return [
+                    'success' => false,
+                    'estado' => 'en_curso',
+                    'message' => 'Ya se está buscando los documentos de este proceso. Espera unos segundos y reintenta.',
+                ];
+            }
+
+            try {
+                $resultado = $this->ejecutarCapturaFicha($contrato, $clave, $fichaId);
+                $resultado['cache'] = false;
+
+                Cache::put($cacheKey, ['at' => now()->timestamp, 'resultado' => $resultado], now()->addMinutes(10));
+
+                return $resultado;
+            } finally {
+                $lock->release();
+            }
+        } catch (\Throwable $e) {
+            Log::error('ScraperProcesos: fallo captura on-demand', [
+                'ocid' => $contrato->ocid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'estado' => 'error',
+                'message' => 'No se pudo buscar los documentos en el SEACE. Intenta de nuevo en unos minutos.',
+            ];
+        } finally {
+            $lockGlobal->release();
+        }
+    }
+
+    /**
+     * Ejecutar el scraper en modo ficha única e importar lo capturado a la DB.
+     */
+    protected function ejecutarCapturaFicha(ContratoMayor $contrato, string $clave, string $fichaId): array
+    {
+        $salida = storage_path('logs/scrape-ficha-' . md5((string) $contrato->ocid) . '.json');
+        @unlink($salida);
+
+        // Rango de búsqueda: día de publicación ±1 (cubre desfases del Excel).
+        $desde = $contrato->fecha_publicacion?->copy()->subDay() ?? now()->subDays(7);
+        $hasta = $contrato->fecha_publicacion?->copy()->addDay() ?? now();
+
+        $env = [];
+        if ($fichaId !== '') {
+            $env[] = 'SCRAPE_FICHA_ID=' . escapeshellarg($fichaId);
+        }
+        if ($clave !== '') {
+            $env[] = 'SCRAPE_FICHA_CLAVE=' . escapeshellarg($clave);
+        }
+        $env[] = 'SCRAPE_DOCS_BUDGET=240000';
+
+        // Tope duro para no dejar la request web colgada (Cloudflare corta a
+        // los 100s). En Windows no existe `timeout` de coreutils.
+        $timeoutBin = PHP_OS_FAMILY === 'Windows' ? '' : 'timeout 95 ';
+
+        $comando = implode(' ', $env) . ' ' . $timeoutBin . sprintf(
+            '%s %s %s %s %s 2>&1',
+            escapeshellarg($this->resolverNodeBin()),
+            escapeshellarg($this->scriptPath),
+            escapeshellarg($desde->format('d/m/Y')),
+            escapeshellarg($hasta->format('d/m/Y')),
+            escapeshellarg($salida)
+        );
+
+        Log::info('ScraperProcesos: captura on-demand', [
+            'ocid' => $contrato->ocid,
+            'directo_por_ficha' => $fichaId !== '',
+            'desde' => $desde->format('d/m/Y'),
+            'hasta' => $hasta->format('d/m/Y'),
+        ]);
+
+        $output = [];
+        $exitCode = 0;
+        exec($comando, $output, $exitCode);
+
+        if ($exitCode !== 0 || !file_exists($salida)) {
+            Log::error('ScraperProcesos: captura on-demand fallo', [
+                'ocid' => $contrato->ocid,
+                'exit' => $exitCode,
+                'output' => implode("\n", array_slice($output, -5)),
+            ]);
+
+            return [
+                'success' => false,
+                'estado' => 'error',
+                'message' => 'El buscador del SEACE no respondió. Intenta de nuevo en unos minutos.',
+            ];
+        }
+
+        $payload = json_decode(file_get_contents($salida), true);
+        @unlink($salida);
+
+        $entradas = $payload['documentos'] ?? [];
+
+        if (empty($entradas)) {
+            return [
+                'success' => false,
+                'estado' => 'no_encontrado',
+                'message' => 'No encontramos este proceso en el buscador del SEACE. Puede que aún no esté publicado ahí: usa "Ver ficha en SEACE".',
+            ];
+        }
+
+        $entrada = $entradas[0];
+        $docs = $entrada['documentos'] ?? [];
+
+        $guardados = $this->guardarDocumentos($contrato, $docs, $clave);
+        $this->guardarFichaId($contrato, $entrada['fichaId'] ?? null);
+        $this->guardarItems($contrato, $entrada['items'] ?? []);
+
+        if ($guardados === 0) {
+            return [
+                'success' => true,
+                'estado' => 'sin_documentos',
+                'message' => 'El proceso todavía no tiene documentos publicados en su ficha del SEACE. Vuelve a intentarlo más tarde.',
+                'documentos' => 0,
+            ];
+        }
+
+        Log::info('ScraperProcesos: captura on-demand OK', [
+            'ocid' => $contrato->ocid,
+            'documentos' => $guardados,
+        ]);
+
+        return [
+            'success' => true,
+            'estado' => 'encontrado',
+            'message' => 'Documentos capturados: ' . $guardados . '.',
+            'documentos' => $guardados,
+        ];
     }
 
     /**

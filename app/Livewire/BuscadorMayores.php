@@ -14,6 +14,7 @@ use App\Services\ArchiveExtractorService;
 use App\Services\EntidadesMayoresService;
 use App\Services\MayoresTdrService;
 use App\Services\SeaceMayoresService;
+use App\Services\SeaceProcedimientosScraperService;
 use App\Services\Tdr\CompatibilityScoreService;
 use App\Services\TdrAnalysisService;
 use Illuminate\Support\Carbon;
@@ -601,6 +602,57 @@ class BuscadorMayores extends Component
     public function tdrPendiente(): void
     {
         $this->notify('El TDR de este proceso aún no está publicado por el OECE. Se habilitará automáticamente cuando el documento esté disponible.', 'info');
+    }
+
+    /**
+     * Captura on-demand de los documentos del proceso en el buscador del
+     * SEACE (40-60s). Al encontrar documentos se refresca la fila para que
+     * estén disponibles las descargas y las herramientas IA.
+     */
+    public function buscarDocumentosAhora(string $ocid): void
+    {
+        if (!$this->ensurePermission(
+            'download-tdr-mayores',
+            'Inicia sesión para buscar los documentos del proceso.',
+            'Tu cuenta no tiene acceso a la búsqueda de documentos. Solicita Proveedor Premium.'
+        )) {
+            return;
+        }
+
+        set_time_limit(180);
+
+        $contrato = ContratoMayor::where('ocid', $ocid)->first();
+
+        if (!$contrato) {
+            $this->notify('No se encontró el proceso en la base local.', 'warning');
+            return;
+        }
+
+        $resultado = app(SeaceProcedimientosScraperService::class)->capturarDocumentosDeProceso($contrato);
+
+        $tipo = match ($resultado['estado'] ?? 'error') {
+            'encontrado' => 'success',
+            'sin_documentos', 'no_encontrado' => 'warning',
+            'en_curso' => 'info',
+            default => 'error',
+        };
+
+        $this->notify($resultado['message'] ?? 'No se pudo buscar los documentos.', $tipo);
+
+        if (($resultado['estado'] ?? '') !== 'encontrado') {
+            return;
+        }
+
+        $this->buscar($this->pagina);
+
+        if ($this->detalleContrato && ($this->detalleContrato['ocid'] ?? null) === $ocid) {
+            $actualizado = collect($this->resultados)->first(fn ($c) => ($c['ocid'] ?? '') === $ocid);
+
+            if ($actualizado) {
+                $this->detalleContrato = $actualizado;
+                $this->documentosCarpeta = $this->listarDocumentosCarpeta($ocid);
+            }
+        }
     }
 
     public function analizarTdr(string $pdfUrl): void

@@ -369,6 +369,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
                     'direccionar' => $this->direccionarMayor($chatId, $contrato, $token, $callbackId),
                     'proforma' => $this->proformaMayor($chatId, $contrato, $token, $callbackId),
                     'postores' => $this->postoresMayor($chatId, $contrato, $token, $callbackId),
+                    'buscardocs' => $this->buscarDocumentosMayor($chatId, $contrato, $token, $callbackId),
                     default => $this->mostrarMayorWeb($chatId, $contrato, $token, $callbackId),
                 };
 
@@ -474,7 +475,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $this->sendMessage($chatId, '⏳ Analizando TDR con IA...', $token);
 
         try {
-            $pdfUrl = $c->url_documento;
+            $pdfUrl = $this->resolverUrlDocumentoMayor($c);
             if (empty($pdfUrl)) { $this->sendMessage($chatId, '❌ Sin documento TDR.', $token); return; }
 
             $service = app(\App\Services\MayoresTdrService::class);
@@ -525,7 +526,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $this->sendMessage($chatId, '🔍 Analizando direccionamiento...', $token);
 
         try {
-            $pdfUrl = $c->url_documento;
+            $pdfUrl = $this->resolverUrlDocumentoMayor($c);
             if (empty($pdfUrl)) { $this->sendMessage($chatId, '❌ Sin documento TDR.', $token); return; }
 
             $analizador = new \App\Services\AnalizadorTDRService();
@@ -561,7 +562,7 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         $this->sendMessage($chatId, '📋 Generando proforma técnica...', $token);
 
         try {
-            $pdfUrl = $c->url_documento;
+            $pdfUrl = $this->resolverUrlDocumentoMayor($c);
             if (empty($pdfUrl)) { $this->sendMessage($chatId, '❌ Sin documento TDR.', $token); return; }
 
             $userId = \App\Models\TelegramSubscription::where('chat_id', $chatId)->value('user_id');
@@ -616,6 +617,44 @@ class TelegramBotListener extends Command implements SignalableCommandInterface,
         }
 
         return 'pdf';
+    }
+
+    /**
+     * URL del documento para análisis IA: release OCDS o documento capturado
+     * de la Ficha de Selección del SEACE (ruta pública de descarga).
+     */
+    protected function resolverUrlDocumentoMayor(\App\Models\ContratoMayor $c): ?string
+    {
+        if (!empty($c->url_documento)) {
+            return $c->url_documento;
+        }
+
+        $documento = app(\App\Services\DocumentoSeaceService::class)->primerDocumento($c);
+
+        return $documento ? route('documentos.seace.descargar', $documento->file_code) : null;
+    }
+
+    /**
+     * Captura on-demand de los documentos del proceso en la ficha del SEACE
+     * (40-60s). Reutiliza el scraper headless.
+     */
+    protected function buscarDocumentosMayor(string $chatId, \App\Models\ContratoMayor $c, string $token, string $callbackId): void
+    {
+        $this->answerCallbackQuery($callbackId, '🔎 Consultando el SEACE...', $token);
+        $this->sendMessage($chatId, '🔎 Consultando la ficha del proceso en el SEACE. Puede tardar hasta 1 minuto...', $token);
+
+        try {
+            $res = app(\App\Services\SeaceProcedimientosScraperService::class)
+                ->capturarDocumentosDeProceso($c);
+
+            if (($res['estado'] ?? '') === 'encontrado') {
+                $this->sendMessage($chatId, "✅ Documentos encontrados\n\n📋 {$c->nomenclatura}\n{$res['message']}\n\nYa podés usar 📎 Descargar TDR o 🤖 Analizar con IA.", $token);
+            } else {
+                $this->sendMessage($chatId, 'ℹ️ ' . ($res['message'] ?? 'No se encontraron documentos.'), $token);
+            }
+        } catch (\Throwable $e) {
+            $this->sendMessage($chatId, '❌ No se pudo buscar documentos: ' . $e->getMessage(), $token);
+        }
     }
 
     /**
