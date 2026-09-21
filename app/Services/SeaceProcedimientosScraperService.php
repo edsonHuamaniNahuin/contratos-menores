@@ -126,8 +126,30 @@ class SeaceProcedimientosScraperService
 
         $nodeBin = $this->resolverNodeBin();
 
+        // Salto incremental: los procesos con ficha ya capturada (barrido
+        // reciente) no se vuelven a navegar. La 2ª corrida diaria solo
+        // procesa lo nuevo. DB = fuente de verdad; el scraper recibe la lista.
+        $skipFile = storage_path('app/scrape-cubiertos.json');
+        try {
+            $cubiertos = ContratoMayor::whereNotNull('ficha_seace_id')
+                ->where('updated_at', '>=', now()->subDays(7))
+                ->pluck('nomenclatura')
+                ->map(fn ($n) => $this->normalizarNomenclatura($n))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            file_put_contents($skipFile, json_encode($cubiertos));
+        } catch (\Throwable $e) {
+            Log::warning('ScraperProcesos: no se pudo escribir la lista de cubiertos', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $comando = sprintf(
-            '%s %s %s %s %s 2>&1',
+            'SCRAPE_SKIP_FILE=%s %s %s %s %s %s 2>&1',
+            escapeshellarg($skipFile),
             escapeshellarg($nodeBin),
             escapeshellarg($this->scriptPath),
             escapeshellarg($desde->format('d/m/Y')),

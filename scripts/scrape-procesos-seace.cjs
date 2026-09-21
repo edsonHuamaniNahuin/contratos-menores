@@ -68,6 +68,18 @@ async function extraerDocumentos(page, clavesFiltro = null) {
   const pausa = parseInt(process.env.SCRAPE_DOCS_PAUSA || '400', 10);
   const filtrar = clavesFiltro instanceof Set && clavesFiltro.size > 0;
 
+  // Procesos ya cubiertos por barridos previos (ficha/documentos capturados):
+  // no se vuelven a navegar. El servicio escribe la lista (DB = fuente de verdad).
+  const cubiertos = new Set();
+  const skipFile = process.env.SCRAPE_SKIP_FILE;
+  if (skipFile && fs.existsSync(skipFile)) {
+    try {
+      const lista = JSON.parse(fs.readFileSync(skipFile, 'utf8'));
+      if (Array.isArray(lista)) lista.forEach(c => { if (c) cubiertos.add(String(c)); });
+    } catch (e) { /* lista corrupta: se ignora */ }
+  }
+  let saltados = 0;
+
   const documentos = [];
   const vistos = new Set();
   let ok = 0, fallos = 0, sinDocs = 0, seguidosFallos = 0, presupuestoAgotado = false, filasListado = 0;
@@ -117,6 +129,9 @@ async function extraerDocumentos(page, clavesFiltro = null) {
       if (!clave || vistos.has(clave) || (filtrar && !clavesFiltro.has(clave))) continue;
       vistos.add(clave);
 
+      // Salto incremental: ya cubierto por un barrido previo
+      if (cubiertos.has(clave)) { saltados++; continue; }
+
       const m = (fila.onclick || '').match(/addSubmitParam\('[^']+',(\{.*?\})\)/s);
       if (!m) continue;
       let params;
@@ -151,6 +166,15 @@ async function extraerDocumentos(page, clavesFiltro = null) {
       // almacenar el contenido.
       const fichaId = (page.url().match(/[?&]id=([a-f0-9-]{36})/i) || [])[1] || null;
 
+      // Diagnóstico puntual (SCRAPE_DUMP_FICHA=1): guarda una ficha con datos
+      // para inspeccionar sus tablas (ej. ítems) sin repetir corridas.
+      if (process.env.SCRAPE_DUMP_FICHA === '1' && !extraerDocumentos._dumped) {
+        try {
+          fs.writeFileSync('/tmp/ficha-dump.html', await page.content());
+          extraerDocumentos._dumped = true;
+        } catch (e) { /* diagnóstico opcional */ }
+      }
+
       const parsed = await page.evaluate(() => {
         const doc = document;
         const txt = (doc.body ? doc.body.innerText : '').replace(/\s+/g, ' ');
@@ -176,19 +200,20 @@ async function extraerDocumentos(page, clavesFiltro = null) {
         }
         const mn = txt.match(/Nomenclatura:\s*([A-Z0-9][A-Za-z0-9./_ -]{3,60})/);
 
-        // Ítems del proceso (resumen compacto): tabla cuya id/encabezado
-        // apunta a ítems. Máx. 50 filas y 120 chars por celda (escalado).
+        // Ítems del proceso (resumen compacto): tablas `itemDetalle*` de la
+        // ficha (una por ítem). Máx. 50 filas y 120 chars por celda (escalado).
         let items = [];
-        const tablas = Array.from(doc.querySelectorAll('table[id*="Item"], table[id*="item"]'));
-        for (const t of tablas) {
-          const filas = Array.from(t.querySelectorAll('tbody tr[data-ri]'));
-          if (!filas.length) continue;
-          const head = (t.querySelector('thead') ? t.querySelector('thead').innerText : '').toLowerCase();
-          if (!/cantidad|unidad|valor|descrip/.test(head) && !/item/i.test(t.id)) continue;
-          items = filas.slice(0, 50).map(tr =>
-            Array.from(tr.querySelectorAll('td')).map(td => (td.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 120))
-          ).filter(c => c.join('').trim() !== '');
-          if (items.length) break;
+        const tablasItems = Array.from(doc.querySelectorAll('table[id*="itemDetalle"], table[id*="ItemDet"]'));
+        for (const t of tablasItems) {
+          for (const tr of t.querySelectorAll('tr')) {
+            if (tr.closest('thead')) continue;
+            const celdas = Array.from(tr.querySelectorAll('td'))
+              .map(td => (td.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 120))
+              .filter(v => v !== '');
+            if (celdas.length) items.push(celdas);
+            if (items.length >= 50) break;
+          }
+          if (items.length >= 50) break;
         }
 
         return {
@@ -251,6 +276,7 @@ async function extraerDocumentos(page, clavesFiltro = null) {
     docs_encontrados: documentos.reduce((n, d) => n + d.documentos.length, 0),
     docs_sin_documentos: sinDocs,
     docs_fallos: fallos,
+    docs_saltados_ya_cubiertos: saltados,
     filas_listado: filasListado,
     docs_presupuesto_agotado: presupuestoAgotado,
   }));
