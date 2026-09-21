@@ -198,6 +198,31 @@ async function extraerDocumentos(page, clavesFiltro = null) {
             });
           });
         }
+        // Documentos adicionales de otras secciones de la ficha (ej. el
+        // Expediente Técnico de obras en frmArchivoExpedienteTecnicoObra):
+        // cualquier link de descarga de la ficha que no esté en la tabla.
+        const codigosVistos = new Set(docs.map(d => d.fileCode).filter(Boolean));
+        doc.querySelectorAll('a[onclick*="descarga"], a[href*="download"], a[href*="fileCode"]').forEach(a => {
+          const oc = a.getAttribute('onclick') || '';
+          const mm = oc.match(/descarga[A-Za-z]*\('([^']+)','([^']+)','([^']*)'\)/);
+          const fileCode = mm ? mm[1] : '';
+          const href = a.getAttribute('href') || '';
+          // Solo links de descarga reales (evita href="#" y botones JS)
+          if (!fileCode && !/download\?|fileCode=|Alfresco|\.pdf|\.docx?/i.test(href)) return;
+          if (fileCode && codigosVistos.has(fileCode)) return;
+          if (fileCode) codigosVistos.add(fileCode);
+          const cont = a.closest('td, tr, div, li');
+          docs.push({
+            etapa: 'Ficha',
+            nombre: ((cont ? cont.innerText : '') || 'Documento').replace(/\s+/g, ' ').trim().slice(0, 90),
+            fileCode,
+            tipo: mm ? mm[2] : '',
+            filename: mm ? mm[3] : '',
+            href,
+            fecha: '',
+          });
+        });
+
         const mn = txt.match(/Nomenclatura:\s*([A-Z0-9][A-Za-z0-9./_ -]{3,60})/);
 
         // Ítems del proceso (resumen compacto): tablas `itemDetalle*` de la

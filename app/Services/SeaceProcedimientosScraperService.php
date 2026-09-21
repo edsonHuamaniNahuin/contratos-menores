@@ -131,8 +131,16 @@ class SeaceProcedimientosScraperService
         // procesa lo nuevo. DB = fuente de verdad; el scraper recibe la lista.
         $skipFile = storage_path('app/scrape-cubiertos.json');
         try {
+            // Solo se salta lo que YA tiene documento cubierto: link del OCDS
+            // o documentos capturados. Los procesos sin documento se revisan
+            // de nuevo (pueden publicarlo después) — evita "no veo mi TDR".
             $cubiertos = ContratoMayor::whereNotNull('ficha_seace_id')
                 ->where('updated_at', '>=', now()->subDays(7))
+                ->where(function ($q) {
+                    $q->where(function ($q2) {
+                        $q2->whereNotNull('url_documento')->where('url_documento', '!=', '');
+                    })->orWhereHas('documentos');
+                })
                 ->pluck('nomenclatura')
                 ->map(fn ($n) => $this->normalizarNomenclatura($n))
                 ->filter()

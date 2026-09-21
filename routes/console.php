@@ -127,14 +127,24 @@ Schedule::job(new NotificarEmailSuscriptoresJob())
 | Cubre el gap de latencia de la API OCDS del OECE (que puede publicar
 | releases con días/semanas de retraso).
 */
-Schedule::job(new ScrapearProcedimientosSeaceJob())
+// Corrida de mediodía: ayer completo (cierra el tramo 21:00-23:59 que la
+// corrida de las 21:00 no alcanza) + re-captura selectiva. El salto
+// incremental evita re-navegar lo ya cubierto.
+Schedule::job(new ScrapearProcedimientosSeaceJob(
+        now('America/Lima')->subDay()->startOfDay()->toDateString(),
+        now('America/Lima')->subDay()->endOfDay()->toDateString(),
+    ))
     ->dailyAt('12:00')
     ->timezone('America/Lima')
     ->withoutOverlapping(30)
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/scraper-procesos-schedule.log'));
 
-Schedule::job(new ScrapearProcedimientosSeaceJob())
+// Corrida nocturna: el día en curso.
+Schedule::job(new ScrapearProcedimientosSeaceJob(
+        now('America/Lima')->startOfDay()->toDateString(),
+        now('America/Lima')->endOfDay()->toDateString(),
+    ))
     ->dailyAt('21:00')
     ->timezone('America/Lima')
     ->withoutOverlapping(30)
