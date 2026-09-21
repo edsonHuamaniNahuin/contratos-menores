@@ -252,7 +252,16 @@ async function extraerDocumentos(page, clavesFiltro = null, fichaIdDirecta = nul
     for (const fila of lote) {
       if (Date.now() - tFichas > presupuesto) { presupuestoAgotado = true; break; }
 
-      const nom = fila.celdas.find(c => /^[A-Z]{2,6}-[A-Z0-9]{2,6}-\d+-\d{4}/.test(c)) || '';
+      // La nomenclatura puede tener prefijos de más de 6 letras (ej.
+      // DIRECTA-DIRECTA-3-2026-GRC-DIRESA-OC-1, COMPRE-COMPRE-...), versiones
+      // y sufijos con espacios. Fallback: la 3ª celda del listado (columna
+      // Nomenclatura) cuando el patrón no calza.
+      const patronNom = /^[A-Z0-9]{2,12}(-[A-Z0-9]{1,12}){1,3}-\d{1,4}-\d{4}([-/][A-Z0-9 .\/-]{1,50})?$/;
+      const celda3 = (fila.celdas[3] || '').trim();
+      const celda3Valida = /\d{4}/.test(celda3)
+        && !/^\d{2}\/\d{2}\/\d{4}/.test(celda3)
+        && (celda3.match(/-/g) || []).length >= 2;
+      const nom = fila.celdas.find(c => patronNom.test(c)) || (celda3Valida ? celda3 : '');
       const clave = norm(nom);
       if (!clave || vistos.has(clave) || (filtrar && !clavesFiltro.has(clave))) continue;
       vistos.add(clave);
