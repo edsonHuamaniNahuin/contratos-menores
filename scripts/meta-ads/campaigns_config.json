@@ -1,0 +1,71 @@
+{
+    "api_version": "v26.0",
+    "defaults": {
+        "status": "PAUSED",
+        "start_time": null,
+        "billing_event": "IMPRESSIONS",
+        "optimization_goal": "LINK_CLICKS",
+        "bid_strategy": "LOWEST_COST_WITHOUT_CAP",
+        "cta_button": "LEARN_MORE",
+        "advantage_audience": 0
+    },
+    "campaigns": [
+        {
+            "name": "MA-Alertas",
+            "objective": "OUTCOME_TRAFFIC",
+            "special_ad_categories": [],
+            "landing": "https://licitacionesmype.pe/alertas-licitaciones",
+            "daily_budget_cents": 1650,
+            "pixel_event": "Lead",
+            "headline": "Alertas de licitaciones por WhatsApp",
+            "creative_image": "public/images/landings/obra-grua.jpg",
+            "primary_text": "¿Cuántas licitaciones de tu rubro se te escapan cada mes?\n\nCada día el Estado publica cientos de convocatorias en el SEACE. Las de tu empresa son pocas, aparecen de golpe y las ventanas para cotizar duran días.\n\nVigilante SEACE te avisa por WhatsApp el mismo día, filtrado por tu rubro y región. Sin revisar el portal a mano.\n\nEscríbenos y te mostramos el sistema con procesos reales de tu sector.",
+            "interests": [
+                "Government concepts and practices",
+                "OSCE",
+                "Construction engineering"
+            ],
+            "age_min": 25,
+            "age_max": 60,
+            "geo_locations": { "countries": ["PE"] }
+        },
+        {
+            "name": "MA-Software",
+            "objective": "OUTCOME_TRAFFIC",
+            "special_ad_categories": [],
+            "landing": "https://licitacionesmype.pe/software-licitaciones",
+            "daily_budget_cents": 1650,
+            "pixel_event": "Lead",
+            "headline": "Software de licitaciones con IA",
+            "creative_image": "public/images/landings/ingeniero-planos.jpg",
+            "primary_text": "Deja de buscar licitaciones a mano.\n\nVigilante SEACE monitorea el SEACE 24/7, filtra por tu rubro, analiza el TDR con IA y te arma la proforma en Word o Excel.\n\nAgenda una demo de 20 minutos y lo ves con procesos reales de tu empresa.",
+            "interests": [
+                "Government concepts and practices",
+                "OSCE",
+                "Software business"
+            ],
+            "age_min": 25,
+            "age_max": 60,
+            "geo_locations": { "countries": ["PE"] }
+        },
+        {
+            "name": "MA-Vigentes",
+            "objective": "OUTCOME_TRAFFIC",
+            "special_ad_categories": [],
+            "landing": "https://licitacionesmype.pe/licitaciones-vigentes",
+            "daily_budget_cents": 1650,
+            "pixel_event": "Lead",
+            "headline": "Licitaciones vigentes hoy",
+            "creative_image": "public/images/landings/equipo-obra-casco.jpg",
+            "primary_text": "Hoy hay más de 4,700 procesos en convocatoria en el Perú.\n\nMunicipios, regiones, ministerios y hospitales publican sus compras en el SEACE. ¿Cuántos calzan con tu negocio?\n\nMira los procesos vigentes y recibe aviso cuando publiquen algo de tu rubro.",
+            "interests": [
+                "Government concepts and practices",
+                "OSCE",
+                "Small business"
+            ],
+            "age_min": 25,
+            "age_max": 60,
+            "geo_locations": { "countries": ["PE"] }
+        }
+    ]
+}

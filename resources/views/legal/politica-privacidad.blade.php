@@ -136,10 +136,16 @@
             <div>
                 <h2 class="text-xl font-bold text-neutral-900 mb-3">10. Uso de WhatsApp Business API</h2>
                 <p>
-                    Si eliges recibir notificaciones por WhatsApp, tu número de teléfono será procesado a través de la
-                    API de WhatsApp Business (Meta Platforms, Inc.). Los mensajes se envían únicamente para las funcionalidades
-                    que hayas solicitado (alertas de licitaciones, análisis de TDR, descarga de documentos). Puedes dejar
-                    de recibir mensajes en cualquier momento enviando "STOP" o eliminando tu suscripción desde la plataforma.
+                    Si elegiste recibir notificaciones por WhatsApp, tu número de teléfono fue procesado a través de la
+                    API de WhatsApp Business (Meta Platforms, Inc.). Los mensajes se enviaban únicamente para las funcionalidades
+                    que solicitaste (alertas de licitaciones, análisis de TDR, descarga de documentos). Podías dejar
+                    de recibir mensajes enviando "STOP" o eliminando tu suscripción desde la plataforma.
+                </p>
+                <p class="mt-3">
+                    <strong>Aviso:</strong> el canal de WhatsApp está <strong>temporalmente deshabilitado</strong> desde el
+                    1 de octubre de 2026 (nuevas políticas y tarifas de Meta). Tus alertas se siguen enviando por
+                    Telegram y correo electrónico.
+                    <a href="{{ route('aviso.whatsapp') }}" class="text-brand-800 font-semibold underline">Ver aviso completo</a>.
                 </p>
             </div>
 

@@ -113,6 +113,10 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
             return Command::FAILURE;
         }
 
+        if (!$this->whatsapp->alertasActivas()) {
+            $this->error('🔕 Alertas por WhatsApp PAUSADAS (switch maestro). El bot no enviará mensajes hasta reactivar con: php artisan whatsapp:alertas on');
+        }
+
         $this->info('📱 WhatsApp Bot Listener iniciado — PID ' . getmypid());
         $this->info('📡 Esperando mensajes entrantes...');
         $this->info('🛑 Presiona Ctrl+C para detener');

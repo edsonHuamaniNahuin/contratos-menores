@@ -687,6 +687,12 @@ class ConfiguracionAlertas extends Component
         try {
             auth()->user()->getOrCreateSubscriberProfile();
 
+            // Switch maestro en off: guardar igual, pero inactiva
+            if ($this->wa_activo && !app(WhatsAppNotificationService::class)->alertasActivas()) {
+                $this->wa_activo = false;
+                session()->flash('wa_error', '⚠️ El canal de WhatsApp está temporalmente deshabilitado; la suscripción se guardó inactiva. Usa Telegram o correo.');
+            }
+
             $waSub = WhatsAppSubscription::updateOrCreate(
                 ['user_id' => auth()->id()],
                 [
@@ -717,6 +723,13 @@ class ConfiguracionAlertas extends Component
     {
         try {
             $waSub = WhatsAppSubscription::where('user_id', auth()->id())->firstOrFail();
+
+            // Switch maestro en off: no se puede reactivar el canal
+            if (!$waSub->activo && !app(WhatsAppNotificationService::class)->alertasActivas()) {
+                session()->flash('wa_error', '❌ El canal de WhatsApp está temporalmente deshabilitado desde el 1 de octubre. Usa Telegram o correo. Más información en /aviso-whatsapp');
+                return;
+            }
+
             $waSub->update(['activo' => !$waSub->activo]);
             $this->wa_activo = $waSub->activo;
 
@@ -813,6 +826,11 @@ class ConfiguracionAlertas extends Component
         try {
             $waSub = WhatsAppSubscription::where('user_id', auth()->id())->firstOrFail();
             $servicio = new WhatsAppNotificationService();
+
+            if (!$servicio->alertasActivas()) {
+                session()->flash('wa_error', '❌ El canal de WhatsApp está temporalmente deshabilitado. Más información en /aviso-whatsapp');
+                return;
+            }
 
             if (!$servicio->isEnabled()) {
                 session()->flash('wa_error', '❌ WhatsApp no esta configurado. Verifica WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID en .env');

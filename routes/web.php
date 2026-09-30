@@ -132,6 +132,17 @@ Route::get('/licitaciones-vigentes', function () {
     return view('licitaciones-vigentes', compact('stats', 'procesos'));
 })->name('landing.vigentes')->middleware('demo.captcha');
 
+Route::get('/plantillas-tdr', function () {
+    return view('plantillas-tdr');
+})->name('landing.plantillas-tdr')->middleware('demo.captcha');
+
+Route::post('/plantillas-tdr', [\App\Http\Controllers\PlantillaTdrController::class, 'capturar'])
+    ->name('plantillas-tdr.capturar')
+    ->middleware('throttle:5,1');
+
+Route::get('/descargar/modelo-tdr', [\App\Http\Controllers\PlantillaTdrController::class, 'descargar'])
+    ->name('plantillas-tdr.descargar');
+
 Route::get('/buscador-publico', function () {
     return view('buscador-publico');
 })->name('buscador.publico');
@@ -200,12 +211,6 @@ Route::get('/buscador-contratos-mayores/{entidad}', function ($entidadSlug) {
     ]);
 })->name('buscador.mayores.departamental');
 
-// Deep-link a la Ficha de Seleccion del SEACE (cronograma, items, contratos,
-// historial): se consulta alla on-demand, sin almacenar su contenido.
-Route::get('/ficha-seace/{fichaId}', [\App\Http\Controllers\DocumentoSeaceController::class, 'ficha'])
-    ->middleware('throttle:30,1')
-    ->name('ficha.seace.ver');
-
 // Descarga de documentos (Bases, TDR, ...) capturados de la Ficha de Selección
 // del SEACE: resuelve el ticket del CMS on-demand y redirige. Público (el
 // documento es público en el SEACE) con throttle anti-abuso.
@@ -216,6 +221,11 @@ Route::get('/documentos-seace/{fileCode}', [\App\Http\Controllers\DocumentoSeace
 Route::get('/planes', function () {
     return view('planes');
 })->name('planes');
+
+// Aviso a usuarios: suspensión de alertas automáticas por WhatsApp (1 oct 2026)
+Route::get('/aviso-whatsapp', function () {
+    return view('aviso-whatsapp');
+})->name('aviso.whatsapp');
 
 Route::get('/contacto', function () {
     return view('contacto');
@@ -280,6 +290,7 @@ Route::get('/sitemap.xml', function () {
         $staticPages = [
             ['loc' => '/', 'priority' => '1.0', 'changefreq' => 'daily'],
             ['loc' => '/buscador-publico', 'priority' => '1.0', 'changefreq' => 'hourly'],
+            ['loc' => '/buscador-contratos-mayores', 'priority' => '0.9', 'changefreq' => 'hourly'],
             ['loc' => '/planes', 'priority' => '0.8', 'changefreq' => 'monthly'],
             ['loc' => '/contacto', 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['loc' => '/manual', 'priority' => '0.7', 'changefreq' => 'monthly'],
@@ -287,6 +298,10 @@ Route::get('/sitemap.xml', function () {
             ['loc' => '/politica-de-privacidad', 'priority' => '0.3', 'changefreq' => 'yearly'],
             ['loc' => '/eliminacion-de-datos', 'priority' => '0.3', 'changefreq' => 'yearly'],
             ['loc' => '/condiciones-del-servicio', 'priority' => '0.3', 'changefreq' => 'yearly'],
+            ['loc' => '/alertas-licitaciones', 'priority' => '0.8', 'changefreq' => 'monthly'],
+            ['loc' => '/software-licitaciones', 'priority' => '0.8', 'changefreq' => 'monthly'],
+            ['loc' => '/licitaciones-vigentes', 'priority' => '0.9', 'changefreq' => 'daily'],
+            ['loc' => '/plantillas-tdr', 'priority' => '0.7', 'changefreq' => 'monthly'],
         ];
 
         foreach ($staticPages as $page) {

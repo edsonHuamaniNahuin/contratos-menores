@@ -142,7 +142,7 @@
                         <svg class="w-5 h-5 text-neutral-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
-                        <span class="text-sm text-neutral-400">Alertas por WhatsApp</span>
+                        <span class="text-sm text-neutral-400">Alertas por WhatsApp <span class="text-amber-600/80">(temporalmente deshabilitado)</span></span>
                     </li>
                     <li class="flex items-start gap-3">
                         <svg class="w-5 h-5 text-neutral-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,6 +246,7 @@
                         <span class="text-sm text-neutral-600">
                             <strong class="text-neutral-900">Alertas por WhatsApp</strong><br>
                             Recibe alertas directamente en tu WhatsApp con botones interactivos para ver el proceso y hacer seguimiento desde tu celular.
+                            <span class="mt-1 block text-[11px] font-semibold text-amber-700">Temporalmente deshabilitado desde el 1 de octubre de 2026.</span>
                         </span>
                     </li>
                     <li class="flex items-start gap-3">
@@ -462,6 +463,7 @@
                         <span class="text-sm text-neutral-600">
                             <strong class="text-neutral-900">Alertas de Contratos Mayores</strong><br>
                             Recibe notificaciones por Telegram y WhatsApp cuando se publiquen nuevos contratos mayores que coincidan con tus palabras clave.
+                            <span class="mt-1 block text-[11px] font-semibold text-amber-700">WhatsApp temporalmente deshabilitado desde el 1 de octubre de 2026.</span>
                         </span>
                     </li>
                 </ul>
@@ -495,6 +497,10 @@
                 </div>
             </div>
 
+        </div>
+
+        <div class="mt-10 max-w-3xl mx-auto">
+            @include('partials.nota-whatsapp')
         </div>
 
         <!-- Nota al pie -->
@@ -580,6 +586,11 @@
                     <h4 class="text-xs font-bold text-neutral-900 uppercase tracking-wider mb-3">Enlaces</h4>
                     <ul class="space-y-2">
                         <li><a href="{{ route('buscador.publico') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Buscador público</a></li>
+                        <li><a href="{{ route('buscador.mayores') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Contratos mayores</a></li>
+                        <li><a href="{{ route('landing.vigentes') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Licitaciones vigentes hoy</a></li>
+                        <li><a href="{{ route('landing.alertas') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Alertas de licitaciones</a></li>
+                        <li><a href="{{ route('landing.software') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Software de licitaciones</a></li>
+                        <li><a href="{{ route('landing.plantillas-tdr') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Modelo de TDR gratis</a></li>
                         <li><a href="{{ route('contacto') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Contacto</a></li>
                         <li><a href="{{ route('login') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Iniciar sesión</a></li>
                         <li><a href="{{ route('register') }}" class="text-xs text-neutral-400 hover:text-primary-500 transition-colors">Registrarse</a></li>

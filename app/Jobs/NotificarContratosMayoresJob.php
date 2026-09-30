@@ -226,7 +226,7 @@ class NotificarContratosMayoresJob implements ShouldQueue
         if ($sub instanceof TelegramSubscription && $telegram->isEnabled()) {
             return $telegram;
         }
-        if ($sub instanceof WhatsAppSubscription && $whatsapp->isEnabled()) {
+        if ($sub instanceof WhatsAppSubscription && $whatsapp->isEnabled() && $whatsapp->alertasActivas()) {
             return $whatsapp;
         }
         return null;

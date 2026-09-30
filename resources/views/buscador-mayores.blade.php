@@ -25,3 +25,7 @@
 @section('content')
     @livewire('buscador-mayores')
 @endsection
+
+@push('scripts')
+    @include('partials.aviso-whatsapp-modal')
+@endpush

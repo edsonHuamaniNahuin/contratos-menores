@@ -160,6 +160,11 @@ class MisProcesosNotificados extends Component
 
             $whatsapp = app(WhatsAppNotificationService::class);
 
+            if (!$whatsapp->alertasActivas()) {
+                $this->errorMessage = 'El canal de WhatsApp está temporalmente deshabilitado. Usa Telegram o correo. Más información en /aviso-whatsapp';
+                return;
+            }
+
             if (!$whatsapp->isEnabled()) {
                 $this->errorMessage = 'El servicio de WhatsApp no está habilitado.';
                 return;

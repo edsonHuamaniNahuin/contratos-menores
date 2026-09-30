@@ -289,7 +289,7 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
                     }
                 }
 
-                if (!empty($dest->telefono)) {
+                if ($whatsapp->alertasActivas() && !empty($dest->telefono)) {
                     try {
                         $whatsapp->enviarMensaje($dest->telefono, $mensajeWhatsApp);
                         Log::info('VigilarAdjudicacionesMayores: whatsapp enviado', [
@@ -330,6 +330,15 @@ class VigilarAdjudicacionesMayoresJob implements ShouldQueue
             ->get();
 
         if ($profiles->isEmpty()) {
+            return;
+        }
+
+        // Switch maestro: sin alertas WhatsApp no hay canal para la buena pro opt-in
+        if (!$whatsapp->alertasActivas()) {
+            Log::info('VigilarAdjudicacionesMayores: alertas WhatsApp pausadas; opt-in omitido', [
+                'ocid' => $vig->ocid,
+            ]);
+
             return;
         }
 

@@ -93,6 +93,8 @@
             * { transition: none !important; }
         }
     </style>
+
+@include('partials.meta-pixel', ['embudo' => 'E1'])
 </head>
 <body>
 
@@ -141,6 +143,9 @@
             <p class="mt-5 text-sm text-neutral-600">
                 Reunión de 20 minutos, sin compromiso. Te mostramos el sistema con procesos reales de tu rubro.
             </p>
+            <div class="mt-6 max-w-xl">
+                @include('partials.nota-whatsapp')
+            </div>
         </div>
 
         {{-- Tarjeta: conversación WhatsApp con proceso real --}}
@@ -551,6 +556,27 @@
         <a href="{{ route('contacto') }}" class="hover:text-neutral-800 underline underline-offset-2">Contacto</a>
     </div>
 </footer>
+
+<script>
+(function () {
+    var EMBUDO = 'E1';
+    function track(evento, params) {
+        if (typeof gtag === 'function') {
+            params = params || {};
+            params.embudo = EMBUDO;
+            gtag('event', evento, params);
+        }
+    }
+    document.querySelectorAll('a[href*="wa.me/"]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            track('lead_whatsapp_click', { canal: 'whatsapp' });
+        });
+    });
+    @if (session('ok'))
+    track('demo_lead_enviado', { canal: 'correo' });
+    @endif
+})();
+</script>
 
 </body>
 </html>

@@ -70,11 +70,15 @@ class ImportarTdrNotificarJob implements ShouldQueue
             'limite' => $this->limite,
         ]);
 
-        // Registrar canal WhatsApp si está habilitado (DIP – canales se registran dinámicamente)
+        // Registrar canal WhatsApp si está habilitado (DIP – canales se registran dinámicamente).
+        // Con el switch maestro en off NO se registra: el engine cuenta coincidencias
+        // pero no envía ni marca como notificado.
         $whatsapp = app(WhatsAppNotificationService::class);
-        if ($whatsapp->isEnabled()) {
+        if ($whatsapp->isEnabled() && $whatsapp->alertasActivas()) {
             $engine->registerChannel($whatsapp);
             Log::info('ImportarTdrNotificarJob: canal WhatsApp registrado.');
+        } elseif (!$whatsapp->alertasActivas()) {
+            Log::info('ImportarTdrNotificarJob: alertas WhatsApp pausadas; canal no registrado.');
         }
 
         // Obtener suscriptores que quieren recibir Contratos Menores

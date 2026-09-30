@@ -166,3 +166,7 @@
     </div>
 </article>
 @endsection
+
+@push('scripts')
+    @include('partials.aviso-whatsapp-modal')
+@endpush

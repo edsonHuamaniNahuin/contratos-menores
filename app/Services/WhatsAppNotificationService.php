@@ -36,6 +36,13 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     protected string $contratoCachePrefix;
 
     /**
+     * Switch maestro (WHATSAPP_ALERTAS_ACTIVAS / ALERTAS_WSP) leído del config.
+     * El estado efectivo además considera la pausa local del comando
+     * `whatsapp:alertas off` (ver alertasActivas()).
+     */
+    protected bool $alertasActivasConfig;
+
+    /**
      * Intervalo mínimo entre envíos al MISMO destinatario (microsegundos).
      * Meta limita ~1 msg/seg por par, pero con margen de seguridad frente
      * al error #131056: 3 segundos.
@@ -58,12 +65,63 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
         $this->debugLogging = (bool) config('services.whatsapp.debug_logs', false);
         $this->contratoCacheTtl = (int) config('services.whatsapp.contrato_cache_ttl', 720);
         $this->contratoCachePrefix = 'whatsapp:' . config('app.env', 'production') . ':contrato:';
+        $this->alertasActivasConfig = (bool) config('services.whatsapp.alertas_activas', true);
 
         $this->enabled = $this->token !== '' && $this->phoneNumberId !== '';
+
+        if (!$this->alertasActivasConfig) {
+            Log::info('WhatsApp: alertas deshabilitadas por configuración (WHATSAPP_ALERTAS_ACTIVAS=false).');
+        }
 
         if ($this->token !== '' && $this->phoneNumberId === '') {
             Log::warning('WhatsApp: WHATSAPP_PHONE_NUMBER_ID no configurado; deshabilitando servicio.');
         }
+    }
+
+    // ─── Switch maestro de alertas ────────────────────────────────────
+
+    /**
+     * Archivo local de pausa (kill switch). Vive en storage/app y sobrevive
+     * a `optimize:clear`; el comando `whatsapp:alertas off` lo crea y `on` lo
+     * elimina. Se consulta en cada envío → efecto inmediato, sin reinicios.
+     */
+    public static function rutaPausa(): string
+    {
+        return storage_path('app/whatsapp-alertas.pausadas');
+    }
+
+    public function alertasPausadasLocalmente(): bool
+    {
+        return is_file(self::rutaPausa());
+    }
+
+    /**
+     * Estado efectivo del switch: config/env Y sin pausa local.
+     */
+    public function alertasActivas(): bool
+    {
+        if (!$this->alertasActivasConfig) {
+            return false;
+        }
+
+        return !$this->alertasPausadasLocalmente();
+    }
+
+    public function pausarAlertas(): void
+    {
+        $ruta = self::rutaPausa();
+        $dir = dirname($ruta);
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        file_put_contents($ruta, now()->toDateTimeString());
+    }
+
+    public function reanudarAlertas(): void
+    {
+        @unlink(self::rutaPausa());
     }
 
     // ─── NotificationChannelContract ──────────────────────────────────
@@ -171,6 +229,13 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarProcesoASuscriptor(object $suscripcion, array $contratoData, array $matchedKeywords = []): array
     {
+        if (!$this->alertasActivas()) {
+            return [
+                'success' => false,
+                'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)',
+            ];
+        }
+
         $this->cacheContratoContext($contratoData);
         $mensaje = $this->construirMensaje($contratoData);
 
@@ -434,6 +499,13 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarMensaje(string $recipientId, string $mensaje): array
     {
+        if (!$this->alertasActivas()) {
+            return [
+                'success' => false,
+                'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)',
+            ];
+        }
+
         if (!$this->enabled) {
             return [
                 'success' => false,
@@ -495,6 +567,13 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarMensajeConBotones(string $recipientId, string $mensaje, array $keyboard): array
     {
+        if (!$this->alertasActivas()) {
+            return [
+                'success' => false,
+                'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)',
+            ];
+        }
+
         if (!$this->enabled) {
             return [
                 'success' => false,
@@ -670,6 +749,10 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarDocumento(string $recipientId, string $documentBinary, string $filename, string $caption = ''): array
     {
+        if (!$this->alertasActivas()) {
+            return ['success' => false, 'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)'];
+        }
+
         if (!$this->enabled) {
             return ['success' => false, 'message' => 'WhatsApp Bot está deshabilitado'];
         }
@@ -863,6 +946,13 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarTemplate(string $recipientId, string $templateName = 'hello_world', string $languageCode = 'en_US', array $components = []): array
     {
+        if (!$this->alertasActivas()) {
+            return [
+                'success' => false,
+                'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)',
+            ];
+        }
+
         if (!$this->enabled) {
             return [
                 'success' => false,

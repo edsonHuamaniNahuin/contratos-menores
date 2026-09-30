@@ -49,6 +49,15 @@ class ReenviarWhatsAppPendientesJob implements ShouldQueue
             return;
         }
 
+        // Switch maestro: con alertas pausadas no se reenvía nada
+        if (!$service->alertasActivas()) {
+            Log::info('ReenviarWhatsAppPendientes: alertas WhatsApp pausadas, no se reenvía', [
+                'phone' => $this->phoneNumber,
+            ]);
+
+            return;
+        }
+
         // La ventana debe estar abierta (el webhook acaba de registrar interacción)
         if (!$sub->ultima_interaccion_at
             || $sub->ultima_interaccion_at->diffInHours(Carbon::now()) >= 24) {

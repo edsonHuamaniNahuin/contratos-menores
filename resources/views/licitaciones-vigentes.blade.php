@@ -114,6 +114,8 @@
             .chip-live::before { animation: none; }
         }
     </style>
+
+@include('partials.meta-pixel', ['embudo' => 'E3'])
 </head>
 <body>
 
@@ -319,6 +321,9 @@
                     </li>
                 @endforeach
             </ul>
+            <div class="mt-7 max-w-lg">
+                @include('partials.nota-whatsapp')
+            </div>
         </div>
 
         <div class="bg-white rounded-3xl p-7 sm:p-9 shadow-2xl">
@@ -450,6 +455,9 @@
         <a href="{{ $waLead }}" target="_blank" rel="noopener" class="btn-wa !px-9 !py-4 !text-[15.5px]">
             Recibir avisos por WhatsApp
         </a>
+        <div class="mt-6 max-w-md mx-auto text-left">
+            @include('partials.nota-whatsapp')
+        </div>
         <p class="text-white/60 text-[13px] mt-5">+51 918 874 873 · sin costo · usted decide cuándo parar</p>
     </div>
 </section>
@@ -476,6 +484,27 @@
         </div>
     </div>
 </footer>
+
+<script>
+(function () {
+    var EMBUDO = 'E3';
+    function track(evento, params) {
+        if (typeof gtag === 'function') {
+            params = params || {};
+            params.embudo = EMBUDO;
+            gtag('event', evento, params);
+        }
+    }
+    document.querySelectorAll('a[href*="wa.me/"]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            track('lead_whatsapp_click', { canal: 'whatsapp' });
+        });
+    });
+    @if (session('ok'))
+    track('demo_lead_enviado', { canal: 'correo' });
+    @endif
+})();
+</script>
 
 </body>
 </html>

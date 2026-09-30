@@ -70,6 +70,8 @@
     </script>
     @endif
     @stack('head')
+
+@include('partials.meta-pixel')
 </head>
 <body class="font-sans antialiased min-h-screen bg-white">
 
@@ -189,6 +191,9 @@
                     <ul class="space-y-2.5 text-sm text-neutral-400">
                         <li><a href="{{ route('buscador.publico') }}" class="hover:text-white transition-colors">Buscador público</a></li>
                         <li><a href="{{ route('buscador.mayores') }}" class="hover:text-white transition-colors">Contratos mayores</a></li>
+                        <li><a href="{{ route('landing.vigentes') }}" class="hover:text-white transition-colors">Licitaciones vigentes hoy</a></li>
+                        <li><a href="{{ route('landing.alertas') }}" class="hover:text-white transition-colors">Alertas de licitaciones</a></li>
+                        <li><a href="{{ route('landing.software') }}" class="hover:text-white transition-colors">Software de licitaciones</a></li>
                         <li><a href="{{ route('planes') }}" class="hover:text-white transition-colors">Planes y precios</a></li>
                         <li><a href="{{ route('manual') }}" class="hover:text-white transition-colors">Manual del usuario</a></li>
                     </ul>

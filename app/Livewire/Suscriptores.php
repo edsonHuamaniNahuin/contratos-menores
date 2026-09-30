@@ -608,6 +608,11 @@ class ConfiguracionAlertas extends Component
             $waSub = WhatsAppSubscription::where('user_id', auth()->id())->firstOrFail();
             $servicio = new WhatsAppNotificationService();
 
+            if (!$servicio->alertasActivas()) {
+                session()->flash('wa_error', '❌ El canal de WhatsApp está temporalmente deshabilitado. Más información en /aviso-whatsapp');
+                return;
+            }
+
             if (!$servicio->isEnabled()) {
                 session()->flash('wa_error', '❌ WhatsApp no esta configurado. Verifica WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID en .env');
                 return;

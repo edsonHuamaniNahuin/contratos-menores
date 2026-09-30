@@ -335,6 +335,7 @@
             @php
                 $waExists = $whatsappSubscription !== null;
                 $waActive = $waExists && $whatsappSubscription->activo;
+                $waPausado = !app(\App\Services\WhatsAppNotificationService::class)->alertasActivas();
             @endphp
             <div wire:key="wa-toggle-{{ $waActive ? '1' : '0' }}"
                  x-data="{ active: {{ $waActive ? 'true' : 'false' }}, exists: {{ $waExists ? 'true' : 'false' }} }"
@@ -359,12 +360,18 @@
                     </div>
                 </div>
                 @if($waExists)
-                    <button @click="active = !active; $wire.toggleWhatsAppActivo()"
-                            class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none"
-                            :class="active ? 'bg-secondary-500' : 'bg-neutral-300'">
-                        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
-                              :class="active ? 'translate-x-5' : 'translate-x-0'"></span>
-                    </button>
+                    @if($waPausado)
+                        <span class="relative w-11 h-6 rounded-full bg-neutral-300 opacity-60 cursor-not-allowed" title="Alertas por WhatsApp pausadas (ver /aviso-whatsapp)">
+                            <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow"></span>
+                        </span>
+                    @else
+                        <button @click="active = !active; $wire.toggleWhatsAppActivo()"
+                                class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none"
+                                :class="active ? 'bg-secondary-500' : 'bg-neutral-300'">
+                            <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                                  :class="active ? 'translate-x-5' : 'translate-x-0'"></span>
+                        </button>
+                    @endif
                 @else
                     <span class="text-[11px] text-neutral-400 italic">Configura un numero primero</span>
                 @endif
@@ -680,7 +687,11 @@
                     Recibe alertas de nuevos procesos SEACE en tu WhatsApp con botones interactivos. Solo se permite 1 numero por usuario.
                 </p>
             </div>
-            @if($canAddWhatsApp && !$whatsappSubscription && !$showWhatsAppModal)
+            @if($waPausado)
+                <span class="flex-shrink-0 px-4 py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-xs font-semibold">
+                    🔕 Pausado
+                </span>
+            @elseif($canAddWhatsApp && !$whatsappSubscription && !$showWhatsAppModal)
                 <button wire:click="toggleWhatsAppModal"
                         class="flex-shrink-0 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-full font-medium text-sm hover:opacity-90 transition-all shadow-md flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -697,6 +708,18 @@
             <div class="bg-primary-500/10 border-l-4 border-primary-500 rounded-2xl p-4 mb-6">
                 <p class="text-sm text-neutral-900 font-medium">
                     El administrador debe configurar WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID en el servidor para habilitar este canal.
+                </p>
+            </div>
+        @endif
+
+        @if($waPausado)
+            <div class="bg-amber-50 border-l-4 border-amber-400 rounded-2xl p-4 mb-6">
+                <p class="text-sm font-semibold text-amber-900">🔕 WhatsApp está temporalmente deshabilitado</p>
+                <p class="text-xs text-amber-800 mt-1">
+                    Desde el 1 de octubre de 2026 el canal de WhatsApp está temporalmente deshabilitado para alertas
+                    automáticas (nuevas tarifas y políticas de Meta).
+                    Tus alertas por <strong>Telegram</strong> y <strong>correo</strong> siguen activas.
+                    <a href="{{ route('aviso.whatsapp') }}" class="font-bold underline">Ver detalles</a>.
                 </p>
             </div>
         @endif

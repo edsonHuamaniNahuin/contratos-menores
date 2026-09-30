@@ -311,7 +311,7 @@
                 [
                     'icon' => '<svg class="w-7 h-7 text-brand-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>',
                     'title' => 'Bot de alertas Telegram y WhatsApp',
-                    'desc' => 'Recibe notificaciones automáticas por Telegram, WhatsApp o Email cuando se publican licitaciones que coinciden con tus palabras clave.',
+                    'desc' => 'Recibe notificaciones automáticas por Telegram, WhatsApp o Email cuando se publican licitaciones que coinciden con tus palabras clave. WhatsApp está temporalmente deshabilitado desde el 1 de octubre de 2026.',
                     'premium' => true,
                 ],
                 [
@@ -403,7 +403,7 @@
                             <td class="py-3.5 px-6 text-center text-neutral-600">Manual, horas/días</td>
                         </tr>
                         <tr>
-                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Alertas Telegram y WhatsApp</td>
+                            <td class="py-3.5 px-6 text-sm text-neutral-900 font-medium">Alertas Telegram y WhatsApp <span class="text-amber-600/80 text-xs font-normal">(WhatsApp temporalmente deshabilitado)</span></td>
                             <td class="py-3.5 px-6 text-center"><span class="inline-flex items-center gap-1.5 text-brand-800 font-medium"><svg class="w-4 h-4 text-secondary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Automáticas por keywords</span></td>
                             <td class="py-3.5 px-6 text-center text-neutral-600">No disponible</td>
                         </tr>
@@ -464,8 +464,8 @@
         <div class="space-y-6">
             @foreach ([
                 ['Crea tu cuenta gratis', 'Regístrate en menos de 1 minuto. Solo necesitas un correo electrónico. Accede al buscador de licitaciones del SEACE de forma inmediata.'],
-                ['Busca contrataciones menores y licitaciones', 'Usa el buscador público para encontrar procesos por palabra clave, departamento, entidad o tipo de contrato. Filtra contrataciones menores hasta 8 UIT ideales para MYPEs.'],
-                ['Configura alertas por Telegram o WhatsApp', 'Activa Premium, agrega tus palabras clave y conecta tu bot de Telegram o WhatsApp para recibir notificaciones cuando se publiquen licitaciones relevantes.'],
+                ['Busca contrataciones menores y licitaciones', 'Usa el buscador público para encontrar procesos por palabra clave, departamento, entidad o tipo de contrato. Filtra contrataciones menores hasta 8 UIT ideales para MYPEs. Explora las <a href="' . route('landing.vigentes') . '" class="text-brand-800 font-semibold underline underline-offset-2">licitaciones vigentes hoy</a>, conoce el <a href="' . route('landing.software') . '" class="text-brand-800 font-semibold underline underline-offset-2">software de licitaciones</a> o descarga el <a href="' . route('landing.plantillas-tdr') . '" class="text-brand-800 font-semibold underline underline-offset-2">modelo de TDR gratis</a>. Recibe <a href="' . route('landing.alertas') . '" class="text-brand-800 font-semibold underline underline-offset-2">alertas de licitaciones</a> el mismo día de publicación.'],
+                ['Configura alertas por Telegram o WhatsApp', 'Activa Premium, agrega tus palabras clave y conecta tu bot de Telegram o WhatsApp para recibir notificaciones cuando se publiquen licitaciones relevantes. WhatsApp está temporalmente deshabilitado desde el 1 de octubre de 2026.'],
                 ['Deja que la IA analice los TDR por ti', 'El analizador de TDR con inteligencia artificial lee documentos completos, obtén scores de compatibilidad y prioriza las mejores oportunidades para tu empresa.'],
             ] as $i => $step)
             <div class="flex items-start gap-5">
@@ -617,6 +617,10 @@
                 </a>
             </div>
         </div>
+
+        <div class="mt-8 max-w-3xl mx-auto">
+            @include('partials.nota-whatsapp')
+        </div>
     </div>
 </section>
 
@@ -656,7 +660,7 @@
                 ],
                 [
                     'q' => '¿Qué diferencia hay entre el plan Gratuito, Premium y Premium + Contratos Mayores?',
-                    'a' => 'El <strong>plan Gratuito</strong> incluye buscador de licitaciones ilimitado, descarga de TDR y dashboard de estadísticas. El plan <strong>Premium</strong> (S/ 49/mes) agrega análisis de TDR con IA, alertas por Telegram/WhatsApp/Email, score de compatibilidad, detección de direccionamiento y proformas en Word. El plan <strong>Premium + Contratos Mayores</strong> (S/ 68/mes) incluye todo lo anterior más la bandeja exclusiva de Contratos Mayores (> 8 UIT), análisis IA para licitaciones públicas, detección de direccionamiento avanzado y visualización de postores y adjudicatarios.',
+                    'a' => 'El <strong>plan Gratuito</strong> incluye buscador de licitaciones ilimitado, descarga de TDR y dashboard de estadísticas. El plan <strong>Premium</strong> (S/ 49/mes) agrega análisis de TDR con IA, alertas por Telegram/WhatsApp/Email (WhatsApp temporalmente deshabilitado desde el 1/10/2026), score de compatibilidad, detección de direccionamiento y proformas en Word. El plan <strong>Premium + Contratos Mayores</strong> (S/ 68/mes) incluye todo lo anterior más la bandeja exclusiva de Contratos Mayores (> 8 UIT), análisis IA para licitaciones públicas, detección de direccionamiento avanzado y visualización de postores y adjudicatarios.',
                 ],
             ] as $i => $faq)
             <div class="bg-white rounded-2xl border border-neutral-100 shadow-soft overflow-hidden">

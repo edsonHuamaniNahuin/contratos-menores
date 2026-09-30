@@ -123,6 +123,14 @@
                     <li>Puedes desactivar las notificaciones en cualquier momento desde la Configuración de tu cuenta o enviando "STOP" al canal correspondiente.</li>
                     <li>Las notificaciones por WhatsApp están sujetas a los términos de uso de WhatsApp Business API (Meta Platforms, Inc.).</li>
                 </ul>
+                <p class="mt-3 text-sm text-neutral-600">
+                    <strong>Aviso:</strong> el canal de WhatsApp está <strong>temporalmente deshabilitado</strong>
+                    desde el 1 de octubre de 2026 por las nuevas políticas y tarifas de WhatsApp Business (Meta Platforms, Inc.).
+                    Tus alertas se siguen enviando por Telegram y correo electrónico.
+                    Si el canal se reactiva, las notificaciones por WhatsApp volverán a estar sujetas a los términos
+                    de uso de WhatsApp Business API y a tu autorización previa.
+                    <a href="{{ route('aviso.whatsapp') }}" class="text-brand-800 font-semibold underline">Ver aviso completo</a>.
+                </p>
             </div>
 
             {{-- 10 --}}

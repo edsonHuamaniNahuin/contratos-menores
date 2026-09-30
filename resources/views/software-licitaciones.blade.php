@@ -127,6 +127,8 @@
             * { transition: none !important; }
         }
     </style>
+
+@include('partials.meta-pixel', ['embudo' => 'E2'])
 </head>
 <body>
 
@@ -465,7 +467,7 @@
                 $features = [
                     ['t' => 'Monitoreo del SEACE 24/7', 'd' => 'Seguimiento continuo de contratos menores y mayores a 8 UIT, con procesos publicados el mismo día (Ley 32069).', 'bg' => '#e0f6ec', 'fg' => '#0fa46f', 'i' => '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2.2"/>'],
                     ['t' => 'Filtros por rubro y región', 'd' => 'Solo le llegan procesos que calzan con la actividad de su empresa y las regiones donde opera.', 'bg' => '#e9e3fc', 'fg' => '#6a4de0', 'i' => '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/>'],
-                    ['t' => 'Alertas por WhatsApp, Telegram o email', 'd' => 'El aviso llega al canal de su preferencia, con entidad, objeto, monto y plazo de presentación.', 'bg' => '#e3f2ea', 'fg' => '#1faa57', 'i' => '<rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M7 10h10M7 13.5h6"/><circle cx="18.5" cy="7.5" r="2" fill="currentColor" stroke="none"/>'],
+                    ['t' => 'Alertas por WhatsApp, Telegram o email', 'd' => 'El aviso llega al canal de su preferencia, con entidad, objeto, monto y plazo de presentación. WhatsApp está temporalmente deshabilitado desde el 1/10/2026.', 'bg' => '#e3f2ea', 'fg' => '#1faa57', 'i' => '<rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M7 10h10M7 13.5h6"/><circle cx="18.5" cy="7.5" r="2" fill="currentColor" stroke="none"/>'],
                     ['t' => 'Análisis de TDR con IA', 'd' => 'La IA lee los documentos y extrae requisitos técnicos, experiencia exigida, penalidades y plazos.', 'bg' => '#fdf0d9', 'fg' => '#c07d0e', 'i' => '<path d="M6 2.5h8l4 4v15H6z"/><path d="M14 2.5v4h4"/><path d="M12.2 10.2l1.6 3.2 3.2 1.6-3.2 1.6-1.6 3.2-1.6-3.2-3.2-1.6 3.2-1.6z"/>'],
                     ['t' => 'Score de compatibilidad', 'd' => 'Cada proceso con una nota de 0 a 10 según el perfil de su empresa. Prioriza donde tiene opción real.', 'bg' => '#fdecec', 'fg' => '#d94b4b', 'i' => '<path d="M4.5 16.5a7.5 7.5 0 0115 0"/><path d="M12 16.5V9"/><circle cx="12" cy="16.5" r="1.4" fill="currentColor" stroke="none"/>'],
                     ['t' => 'Proforma de cotización', 'd' => 'Genera la cotización en Word, PDF o Excel con los costos de su empresa, lista para presentar.', 'bg' => '#e8eff9', 'fg' => '#2b579a', 'i' => '<path d="M6 2.5h8l4 4v15H6z"/><path d="M14 2.5v4h4"/><path d="M9 12.5h6M9 16h6"/><path d="M9 19h6"/>'],
@@ -480,6 +482,10 @@
                     <p class="text-[14px] text-[var(--muted)] leading-relaxed">{{ $f['d'] }}</p>
                 </div>
             @endforeach
+        </div>
+
+        <div class="mt-8 max-w-3xl">
+            @include('partials.nota-whatsapp')
         </div>
     </div>
 </section>
@@ -633,7 +639,7 @@
     <div class="divide-y divide-[var(--line)] bg-white border border-[var(--line)] rounded-2xl px-7 shadow-[0_10px_30px_-24px_rgba(15,27,25,.3)]">
         @php
             $faqs = [
-                ['q' => '¿Es una plataforma web o hay que instalar algo?', 'a' => 'Es una plataforma 100% web. Se accede desde el navegador de una computadora, tablet o celular. Las alertas llegan por WhatsApp, Telegram o correo, de modo que no es necesario tener la página abierta para recibirlas.'],
+                ['q' => '¿Es una plataforma web o hay que instalar algo?', 'a' => 'Es una plataforma 100% web. Se accede desde el navegador de una computadora, tablet o celular. Las alertas llegan por WhatsApp, Telegram o correo, de modo que no es necesario tener la página abierta para recibirlas. WhatsApp está temporalmente deshabilitado desde el 1/10/2026.'],
                 ['q' => '¿La demo tiene algún costo o compromiso?', 'a' => 'No. Son 20 minutos por videollamada o teléfono. Configuramos el perfil con los rubros de su empresa, buscamos procesos reales de su sector y usted recorre el panel. Si no le sirve, no pasa nada.'],
                 ['q' => '¿Qué diferencia hay con el buscador del OSCE?', 'a' => 'El buscador del OSCE es un portal de consulta: usted abre, busca y filtra a mano. Vigilante SEACE es un software que trabaja por su empresa: monitorea el SEACE, filtra por rubro y región, analiza el TDR con IA, entrega un score de compatibilidad y genera la proforma de cotización.'],
                 ['q' => '¿Los documentos que genera son editables?', 'a' => 'Sí. La proforma se descarga en Word, PDF o Excel, y el reporte de procesos en Excel con plantilla analítica. Ambos los puede ajustar su equipo antes de presentarlos.'],
@@ -705,6 +711,27 @@
         </div>
     </div>
 </footer>
+
+<script>
+(function () {
+    var EMBUDO = 'E2';
+    function track(evento, params) {
+        if (typeof gtag === 'function') {
+            params = params || {};
+            params.embudo = EMBUDO;
+            gtag('event', evento, params);
+        }
+    }
+    document.querySelectorAll('a[href*="wa.me/"]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            track('lead_whatsapp_click', { canal: 'whatsapp' });
+        });
+    });
+    @if (session('ok'))
+    track('demo_lead_enviado', { canal: 'correo' });
+    @endif
+})();
+</script>
 
 </body>
 </html>

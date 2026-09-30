@@ -1177,9 +1177,9 @@ class PruebaEndpoints extends Component
             /** @var ImportadorTdrEngine $engine */
             $engine = app(ImportadorTdrEngine::class);
 
-            // Registrar canal WhatsApp si está habilitado
+            // Registrar canal WhatsApp si está habilitado y con alertas activas
             $whatsapp = app(WhatsAppNotificationService::class);
-            if ($whatsapp->isEnabled()) {
+            if ($whatsapp->isEnabled() && $whatsapp->alertasActivas()) {
                 $engine->registerChannel($whatsapp);
             }
 

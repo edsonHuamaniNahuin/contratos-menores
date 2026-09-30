@@ -69,6 +69,7 @@ npm run build (como ROOT, no www-data — node_modules es root; node 22 en /usr/
 - **Monitoreo:** /admin/monitoreo lee laravel.log (errores últimos 15).
 
 ## 6. TAREAS ACTIVAS (checklist)
+- [ ] **META ADS (pendiente del usuario)**: dar los 4 datos del SETUP (token system user, ad-account act_, page_id, pixel_id) → lanzar campañas MA-Alertas/MA-Software/MA-Vigentes con `python scripts/meta-ads/create_campaigns.py`. Antes: META_PIXEL_ID en .env + deploy (el pixel ya está en el código).
 - [ ] **3 EMBUDOS + 3 CAMPAÑAS** (documents/02-marketing-adquisicion/EMBUDOS_3_CAMPANAS.md): E1=/alertas-licitaciones ✅, E2=/software-licitaciones ✅, E3=/licitaciones-vigentes ✅ (construidas 02/09). Objetivos: E1 VENTA / E2 REUNIÓN / E3 LEAD — reunión WhatsApp +51 918 874 873, SIN trial gratis. Leads por correo → BD demo_leads + email, con antibot (honeypot, captcha dinámico por sesión, rate-limit IP, blacklist desechables).
 - [ ] Siguiente: activar las 3 campañas Google Ads (keywords Nivel 1, negativos) y primera medición CPR/CAC/ROAS con datos de demo_leads.
 - [ ] **S1 mercado-vigilante:** guía de entrevista imprimible (7 preguntas); entrevistas (Elsa/Corporación Famod, Rodrigo/Zavatec, Boris cancelado, Lisette/Honda). Candidatos en documents/03-clientes-investigacion/candidatos-entrevistas.md.

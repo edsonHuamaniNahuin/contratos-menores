@@ -536,7 +536,7 @@
             </div>
         </div>
 
-        {{-- ━━━ TAB 5: BOTS (Telegram + WhatsApp) ━━━ --}}
+        {{-- ━━━ TAB 5: BOTS (Telegram; WhatsApp suspendido oct 2026) ━━━ --}}
         <div x-show="activeTab === 'bots'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
             <div class="space-y-8">
                 <section class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
@@ -589,10 +589,12 @@
 
                 <section class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-8">
                     <h2 class="text-2xl font-bold text-neutral-900 mb-2">📱 Bot de WhatsApp</h2>
-                    <p class="text-xs font-medium text-brand-800 bg-brand-800/5 inline-block px-3 py-1 rounded-full mb-6">⭐ Función Premium</p>
+                    <p class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 inline-block px-3 py-1 rounded-full mb-6">⏸️ Suspendido desde el 1 de octubre de 2026</p>
+
+                    <div class="mb-6">@include('partials.nota-whatsapp')</div>
 
                     <p class="text-neutral-600 leading-relaxed mb-6">
-                        Similar al bot de Telegram, te envía notificaciones automáticas directamente a tu número de teléfono registrado.
+                        Similar al bot de Telegram, enviaba notificaciones automáticas directamente a tu número de teléfono registrado.
                     </p>
 
                     {!! manualImg('bot-whatsapp-chat.png', 'Chat del bot de WhatsApp', 'Ejemplo de notificación y respuestas en WhatsApp') !!}

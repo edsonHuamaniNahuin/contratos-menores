@@ -146,6 +146,12 @@ return [
         'notification_template' => env('WHATSAPP_NOTIFICATION_TEMPLATE', ''),
 'template_language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'es_PE'),
         'business_phone' => env('WHATSAPP_BUSINESS_PHONE', ''),
+
+        // Switch maestro de alertas WhatsApp. Con false (o con el comando
+        // `php artisan whatsapp:alertas off`) NINGÚN proceso envía mensajes
+        // por WhatsApp: jobs, re-alertas, buena pro, bots y pruebas.
+        // Alias aceptado: ALERTAS_WSP=false.
+        'alertas_activas' => env('WHATSAPP_ALERTAS_ACTIVAS', env('ALERTAS_WSP', true)),
     ],
 
     'analizador_tdr' => [
@@ -165,6 +171,11 @@ return [
         'base_url' => env('SEACE_MAYORES_API_URL', 'https://contratacionesabiertas.oece.gob.pe/api/v1'),
         'timeout' => env('SEACE_MAYORES_TIMEOUT', 30),
         'debug_logs' => env('SEACE_MAYORES_DEBUG_LOGS', false),
+    ],
+
+    // ─── Meta (Facebook/Instagram Pixel) ───────────────────
+    'meta' => [
+        'pixel_id' => env('META_PIXEL_ID'),
     ],
 
     // ─── Pasarela de pago activa ────────────────────────

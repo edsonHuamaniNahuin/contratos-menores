@@ -33,6 +33,10 @@
 | `BROCHURE_CONTENIDO.md` | Contenido fuente del brochure comercial (Honda/corporativo) |
 | `PROMPT_BROCHURE_IA.md` | Prompt para IA generadora de brochures (+14 screenshots) |
 | `EMBUDOS_3_CAMPANAS.md` | **3 embudos + 3 campañas Google Ads** (E1 alertas, E2 software, E3 vigentes; CPR/CAC/ROAS por embudo) |
+| `CONFIG_CAMPANAS_GOOGLE_ADS.md` | **Configuración operativa**: keywords por grupo, negativas, anuncios RSA, extensiones y checklist de lanzamiento |
+| `CONFIG_CAMPANAS_META_ADS.md` | **Campañas Facebook/Instagram**: pixel Meta + 3 campañas (WhatsApp/Tráfico), audiencias por interés, copy de anuncios y checklist |
+| `partials/meta-pixel` (en vistas) | Snippet Meta Pixel con eventos PageView/Contact/Lead por embudo (requiere `META_PIXEL_ID` en .env) |
+| `scripts/meta-ads/` | **Lanzador por API**: `create_campaigns.py` + `campaigns_config.json` (3 campañas) + `SETUP_META_API.md` (credenciales) |
 | `VOC-DATOS-REALES` (en 03) | Keywords y descripción de empresa de usuarios reales → cluster A construcción = el que paga |
 | Landings E1/E2/E3 | `/alertas-licitaciones`, `/software-licitaciones`, `/licitaciones-vigentes` (rutas en web.php) |
 
