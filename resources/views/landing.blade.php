@@ -474,7 +474,7 @@
                 </div>
                 <div class="bg-white rounded-3xl shadow-soft border border-neutral-100 p-6 flex-1">
                     <h3 class="text-base font-bold text-neutral-900 mb-1">{{ $step[0] }}</h3>
-                    <p class="text-sm text-neutral-600 leading-relaxed">{{ $step[1] }}</p>
+                    <p class="text-sm text-neutral-600 leading-relaxed">{!! $step[1] !!}</p>
                 </div>
             </div>
             @endforeach
