@@ -211,6 +211,12 @@ Route::get('/buscador-contratos-mayores/{entidad}', function ($entidadSlug) {
     ]);
 })->name('buscador.mayores.departamental');
 
+// Deep-link a la Ficha de Selección del SEACE (cronograma, ítems, contratos,
+// historial): se consulta allá on-demand, sin almacenar su contenido.
+Route::get('/ficha-seace/{fichaId}', [\App\Http\Controllers\DocumentoSeaceController::class, 'ficha'])
+    ->middleware('throttle:30,1')
+    ->name('ficha.seace.ver');
+
 // Descarga de documentos (Bases, TDR, ...) capturados de la Ficha de Selección
 // del SEACE: resuelve el ticket del CMS on-demand y redirige. Público (el
 // documento es público en el SEACE) con throttle anti-abuso.
