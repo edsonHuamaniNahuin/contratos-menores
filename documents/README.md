@@ -66,6 +66,7 @@
 |---|---|
 | `arquitectura.md` … `comandos.md` | Documentación técnica por módulo (arquitectura, menores, mayores, IA, notificaciones, backup, despliegue, suscripciones, comandos) |
 | `BITACORA.md` | **Bitácora de bugs e incidencias** (revisar siempre ante errores) |
+| `WHATSAPP_SWITCH.md` | **Runbook del switch de alertas WhatsApp** (apagado 30/09/2026, cómo prenderlo de nuevo y costos) |
 | `API_SEACE_ENDPOINTS.md` | Endpoints de la API SEACE |
 | `AUTENTICACION_RESILIENTE.md` | Estrategia de autenticación resiliente |
 | `BUSCADOR_PUBLICO.md` | Documentación del buscador público |

@@ -30,6 +30,7 @@ npm run build (como ROOT, no www-data — node_modules es root; node 22 en /usr/
 - Tinker en producción: `sudo -u www-data env HOME=/tmp XDG_CONFIG_HOME=/tmp php artisan tinker --execute='...'` (cuidado con comillas en PowerShell; usar archivos PHP base64 si es largo).
 
 ## 4. Estado de lo construido (últimos commits significativos)
+- **WhatsApp APAGADO por switch maestro desde 30/09/2026 23:51** (`php artisan whatsapp:alertas off`). Motivo: desde 01/10/2026 Meta cobra servicio/utilidad y las alertas son plantillas Marketing (~S/ 0.26 c/u). Runbook: `documents/05-tecnico-operaciones/WHATSAPP_SWITCH.md`.
 - (pendiente de commit) Landings E1 `/alertas-licitaciones`, E2 `/software-licitaciones`, E3 `/licitaciones-vigentes` + captura leads por correo (`demo_leads`, captcha dinámico) + fotos en public/images/landings/.
 - `0d35d2ca` docs reorganizados por objetivo (documents/) + README índice.
 - `341d3358` Skills S1-S3 creados en `.opencode/skills/` (mercado-vigilante, landing-vigilante, funnel-paid-vigilante).
@@ -69,6 +70,7 @@ npm run build (como ROOT, no www-data — node_modules es root; node 22 en /usr/
 - **Monitoreo:** /admin/monitoreo lee laravel.log (errores últimos 15).
 
 ## 6. TAREAS ACTIVAS (checklist)
+- [ ] **WHATSAPP (APAGADO 30/09)**: no prenderlo sin revisar el runbook `documents/05-tecnico-operaciones/WHATSAPP_SWITCH.md` (tarifas Meta, categoría Utility, método de pago, aviso del modal).
 - [ ] **META ADS (pendiente del usuario)**: dar los 4 datos del SETUP (token system user, ad-account act_, page_id, pixel_id) → lanzar campañas MA-Alertas/MA-Software/MA-Vigentes con `python scripts/meta-ads/create_campaigns.py`. Antes: META_PIXEL_ID en .env + deploy (el pixel ya está en el código).
 - [ ] **3 EMBUDOS + 3 CAMPAÑAS** (documents/02-marketing-adquisicion/EMBUDOS_3_CAMPANAS.md): E1=/alertas-licitaciones ✅, E2=/software-licitaciones ✅, E3=/licitaciones-vigentes ✅ (construidas 02/09). Objetivos: E1 VENTA / E2 REUNIÓN / E3 LEAD — reunión WhatsApp +51 918 874 873, SIN trial gratis. Leads por correo → BD demo_leads + email, con antibot (honeypot, captcha dinámico por sesión, rate-limit IP, blacklist desechables).
 - [ ] Siguiente: activar las 3 campañas Google Ads (keywords Nivel 1, negativos) y primera medición CPR/CAC/ROAS con datos de demo_leads.
