@@ -137,7 +137,7 @@ class SeaceTestCommand extends Command
             } else {
                 $this->error("   ❌ Error de autenticación");
                 $this->warn("   💡 Verifica RUC y contraseña en .env");
-                $this->warn("   💡 Revisa los logs en: storage/logs/laravel.log");
+                $this->warn("   💡 Revisa los logs en: storage/logs");
             }
 
         } catch (Exception $e) {
@@ -189,7 +189,7 @@ class SeaceTestCommand extends Command
             } else {
                 $this->error("   ❌ Error al enviar mensaje");
                 $this->warn("   💡 Verifica el Bot Token y Chat ID");
-                $this->warn("   💡 Revisa los logs en: storage/logs/laravel.log");
+                $this->warn("   💡 Revisa los logs en: storage/logs");
             }
 
         } catch (Exception $e) {

@@ -154,43 +154,70 @@ class AdminMonitoreoController extends Controller
 
     /**
      * Errores recientes del log de Laravel (últimos N).
+     *
+     * Lee solo la cola del archivo (512 KB) en vez de cargar todo el log
+     * en memoria, y usa el log más reciente (con LOG_STACK=daily los
+     * archivos rotan por día: laravel-YYYY-MM-DD.log).
      */
     protected function erroresRecientes(int $limite = 15): array
     {
-        $ruta = storage_path('logs/laravel.log');
+        $ruta = $this->logReciente();
 
-        if (!is_file($ruta)) {
+        if ($ruta === null) {
             return [];
+        }
+
+        $handle = @fopen($ruta, 'r');
+        if ($handle === false) {
+            return [];
+        }
+
+        $tamano = (int) (@filesize($ruta) ?: 0);
+        $leer = min($tamano, 512 * 1024);
+
+        fseek($handle, max(0, $tamano - $leer));
+        if ($tamano > $leer) {
+            fgets($handle); // descartar la primera línea parcial
         }
 
         $errores = [];
-        $lineas = @file($ruta);
-
-        if (!is_array($lineas)) {
-            return [];
-        }
-
-        // Leer de atrás hacia adelante para capturar los más recientes
-        for ($i = count($lineas) - 1; $i >= 0 && count($errores) < $limite; $i--) {
-            $linea = $lineas[$i];
+        while (($linea = fgets($handle)) !== false) {
             if (!str_contains($linea, '.ERROR:')) {
                 continue;
             }
 
-            // Extraer fecha y mensaje corto
             preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/', $linea, $mFecha);
-            $fecha = $mFecha[1] ?? '';
 
             $mensaje = preg_replace('/^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \w+\.ERROR:\s*/', '', trim($linea));
-            $mensaje = mb_substr($mensaje, 0, 200);
 
             $errores[] = [
-                'fecha'   => $fecha,
-                'mensaje' => $mensaje,
+                'fecha'   => $mFecha[1] ?? '',
+                'mensaje' => mb_substr((string) $mensaje, 0, 200),
             ];
         }
 
-        return $errores;
+        fclose($handle);
+
+        return array_slice($errores, -$limite);
+    }
+
+    /**
+     * Archivo de log más reciente (soporta single y daily).
+     */
+    protected function logReciente(): ?string
+    {
+        $archivos = array_filter(
+            glob(storage_path('logs/laravel*.log')) ?: [],
+            'is_file'
+        );
+
+        if (empty($archivos)) {
+            return null;
+        }
+
+        usort($archivos, fn ($a, $b) => filemtime($b) <=> filemtime($a));
+
+        return $archivos[0];
     }
 
     /**
