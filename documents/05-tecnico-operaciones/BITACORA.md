@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-10-12 · Admin Monitoreo (panel de errores) · `5a9867e8`
+
+### El panel mostraba errores YA RESUELTOS de días anteriores + cargaba el log completo (22 MB) en memoria
+
+**Síntoma:** `/admin/monitoreo` listaba los 15 `.ERROR:` más recientes de `laravel.log`, que incluían incidentes ya corregidos: buscadores 21:31–33 del 11/10 (fix `2d924cc3`+`81c0dd6a`), `explode()` del scheduler 08:20 de hoy (fix `712ae001`), script temporal `contrato_mayor_documentos`, y transitorios SEACE/SMTP. Parecían bugs vigentes pero eran historia.
+
+**Verificación (contraste con bitácora):** 0 ocurrencias nuevas después de cada fix — confirmado con grep de todas las familias de errores. El único problema REAL era el mecanismo del panel:
+1. Leía el log único completo con `file()` → ~22 MB / +130K líneas en memoria en cada visita.
+2. Sin rotación diaria, la historia vieja se quedaba visible para siempre.
+
+**Solución:**
+1. `erroresRecientes()` ahora lee SOLO la cola (512 KB) del log más reciente (`glob laravel*.log` ordenado por mtime) — soporta single y daily.
+2. Producción: `LOG_STACK=daily` (+ `LOG_DAILY_DAYS=30`) → archivo nuevo `laravel-YYYY-MM-DD.log` cada día; el panel muestra solo el día actual.
+3. Log histórico archivado como `archivo-laravel-hasta-2026-10-11.log` (22 MB preservados, no se pierde auditoría).
+
+**Verificación:** error de prueba escrito por www-data → el panel lo detectó desde el archivo diario (reflection sobre el método); error eliminado → panel = 0; `/admin/monitoreo` responde 302 (login, sin 500); permisos del log nuevo OK.
+
+**Lección:** un visor de "errores recientes" sobre un log único y gigante se vuelve inútil: muestra historia resuelta y cuesta memoria. Con logs diarios + lectura de cola, el panel refleja solo lo del día.
+
+**Archivos:** `app/Http/Controllers/AdminMonitoreoController.php`, `.env` producción (`LOG_STACK=daily`, `LOG_DAILY_DAYS=30`), `app/Console/Commands/SeaceTestCommand.php`
+
+---
+
 ## 2026-10-12 · Meta Ads (almacén de métricas propio) · `c32159ae`
 
 ### Cada centavo de la campaña queda guardado en la BD del servidor (intradía + cierres diarios por anuncio)
