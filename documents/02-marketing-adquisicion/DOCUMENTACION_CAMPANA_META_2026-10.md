@@ -204,14 +204,19 @@ canal de venta.
 
 ## 6. Estructura de campañas en Meta
 
-### 6.1 Estado actual — estructura v2 aplicada y EN VIVO (11/10/2026)
+### 6.1 Estado actual — estructura v2 aplicada; arranque programado lunes 12/10 08:00 (11/10/2026)
 
 La v1 (3 campañas sueltas por embudo) fue **eliminada** y reemplazada por una campaña de aprendizaje con 3 ad sets
-(ver §6.2). Estado al cierre: campaña y 3 ad sets **ACTIVE**; **9 anuncios ACTIVE** (8 en revisión `IN_PROCESS` de Meta).
+(ver §6.2). Al cierre del domingo 11/10: los **9 anuncios quedaron ACTIVE** (revisión Meta OK), los 3 ad sets ACTIVE,
+y la **campaña quedó PAUSED a propósito** tras detectar que se había activado fuera de horario (domingo 23:00).
+Antes de entregar gasto se pausó → **S/ 0 gastado**. El arranque real está programado para el **lunes 12/10 08:00
+(America/Lima)** con `scripts/meta-ads/toggle_campaign.py --activate` vía timer del servidor
+(`meta-activar-lunes.timer`). Si se necesita cancelar: `systemctl stop meta-activar-lunes.timer` (ver §12 pendientes:
+dayparting por API exige presupuesto lifetime).
 
 | Nivel | Nombre | ID | Presupuesto | Estado |
 |---|---|---|---|---|
-| Campaña | `META_Traffic_Construccion_E1E2E3_2026Q4` | `120247999030430108` | ABO (sin CBO) | ACTIVE |
+| Campaña | `META_Traffic_Construccion_E1E2E3_2026Q4` | `120247999030430108` | ABO (sin CBO) | PAUSED → arranca lunes 08:00 |
 | Ad set E1 | `META_Traffic_E1_Alertas_2026Q4` | `120247999030690108` | **S/ 7/día** | ACTIVE |
 | Ad set E2 | `META_Traffic_E2_Software_2026Q4` | `120247999032700108` | **S/ 7/día** | ACTIVE |
 | Ad set E3 | `META_Traffic_E3_Vigentes_2026Q4` | `120247999034400108` | **S/ 7/día** | ACTIVE |
@@ -235,16 +240,19 @@ La v1 (3 campañas sueltas por embudo) fue **eliminada** y reemplazada por una c
 
 ```
 Cuenta Meta (act_350473826722700)
-└── META_Traffic_Construccion_E1E2E3_2026Q4        (ABO, PAUSED · S/21/día total)
+└── META_Traffic_Construccion_E1E2E3_2026Q4        (ABO, PAUSED hasta lunes 12 08:00 · S/21/día total)
      ├── META_Traffic_E1_Alertas_2026Q4   S/7/día  → /alertas-licitaciones
-     │     ├── MA-Alertas - 4x5  (ma-alertas-1350.png)
-     │     └── MA-Alertas - 1x1  (ma-alertas-1080.png)
+     │     ├── MA-Alertas - V1 Dato    (ma-alertas-1350.png)
+     │     ├── MA-Alertas - V2 Dolor   (e1-v2-1350.png)
+     │     └── MA-Alertas - V3 Alivio  (e1c-v3-1350.png)
      ├── META_Traffic_E2_Software_2026Q4  S/7/día  → /software-licitaciones
-     │     ├── MA-Software - 4x5
-     │     └── MA-Software - 1x1
+     │     ├── MA-Software - V1 Dato   (ma-software-1350.png)
+     │     ├── MA-Software - V2 Dolor  (e2-v2-1350.png)
+     │     └── MA-Software - V3 Alivio (e2c-v3-1350.png)
      └── META_Traffic_E3_Vigentes_2026Q4  S/7/día  → /licitaciones-vigentes
-           ├── MA-Vigentes - 4x5
-           └── MA-Vigentes - 1x1
+           ├── MA-Vigentes - V1 Dato   (ma-vigentes-1350.png)
+           ├── MA-Vigentes - V2 Dolor  (e3-v2-1350.png)
+           └── MA-Vigentes - V3 Alivio (e3c-v3-1350.png)
 ```
 
 **Presupuesto aprobado: S/ 50 por campaña a la semana → S/ 150/semana total (≈ S/ 642/mes).**
