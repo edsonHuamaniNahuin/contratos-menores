@@ -8,6 +8,11 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Correo hacia el VISITANTE que descargó el modelo de TDR (lead magnet).
+ * Se envía al correo del lead; si responde, la respuesta va a services@.
+ * El aviso interno para el equipo es `LeadPlantillaTdrInternoMail`.
+ */
 class TdrPlantillaMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -21,7 +26,7 @@ class TdrPlantillaMail extends Mailable
     {
         return new Envelope(
             subject: 'Tu modelo de TDR está listo — Vigilante SEACE',
-            replyTo: [$this->email],
+            replyTo: ['services@sunqupacha.com'],
         );
     }
 

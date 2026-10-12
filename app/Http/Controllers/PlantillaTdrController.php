@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\LeadPlantillaTdrInternoMail;
 use App\Mail\TdrPlantillaMail;
 use App\Models\DemoLead;
 use Illuminate\Http\Request;
@@ -93,10 +94,22 @@ class PlantillaTdrController extends Controller
                 'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
             ]);
 
-            Mail::to('services@sunqupacha.com')->send(new TdrPlantillaMail(
+            // 1) Correo al VISITANTE (lo prometido en la landing: "También te enviamos el enlace a tu correo")
+            Mail::to($lead->email)->send(new TdrPlantillaMail(
                 nombre: $lead->nombre,
                 email:  $lead->email,
             ));
+
+            // 2) Aviso INTERNO al equipo (no debe romper el flujo del lead si falla)
+            try {
+                Mail::to('services@sunqupacha.com')->send(new LeadPlantillaTdrInternoMail(
+                    nombre: $lead->nombre,
+                    email:  $lead->email,
+                    origen: $lead->origen,
+                ));
+            } catch (\Throwable $e) {
+                Log::warning('PlantillaTdr: no se pudo notificar a services', ['error' => $e->getMessage()]);
+            }
 
             Log::info('PlantillaTdr: lead registrado', ['id' => $lead->id, 'email' => $lead->email]);
         } catch (\Throwable $e) {
