@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16211f; --paper:#f6f3ec; --teal:#0e5a54; --teal-deep:#07352f;
+    --mint:#9fdfc9; --mint-soft:#d8efe6; --line:#ddd5c6; --amber:#df9117;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px}
+  body{
+    min-height:100vh; background:var(--paper); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    padding:52px 60px; display:flex; flex-direction:column; justify-content:space-between;
+    position:relative; overflow:hidden;
+  }
+  .frame{position:absolute; inset:20px; border:1px solid rgba(22,33,31,.10); border-radius:24px; pointer-events:none}
+  .brand{display:flex; align-items:center; gap:16px; position:relative; z-index:2}
+  .shield{width:58px;height:58px;border-radius:17px;background:linear-gradient(145deg,#0e5a54,#07352f);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px -12px rgba(7,53,47,.6)}
+  .brand-name{font-weight:800;font-size:27px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:14.5px;color:#6f7a76;font-weight:500;margin-top:4px}
+
+  .hero{display:flex; flex-direction:column; gap:22px; position:relative; z-index:2; margin-top:14px}
+  .kicker{display:inline-flex; align-items:center; gap:10px; font-size:15px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--teal)}
+  .kicker::before{content:"";width:34px;height:2px;background:var(--teal)}
+  h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:67px;line-height:1.04;letter-spacing:-.022em;max-width:930px}
+  h1 .n{color:var(--teal)}
+  .sub{font-size:22px;line-height:1.45;color:#4c5854;max-width:790px;font-weight:500}
+
+  .card{background:#fff;border-radius:30px;border:1px solid #e9e2d4;box-shadow:0 30px 70px -38px rgba(22,33,31,.45);overflow:hidden;position:relative;z-index:2}
+  .card-head{background:#2AABEE;display:flex;align-items:center;gap:16px;padding:20px 30px}
+  .card-avatar{width:46px;height:46px;border-radius:50%;background:#fff;color:#2AABEE;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:24px}
+  .card-name{color:#fff;font-weight:700;font-size:20px;line-height:1.15}
+  .card-status{color:rgba(255,255,255,.85);font-size:14px;font-weight:500}
+  .card-body{padding:28px 30px 26px}
+  .card-label{display:inline-flex;align-items:center;gap:8px;background:#e6f7ef;color:#0b7a54;font-size:13.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:8px 14px}
+  .card-code{font-family:'JetBrains Mono',monospace;font-size:15px;color:#8d9793;margin:16px 0 8px;font-weight:500}
+  .card-objeto{font-family:'Fraunces',serif;font-weight:600;font-size:33px;line-height:1.15;letter-spacing:-.01em}
+  .card-entidad{font-size:17px;color:#5c6763;margin-top:10px;font-weight:500}
+  .card-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;padding-top:20px;border-top:1px solid #efe9dd}
+  .card-monto-label{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9aa39f;font-weight:700}
+  .card-monto{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:30px;color:var(--teal);margin-top:6px}
+  .card-fecha{font-size:14.5px;color:#9aa39f;font-weight:500}
+
+  .cta{background:linear-gradient(100deg,#07352f,#0e5a54);color:#fff;border-radius:999px;padding:25px 38px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;box-shadow:0 24px 50px -30px rgba(7,53,47,.8)}
+  .cta-l{display:flex;align-items:center;gap:16px}
+  .cta-bell{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center}
+  .cta-title{font-size:21px;font-weight:800;letter-spacing:-.01em}
+  .cta-sub{font-size:14.5px;color:rgba(255,255,255,.75);font-weight:500;margin-top:3px}
+  .cta-url{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:13px 22px}
+  @media (min-height:1200px){
+    body{padding:64px 60px}
+    h1{font-size:74px}
+    .sub{font-size:24px}
+    .card-body{padding:34px 32px 30px}
+    .card-objeto{font-size:37px}
+    .cta{padding:29px 42px}
+  }
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+
+  <div class="brand">
+    <div class="shield">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9fdfc9" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Vigilante SEACE</div>
+      <div class="brand-sub">Monitoreo de licitaciones del Estado</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <span class="kicker">Alertas el mismo día de publicación</span>
+    <h1>El lunes se publicó una licitación de tu rubro. <span class="n">Te enteraste el viernes.</span></h1>  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-avatar">V</div>
+      <div>
+        <div class="card-name">Vigilante SEACE</div>
+        <div class="card-status">bot de alertas · Telegram</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <span class="card-label">● Nuevo proceso · convocatoria</span>
+      <div class="card-code">LP-SM-3-2026-MDE/C-1</div>
+      <div class="card-objeto">Mejoramiento de pistas y veredas en zona urbana</div>
+      <div class="card-entidad">Municipalidad Distrital de La Esperanza · La Libertad</div>
+      <div class="card-row">
+        <div>
+          <div class="card-monto-label">Monto referencial</div>
+          <div class="card-monto">S/ 9,726,222</div>
+        </div>
+        <div class="card-fecha">Publicado hoy · 10:42</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub">Te avisamos por <strong>Telegram o correo</strong>, filtrado por tu rubro y región. Sin revisar el portal a mano todos los días.</div>
+
+  <div class="cta">
+    <div class="cta-l">
+      <div class="cta-bell">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      </div>
+      <div>
+        <div class="cta-title">Empieza gratis y recibe tu primera alerta</div>
+        <div class="cta-sub">Sin tarjeta · Configúralo en 1 minuto</div>
+      </div>
+    </div>
+    <div class="cta-url">licitacionesmype.pe</div>
+  </div>
+</body>
+</html>

@@ -1,6 +1,6 @@
-# 📘 Documentación de Campaña — Meta Ads · Vigilante SEACE
+# Documentación de Campaña — Meta Ads · Vigilante SEACE
 
-> **Versión:** 1.0 · **Fecha:** 01/10/2026 · **Autor:** equipo Vigilante SEACE
+> **Versión:** 1.1 · **Fecha:** 01/10/2026 · **Presupuesto real:** **S/ 150/semana (S/ 21/día)**
 > **Cuenta publicitaria:** `act_350473826722700` (FocusSunquPacha · PEN · America/Lima)
 > **Documentos relacionados:** `CONFIG_CAMPANAS_META_ADS.md` (config inicial), `EMBUDOS_3_CAMPANAS.md` (E1/E2/E3),
 > `CONFIG_CAMPANAS_GOOGLE_ADS.md`, `PRONOSTICO_TRAFICO_REVENUE.md`, `../03-clientes-investigacion/voc-datos-reales.md`.
@@ -79,7 +79,7 @@ Fuente: BD de producción `vigilante_seace` (consulta 01/10/2026).
 | CTR (Meta, cold B2B PE) | ≥ 1.0 % (bueno 1.5 %) | < 0.8 % |
 | CPM | S/ 25–45 (US$ 7–12) | > S/ 70 |
 | CPC | S/ 0.8–1.8 | > S/ 2.5 |
-| CPL (form) | **≤ S/ 15** | > S/ 30 |
+| CPL (form) | meta de escalado **≤ S/ 15** · realista S/ 20–40 con S/ 150/semana | > S/ 30 sostenido |
 | Tasa lead → reunión | ≥ 25 % | < 15 % |
 | Tasa reunión → pago | ≥ 20 % | < 10 % |
 | CAC (blended, 30d) | **≤ S/ 120** | > S/ 200 |
@@ -122,6 +122,36 @@ La audiencia se define en el **creativo** (rubro, obra, regiones), no apilando i
   (p. ej. plantilla TDR → demo), frecuencia 3–5/semana.
 - **Lookalike 1 %:** cuando `demo_leads` + pagos sumen ≥ 100 contactos (hoy 3 — no alcanza).
 
+### 4.3 Sectores y geografía según datos reales de producción (01/10/2026)
+
+Universo de contratos mayores en BD (`contratos_mayores`) y clientes reales (`subscriber_profile_keyword`):
+
+**Por objeto (vigentes CONVOCADO):**
+
+| Objeto | Vigentes | Monto promedio | Lectura para campañas |
+|---|---|---|---|
+| Servicio | 4,200 | S/ 318k | Alto volumen, ticket accesible — **avatar "servicios/mantenimiento"** |
+| Bien | 4,131 | S/ 125k | Volumen alto, ticket bajo — menos prioritario |
+| **Obra** | 1,582 | **S/ 6.0M** | Menos procesos pero el nicho que paga (Cluster A) — **foco de E2/E3** |
+| Consultoría de obra | 409 | S/ 415k | Nicho secundario (expedientes, supervisión) |
+
+**Por geografía (top):** Lima 1,727 · Cusco 483 · Áncash 358 · Puno 334 · Arequipa 324 · Apurímac 261 ·
+Junín 260 · La Libertad 252 · Cajamarca 230 · Piura 168 (4,385 sin depto. asignado en scraping).
+
+**Keywords declaradas por los clientes reales (top):** Obras civiles (5) · Servicio de mantenimiento (4) ·
+Tecnología de la información (3) · **Infraestructura (3)** · Movimiento de tierras (2) · Estructuras (2) ·
+Servicios logísticos (2) · Limpieza integral · SySO · BIM/edificaciones sanitarias (1 c/u).
+
+**Configuración derivada:**
+1. **Dos avatares creativos** (no dos campañas): (a) **obra/infraestructura** — "obras civiles, movimiento de
+   tierras, pistas, saneamiento, estructuras" (el que paga); (b) **servicios/mantenimiento** — "servicio de
+   mantenimiento, limpieza integral, logística" (volumen alto). El lenguaje de los creativos usa estas palabras.
+2. **Geografía:** Perú completo; los creativos mencionan región ("filtrado por tu rubro y región") para abrir
+   Cusco/Puno/Áncash/Arequipa sin segmentar geo (Andromeda encuentra el clúster).
+3. **Intereses base** (señal, no filtro duro): OSCE + contrataciones del Estado + construcción. Sin apilar más
+   (el apilado perjudica en 2026).
+4. **No atacar TI** con creativo específico hasta tener una conversión real de ese clúster.
+
 ---
 
 ## 5. Oferta y message-match por campaña
@@ -152,9 +182,9 @@ aprendizaje con 3 ad sets (ver §6.2).
 | Nivel | Nombre | ID | Presupuesto | Estado |
 |---|---|---|---|---|
 | Campaña | `META_Traffic_Construccion_E1E2E3_2026Q4` | `120247999030430108` | ABO (sin CBO) | PAUSED |
-| Ad set E1 | `META_Traffic_E1_Alertas_2026Q4` | `120247999030690108` | S/ 10/día | PAUSED |
-| Ad set E2 | `META_Traffic_E2_Software_2026Q4` | `120247999032700108` | S/ 10/día | PAUSED |
-| Ad set E3 | `META_Traffic_E3_Vigentes_2026Q4` | `120247999034400108` | S/ 10/día | PAUSED |
+| Ad set E1 | `META_Traffic_E1_Alertas_2026Q4` | `120247999030690108` | **S/ 7/día** | PAUSED |
+| Ad set E2 | `META_Traffic_E2_Software_2026Q4` | `120247999032700108` | **S/ 7/día** | PAUSED |
+| Ad set E3 | `META_Traffic_E3_Vigentes_2026Q4` | `120247999034400108` | **S/ 7/día** | PAUSED |
 | Anuncio E1 | `MA-Alertas - 4x5` | `120247999031740108` | — | PAUSED |
 | Anuncio E1 | `MA-Alertas - 1x1` | `120247999032370108` | — | PAUSED |
 | Anuncio E2 | `MA-Software - 4x5` | `120247999033910108` | — | PAUSED |
@@ -170,17 +200,20 @@ aprendizaje con 3 ad sets (ver §6.2).
 
 ```
 Cuenta Meta (act_350473826722700)
-└── META_Traffic_Construccion_E1E2E3_2026Q4        (ABO, PAUSED)
-     ├── META_Traffic_E1_Alertas_2026Q4   S/10/día  → /alertas-licitaciones
+└── META_Traffic_Construccion_E1E2E3_2026Q4        (ABO, PAUSED · S/21/día total)
+     ├── META_Traffic_E1_Alertas_2026Q4   S/7/día  → /alertas-licitaciones
      │     ├── MA-Alertas - 4x5  (ma-alertas-1350.png)
      │     └── MA-Alertas - 1x1  (ma-alertas-1080.png)
-     ├── META_Traffic_E2_Software_2026Q4  S/10/día  → /software-licitaciones
+     ├── META_Traffic_E2_Software_2026Q4  S/7/día  → /software-licitaciones
      │     ├── MA-Software - 4x5
      │     └── MA-Software - 1x1
-     └── META_Traffic_E3_Vigentes_2026Q4  S/10/día  → /licitaciones-vigentes
+     └── META_Traffic_E3_Vigentes_2026Q4  S/7/día  → /licitaciones-vigentes
            ├── MA-Vigentes - 4x5
            └── MA-Vigentes - 1x1
 ```
+
+**Presupuesto aprobado: S/ 50 por campaña a la semana → S/ 150/semana total (≈ S/ 642/mes).**
+No se crean más campañas hasta tener datos de esta fase (regla acordada).
 
 **Naming convention** (a aplicar): `META_[Objetivo]_[Audiencia]_[Oferta]_[Fecha]` → ej.
 `META_Lead_Construccion_Alertas_2026Q4`.
@@ -219,6 +252,12 @@ quedan como control). A las 2 semanas evaluar formulario nativo como ad set para
 Regenerar cualquiera: `node <skill browser-automation>/browser.mjs <file-url> --script scripts/ad-creatives/render.mjs` con
 `RENDER_URL/RENDER_OUT/RENDER_W/RENDER_H` en el entorno. Estilos y colores están alineados a cada landing
 (brand tokens E1/E2/E3) para message-match visual.
+
+**Variantes B (hook alternativo, listas para el A/B de la semana 2):**
+`ma-alertas-1350-b.png` (dolor: "El lunes se publicó una licitación de tu rubro. Te enteraste el viernes.") ·
+`ma-software-1350-b.png` ("El TDR que te descalifica está en la página 34. La IA lo lee por ti.") ·
+`ma-vigentes-1350-b.png` ("Tu próximo contrato con el Estado ya está publicado. Está en el SEACE.").
+Fuentes: `scripts/ad-creatives/*-b.html`. El A/B es **A (dato/pregunta) vs B (dolor/urgencia)** sobre el mismo diseño.
 
 ### 7.2 Reglas de producción (Andromeda: volumen > pulido)
 - **1 hora semanal** de producción de creativos: 3–5 estáticos nuevos por semana.
@@ -297,18 +336,27 @@ en producción; revisar que no se dispare en páginas de checkout/pago (evitar s
 
 ## 9. Presupuesto, economía y proyección
 
-### 9.1 Escenarios de inversión (fase de aprendizaje)
+### 9.1 Presupuesto real: S/ 150/semana (S/ 21/día)
 
-| Escenario | Presupuesto/mes | Por campaña/día | Leads esperados (CPL S/ 15) | Reuniones (25 %) | Pagos (20 %) | CAC estimado* |
-|---|---|---|---|---|---|---|
-| **Mínimo (recomendado inicio)** | S/ 500 | S/ 5.5 | 33 | 8 | 1.7 | S/ 294 |
-| **Base** | S/ 900 | S/ 10 | 60 | 15 | 3 | S/ 300 |
-| **Agresivo (solo si CPL ≤ S/ 12)** | S/ 1,500 | S/ 16.5 | 125 | 31 | 6 | S/ 250 |
+| Semana | Distribución | Objetivo de la semana |
+|---|---|---|
+| **S1 (días 1–7)** | E1 S/7 · E2 S/7 · E3 S/7 | Primeros datos: entrega, CTR, CPC por anuncio (A/B de formato 4:5 vs 1:1) |
+| **S2 (días 8–14)** | Ganador S/13 · 2.º S/5 · 3.º S/3 | Reasignar al mejor embudo + subir variantes B (A/B de hook) |
+| **S3+** | 80 % ganador · 20 % slot de test | Escalar solo con el semáforo de §9.3 en verde |
 
-\* CAC = presupuesto ÷ pagos. **Con el LTV actual (≈ S/ 338 a 6 meses) y CAC S/ 250–300, el payback es 4–5 meses:
-lo hace viable pero exige mejorar retención y/o subir ticket.** Si el CPL sale > S/ 30, el canal no es viable
-para venta directa y debe reenfocarse a **lead magnet (plantillas-TDR) → email nurturing** con costo por lead
-mucho menor (meta ≤ S/ 6).
+**Rendimiento esperado con S/ 21/día** (benchmarks B2B Meta Perú: CPM ≈ S/ 30, CTR ≈ 1.2 %, conversión landing 6 %):
+
+| Métrica | Semana | Mes (~4.3 sem) |
+|---|---|---|
+| Impresiones | ~4,900 | ~21,000 |
+| Clics | ~59 | ~250 |
+| Leads (CVR 6 %) | ~3–4 | ~15 |
+| Costo por lead implícito | ~S/ 40 | ~S/ 42 |
+
+⚠️ Con S/ 150/semana el volumen es de **aprendizaje y lectura de creativos**, no de cierre de ventas: alcanza
+para saber qué embudo/hook responde y decidir dónde poner más. Si el CPL se mantiene > S/ 30, el canal se
+reenfoca a **lead magnet** (`/plantillas-tdr`, meta CPL ≤ S/ 6) o se pausa. No se crean campañas nuevas hasta
+cerrar la semana 2.
 
 ### 9.2 Break-even por plan
 
@@ -330,16 +378,41 @@ Escalado: **+20 % cada 5 días** (nunca +30 %); rollback si el costo supera 1.5�
 
 ---
 
-## 10. Plan de experimentos (A/B) — 3 tests simultáneos
+## 10. Estrategia A/B por días (fase 1)
 
-| # | Hipótesis | Variable | Métrica | Duración |
-|---|---|---|---|---|
-| T1 | El flyer 4:5 supera al 1:1 en feed | Formato del creativo | CTR + CPL | 10–14 días |
-| T2 | El hook con dato duro ("1,347 convocatorias") supera al hook con pregunta | Headline/hook | CTR + lead→reunión | 10–14 días |
-| T3 | El formulario de landing convierte mejor que un Lead Form nativo (Higher Intent) | Destino | CPL + tasa de calificación | 14 días |
+**Principio:** el A/B se lee por **bloques de días con monitoreo diario**. Alternar creativos día por día (par A /
+impar B) **reinicia el aprendizaje de Meta** y ensucia los datos; por eso: cada fila es un control diario y cada
+bloque una decisión.
 
-Al ganar un test: registrar aprendizaje en `documents/04-metricas-reportes/` (qué ganó, por qué, dato) y
-**mirror** del headline ganador en el H1 de la landing (esperado +15–20 % de conversión).
+**Semana 1 — A/B de formato (4:5 vs 1:1) en los 3 embudos**
+
+| Día | Qué corre | Qué se lee | Decisión del día |
+|---|---|---|---|
+| 1 | E1+E2+E3 · 2 anuncios c/u · S/7/día por ad set | Entrega y estado de revisión Meta; gasto real | Ninguna (no tocar) |
+| 2 | Igual | Impresiones/alcance, CPM | Si un anuncio no entrega → revisar/reemplazar |
+| 3 | Igual | Primer CTR por anuncio y formato | Anotar (muestra chica, no decidir) |
+| 4 | Igual | CTR/CPC acumulado; clics | Anotar |
+| 5 | Igual | CTR/CPC; primeros leads BD (por UTM) | Anotar; formato líder por ad set |
+| 6 | Igual | Frecuencia (< 1.5) | Anotar |
+| **7** | Igual | **Fair-share (gasto ≥ 50 % esperado) + CTR + leads** | **Decisión bloque 1:** pausar el formato perdedor de cada ad set |
+
+**Semana 2 — A/B de hook (A = dato/pregunta · B = dolor/urgencia)**
+
+| Día | Qué corre | Qué se lee | Decisión |
+|---|---|---|---|
+| 8 | Ganadores S1 + variantes B (3 anuncios nuevos) | Aprobación Meta de los B | Activar B junto a A en cada ad set |
+| 9–13 | A vs B por ad set | CTR/CPC/leads por hook (UTM) | Anotar diario |
+| **14** | — | **CTR/CPC/leads/CPL por ad set y por hook** | **Decisión bloque 2:** reasignar presupuesto (S2: S/13/S/5/S/3) al mejor embudo; retirar el hook perdedor |
+
+**Semana 3+ — consolidación:** 80 % al ganador + 20 % a un slot de test (nuevas variantes de hook/visual).
+Lectura semanal con reglas de §12.
+
+**Panel diario (una hoja):** entrega · impresiones · CPM · CTR · CPC · clics · leads por UTM (`demo_leads`) ·
+frecuencia. Se registra desde el día 1 en `documents/04-metricas-reportes/`.
+
+> ¿Por qué no "día A / día B" alternado? Aprendido de `meta-decision-system.md`: los cortes diarios con
+> presupuestos bajos no llegan a la muestra mínima (día 7: cada anuncio necesita ≥ S/12 de gasto para leerse) y
+> el encendido/apagado constante resetea el aprendizaje. Bloques + lectura diaria = mismos datos, sin ruido.
 
 ---
 
@@ -347,7 +420,7 @@ Al ganar un test: registrar aprendizaje en `documents/04-metricas-reportes/` (qu
 
 | Día | Acción |
 |---|---|
-| **Día 0 (lanzamiento)** | Activar 3 campañas a S/ 10–16.5/día; verificar pixel (PageView + Lead de prueba); UTMs correctos |
+| **Día 0 (lanzamiento)** | Activar la campaña de test (S/ 21/día total: S/ 7 por ad set); verificar pixel (PageView + Lead de prueba); UTMs correctos |
 | **Día 1–7 (learning)** | No tocar nada. Monitorear entrega, errores de revisión Meta, gasto |
 | **Día 7 (delivery check)** | Por anuncio: gasto ≥ (presupuesto/ads)×7×0.5 → los que no, kill (cambiando hook/visual) |
 | **Semanal (lunes)** | Leer CTR/CPM/CPL por anuncio (rolling 14d) + calidad de leads en BD; aplicar swap si > 1.5× TCPL |
