@@ -2,12 +2,15 @@
 
 @php
     // ─── Construir SEO dinámico basado en filtros activos ───
-    $dep = request('dep', request('departamento', ''));
-    $objeto = request('objeto', '');
-    $estado = request('estado', '');
-    $q = request('palabraClave', request('q', ''));
-    $entidad = request('entidad', request('entidadTexto', ''));
-    $pagina = (int) request('pagina', request('pag', 1));
+    // Los query params se normalizan a string: un param tipo array
+    // (ej. ?palabraClave[]=x) rompería Str::limit/e() con error 500.
+    $param = fn ($v) => is_scalar($v) ? (string) $v : '';
+    $dep = $param(request('dep', request('departamento', '')));
+    $objeto = $param(request('objeto', ''));
+    $estado = $param(request('estado', ''));
+    $q = $param(request('palabraClave', request('q', '')));
+    $entidad = $param(request('entidad', request('entidadTexto', '')));
+    $pagina = max(1, (int) request('pagina', request('pag', 1)));
 
     $titleParts = [];
     $descParts = [];
@@ -54,8 +57,8 @@
         'objeto' => $objeto ?: null,
         'estado' => $estado ?: null,
         'dep' => $dep ?: null,
-        'prov' => request('prov') ?: null,
-        'dist' => request('dist') ?: null,
+        'prov' => $param(request('prov')) ?: null,
+        'dist' => $param(request('dist')) ?: null,
         'pagina' => $pagina > 1 ? $pagina : null,
     ]);
     $canonicalUrl = url('/buscador-publico') . (count($canonicalParams) > 0 ? '?' . http_build_query($canonicalParams) : '');

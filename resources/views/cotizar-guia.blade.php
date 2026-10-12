@@ -5,8 +5,9 @@
 @section('noindex', true)
 
 @php
-    $codigoProceso = request('proceso', '');
-    $entidad = request('entidad', '');
+    $param = fn ($v) => is_scalar($v) ? (string) $v : '';
+    $codigoProceso = $param(request('proceso', ''));
+    $entidad = $param(request('entidad', ''));
     $idContrato = (int) request('id', 0);
     $seaceBase = rtrim(config('services.seace.frontend_origin', 'https://prod6.seace.gob.pe'), '/');
     $urlLogin = $seaceBase . '/auth-proveedor/';

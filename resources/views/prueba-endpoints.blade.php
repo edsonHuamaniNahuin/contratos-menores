@@ -41,6 +41,6 @@
         </div>
     </div>
 
-    @livewire('prueba-endpoints', ['cuentaId' => request()->get('cuenta')])
+    @livewire('prueba-endpoints', ['cuentaId' => is_scalar($cuenta = request()->get('cuenta')) ? $cuenta : null])
 </div>
 @endsection
