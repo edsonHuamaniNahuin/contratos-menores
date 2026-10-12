@@ -89,6 +89,7 @@ class DemoLeadController extends Controller
                 'landing'    => $landing,
                 'ip'         => $request->ip(),
                 'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
+                ...\App\Support\UtmParser::extraer($request),
             ]);
 
             Mail::to('services@sunqupacha.com')->send(new DemoLeadMail(

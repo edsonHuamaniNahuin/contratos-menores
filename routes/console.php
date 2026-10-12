@@ -324,3 +324,23 @@ Schedule::command('meta:monitor --notificar')
     ->timezone('America/Lima')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/meta-monitor.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Ingesta de Métricas Meta (almacén propio en BD)
+|--------------------------------------------------------------------------
+| Cada hora (08:00–23:00) guarda el acumulado del día por anuncio en
+| meta_insights_intradia; a las 08:15 cierra el día anterior en
+| meta_insights_diarios. Backup del dashboard de Meta en servidor propio.
+*/
+Schedule::command('meta:ingerir')
+    ->cron('5 8-23 * * *')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/meta-ingerir.log'));
+
+Schedule::command('meta:ingerir --cerrar')
+    ->cron('15 8 * * *')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/meta-ingerir.log'));

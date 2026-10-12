@@ -92,6 +92,7 @@ class PlantillaTdrController extends Controller
                 'origen'     => mb_substr((string) $request->headers->get('referer', ''), 0, 250) ?: null,
                 'ip'         => $request->ip(),
                 'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
+                ...\App\Support\UtmParser::extraer($request),
             ]);
 
             // 1) Correo al VISITANTE (lo prometido en la landing: "También te enviamos el enlace a tu correo")
