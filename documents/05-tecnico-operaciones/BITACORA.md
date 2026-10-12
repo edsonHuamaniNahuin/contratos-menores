@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-10-12 · Meta Ads (almacén de métricas propio) · `c32159ae`
+
+### Cada centavo de la campaña queda guardado en la BD del servidor (intradía + cierres diarios por anuncio)
+
+**Objetivo:** tener indicadores propios (independientes del dashboard de Meta) para optimizar campañas: gasto, CTR, CPC, CPM, frecuencia, link clicks y leads por anuncio/día, cruzables con los leads reales de la web.
+
+**Implementación:**
+1. **`meta_insights_diarios`** (unique `fecha+ad_id`): cierre final de cada día por anuncio (spend, impressions, reach, clicks, link_clicks, leads, ctr, cpc, cpm, frequency + nombres de campaña/ad set/anuncio).
+2. **`meta_insights_intradia`** (unique `capturado_at+ad_id`): acumulado del día capturado cada hora (ritmo de gasto y entrega en vivo).
+3. **Comando `meta:ingerir`**: `--cerrar` guarda cierres (ayer o rango `--dias=N` con `time_increment=1`); por defecto guarda el intradía de hoy. `updateOrCreate` → idempotente, re-ejecutable.
+4. **Schedule:** cada hora `5 8-23 * * *` (intradía) + `15 8 * * *` (cierre diario de ayer). Logs en `storage/logs/meta-ingerir.log`.
+5. **UTMs en leads** (`demo_leads`): nuevas columnas `utm_source/medium/campaign/content/term` + `fbclid`, extraídas del formulario o del Referer (`App\Support\UtmParser`). Ahora **cada lead se puede atribuir al anuncio exacto** (`utm_content` = nombre del anuncio, `utm_term` = ad set).
+
+**Verificación:**
+- Migraciones OK (tablas + columnas), `schedule:list` OK (2 corridas nuevas).
+- Backfill 7 días: 0 filas (correcto: aún no había entrega al correr; la campaña arrancó a las 08:00).
+- E2E UTM: POST real con Referer de campaña → lead guardado con `utm_source=meta`, `utm_content=MA-AlertasV2`, `fbclid` (id 7, eliminado después).
+
+**Consultas útiles (indicativos):**
+```sql
+-- Gasto/rendimiento último día cerrado por anuncio
+SELECT fecha, ad_name, spend, impressions, clicks, ctr, cpc, leads
+FROM meta_insights_diarios ORDER BY fecha DESC, spend DESC;
+
+-- Gasto acumulado por ad set (últimos 7 días)
+SELECT adset_name, SUM(spend) gasto, SUM(clicks) clics, SUM(leads) leads
+FROM meta_insights_diarios WHERE fecha >= CURDATE() - INTERVAL 7 DAY GROUP BY adset_name;
+
+-- Ritmo de gasto de hoy (cada hora)
+SELECT capturado_at, ROUND(SUM(spend),2) acumulado
+FROM meta_insights_intradia WHERE fecha = CURDATE() GROUP BY capturado_at ORDER BY capturado_at;
+
+-- Leads por anuncio (atribución real vía UTM)
+SELECT utm_content AS anuncio, utm_term AS adset, COUNT(*) leads
+FROM demo_leads WHERE utm_source = 'meta' GROUP BY utm_content, utm_term ORDER BY leads DESC;
+```
+
+**Archivos:** `database/migrations/2026_10_12_000001_create_meta_insights_tables.php`, `database/migrations/2026_10_12_000002_add_utm_to_demo_leads.php`, `app/Models/MetaInsightDiario.php`, `app/Models/MetaInsightIntradia.php`, `app/Console/Commands/MetaIngerirCommand.php`, `app/Support/UtmParser.php`, `app/Http/Controllers/DemoLeadController.php`, `app/Http/Controllers/PlantillaTdrController.php`, `routes/console.php`
+
+---
+
 ## 2026-10-12 · Meta Ads (monitoreo) · `0627792b`, `712ae001`
 
 ### Monitor automático de campañas con alertas Telegram + pruebas de conversión (pixel/GA4/formulario)
