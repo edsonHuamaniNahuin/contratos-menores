@@ -59,6 +59,7 @@ class RegisteredUserController extends Controller
             'ruc'          => $validated['ruc'] ?? null,
             'razon_social' => $validated['razon_social'] ?? null,
             'telefono'     => $validated['telefono'] ?? null,
+            ...\App\Support\UtmParser::extraer($request),
         ]);
 
         $providerRole = Role::firstOrCreate(
