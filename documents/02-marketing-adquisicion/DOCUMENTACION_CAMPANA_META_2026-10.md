@@ -231,7 +231,8 @@ dayparting por API exige presupuesto lifetime).
 | Anuncio E3 | `MA-Vigentes - V3 Alivio` | `120247999162570108` | — | ACTIVE |
 
 - Página: **Vigilante SEACE** (`1340988862437864`) · Pixel: **Vigilante SEACE Web** (`1029237720131593`).
-- Audiencia por ad set: Perú, 25–60 · intereses núcleo (OSCE + Gobierno + rubro) · sin advantage audience.
+- Audiencia por ad set: Perú, 25–60 · intereses núcleo **validados** (E1: Construction engineering · E2: Software ·
+  E3: Pequeñas y medianas empresas — todos + prácticas gubernamentales) · sin advantage audience.
   Exclusiones activas: clientes (`120247999226360108`) y leads web (`120247999226840108`).
 - Reproducible: `scripts/meta-ads/refactor_campaigns_v2.py --delete-old` (estructura) y
   `scripts/meta-ads/configure_v2.py --activate` (anuncios/UTMs).

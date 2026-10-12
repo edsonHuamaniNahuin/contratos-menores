@@ -34,19 +34,19 @@ ADSETS = [
     {
         "adset": "META_Traffic_E1_Alertas_2026Q4",
         "landing": "https://licitacionesmype.pe/alertas-licitaciones",
-        "interest_names": ["Government concepts and practices", "OSCE", "Construction engineering"],
+        "interest_names": ["Construction engineering", "Government concepts and practices"],
         "flyers": [("4x5", "public/images/ads/ma-alertas-1350.png"), ("1x1", "public/images/ads/ma-alertas-1080.png")],
     },
     {
         "adset": "META_Traffic_E2_Software_2026Q4",
         "landing": "https://licitacionesmype.pe/software-licitaciones",
-        "interest_names": ["Government concepts and practices", "OSCE", "Software business"],
+        "interest_names": ["Software", "Government concepts and practices"],
         "flyers": [("4x5", "public/images/ads/ma-software-1350.png"), ("1x1", "public/images/ads/ma-software-1080.png")],
     },
     {
         "adset": "META_Traffic_E3_Vigentes_2026Q4",
         "landing": "https://licitacionesmype.pe/licitaciones-vigentes",
-        "interest_names": ["Government concepts and practices", "OSCE", "Small business"],
+        "interest_names": ["Pequeñas y medianas empresas", "Government concepts and practices"],
         "flyers": [("4x5", "public/images/ads/ma-vigentes-1350.png"), ("1x1", "public/images/ads/ma-vigentes-1080.png")],
     },
 ]

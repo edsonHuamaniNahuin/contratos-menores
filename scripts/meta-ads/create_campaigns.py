@@ -55,19 +55,23 @@ def api(method: str, path: str, token: str, data: dict | None = None) -> dict:
 
 
 def search_interest_id(token: str, name: str) -> str | None:
-    """Busca el ID numérico de un interés de audiencia por nombre."""
-    path = "search?type=adinterest&q=" + urllib.parse.quote(name) + "&limit=5"
+    """Busca el ID numérico de un interés de audiencia por nombre.
+
+    Valida el resultado (exacto primero, luego contenido). Si ningún candidato
+    coincide razonablemente devuelve None: NUNCA tomar el primer resultado
+    fuzzy — así "OSCE" terminó apuntando a "Lille Olympique Sporting Club".
+    """
+    path = "search?type=adinterest&q=" + urllib.parse.quote(name) + "&limit=10"
     data = api("GET", path, token)
     items = data.get("data", [])
-    name_l = name.lower()
+    name_l = name.lower().strip()
     for item in items:
-        if item.get("name", "").lower() == name_l:
+        if item.get("name", "").lower().strip() == name_l:
             return str(item["id"])
     for item in items:  # fallback: que contenga el término
         if name_l in item.get("name", "").lower():
             return str(item["id"])
-    if items:
-        return str(items[0]["id"])  # último fallback: primer match
+    print(f"  AVISO: interés '{name}' sin coincidencia razonable; se omite")
     return None
 
 

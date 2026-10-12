@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-10-12 · Meta Ads (segmentación) · (commit de esta sesión)
+
+### Intereses de los 3 ad sets mal resueltos por búsqueda fuzzy del script ("OSCE" → "Lille Olympique Sporting Club")
+
+**Síntoma (detectado al auditar la segmentación con la API):** los 3 ad sets tenían el interés **"Lille Olympique Sporting Club"** (club de fútbol francés) donde se esperaba "OSCE"; E2 tenía "Ingeniería (ciencia)" en vez de software y E3 "Small Business Expo" en vez de small business. La segmentación estaba contaminada por públicos irrelevantes.
+
+**Causa:** `create_campaigns.py::search_interest_id` usaba como último fallback `items[0]` — el primer resultado de la búsqueda `adinterest` SIN validar el nombre. La búsqueda de "OSCE" no tiene coincidencias y devolvió un resultado arbitrario (Lille OSC).
+
+**Solución:**
+1. Targeting corregido en vivo por API en los 3 ad sets (verificado con GET):
+   - E1: `Construction engineering` + prácticas gubernamentales.
+   - E2: `Software` + prácticas gubernamentales.
+   - E3: `Pequeñas y medianas empresas (MYPE)` + prácticas gubernamentales.
+   Exclusiones (clientes/leads) intactas; `advantage_audience` sigue en 0; geo/edad sin cambios.
+2. `search_interest_id` ahora valida: exacto → contenido → si no hay coincidencia razonable **devuelve None** (se omite el interés). Nunca más el primer fuzzy.
+3. `refactor_campaigns_v2.py` actualizado con los nombres de interés corregidos (re-correr los scripts ahora es seguro).
+
+**Lección:** nunca aceptar el primer resultado de una búsqueda de intereses de Meta — los IDs numéricos no dicen nada; hay que validar el nombre devuelto contra lo buscado.
+
+**Archivos:** `scripts/meta-ads/create_campaigns.py`, `scripts/meta-ads/refactor_campaigns_v2.py`, `documents/02-marketing-adquisicion/DOCUMENTACION_CAMPANA_META_2026-10.md` (§6.1)
+
+---
+
 ## 2026-10-12 · Admin Monitoreo (panel de errores) · `5a9867e8`
 
 ### El panel mostraba errores YA RESUELTOS de días anteriores + cargaba el log completo (22 MB) en memoria
