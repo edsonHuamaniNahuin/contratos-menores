@@ -217,6 +217,16 @@ python scripts/meta-ads/configure_v2.py --token $TOKEN --ad-account act_35047382
 6. **Nunca validar flyers por gusto**: A/B por CTR/CPC/leads con una variable por bloque y cap de 3 versiones.
 7. **La foto IA es el fondo, el mensaje va en HTML**: texto nítido, branding consistente y regenerable en minutos.
 8. GA4 antes de configurar: **82 % desktop**, Bing+ChatGPT 23 % del orgánico y Lima 57 % — datos que cambian decisiones.
+9. **Timing de activación (error detectado y corregido):** la campaña se activó un **domingo 23:00**; con audiencia B2B
+   eso quema presupuesto en horas muertas. Se **pausó con S/ 0 gastado** (antes de que Meta entregara) y se programó
+   el arranque para el **lunes 08:00 (America/Lima)** vía timer del servidor + `scripts/meta-ads/toggle_campaign.py`.
+   *Nunca activar campañas B2B fuera de horario laboral; el arranque es una decisión de media, no un detalle.*
+10. **Dayparting (franjas L–V 8:00–20:00) por API requiere presupuesto lifetime**, no diario
+    (errores 1487675/1487682: "la frecuencia requiere una campaña sin franjas del día" / "no se admite presupuesto
+    diario para la especificación actual"). Alternativa documentada: si al día 7 el desglose por hora muestra noches
+    de baja calidad, migrar los ad sets a presupuesto semanal (lifetime) + `adset_schedule` para activar franjas.
+11. **Conversión personalizada `Lead`:** la API rechaza su creación (1760020/1760021: formato de regla/categoría);
+    el evento `Lead` ya sirve directo como conversión en Ads Manager, así que queda como paso manual opcional.
 
 ---
 
