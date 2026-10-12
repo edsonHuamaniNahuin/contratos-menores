@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\DemoLead;
+use App\Models\MetaInsightDiario;
+use App\Models\PagoYape;
 use App\Services\AdminTelegramNotificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -75,6 +77,14 @@ class MetaMonitorCommand extends Command
             $alertas[] = 'Error API Meta: ' . mb_substr((string) ($insights['error']['message'] ?? 'desconocido'), 0, 120);
         }
 
+        $roi = $this->calcularRoi($spend);
+        if ($roi['yape_pendientes_2h'] > 0) {
+            $alertas[] = "Yape: {$roi['yape_pendientes_2h']} pago(s) PENDIENTE(S) hace +2h — aprobar en /admin/pagos-yape para no perder la venta.";
+        }
+        if ($roi['roas_mes'] !== null && $roi['roas_mes'] < 10 && now()->day >= 7) {
+            $alertas[] = "ROAS del mes {$roi['roas_mes']}x por debajo del mínimo 10x (objetivo 40x).";
+        }
+
         $resumen = [
             'fecha' => now()->format('Y-m-d H:i'),
             'gasto_soles' => round($spend, 2),
@@ -89,6 +99,7 @@ class MetaMonitorCommand extends Command
             'leads_db' => $leadsDb,
             'leads_por_landing' => $leadsPorLanding,
             'cpl_db' => $leadsDb > 0 ? round($spend / $leadsDb, 2) : null,
+            'roi' => $roi,
             'alertas' => $alertas,
         ];
 
@@ -147,6 +158,50 @@ class MetaMonitorCommand extends Command
         }
 
         return $total;
+    }
+
+    private function calcularRoi(float $spendHoy): array
+    {
+        $hoy = now()->toDateString();
+        $inicioMes = now()->startOfMonth()->toDateString();
+
+        $yapeHoy = PagoYape::where('estado', PagoYape::ESTADO_APROBADO)
+            ->whereDate('processed_at', $hoy)
+            ->selectRaw('COUNT(*) as total, COALESCE(SUM(monto), 0) as monto')
+            ->first();
+
+        $yapeMes = PagoYape::where('estado', PagoYape::ESTADO_APROBADO)
+            ->whereDate('processed_at', '>=', $inicioMes)
+            ->selectRaw('COUNT(*) as total, COALESCE(SUM(monto), 0) as monto')
+            ->first();
+
+        $gastoMes = (float) MetaInsightDiario::whereBetween('fecha', [$inicioMes, now()->subDay()->toDateString()])
+            ->sum('spend') + $spendHoy;
+
+        $roasMes = $gastoMes > 0.01 ? round((float) $yapeMes->monto / $gastoMes, 2) : null;
+
+        $emailsCampana = DemoLead::where('utm_source', 'meta')->pluck('email');
+
+        $yapeCampanaMes = $emailsCampana->isEmpty() ? 0 : PagoYape::where('estado', PagoYape::ESTADO_APROBADO)
+            ->whereDate('processed_at', '>=', $inicioMes)
+            ->whereHas('user', fn ($q) => $q->whereIn('email', $emailsCampana))
+            ->count();
+
+        $pendientesViejos = PagoYape::where('estado', PagoYape::ESTADO_PENDIENTE)
+            ->where('created_at', '<=', now()->subHours(2))
+            ->count();
+
+        return [
+            'yape_hoy' => ['ventas' => (int) $yapeHoy->total, 'monto' => round((float) $yapeHoy->monto, 2)],
+            'yape_mes' => ['ventas' => (int) $yapeMes->total, 'monto' => round((float) $yapeMes->monto, 2)],
+            'yape_campana_mes' => $yapeCampanaMes,
+            'yape_pendientes_2h' => $pendientesViejos,
+            'leads_mes' => DemoLead::where('created_at', '>=', $inicioMes)->count(),
+            'gasto_mes' => round($gastoMes, 2),
+            'roas_mes' => $roasMes,
+            'meta_roas_min' => 10,
+            'meta_roas_optimo' => 40,
+        ];
     }
 
     private function evaluarAlertas(
@@ -225,6 +280,13 @@ class MetaMonitorCommand extends Command
                 ['Frecuencia', $resumen['frecuencia']],
                 ['Leads BD (Meta)', $resumen['leads_db'] . ' (' . $resumen['leads_meta'] . ')'],
                 ['CPL', $resumen['cpl_db'] !== null ? 'S/ ' . number_format($resumen['cpl_db'], 2) : '—'],
+                ['Yape hoy', $resumen['roi']['yape_hoy']['ventas'] . ' venta(s) · S/ ' . number_format($resumen['roi']['yape_hoy']['monto'], 2)],
+                ['Yape del mes', $resumen['roi']['yape_mes']['ventas'] . ' venta(s) · S/ ' . number_format($resumen['roi']['yape_mes']['monto'], 2)
+                    . ' (' . $resumen['roi']['yape_campana_mes'] . ' atribuibles a campaña)'],
+                ['Gasto del mes', 'S/ ' . number_format($resumen['roi']['gasto_mes'], 2)],
+                ['ROAS del mes', ($resumen['roi']['roas_mes'] !== null ? $resumen['roi']['roas_mes'] . 'x' : '—')
+                    . ' (meta: 10x mín / 40x óptimo)'],
+                ['Leads del mes', $resumen['roi']['leads_mes']],
             ]
         );
 
@@ -251,6 +313,11 @@ class MetaMonitorCommand extends Command
             "🔁 Frecuencia: {$resumen['frecuencia']}",
             "🎯 Leads hoy: {$resumen['leads_db']} (Meta {$resumen['leads_meta']})" .
                 ($resumen['cpl_db'] !== null ? ' · CPL S/ ' . number_format($resumen['cpl_db'], 2) : ''),
+            "💰 Yape hoy: {$resumen['roi']['yape_hoy']['ventas']} · S/ " . number_format($resumen['roi']['yape_hoy']['monto'], 2),
+            "📅 Yape mes: {$resumen['roi']['yape_mes']['ventas']} · S/ " . number_format($resumen['roi']['yape_mes']['monto'], 2)
+                . " · Gasto mes: S/ " . number_format($resumen['roi']['gasto_mes'], 2),
+            "📈 ROAS mes: " . ($resumen['roi']['roas_mes'] !== null ? $resumen['roi']['roas_mes'] . 'x' : '—')
+                . " (meta: 10x mín / 40x óptimo)",
         ];
 
         foreach ($resumen['leads_por_landing'] as $landing => $total) {
