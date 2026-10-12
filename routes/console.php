@@ -314,7 +314,7 @@ if (!app()->environment('production')) {
 | a las 21:30 envía el resumen completo. Historial: storage/app/meta-monitor.
 */
 Schedule::command('meta:monitor --solo-alertas')
-    ->daily()->at(['10:00', '13:00', '16:00', '19:00'])
+    ->cron('0 10,13,16,19 * * *')
     ->timezone('America/Lima')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/meta-monitor.log'));
