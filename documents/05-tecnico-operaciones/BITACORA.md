@@ -25,6 +25,23 @@
 
 ---
 
+## 2026-10-12 · Meta Ads (tráfico basura) · (commit de esta sesión)
+
+### 18/18 clics venían de Audience Network (placements Advantage+ abiertos) — CPC de S/ 0.03 era basura, no éxito
+
+**Síntoma (detectado por la desconfianza del usuario: "¿puro sapo?"):** a las 13:30 la campaña mostraba CPC S/ 0.03 y CTR 3.9% (aparentemente excelentes) **pero 0 leads**. Breakdown por plataforma: **Audience Network 330 impr / 18 clics / S/ 0.66** vs **Facebook feed 128 impr / 0 clics**. Región Loreto: 20 impresiones → 9 clics (CTR 45%, físicamente anómalo = clics accidentales / fat-finger).
+
+**Causa:** los 3 ad sets se crearon con placements **Advantage+ abiertos** (todas las plataformas) y objetivo LINK_CLICKS → Meta compró la mayor cantidad de clics al menor precio: Audience Network (apps de terceros), tráfico sin intención.
+
+**Solución:** targeting actualizado por API en los 3 ad sets: `publisher_platforms=[facebook, instagram]` + posiciones FB (feed, story, facebook_reels) e IG (stream, story, reels). Nota: `video_feeds` está deprecado (error 2490562). Verificado con GET. Se aceptó el reset de learning (día 1, S/ 0.66 gastado).
+- `verify_campaign.py` ahora valida también los placements (solo FB+IG) — el validador lo habría cachado.
+
+**Lección:** en campañas de leads B2B LatAm, NUNCA dejar placements Advantage+ abiertos con objetivo de clics: compra Audience Network y los dashboards "mejoran" mientras no hay conversiones. Un CPC anómalamente barato (< S/ 0.10) es señal de basura, no de eficiencia. Chequear SIEMPRE el breakdown por plataforma antes de celebrar métricas.
+
+**Archivos:** targeting en vivo (API), `scripts/meta-ads/verify_campaign.py`
+
+---
+
 ## 2026-10-12 · Meta Ads (verificación) · (commit de esta sesión)
 
 ### Lección dura: "aplicado" no es "verificado" — intereses wrong + falta de validación sistemática

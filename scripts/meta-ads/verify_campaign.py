@@ -114,6 +114,9 @@ class Validador:
             self.check((t.get("targeting_automation") or {}).get("advantage_audience") == 0,
                        f"{esperado['nombre']} advantage_audience=0",
                        str(t.get("targeting_automation")))
+            self.check(t.get("publisher_platforms") == ["facebook", "instagram"],
+                       f"{esperado['nombre']} solo FB+IG (sin Audience Network)",
+                       str(t.get("publisher_platforms")))
 
             excluidos = {e["id"] for e in t.get("excluded_custom_audiences", [])}
             self.check(excluidos == EXCLUIDOS_ESPERADOS,
