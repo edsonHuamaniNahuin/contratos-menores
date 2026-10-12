@@ -357,3 +357,14 @@ Schedule::command('trial:onboarding')
     ->timezone('America/Lima')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/trial-onboarding.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Reporte Semanal de ROI (lunes 09:00, Telegram admin)
+|--------------------------------------------------------------------------
+*/
+Schedule::command('roi:semanal')
+    ->weeklyOn(1, '09:00')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/roi-semanal.log'));
