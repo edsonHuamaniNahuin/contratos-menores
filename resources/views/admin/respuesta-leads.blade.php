@@ -175,7 +175,7 @@ Te comparto cómo funciona:
 • La IA analiza el TDR y te dice si calificas antes de postular.
 • Incluye buscador de contratos menores y mayores + seguimiento de procesos.
 
-Puedes probarlo 15 días gratis aquí: https://licitacionesmype.pe/register
+Actívalo hoy y tienes 5 días de garantía: si no te convence, te devolvemos tu dinero. Crea tu cuenta aquí: https://licitacionesmype.pe/register
 
 ¿Te muestro el sistema en una demo rápida de 20 minutos? ¿Qué día te queda bien?`,
         correoAsunto: 'Vigilante SEACE — así te avisamos de las licitaciones de tu rubro',
@@ -188,7 +188,7 @@ Gracias por tu interés en Vigilante SEACE. Te resumo cómo ayudamos a proveedor
 🔍 Contratos menores y mayores: buscador completo con entidades, montos y estados.
 📊 Seguimiento de tus procesos: plazos y documentos siempre a la vista.
 
-Puedes probarlo 15 días gratis, sin tarjeta: https://licitacionesmype.pe/register
+Actívalo hoy y tienes 5 días de garantía: si no te convence, te devolvemos tu dinero: https://licitacionesmype.pe/register
 
 ¿Prefieres una demo de 20 minutos? Responde a este correo o escríbenos al WhatsApp +51 918 874 873.
 

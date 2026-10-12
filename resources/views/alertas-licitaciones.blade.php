@@ -406,7 +406,7 @@
                 <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-white/75 mb-5">
                     <span>✔ 200+ proveedores registrados</span>
                     <span>✔ Alertas el mismo día</span>
-                    <span>✔ 15 días de prueba gratis</span>
+                    <span>✔ Garantía de 5 días</span>
                 </div>
 
                 @if (session('ok'))

@@ -199,7 +199,7 @@
             </a>
             @endguest
         </div>
-        <p class="text-white/70 text-sm font-medium mt-6">Obtén 15 días de prueba Premium al registrarte</p>
+        <p class="text-white/70 text-sm font-medium mt-6">Regístrate gratis — y al activar, 5 días de garantía de devolución</p>
     </div>
 </section>
 

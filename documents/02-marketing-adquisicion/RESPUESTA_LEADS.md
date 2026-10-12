@@ -11,7 +11,7 @@
 2. Responder en **≤ 2 horas hábiles** (L–V 8:00–18:00):
    - **Por WhatsApp** (rápido, adjuntando el flyer) si dejó teléfono o si llegó por campaña.
    - **Por correo** con la plantilla si solo dejó email.
-3. Objetivo del primer contacto: **agendar demo de 20 min** o lograr el **registro con prueba de 15 días**.
+3. Objetivo del primer contacto: **agendar demo de 20 min** y cerrar **activación directa con Yape** (5 días de garantía).
 
 ---
 
@@ -42,7 +42,7 @@ Gracias por tu interés en Vigilante SEACE. Te resumo cómo ayudamos a proveedor
 🔍 Contratos menores y mayores: buscador completo con entidades, montos y estados.
 📊 Seguimiento de tus procesos: plazos y documentos siempre a la vista.
 
-Puedes probarlo 15 días gratis, sin tarjeta: https://licitacionesmype.pe/register
+Actívalo hoy y tienes 5 días de garantía: si no te convence, te devolvemos tu dinero: https://licitacionesmype.pe/register
 
 ¿Prefieres una demo de 20 minutos? Responde a este correo o escríbenos al WhatsApp +51 918 874 873.
 
@@ -69,7 +69,7 @@ Te comparto cómo funciona:
 • La IA analiza el TDR y te dice si calificas antes de postular.
 • Incluye buscador de contratos menores y mayores + seguimiento de procesos.
 
-Puedes probarlo 15 días gratis aquí: https://licitacionesmype.pe/register
+Actívalo hoy y tienes 5 días de garantía: si no te convence, te devolvemos tu dinero. Crea tu cuenta aquí: https://licitacionesmype.pe/register
 
 ¿Te muestro el sistema en una demo rápida de 20 minutos? ¿Qué día te queda bien?
 ```
@@ -78,7 +78,7 @@ Puedes probarlo 15 días gratis aquí: https://licitacionesmype.pe/register
 
 | El lead pregunta… | Ajuste del mensaje |
 |---|---|
-| "¿Cuánto cuesta?" | Añadir: "Los planes van desde S/ 49 al mes; con la prueba de 15 días entras sin pagar nada y recién decides después." |
+| "¿Cuánto cuesta?" | Añadir: "Los planes van desde S/ 49 al mes, y al activar tienes 5 días de garantía: si no te convence, te devolvemos tu dinero." |
 | "¿Cómo me llegan las alertas?" | Añadir: "Eliges canal (WhatsApp, Telegram o correo) y las palabras clave de tu rubro en Configuración de Alertas." |
 | "¿Sirve para mi rubro/región?" | Añadir: "Sí — filtra por rubro y por departamento/provincia/distrito. Dime tu rubro y te muestro licitaciones de muestra." |
 

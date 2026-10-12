@@ -63,11 +63,11 @@
                             </table>
 
                             <p style="margin:24px 0 8px; font-size:14px; color:#4B5563; line-height:1.7;">
-                                Puedes probarlo <strong>15 días gratis, sin tarjeta</strong>:
+                                Actívalo hoy y tienes <strong>5 días de garantía</strong>: si no te convence, te devolvemos tu dinero.
                             </p>
                             <p style="margin:0 0 24px;">
                                 <a href="{{ url('/register') }}" style="display:inline-block; background:#025964; color:#ffffff; text-decoration:none; font-weight:700; font-size:14px; padding:14px 32px; border-radius:999px;">
-                                    Crear mi cuenta gratis
+                                    Crear mi cuenta y activar
                                 </a>
                             </p>
 
