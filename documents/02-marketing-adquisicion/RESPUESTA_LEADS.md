@@ -56,8 +56,8 @@ Servicio privado e independiente, no afiliado al OSCE ni al Estado peruano.
 
 ## 3. WhatsApp — mensaje + flyer
 
-**Flyer (adjuntar):** `public/images/wsp/vigilante-info-1350.png`
-→ URL pública: `https://licitacionesmype.pe/images/wsp/vigilante-info-1350.png`
+**Flyer (adjuntar):** `public/images/wsp/vigilante-info-1350-v2.png`
+→ URL pública: `https://licitacionesmype.pe/images/wsp/vigilante-info-1350-v2.png`
 
 **Mensaje plantilla:**
 

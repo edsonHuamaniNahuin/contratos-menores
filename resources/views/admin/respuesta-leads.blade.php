@@ -137,14 +137,14 @@
             </div>
 
             <div class="flex flex-col md:flex-row gap-6">
-                <img src="{{ url('/images/wsp/vigilante-info-1350.png') }}" alt="Flyer Vigilante SEACE"
+                <img src="{{ url('/images/wsp/vigilante-info-1350-v2.png') }}" alt="Flyer Vigilante SEACE"
                      class="w-full md:w-64 rounded-xl border border-neutral-200">
 
                 <div class="flex-1 flex flex-col gap-3">
                     <p class="text-sm text-neutral-600 leading-relaxed">
                         Adjúntalo en WhatsApp (o envíalo como imagen). Ideal para el primer contacto cuando piden información.
                     </p>
-                    <a href="{{ url('/images/wsp/vigilante-info-1350.png') }}?descargar=1" download="vigilante-seace-info.png"
+                    <a href="{{ url('/images/wsp/vigilante-info-1350-v2.png') }}?descargar=1" download="vigilante-seace-info.png"
                        class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-primary-500 text-white text-sm font-semibold hover:opacity-90 transition w-fit">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/></svg>
                         Descargar PNG
@@ -167,7 +167,7 @@ function respuestaLeads() {
     return {
         nombre: '',
         copiado: '',
-        flyerUrl: 'https://licitacionesmype.pe/images/wsp/vigilante-info-1350.png',
+        flyerUrl: 'https://licitacionesmype.pe/images/wsp/vigilante-info-1350-v2.png',
         waTexto: `Hola {nombre} 👋 Gracias por escribir a Vigilante SEACE.
 
 Te comparto cómo funciona:
