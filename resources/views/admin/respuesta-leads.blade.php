@@ -15,7 +15,7 @@
 
     {{-- Nombre del lead --}}
     <div class="bg-white border border-neutral-200 rounded-2xl p-5 mb-6">
-        <label class="block text-sm font-semibold text-neutral-700 mb-2">Nombre del lead (opcional)</label>
+        <label class="block text-sm font-semibold text-neutral-700 mb-2">Nombre de la persona (lead o cliente)</label>
         <div class="flex flex-col sm:flex-row gap-3">
             <input type="text" x-model="nombre" placeholder="Ej: Juan Pérez"
                    class="flex-1 px-4 py-3 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -97,6 +97,36 @@
             </div>
         </div>
 
+        {{-- Pedir testimonios --}}
+        <div class="lg:col-span-2 bg-white border border-neutral-200 rounded-2xl p-5">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.363 1.118l1.286 3.958c.3.921-.755 1.688-1.539 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.197-1.538-1.118l1.286-3.958a1 1 0 00-.364-1.118L2.05 9.385c-.783-.57-.38-1.81.588-1.81h4.163a1 1 0 00.95-.69l1.298-3.958z"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-neutral-900">Pedir testimonios (clientes actuales)</h2>
+                    <p class="text-xs text-neutral-500">Tu mejor prueba social: los clientes que ya pagan. Envía el pedido por WhatsApp.</p>
+                </div>
+            </div>
+
+            <textarea x-model="testiTexto" rows="7"
+                      class="w-full px-4 py-3 rounded-xl border border-neutral-300 text-[13px] leading-relaxed font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+
+            <div class="flex flex-wrap gap-3 mt-4">
+                <button @click="copiar(testiTexto, 'testi')"
+                        class="px-4 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-semibold hover:opacity-90 transition">
+                    <span x-show="copiado !== 'testi'">Copiar mensaje</span>
+                    <span x-show="copiado === 'testi'" x-cloak>Copiado ✓</span>
+                </button>
+                <a :href="'https://wa.me/51918874873?text=' + encodeURIComponent(testiTexto)" target="_blank" rel="noopener"
+                   class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:opacity-90 transition">
+                    Abrir WhatsApp con este texto
+                </a>
+            </div>
+
+            <p class="mt-3 text-xs text-neutral-400">Cuando un cliente acepte, pásame su frase + nombre/empresa y la subimos a las 3 landings.</p>
+        </div>
+
         {{-- Flyer --}}
         <div class="lg:col-span-2 bg-white border border-neutral-200 rounded-2xl p-5">
             <div class="flex items-center gap-3 mb-4">
@@ -166,10 +196,16 @@ Saludos,
 Equipo Vigilante SEACE
 Sunqupacha S.A.C. · licitacionesmype.pe
 Servicio privado e independiente, no afiliado al OSCE ni al Estado peruano.`,
+        testiTexto: `Hola {nombre} 👋 Te escribo del equipo de Vigilante SEACE. ¡Gracias por confiar en el sistema!
+
+Estamos mejorando nuestra página y nos encantaría mostrar tu experiencia: ¿nos regalas 1-2 líneas sobre cómo te ayuda? (Ej: "me avisan el mismo día", "ya no reviso el SEACE a mano", "encontré procesos que antes se me pasaban").
+
+Con tu permiso publicaríamos tu nombre y empresa. ¡Gracias!`,
         aplicarNombre() {
             const reemplazo = this.nombre.trim() !== '' ? this.nombre.trim() : 'estimado proveedor';
             this.waTexto = this.waTexto.replaceAll('{nombre}', reemplazo);
             this.correoTexto = this.correoTexto.replaceAll('{nombre}', reemplazo);
+            this.testiTexto = this.testiTexto.replaceAll('{nombre}', reemplazo);
         },
         async copiar(texto, seccion) {
             try {
