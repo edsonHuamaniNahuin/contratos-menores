@@ -5,6 +5,26 @@
 
 ---
 
+## 2026-10-12 · Meta Ads (flujos de conversión) · `23abc227`
+
+### Auditoría del clic→conversión: pixel verificado con la API de stats + endurecido el evento `Lead`
+
+**Qué se verificó (embudo completo):**
+1. Los 9 anuncios llevan CTA "Más información" a la landing del embudo con UTMs correctos (validador `verify_campaign.py`).
+2. Landings E1/E2/E3: formulario con captcha + WhatsApp. POST → lead en `demo_leads` (con `landing`, `utm_*`, `fbclid`, ip, UA) + email interno a services@ + página de éxito "Gracias...".
+3. **Eventos del pixel Meta verificados con la API `/{pixel}/stats`**: `PageView` y `Contact` (clics WhatsApp) llegan a Meta hoy. NO es una suposición: hay eventos reales registrados.
+4. Evento `Lead`: el snippet se renderiza en la página de éxito (verificado en el HTML servido). Se **endureció**: ahora se dispara directo al parsear el script (mismo mecanismo que PageView) en vez de dentro de `DOMContentLoaded` (commit `23abc227`, desplegado + verificado en HTML de éxito).
+
+**Nota importante (límite del harness de pruebas):** el navegador headless de pruebas (patchright) evalúa en un mundo aislado y no ejecuta los beacons del pixel para nuestros tests — por eso los tests propios no aparecen en los stats. La confirmación final del evento `Lead` será: (a) primer lead real visible en Events Manager, o (b) botón "Probar eventos" (manual). Los `PageView`/`Contact` que sí aparecen en stats provienen de navegadores reales (incluido tráfico orgánico).
+
+**Observación de la auditoría:** clics a WhatsApp (`Contact`) NO se guardan en BD (solo como evento en Meta/GA4); la conversación vive en WhatsApp Business. Sin email automático al lead (solo aviso interno a services@). Ambas cosas quedan como decisiones de fase 2.
+
+**Datos basura limpiados:** leads de prueba QA (ids 6-11) eliminados; en BD quedan solo los 3 leads reales.
+
+**Archivos:** `resources/views/partials/meta-pixel.blade.php`
+
+---
+
 ## 2026-10-12 · Meta Ads (verificación) · (commit de esta sesión)
 
 ### Lección dura: "aplicado" no es "verificado" — intereses wrong + falta de validación sistemática
