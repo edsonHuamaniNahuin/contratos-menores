@@ -236,6 +236,11 @@ dayparting por API exige presupuesto lifetime).
   Exclusiones activas: clientes (`120247999226360108`) y leads web (`120247999226840108`).
 - Reproducible: `scripts/meta-ads/refactor_campaigns_v2.py --delete-old` (estructura) y
   `scripts/meta-ads/configure_v2.py --activate` (anuncios/UTMs).
+- **Verificación obligatoria (definición de "aplicado"):** tras CUALQUIER cambio (API o scripts), correr
+  `python3 scripts/meta-ads/verify_campaign.py --token-file /root/.meta-token` — compara en vivo vs. intencionado
+  (campaña, presupuestos, segmentación, exclusiones, intereses, 9 anuncios con landing/UTM/imagen) y falla con exit 1
+  si algo no coincide. **Nada se considera aplicado hasta que pase.** Primera corrida completa: 87/88 OK
+  (única excepción: V3 de Vigentes en `PENDING_REVIEW`, revisión normal de Meta).
 
 ### 6.2 Estructura (aplicada)
 

@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-10-12 · Meta Ads (verificación) · (commit de esta sesión)
+
+### Lección dura: "aplicado" no es "verificado" — intereses wrong + falta de validación sistemática
+
+**Contexto:** el bug de intereses ("OSCE" → "Lille Olympique Sporting Club") pasó porque los scripts aplicaban lo que devolvía una búsqueda fuzzy sin validar el resultado, y se marcó la configuración como lista SIN comparar lo aplicado en vivo contra lo intencionado. El usuario lo detectó preguntando "¿cómo has segmentado?".
+
+**Medida permanente:** nuevo validador **`scripts/meta-ads/verify_campaign.py`** que compara en vivo vs. intencionado y falla con exit 1:
+- Campaña: nombre, status ACTIVE, objetivo OUTCOME_TRAFFIC.
+- 3 ad sets: nombre, ACTIVE, S/ 7/día (700 cents), LINK_CLICKS, geo PE, 25–60, `advantage_audience=0`, exclusiones exactas (clientes+leads), intereses validados por nombre.
+- 9 anuncios: nombre, ad set correcto, ACTIVE/ACTIVE, landing correcta por embudo, UTMs exactos, imagen presente y 3 imágenes distintas por embudo.
+
+**Resultado de la primera corrida completa: 87/88 OK.** Única excepción: `MA-Vigentes - V3 Alivio` en `PENDING_REVIEW` (revisión normal de Meta tras editar el ad set; se aprueba sola, máx 24 h). No es mala configuración.
+
+**Protocolo actualizado (doc §6.1):** ningún cambio de campaña se considera aplicado hasta que `verify_campaign.py` pase. Correrlo tras CUALQUIER edición (API o re-ejecución de scripts).
+
+**Lección:** la validación no es un paso extra — ES la definición de "hecho". Todo valor aplicado por API se re-lee y se compara contra lo intencionado; los buscadores (intereses, IDs) se validan por nombre antes de usar el resultado.
+
+**Archivos:** `scripts/meta-ads/verify_campaign.py`, `documents/02-marketing-adquisicion/DOCUMENTACION_CAMPANA_META_2026-10.md`
+
+---
+
 ## 2026-10-12 · Meta Ads (segmentación) · (commit de esta sesión)
 
 ### Intereses de los 3 ad sets mal resueltos por búsqueda fuzzy del script ("OSCE" → "Lille Olympique Sporting Club")
