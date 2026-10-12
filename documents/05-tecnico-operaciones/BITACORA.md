@@ -5,6 +5,45 @@
 
 ---
 
+## 2026-10-12 · Meta Ads (monitoreo) · `0627792b`, `712ae001`
+
+### Monitor automático de campañas con alertas Telegram + pruebas de conversión (pixel/GA4/formulario)
+
+**Contexto:** Día 1 de la campaña (lanzada lunes 08:00). Se pidió monitoreo continuo y las pruebas necesarias para maximizar conversiones.
+
+**Pruebas ejecutadas (navegador headless real, con UTMs de campaña):**
+1. Las 3 landings destino responden 200 y cargan bien: `/alertas-licitaciones`, `/software-licitaciones`, `/licitaciones-vigentes`. **0 errores de consola, 0 requests fallidos.**
+2. **Pixel Meta** (`1029237720131593`): `fbevents.js` + config cargan en las 3 landings. ✅
+3. **GA4** (`G-4PRW1QCW48`): `gtag.js` carga y dispara hits (request `/td` capturado). ✅
+4. **Formulario e2e real** (E1): captcha dinámico resuelto → POST → mensaje "Gracias. Hemos recibido tu solicitud..." → lead en BD (id 6) + correo interno de demo a services@. Lead de prueba eliminado tras la verificación. ✅
+
+**Monitor automático (`meta:monitor`):**
+- Revisa: gasto vs S/ 21/día, impresiones, clics, CTR, CPC, CPM, frecuencia, leads del día (BD `demo_leads` por landing + atribución Meta) e issues de campaña/ad sets/anuncios.
+- Alertas por Telegram (admin): anuncios rechazados/con issues, sin entrega después de las 11:00, CTR < 0.5% con > 1.5K impresiones, frecuencia > 2.8, CPC > S/ 3.
+- Horario: **10/13/16/19** solo-alertas + **resumen completo 21:30**. Historial: `storage/app/meta-monitor/YYYY-MM.json`. Requiere `META_ACCESS_TOKEN` en `.env` de producción (agregado).
+
+**Verificación:** `schedule:list` OK (4+1 corridas), primera notificación Telegram enviada, snapshot creado, servicios sanos.
+
+**Archivos:** `app/Console/Commands/MetaMonitorCommand.php`, `config/services.php`, `routes/console.php`, `app/Services/AdminTelegramNotificationService.php` (método `enviarMensaje`)
+
+---
+
+## 2026-10-12 · Incidente Laravel 12 · `712ae001`
+
+### `->at([...])` en el scheduler rompió TODOS los comandos artisan en producción
+
+**Síntoma:** tras desplegar el schedule de `meta:monitor` con `->daily()->at(['10:00','13:00','16:00','19:00'])`, cualquier `php artisan` fallaba: `explode(): Argument #2 ($string) must be of type string, array given (ManagesFrequencies.php:347)`. El deploy quedó a medias (cache/migrate no corrieron) porque artisan carga `routes/console.php` al boot y explotaba.
+
+**Causa:** en Laravel 12, `at()` delega en `dailyAt(string $time)` y hace `explode(':', $time)` — **no acepta arrays** (esa sintaxis es de versiones antiguas).
+
+**Solución:** `->cron('0 10,13,16,19 * * *')`. Deploy repetido, artisan OK (Laravel 12.49), schedule verificado con `schedule:list`.
+
+**Lección:** todo cambio de scheduler debe probarse con `php artisan schedule:list` ANTES del deploy — un error en `routes/console.php` tumba TODOS los comandos artisan (incluidos los del propio deploy). Ventana de indisponibilidad: ~10 min; los servicios en ejecución no se cayeron.
+
+**Archivos:** `routes/console.php`
+
+---
+
 ## 2026-10-11 · Plantillas TDR (correos) · `cf4b18b2`
 
 ### El correo del modelo de TDR se enviaba a `services@` en vez del LEAD (los leads nunca lo recibían)
