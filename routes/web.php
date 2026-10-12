@@ -551,6 +551,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.monitoreo')
         ->middleware('can:view-monitoreo-sistema');
 
+    Route::get('/admin/respuesta-leads', function () {
+        return view('admin.respuesta-leads');
+    })
+        ->name('admin.respuesta-leads')
+        ->middleware('can:view-monitoreo-sistema');
+
     Route::get('/vigilancia-adjudicaciones', function () {
         return view('vigilancia-adjudicaciones');
     })
