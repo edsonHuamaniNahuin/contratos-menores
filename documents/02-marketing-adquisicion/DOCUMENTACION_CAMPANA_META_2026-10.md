@@ -144,34 +144,42 @@ canal de venta.
 
 ## 6. Estructura de campañas en Meta
 
-### 6.1 Estado actual (creado el 01/10/2026, PAUSED)
+### 6.1 Estado actual — estructura v2 aplicada (01/10/2026, todo PAUSED)
 
-| Campaña | Campaña ID | Conjunto ID | Anuncio ID | Objetivo actual | Presupuesto |
-|---|---|---|---|---|---|
-| MA-Alertas | `120247998776920108` | `120247998777150108` | `120247998801620108` | OUTCOME_TRAFFIC · LINK_CLICKS | S/ 16.50/día |
-| MA-Software | `120247998778070108` | `120247998778140108` | `120247998801790108` | OUTCOME_TRAFFIC · LINK_CLICKS | S/ 16.50/día |
-| MA-Vigentes | `120247998779450108` | `120247998779630108` | `120247998802140108` | OUTCOME_TRAFFIC · LINK_CLICKS | S/ 16.50/día |
+La v1 (3 campañas sueltas por embudo) fue **eliminada** el 01/10/2026 y reemplazada por una campaña de
+aprendizaje con 3 ad sets (ver §6.2).
+
+| Nivel | Nombre | ID | Presupuesto | Estado |
+|---|---|---|---|---|
+| Campaña | `META_Traffic_Construccion_E1E2E3_2026Q4` | `120247999030430108` | ABO (sin CBO) | PAUSED |
+| Ad set E1 | `META_Traffic_E1_Alertas_2026Q4` | `120247999030690108` | S/ 10/día | PAUSED |
+| Ad set E2 | `META_Traffic_E2_Software_2026Q4` | `120247999032700108` | S/ 10/día | PAUSED |
+| Ad set E3 | `META_Traffic_E3_Vigentes_2026Q4` | `120247999034400108` | S/ 10/día | PAUSED |
+| Anuncio E1 | `MA-Alertas - 4x5` | `120247999031740108` | — | PAUSED |
+| Anuncio E1 | `MA-Alertas - 1x1` | `120247999032370108` | — | PAUSED |
+| Anuncio E2 | `MA-Software - 4x5` | `120247999033910108` | — | PAUSED |
+| Anuncio E2 | `MA-Software - 1x1` | `120247999034210108` | — | PAUSED |
+| Anuncio E3 | `MA-Vigentes - 4x5` | `120247999035080108` | — | PAUSED |
+| Anuncio E3 | `MA-Vigentes - 1x1` | `120247999035650108` | — | PAUSED |
 
 - Página: **Vigilante SEACE** (`1340988862437864`) · Pixel: **Vigilante SEACE Web** (`1029237720131593`).
-- Audiencia actual: Perú, 25–60, intereses "Government concepts", "OSCE", + rubro. Creativos: fotos de las landings (a reemplazar por los flyers nuevos).
+- Audiencia por ad set: Perú, 25–60 · intereses núcleo (OSCE + Gobierno + rubro) · sin advantage audience.
+- Reproducible: `scripts/meta-ads/refactor_campaigns_v2.py --delete-old`.
 
-### 6.2 Estructura propuesta (a implementar en el refactor)
-
-Adoptamos la estructura **Scaling/Testing** adaptada a presupuesto pequeño (skill `ads` → `meta-decision-system`):
+### 6.2 Estructura (aplicada)
 
 ```
 Cuenta Meta (act_350473826722700)
-├── [TESTING] META_Lead_Construccion_E1E2E3_Multi_2026Q4   ← 100% del presupuesto al inicio (S/ 30-40/día)
-│    ├── Ad set 1: E1 Alertas      → /alertas-licitaciones   (broad PE + exclusión clientes)
-│    │     ├── Flyer 4:5  (ma-alertas-1350)  ← ganador esperado
-│    │     ├── Flyer 1:1  (ma-alertas-1080)
-│    │     └── Variante de hook B (pendiente de producir)
-│    ├── Ad set 2: E2 Software     → /software-licitaciones
-│    │     ├── Flyer 4:5 + 1:1
-│    ├── Ad set 3: E3 Vigentes     → /licitaciones-vigentes
-│    │     ├── Flyer 4:5 + 1:1
-├── [SCALING] (se crea al graduar los primeros ganadores, ~80% del presupuesto)
-└── [REMARKETING] (cuando haya audiencias ≥1,000 personas por landing)
+└── META_Traffic_Construccion_E1E2E3_2026Q4        (ABO, PAUSED)
+     ├── META_Traffic_E1_Alertas_2026Q4   S/10/día  → /alertas-licitaciones
+     │     ├── MA-Alertas - 4x5  (ma-alertas-1350.png)
+     │     └── MA-Alertas - 1x1  (ma-alertas-1080.png)
+     ├── META_Traffic_E2_Software_2026Q4  S/10/día  → /software-licitaciones
+     │     ├── MA-Software - 4x5
+     │     └── MA-Software - 1x1
+     └── META_Traffic_E3_Vigentes_2026Q4  S/10/día  → /licitaciones-vigentes
+           ├── MA-Vigentes - 4x5
+           └── MA-Vigentes - 1x1
 ```
 
 **Naming convention** (a aplicar): `META_[Objetivo]_[Audiencia]_[Oferta]_[Fecha]` → ej.
@@ -186,8 +194,10 @@ Cuenta Meta (act_350473826722700)
 | OUTCOME_LEADS + Lead Form nativo (Higher Intent, email corporativo, 2 preguntas) | Test en el 2.º ad set de E2/E3 | Menos control, preguntas de calidad |
 | OUTCOME_SALES + conversión `Lead` del pixel | Cuando haya ≥50 leads/semana | Precipitado con el volumen actual |
 
-**Decisión:** fase 1 = `OUTCOME_LEADS` (o `OUTCOME_TRAFFIC` mientras el pixel acumula) con **optimización a
-`Lead`**; a las 2 semanas evaluar formulario nativo como ad set paralelo.
+**Decisión (aplicada en v2):** fase 1 = **OUTCOME_TRAFFIC + LINK_CLICKS** (los ad sets actuales) para leer
+rápido creativos/landings mientras el pixel acumula sus primeros `Lead`; al alcanzar **≥ 15–20 leads** se crea
+la versión `OUTCOME_LEADS + OFFSITE_CONVERSIONS (pixel Lead)` con la misma estructura (los ad sets actuales
+quedan como control). A las 2 semanas evaluar formulario nativo como ad set paralelo.
 
 ### 6.4 Pujas y learning phase
 - Estrategia: **LOWEST_COST_WITHOUT_CAP** (sin tope) hasta tener costo estable; luego *cost cap* ≈ 1.2× TCPL.
