@@ -60,6 +60,10 @@ class RoiSemanalCommand extends Command
         $trials = Subscription::where('plan', Subscription::PLAN_TRIAL)
             ->whereBetween('created_at', [$desde, $hasta])
             ->count();
+        $trialsMeta = Subscription::where('plan', Subscription::PLAN_TRIAL)
+            ->whereBetween('created_at', [$desde, $hasta])
+            ->whereHas('user', fn ($q) => $q->where('utm_source', 'meta'))
+            ->count();
 
         $yape = PagoYape::where('estado', PagoYape::ESTADO_APROBADO)
             ->whereBetween('processed_at', [$desde, $hasta]);
@@ -81,6 +85,7 @@ class RoiSemanalCommand extends Command
             'registros_total' => $registrosTotal,
             'registros_meta' => $registrosMeta,
             'trials' => $trials,
+            'trials_meta' => $trialsMeta,
             'yape_ventas' => $yapeVentas,
             'yape_monto' => round($yapeMonto, 2),
             'yape_campana' => $yapeCampana,
@@ -88,9 +93,9 @@ class RoiSemanalCommand extends Command
             'costo_registro' => $registrosTotal > 0 ? round($gasto / $registrosTotal, 2) : null,
             'costo_venta' => $yapeVentas > 0 ? round($gasto / $yapeVentas, 2) : null,
             'roas' => $gasto > 0.01 ? round($yapeMonto / $gasto, 2) : null,
-            'conv_lead_registro' => $leadsTotal > 0 ? round($registrosTotal / $leadsTotal * 100, 1) : null,
-            'conv_registro_trial' => $registrosTotal > 0 ? round($trials / $registrosTotal * 100, 1) : null,
-            'conv_trial_pago' => $trials > 0 ? round($yapeVentas / $trials * 100, 1) : null,
+            'conv_lead_registro' => $leadsMeta > 0 ? round($registrosMeta / $leadsMeta * 100, 1) : null,
+            'conv_registro_trial' => $registrosMeta > 0 ? round($trialsMeta / $registrosMeta * 100, 1) : null,
+            'conv_trial_pago' => $trialsMeta > 0 ? round($yapeCampana / $trialsMeta * 100, 1) : null,
         ];
     }
 
