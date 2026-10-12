@@ -1,6 +1,8 @@
 # Documentación de Campaña — Meta Ads · Vigilante SEACE
 
-> **Versión:** 1.1 · **Fecha:** 01/10/2026 · **Presupuesto real:** **S/ 150/semana (S/ 21/día)**
+> **Versión:** 1.2 · **Fecha:** 11/10/2026 · **Presupuesto real:** **S/ 150/semana (S/ 21/día)**
+> 📎 El detalle técnico exhaustivo (cronología, prompts de IA, IDs, payloads, scripts y lecciones) está en
+> `ANEXO_TECNICO_CAMPANA_META.md`.
 > **Cuenta publicitaria:** `act_350473826722700` (FocusSunquPacha · PEN · America/Lima)
 > **Documentos relacionados:** `CONFIG_CAMPANAS_META_ADS.md` (config inicial), `EMBUDOS_3_CAMPANAS.md` (E1/E2/E3),
 > `CONFIG_CAMPANAS_GOOGLE_ADS.md`, `PRONOSTICO_TRAFICO_REVENUE.md`, `../03-clientes-investigacion/voc-datos-reales.md`.
@@ -122,7 +124,7 @@ La audiencia se define en el **creativo** (rubro, obra, regiones), no apilando i
   (p. ej. plantilla TDR → demo), frecuencia 3–5/semana.
 - **Lookalike 1 %:** cuando `demo_leads` + pagos sumen ≥ 100 contactos (hoy 3 — no alcanza).
 
-### 4.3 Sectores y geografía según datos reales de producción (01/10/2026)
+### 4.3 Sectores y geografía según datos reales de producción (11/10/2026)
 
 Universo de contratos mayores en BD (`contratos_mayores`) y clientes reales (`subscriber_profile_keyword`):
 
@@ -152,7 +154,7 @@ Servicios logísticos (2) · Limpieza integral · SySO · BIM/edificaciones sani
    (el apilado perjudica en 2026).
 4. **No atacar TI** con creativo específico hasta tener una conversión real de ese clúster.
 
-### 4.4 Lo que dice GA4 (últimos 28 días, 01/10/2026) — ajustes a la configuración
+### 4.4 Lo que dice GA4 (últimos 28 días, 11/10/2026) — ajustes a la configuración
 
 Fuente: GA4 `properties/404642926` (script `scripts/ga4-mcp-server.py` + queries propias).
 
@@ -202,27 +204,32 @@ canal de venta.
 
 ## 6. Estructura de campañas en Meta
 
-### 6.1 Estado actual — estructura v2 aplicada (01/10/2026, todo PAUSED)
+### 6.1 Estado actual — estructura v2 aplicada y EN VIVO (11/10/2026)
 
-La v1 (3 campañas sueltas por embudo) fue **eliminada** el 01/10/2026 y reemplazada por una campaña de
-aprendizaje con 3 ad sets (ver §6.2).
+La v1 (3 campañas sueltas por embudo) fue **eliminada** y reemplazada por una campaña de aprendizaje con 3 ad sets
+(ver §6.2). Estado al cierre: campaña y 3 ad sets **ACTIVE**; **9 anuncios ACTIVE** (8 en revisión `IN_PROCESS` de Meta).
 
 | Nivel | Nombre | ID | Presupuesto | Estado |
 |---|---|---|---|---|
-| Campaña | `META_Traffic_Construccion_E1E2E3_2026Q4` | `120247999030430108` | ABO (sin CBO) | PAUSED |
-| Ad set E1 | `META_Traffic_E1_Alertas_2026Q4` | `120247999030690108` | **S/ 7/día** | PAUSED |
-| Ad set E2 | `META_Traffic_E2_Software_2026Q4` | `120247999032700108` | **S/ 7/día** | PAUSED |
-| Ad set E3 | `META_Traffic_E3_Vigentes_2026Q4` | `120247999034400108` | **S/ 7/día** | PAUSED |
-| Anuncio E1 | `MA-Alertas - 4x5` | `120247999031740108` | — | PAUSED |
-| Anuncio E1 | `MA-Alertas - 1x1` | `120247999032370108` | — | PAUSED |
-| Anuncio E2 | `MA-Software - 4x5` | `120247999033910108` | — | PAUSED |
-| Anuncio E2 | `MA-Software - 1x1` | `120247999034210108` | — | PAUSED |
-| Anuncio E3 | `MA-Vigentes - 4x5` | `120247999035080108` | — | PAUSED |
-| Anuncio E3 | `MA-Vigentes - 1x1` | `120247999035650108` | — | PAUSED |
+| Campaña | `META_Traffic_Construccion_E1E2E3_2026Q4` | `120247999030430108` | ABO (sin CBO) | ACTIVE |
+| Ad set E1 | `META_Traffic_E1_Alertas_2026Q4` | `120247999030690108` | **S/ 7/día** | ACTIVE |
+| Ad set E2 | `META_Traffic_E2_Software_2026Q4` | `120247999032700108` | **S/ 7/día** | ACTIVE |
+| Ad set E3 | `META_Traffic_E3_Vigentes_2026Q4` | `120247999034400108` | **S/ 7/día** | ACTIVE |
+| Anuncio E1 | `MA-Alertas - V1 Dato` | `120247999155660108` | — | ACTIVE |
+| Anuncio E1 | `MA-Alertas - V2 Dolor` | `120247999156360108` | — | ACTIVE |
+| Anuncio E1 | `MA-Alertas - V3 Alivio` | `120247999157100108` | — | ACTIVE |
+| Anuncio E2 | `MA-Software - V1 Dato` | `120247999157490108` | — | ACTIVE |
+| Anuncio E2 | `MA-Software - V2 Dolor` | `120247999158440108` | — | ACTIVE |
+| Anuncio E2 | `MA-Software - V3 Alivio` | `120247999159430108` | — | ACTIVE |
+| Anuncio E3 | `MA-Vigentes - V1 Dato` | `120247999160020108` | — | ACTIVE |
+| Anuncio E3 | `MA-Vigentes - V2 Dolor` | `120247999161460108` | — | ACTIVE |
+| Anuncio E3 | `MA-Vigentes - V3 Alivio` | `120247999162570108` | — | ACTIVE |
 
 - Página: **Vigilante SEACE** (`1340988862437864`) · Pixel: **Vigilante SEACE Web** (`1029237720131593`).
 - Audiencia por ad set: Perú, 25–60 · intereses núcleo (OSCE + Gobierno + rubro) · sin advantage audience.
-- Reproducible: `scripts/meta-ads/refactor_campaigns_v2.py --delete-old`.
+  Exclusiones activas: clientes (`120247999226360108`) y leads web (`120247999226840108`).
+- Reproducible: `scripts/meta-ads/refactor_campaigns_v2.py --delete-old` (estructura) y
+  `scripts/meta-ads/configure_v2.py --activate` (anuncios/UTMs).
 
 ### 6.2 Estructura (aplicada)
 
@@ -533,7 +540,7 @@ recalibran con datos reales a los 30 días.
 - Script de creación: `scripts/meta-ads/create_campaigns.py` (+ `campaigns_config.json`).
 - Flyers: `public/images/ads/*.png` · fuentes: `scripts/ad-creatives/*.html` · render: `render.mjs`.
 
-### 14.2 Checklist pre-lanzamiento (estado 01/10/2026)
+### 14.2 Checklist pre-lanzamiento (estado 11/10/2026)
 
 - [x] Definir objetivo por campaña y aplicar nombres `META_Traffic_..._2026Q4` (aplicado v2).
 - [x] Subir los 9 flyers (V1/V2/V3 × 3 embudos, 4:5) y crear los 9 anuncios (activos).
