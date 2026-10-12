@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-10-11 · Buscadores · `2d924cc3`, `81c0dd6a`
+
+### 500 en `/buscador-publico` y `/buscador-contratos-mayores` con query params inválidos (tráfico de bots)
+
+**Síntoma:** URLs con parámetros no numéricos o tipo array devolvían **500 en producción** (reproducido el 11/10 con 9 vectores: `?pagina=abc`, `?porPagina=abc`, `?dep=abc`, `?pagina=`, `?palabraClave[]=x`, `?ordenarPor[]=x`, `?desde[]=x`, etc.). En `/admin/monitoreo` aparecían como `Cannot assign string to property App\Livewire\BuscadorPublico::$pagina of type int` (3 ocurrencias desde el 01/10 — crawlers/bots).
+
+**Causa (dos capas):**
+1. En Livewire 4, `#[Url]` hidrata el valor del query string: si `json_decode` no lo convierte (ej. `?pagina=abc`) o el param es array (`?palabraClave[]=x`), asigna el valor CRUDO a la propiedad tipada `int`/`string` → `TypeError` → 500.
+2. El blade `buscador-publico.blade.php` leía `request('palabraClave')` crudo para el SEO (`Str::limit($q, …)`) → un array rompía con `mb_strwidth(): Argument #1 must be of type string`.
+
+**Solución:**
+1. Nuevos atributos `App\Support\Livewire\UrlInt` y `UrlString` (extienden `BaseUrl`): coaccionan ANTES de asignar — valor no numérico/array → default declarado de la propiedad; `UrlInt` acepta `min`/`max`. Reemplazados los **21 usos de `#[Url]`** en ambos buscadores.
+2. Normalización a string de los `request()` crudos en blades que construyen SEO/contenido: `buscador-publico.blade.php`, `cotizar-guia.blade.php`, `prueba-endpoints.blade.php`.
+
+**Verificación:** matriz de 18 URLs (vectores de bots + paginación interna `page[]`/`page=abc` + queries normales `?palabraClave=software`, `?dep=lima`) → **18/18 = 200**; 0 errores nuevos en `laravel.log` tras el deploy. Deploy vía `deploy/orchestrate.sh deploy --skip-deps`.
+
+**Lección:** En Livewire 4, `#[Url]` con propiedades tipadas NO es seguro ante query strings arbitrarios (los bots prueban `[]=` y basura). Toda prop de URL debe coaccionar explícitamente; y todo blade que lea `request()` directo debe normalizar a string. Un 500 por bot mata el crawl de SEO y ensucia el Monitoreo.
+
+**Archivos:** `app/Support/Livewire/UrlInt.php`, `app/Support/Livewire/UrlString.php`, `app/Livewire/BuscadorPublico.php`, `app/Livewire/BuscadorMayores.php`, `resources/views/buscador-publico.blade.php`, `resources/views/cotizar-guia.blade.php`, `resources/views/prueba-endpoints.blade.php`
+
+---
+
+## 2026-10-11 · Monitoreo (auditoría de errores recientes) · (sin commit)
+
+**Contexto:** Revisión del panel `/admin/monitoreo` a pedido del usuario. Clasificación de los 15 errores:
+
+1. **`contrato_mayor_documentos` doesn't exist (11/10 20:39):** **falsa alarma de producto.** El stacktrace apunta a `/tmp/ads-metrics.php` (script temporal one-off de métricas de campaña, ya eliminado): consultaba la tabla con el nombre en singular por un typo del script. La tabla real `contratos_mayores_documentos` existe, el feature de documentos funciona y **0 migraciones pendientes** en producción. No tocar nada.
+2. **`Cannot assign string to property ...$pagina` (01/10):** bug REAL — corregido en la entrada superior (commits `2d924cc3`, `81c0dd6a`).
+3. **Transitorios (sin acción de código):**
+   - `SEACE Público: Error en búsqueda status 500` (02–09/10): caídas del upstream `prod6.seace.gob.pe`; el error se registra y se recupera solo.
+   - `Telegram Bot Listener Error` (timeouts cURL / 429): red o rate-limit de Telegram, ya documentado (2026-09-15, `ee84ed2a`).
+   - SMTP `421 Timeout - closing connection` (10/10 11:17–11:18, 2 ocurrencias): hiccup del proveedor; el job reintenta con backoff y los correos no marcados se reenvían en la siguiente corrida (fix `2026-08-18`). Vigilar frecuencia (ver Pendientes).
+
+---
+
 ## 2026-09-18 · Buscador Contratos Mayores · (commit de esta sesión)
 
 ### Aviso "TDR pendiente" se desborda del menú de acciones (`white-space: nowrap` heredado)
@@ -1003,3 +1038,4 @@ Cada página ahora tiene exactamente 1 `<h1>` semántico.
 | Core Web Vitals no medidos | Media | PageSpeed Insights pendiente |
 | OG image (`vigilante-seace-og.webp`) | Baja | Placeholder, no existe el archivo aún |
 | Internal linking desde páginas principales al blog | Media | Fase 2 del plan SEO |
+| 421 SMTP MailerSend esporádico (2 el 10/10 11:17-18) | Media | El job reintenta; si la frecuencia sube, revisar plan/uso de MailerSend (free ≈3,000/mes) |
