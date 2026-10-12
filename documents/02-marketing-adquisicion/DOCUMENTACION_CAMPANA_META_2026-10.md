@@ -152,6 +152,33 @@ Servicios logísticos (2) · Limpieza integral · SySO · BIM/edificaciones sani
    (el apilado perjudica en 2026).
 4. **No atacar TI** con creativo específico hasta tener una conversión real de ese clúster.
 
+### 4.4 Lo que dice GA4 (últimos 28 días, 01/10/2026) — ajustes a la configuración
+
+Fuente: GA4 `properties/404642926` (script `scripts/ga4-mcp-server.py` + queries propias).
+
+**Tráfico:** 335 usuarios · 625 sesiones · 4,433 páginas vistas · duración media **6m 34s** · rebote **32 %**.
+**Fuentes:** Google orgánico 161 u · directo 76 u · **Bing orgánico 60 u** · **ChatGPT (ai-assistant) 18 u** · Yahoo 17 u.
+Todo orgánico: **no hay tráfico pago aún** (baseline limpio para medir Meta).
+**Dispositivos:** **82 % desktop** (275 u) · 18 % mobile (60 u) · tablet 1 → la audiencia investiga desde la oficina, no desde el celular.
+**Geografía:** Lima 191 u (57 %) · La Libertad 20 · Lambayeque 14 · Arequipa 11 · Junín 10 · Cusco 9 · Cajamarca 8 ·
+Callao 7 · Ica 6 · Áncash 3 · Puno 3. Ciudades: Lima, Trujillo, Chiclayo, Cusco, Arequipa, Huancayo.
+**Engagement por landing:** `/buscador-publico` 92 % (194 sesiones) · `/plantillas-tdr` 54 % (28) ·
+`/licitaciones-vigentes` 56 % (9) · `/alertas-licitaciones` 33 % (3, landing nueva) · `/planes` 62 % (8).
+
+**Implicancias aplicadas a la campaña:**
+1. **Geo:** mantener Perú completo (los 3 adsets) — Lima concentra la demanda pero las regiones (norte/sur) ya generan
+   sesiones; los creativos siguen con lenguaje "tu rubro y región".
+2. **Desktop-first:** los leads B2B revisan en escritorio → no sobre-indexar mobile; creativos 4:5/1:1 sirven feed
+   móvil y desktop; la landing debe estar impecable en desktop (ya lo está).
+3. **Bing + ChatGPT traen 23 % del tráfico orgánico** → confirmar que el mensaje del anuncio esté alineado con la
+   promesa que buscan ("licitaciones del Estado", "oportunidades") y que el pixel capture también esos aterrizajes.
+4. **Alerta de conversión (riesgo):** GA4 muestra **157 `form_submit` de 56 usuarios** pero solo **3 `demo_lead_enviado`**.
+   Hay fricción/validación en los formularios (captcha, reglas, errores). **Antes de escalar presupuesto hay que
+   probar el formulario en producción** (enviar un lead de prueba y confirmar que entra a `demo_leads` + email). Si el
+   form no convierte, el tráfico pago se desperdicia.
+5. **Lead magnet validado como funnel:** `/plantillas-tdr` ya recibe sesiones orgánicas con 54 % de engagement → es
+   candidato a 4.º embudo cuando se permita crear campañas nuevas (respetar el cap de 3 hasta cerrar la fase de datos).
+
 ---
 
 ## 5. Oferta y message-match por campaña
@@ -505,13 +532,21 @@ recalibran con datos reales a los 30 días.
 - Script de creación: `scripts/meta-ads/create_campaigns.py` (+ `campaigns_config.json`).
 - Flyers: `public/images/ads/*.png` · fuentes: `scripts/ad-creatives/*.html` · render: `render.mjs`.
 
-### 14.2 Checklist pre-lanzamiento (refactor)
-- [ ] Definir objetivo por campaña (LEADS/traffic) y aplicar nombres `META_Lead_..._2026Q4`.
-- [ ] Subir los 6 flyers nuevos como creativos (4:5 + 1:1 por campaña) y actualizar los anuncios.
-- [ ] Excluir clientes actuales y leads existentes de las audiencias.
-- [ ] Marcar `Lead` como conversión primaria y crear conversiones personalizadas por embudo.
-- [ ] Verificar UTMs en los 3 anuncios.
-- [ ] Probar `Lead` real (enviar el formulario de una landing) en Events Manager.
+### 14.2 Checklist pre-lanzamiento (estado 01/10/2026)
+
+- [x] Definir objetivo por campaña y aplicar nombres `META_Traffic_..._2026Q4` (aplicado v2).
+- [x] Subir los 9 flyers (V1/V2/V3 × 3 embudos, 4:5) y crear los 9 anuncios (activos).
+- [x] UTMs (`url_tags`) en los 9 anuncios.
+- [x] Presupuesto S/ 7/día por ad set (S/ 150/semana total) — aplicado.
+- [x] Pixel cargando (PageView) y Lead implementado en las landings.
+- [ ] **Excluir clientes/leads**: audiencias creadas por API bloqueadas por Meta → **aceptar las Condiciones de
+      Públicos Personalizados** en `https://business.facebook.com/ads/manage/customaudiences/tos/?act=350473826722700`
+      y reintentar (`scripts/meta-ads/configure_v2.py`).
+- [ ] Conversión personalizada `Lead` (la API no la acepta con este permiso): crearla en Events Manager → Eventos
+      personalizados → Crear desde `Lead` (pixel 1029237720131593).
+- [ ] Verificar el dominio `licitacionesmype.pe` en Business Manager (Seguridad de la marca → Dominios).
+- [ ] **Probar el formulario en producción** (riesgo de fricción: 157 `form_submit` GA4 vs 3 leads en BD) y confirmar
+      que el evento `Lead` aparece en Events Manager → Probar eventos.
 - [ ] Registrar baseline diario (gasto, impresiones, clics, leads BD) desde el día 0.
 
 ### 14.3 Referencias
