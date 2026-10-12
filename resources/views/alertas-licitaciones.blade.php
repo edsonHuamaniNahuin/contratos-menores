@@ -403,6 +403,12 @@
                     <span class="h-px flex-1 bg-white/20"></span>
                 </div>
 
+                <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-white/75 mb-5">
+                    <span>✔ 200+ proveedores registrados</span>
+                    <span>✔ Alertas el mismo día</span>
+                    <span>✔ 15 días de prueba gratis</span>
+                </div>
+
                 @if (session('ok'))
                     <div class="bg-white/10 border border-white/25 text-white text-[13.5px] leading-relaxed rounded-xl px-4 py-3 mb-4">
                         {{ session('ok') }}
@@ -435,14 +441,14 @@
                             <div class="flex flex-col sm:flex-row gap-3">
                                 <input class="campo-correo w-full sm:flex-1 px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="text" name="captcha" required inputmode="numeric" autocomplete="off" placeholder="Respuesta">
                                 <button type="submit" class="w-full sm:w-auto shrink-0 rounded-xl bg-[var(--mint-soft)] text-[var(--teal-deep)] font-bold text-[15px] px-6 py-3 transition-opacity hover:opacity-90 whitespace-nowrap">
-                                    Enviar solicitud
+                                    Agendar mi reunión
                                 </button>
                             </div>
                             <p class="text-white/45 text-[11px] mt-1.5">Verificación anti-robot.</p>
                             @error('captcha')<p class="text-[12px] text-red-200">{{ $message }}</p>@enderror
                             @error('form')<p class="text-[12px] text-red-200">{{ $message }}</p>@enderror
                         </div>
-                        <p class="text-white/50 text-[11.5px] text-center leading-relaxed">Sin spam. Solo usamos tu correo para coordinar la reunión.</p>
+                        <p class="text-white/60 text-[11.5px] text-center leading-relaxed">Respondemos en menos de 2 horas hábiles (L–V). Sin spam. <a href="{{ route('legal.politica-privacidad') }}" class="underline underline-offset-2 hover:text-white">Política de privacidad</a>.</p>
                     </div>
                 </form>
                 <script>

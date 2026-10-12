@@ -566,6 +566,12 @@
                 <span class="h-px flex-1 bg-neutral-200"></span>
             </div>
 
+            <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] mb-5" style="color:var(--muted)">
+                <span>✔ 200+ proveedores registrados</span>
+                <span>✔ Alertas el mismo día</span>
+                <span>✔ 15 días de prueba gratis</span>
+            </div>
+
             @if (session('ok'))
                 <div class="bg-[var(--mint-soft)] border border-[var(--mint)]/40 text-[var(--teal-deep)] text-[13.5px] leading-relaxed rounded-xl px-4 py-3 mb-4">
                     {{ session('ok') }}
@@ -599,14 +605,14 @@
                         <div class="flex flex-col sm:flex-row gap-3">
                             <input class="campo-correo w-full sm:flex-1 px-4 py-3 rounded-xl border text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 transition-colors" style="border-color:var(--line); color:var(--ink)" type="text" name="captcha" required inputmode="numeric" autocomplete="off" placeholder="Respuesta">
                             <button type="submit" class="btn-teal w-full sm:w-auto !px-6 !py-3 whitespace-nowrap">
-                                Enviar solicitud
+                                Agendar una demo
                             </button>
                         </div>
                         <p class="text-[11px] text-neutral-400 mt-1.5">Verificación anti-robot.</p>
                         @error('captcha')<p class="text-[12px]" style="color:var(--coral)">{{ $message }}</p>@enderror
                         @error('form')<p class="text-[12px]" style="color:var(--coral)">{{ $message }}</p>@enderror
                     </div>
-                    <p class="text-[11.5px] text-center text-neutral-400 leading-relaxed">Sin spam. Solo usamos tu correo para coordinar la reunión.</p>
+                    <p class="text-[11.5px] text-center text-neutral-400 leading-relaxed">Respondemos en menos de 2 horas hábiles (L–V). Sin spam. <a href="{{ route('legal.politica-privacidad') }}" class="underline underline-offset-2 hover:text-neutral-600">Política de privacidad</a>.</p>
                 </div>
             </form>
             <script>
