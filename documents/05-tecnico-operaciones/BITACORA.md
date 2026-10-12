@@ -5,6 +5,30 @@
 
 ---
 
+## 2026-10-11 · Plantillas TDR (correos) · `cf4b18b2`
+
+### El correo del modelo de TDR se enviaba a `services@` en vez del LEAD (los leads nunca lo recibían)
+
+**Síntoma:** En la bandeja de `services@sunqupacha.com` llegaban correos dirigidos a OTRAS personas: "Hola Morocho Miranda Jonatan Sebastian 👋", "Hola gonzalo 👋 — Descarga tu modelo de TDR…". El equipo temía que las alertas se enviaran a todos los usuarios. Además, los leads **nunca recibían** el correo prometido por la landing ("También te enviamos el enlace a tu correo", FAQ: "Dejas tu correo para que te enviemos el enlace").
+
+**Causa:** `PlantillaTdrController::capturar` tenía `Mail::to('services@sunqupacha.com')->send(new TdrPlantillaMail(...))` — pero `TdrPlantillaMail` es la plantilla **dirigida al visitante** (saluda con su nombre y trae su botón de descarga). El destinatario estaba invertido: el correo del lead iba al equipo.
+
+**Verificación del resto de correos (sin cambios):** todas las alertas a usuarios van individualmente al destinatario correcto — `nuevo-proceso-seace` (`$emailSub->email`), bienvenida (`$user->email`), pagos, expiración de suscripción, adjudicaciones. No hay broadcast.
+
+**Solución:**
+1. `TdrPlantillaMail` ahora va al **correo del lead** (`Mail::to($lead->email)`); `replyTo` → `services@sunqupacha.com` (si el lead responde, llega al equipo).
+2. Nuevo `LeadPlantillaTdrInternoMail` (formato interno: "Nuevo lead — plantilla TDR" con datos y acción sugerida) hacia `services@`, envuelto en try/catch para no romper el flujo del lead si el SMTP falla.
+
+**Verificación e2e en producción:** flujo completo con captcha real (GET → captcha → POST) → 302 + página "Listo"; 2 correos disparados sin errores (0 en log); lead de prueba creado y eliminado (`demo_leads` id 5). Deploy `cf4b18b2`.
+
+**Lección:** Un correo transaccional tiene UN destinatario correcto. Si el copy saluda al usuario ("Hola {nombre}"), va al usuario; el aviso interno es OTRO correo (otro formato). Revisar siempre el `Mail::to()` contra el copy de la plantilla.
+
+**Pendiente:** los 3 leads históricos (gonzalo 05/10, Tatiana 07/10, Morocho 10/10) nunca recibieron su correo prometido — ofrecer reenvío.
+
+**Archivos:** `app/Http/Controllers/PlantillaTdrController.php`, `app/Mail/TdrPlantillaMail.php`, `app/Mail/LeadPlantillaTdrInternoMail.php`, `resources/views/emails/lead-plantilla-tdr-interno.blade.php`
+
+---
+
 ## 2026-10-11 · Buscadores · `2d924cc3`, `81c0dd6a`
 
 ### 500 en `/buscador-publico` y `/buscador-contratos-mayores` con query params inválidos (tráfico de bots)
