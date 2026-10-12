@@ -344,3 +344,16 @@ Schedule::command('meta:ingerir --cerrar')
     ->timezone('America/Lima')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/meta-ingerir.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Onboarding de Prueba Gratuita (trial → pago)
+|--------------------------------------------------------------------------
+| Secuencia d1/d3/d7/d12/d15 + vencimiento. Diario 09:15 (Lima).
+| El win-back de pruebas vencidas se corre manual: trial:onboarding --vencidos
+*/
+Schedule::command('trial:onboarding')
+    ->dailyAt('09:15')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/trial-onboarding.log'));
