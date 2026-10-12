@@ -237,6 +237,21 @@ quedan como control). A las 2 semanas evaluar formulario nativo como ad set para
 - No editar anuncios activos (resetea learning). Cambios = anuncios nuevos.
 - Learning phase: 7 días / ~50 eventos por ad set. Con S/ 16.5/día, esperar 10–14 días antes de leer resultados.
 
+### 6.5 Estrategias de configuración (A/B/C — máximo 3)
+
+Solo una estrategia de segmentación a la vez; el resto de variables (creativos, presupuesto) se mantienen iguales
+para que el dato sea limpio.
+
+| Config | Segmentación | Cuándo usarla | Hipótesis |
+|---|---|---|---|
+| **A · Intereses núcleo** (actual) | Perú · 25–60 · intereses OSCE + Gobierno + rubro | Semana 1 | El filtro de intereses acelera la entrega al ICP |
+| **B · Broad** (sin intereses) | Perú · 25–60 · solo país/edad | Semana 2 (mismos creativos que A) | Andromeda: el creativo hace el targeting; CPM más barato y mayor reach |
+| **C · Advantage+** | Broad + `advantage_audience` activado | Semana 3 (si A/B dieron señal) | El algoritmo encuentra mejor al ICP que los intereses |
+
+**Rotación:** cada estrategia se prueba **una semana** con los mismos creativos ganadores; se compara CPM, CTR y
+CPL. Se adopta la ganadora y se pasa a la fase de escalado. Prohibido correr más de 3 estrategias o mezclar
+cambios de audiencia y creativo en la misma semana.
+
 ---
 
 ## 7. Creativos (material gráfico)
@@ -294,6 +309,25 @@ Headline: **Software de licitaciones con IA** · CTA: Más información
 > Mira los procesos vigentes y recibe aviso cuando publiquen algo de tu rubro.
 
 Headline: **Licitaciones vigentes hoy** · CTA: Más información
+
+### 7.4 Matriz A/B de creativos — 3 versiones por embudo (máximo)
+
+Cada embudo tiene exactamente 3 versiones (hook distinto, mismo sistema de diseño). El A/B se lee por
+**CTR + leads por UTM**, no por gusto.
+
+| Embudo | V1 · Dato (racional) | V2 · Dolor (miedo/FOMO) | V3 · Alivio (beneficio) |
+|---|---|---|---|
+| **E1 Alertas** | "Esta semana el SEACE publicó 1,347 convocatorias…" (tarjeta Telegram) | "Mientras lees esto, tu competencia ya está cotizando esa licitación." (contratista frustrado) | "Deja de revisar el SEACE todos los días." (tranquilidad) |
+| **E2 Software** | "La IA lee el TDR y te dice si de verdad calzas…" (panel producto) | "El requisito que te descalifica está en la página 34." (TDR circulado) | "Recupera tus noches. La IA lee el TDR por ti." (alivio nocturno) |
+| **E3 Vigentes** | "10,322 procesos vigentes. ¿Cuántos calzan…?" (feed navy) | "Tu próxima obra ya está publicada en el SEACE." (amanecer en obra) | "El Estado compra lo que tú vendes. Todos los días." (servicios/almacén) |
+
+**Archivos por versión (4:5 `-1350` y 1:1 `-1080`):**
+- V1: `ma-alertas-*.png` · `ma-software-*.png` · `ma-vigentes-*.png` (template HTML original).
+- V2: `e1-v2-*.png` · `e2-v2-*.png` · `e3-v2-*.png` (foto AI + hook dolor).
+- V3: `e1c-v3-*.png` · `e2c-v3-*.png` · `e3c-v3-*.png` (foto AI + hook alivio).
+- Héroes AI: `public/images/ads/ai/hero-e{1,2,3}*.png` · template: `scripts/ad-creatives/flyer-v2.html` (configs `e1/e2/e3` = V2 · `e1c/e2c/e3c` = V3).
+
+**Regla de cap:** máximo 3 versiones activas por embudo. Una nueva versión reemplaza a la peor (nunca se corre una cuarta).
 
 ---
 

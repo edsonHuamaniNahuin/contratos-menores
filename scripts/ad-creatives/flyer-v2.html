@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@600;700&family=Sora:wght@700;800&family=Inter:wght@500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px}
+  body{
+    min-height:100vh; position:relative; overflow:hidden; color:#fff;
+    font-family:'Inter',system-ui,sans-serif;
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:52px 56px 48px;
+  }
+  .photo{position:absolute; inset:0; background-size:cover; background-position:center 30%; z-index:0}
+  .scrim{position:absolute; inset:0; z-index:1;
+    background:
+      linear-gradient(180deg, rgba(6,12,10,.62) 0%, rgba(6,12,10,.10) 30%, rgba(6,12,10,.16) 52%, rgba(6,12,10,.88) 78%, rgba(6,12,10,.97) 100%);}
+  .brand{display:flex; align-items:center; gap:15px; position:relative; z-index:2}
+  .shield{width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+  .brand-name{font-weight:800;font-size:25px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:13.5px;color:rgba(255,255,255,.72);font-weight:500;margin-top:4px}
+  .content{display:flex; flex-direction:column; gap:20px; position:relative; z-index:2; padding-bottom:6px}
+  .kicker{display:inline-flex; align-items:center; gap:10px; font-size:14px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+  .kicker::before{content:"";width:32px;height:2px;background:var(--accent)}
+  h1{font-family:var(--display); font-size:64px; line-height:1.04; letter-spacing:-.022em; max-width:960px; text-shadow:0 4px 30px rgba(0,0,0,.45)}
+  .sub{font-size:21px; line-height:1.45; color:rgba(255,255,255,.86); max-width:780px; font-weight:500; text-shadow:0 2px 14px rgba(0,0,0,.4)}
+  .cta{display:inline-flex; align-items:center; gap:14px; align-self:flex-start; margin-top:6px;
+       background:var(--accent); color:#08130f; border-radius:999px; padding:19px 30px;
+       font-size:19.5px; font-weight:800; letter-spacing:-.01em}
+  .cta svg{flex-shrink:0}
+  @media (max-height:1100px){
+    body{padding:44px 52px 42px}
+    h1{font-size:58px}
+    .sub{font-size:20px}
+    .content{gap:17px}
+  }
+</style>
+</head>
+<body>
+  <div class="photo" id="photo"></div>
+  <div class="scrim"></div>
+
+  <div class="brand">
+    <div class="shield">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Vigilante SEACE</div>
+      <div class="brand-sub">Licitaciones del Estado peruano</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <span class="kicker" id="kicker"></span>
+    <h1 id="headline"></h1>
+    <div class="sub" id="sub"></div>
+    <div class="cta">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      <span id="cta"></span>
+    </div>
+  </div>
+
+<script>
+  const BASE = 'file:///D:/xampp/htdocs/vigilante-seace/public/images/ads/ai/';
+  const CONFIG = {
+    e1: {
+      photo: BASE + 'hero-e1-frustracion.png',
+      photoPos: 'center 26%',
+      display: "'Fraunces', Georgia, serif",
+      accent: '#9fdfc9',
+      kicker: 'Alertas el mismo día',
+      headline: 'Mientras lees esto, tu competencia ya está cotizando esa licitación.',
+      sub: 'Recibe las convocatorias de tu rubro por Telegram o correo, el mismo día en que el Estado las publica.',
+      cta: 'Empieza gratis en licitacionesmype.pe'
+    },
+    e2: {
+      photo: BASE + 'hero-e2-descalificacion.png',
+      photoPos: 'center 45%',
+      display: "'Space Grotesk', sans-serif",
+      accent: '#17b885',
+      kicker: 'Análisis de TDR con IA',
+      headline: 'El requisito que te descalifica está en la página 34.',
+      sub: 'La IA lee el TDR completo y te dice si de verdad calzas, antes de que inviertas en postular.',
+      cta: 'Pruébalo gratis en licitacionesmype.pe'
+    },
+    e3: {
+      photo: BASE + 'hero-e3-amanecer.png',
+      photoPos: 'center 40%',
+      display: "'Sora', sans-serif",
+      accent: '#f0a028',
+      kicker: '10,322 convocatorias vigentes',
+      headline: 'Tu próxima obra ya está publicada en el SEACE.',
+      sub: 'Míralas gratis hoy y recibe las de tu rubro con días de ventaja para preparar tu cotización.',
+      cta: 'Ver licitaciones en licitacionesmype.pe'
+    },
+    e1c: {
+      photo: BASE + 'hero-e1-v3.png',
+      photoPos: 'center 38%',
+      display: "'Fraunces', Georgia, serif",
+      accent: '#9fdfc9',
+      kicker: 'Alertas el mismo día',
+      headline: 'Deja de revisar el SEACE todos los días.',
+      sub: 'Te avisamos por Telegram o correo cuando el Estado publica algo de tu rubro. Tú sigues con tu obra.',
+      cta: 'Empieza gratis en licitacionesmype.pe'
+    },
+    e2c: {
+      photo: BASE + 'hero-e2-v3.png',
+      photoPos: 'center 45%',
+      display: "'Space Grotesk', sans-serif",
+      accent: '#17b885',
+      kicker: 'Análisis de TDR con IA',
+      headline: 'Recupera tus noches. La IA lee el TDR por ti.',
+      sub: 'Requisitos, penalidades y plazos en segundos. Tú decides si vale la pena postular.',
+      cta: 'Pruébalo gratis en licitacionesmype.pe'
+    },
+    e3c: {
+      photo: BASE + 'hero-e3-v3.png',
+      photoPos: 'center 42%',
+      display: "'Sora', sans-serif",
+      accent: '#f0a028',
+      kicker: '10,322 convocatorias vigentes',
+      headline: 'El Estado compra lo que tú vendes. Todos los días.',
+      sub: 'Mira gratis las convocatorias de tu rubro y recibe avisos por Telegram o correo.',
+      cta: 'Ver licitaciones en licitacionesmype.pe'
+    }
+  };
+
+  const key = (location.hash || '#e1').replace('#', '');
+  const c = CONFIG[key] || CONFIG.e1;
+  document.documentElement.style.setProperty('--accent', c.accent);
+  document.documentElement.style.setProperty('--display', c.display);
+  const photo = document.getElementById('photo');
+  photo.style.backgroundImage = "url('" + c.photo + "')";
+  photo.style.backgroundPosition = c.photoPos;
+  document.getElementById('kicker').textContent = c.kicker;
+  document.getElementById('headline').textContent = c.headline;
+  document.getElementById('sub').textContent = c.sub;
+  document.getElementById('cta').textContent = c.cta;
+</script>
+</body>
+</html>
