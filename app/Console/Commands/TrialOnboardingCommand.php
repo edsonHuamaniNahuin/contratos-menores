@@ -123,6 +123,8 @@ class TrialOnboardingCommand extends Command
                 continue;
             }
 
+            usleep(2500000);
+
             if ($this->enviar($user, 'vencido')) {
                 $this->marcar($user->id, 'vencido');
                 $this->line("  enviado: {$user->email} → vencido");
@@ -137,30 +139,39 @@ class TrialOnboardingCommand extends Command
     {
         $user = User::where('email', $email)->first() ?? new User(['name' => 'Equipo', 'email' => $email]);
 
-        foreach (['d1', 'd3', 'd7', 'd12', 'd15', 'vencido'] as $paso) {
-            try {
-                Mail::to($email)->send(new OnboardingTrialMail($user, $paso));
+        $pasos = ['d1', 'd3', 'd7', 'd12', 'd15', 'vencido'];
+        foreach ($pasos as $i => $paso) {
+            if ($i > 0) {
+                usleep(2500000);
+            }
+            if ($this->enviar($user, $paso)) {
                 $this->line("  prueba enviada: {$paso} → {$email}");
-            } catch (\Throwable $e) {
-                $this->error("  fallo {$paso}: " . $e->getMessage());
             }
         }
 
-        return 6;
+        return count($pasos);
     }
 
-    private function enviar(User $user, string $paso): bool
+    private function enviar(User $user, string $paso, int $intento = 1): bool
     {
         try {
             Mail::to($user->email)->send(new OnboardingTrialMail($user, $paso));
             return true;
         } catch (\Throwable $e) {
+            $mensaje = $e->getMessage();
+            $temporal = str_contains($mensaje, '421') || str_contains($mensaje, '429') || str_contains($mensaje, 'Too many');
+
+            if ($temporal && $intento === 1) {
+                sleep(30);
+                return $this->enviar($user, $paso, 2);
+            }
+
             Log::warning('TrialOnboarding: fallo al enviar', [
                 'user_id' => $user->id,
                 'paso' => $paso,
-                'error' => $e->getMessage(),
+                'error' => $mensaje,
             ]);
-            $this->error("  fallo {$paso} → {$user->email}: " . mb_substr($e->getMessage(), 0, 120));
+            $this->error("  fallo {$paso} → {$user->email}: " . mb_substr($mensaje, 0, 120));
             return false;
         }
     }
