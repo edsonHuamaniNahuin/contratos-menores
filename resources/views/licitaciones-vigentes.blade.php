@@ -498,6 +498,12 @@
     document.querySelectorAll('a[href*="wa.me/"]').forEach(function (el) {
         el.addEventListener('click', function () {
             track('lead_whatsapp_click', { canal: 'whatsapp' });
+            try {
+                navigator.sendBeacon(
+                    '/api/wa-click',
+                    new Blob([JSON.stringify({ landing: 'licitaciones-vigentes', url: location.href })], { type: 'application/json' })
+                );
+            } catch (e) {}
         });
     });
     @if (session('ok'))

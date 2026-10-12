@@ -7,6 +7,7 @@ use App\Models\MetaInsightDiario;
 use App\Models\PagoYape;
 use App\Services\AdminTelegramNotificationService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -197,6 +198,7 @@ class MetaMonitorCommand extends Command
             'yape_campana_mes' => $yapeCampanaMes,
             'yape_pendientes_2h' => $pendientesViejos,
             'leads_mes' => DemoLead::where('created_at', '>=', $inicioMes)->count(),
+            'wa_clicks_hoy' => (int) DB::table('wa_clicks')->whereDate('created_at', $hoy)->count(),
             'gasto_mes' => round($gastoMes, 2),
             'roas_mes' => $roasMes,
             'meta_roas_min' => 10,
@@ -287,6 +289,7 @@ class MetaMonitorCommand extends Command
                 ['ROAS del mes', ($resumen['roi']['roas_mes'] !== null ? $resumen['roi']['roas_mes'] . 'x' : '—')
                     . ' (meta: 10x mín / 40x óptimo)'],
                 ['Leads del mes', $resumen['roi']['leads_mes']],
+                ['Clics WhatsApp hoy', $resumen['roi']['wa_clicks_hoy']],
             ]
         );
 
@@ -318,6 +321,7 @@ class MetaMonitorCommand extends Command
                 . " · Gasto mes: S/ " . number_format($resumen['roi']['gasto_mes'], 2),
             "📈 ROAS mes: " . ($resumen['roi']['roas_mes'] !== null ? $resumen['roi']['roas_mes'] . 'x' : '—')
                 . " (meta: 10x mín / 40x óptimo)",
+            "🟢 Clics WhatsApp hoy: {$resumen['roi']['wa_clicks_hoy']}",
         ];
 
         foreach ($resumen['leads_por_landing'] as $landing => $total) {
