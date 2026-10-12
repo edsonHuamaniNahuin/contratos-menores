@@ -24,7 +24,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Url;
+use App\Support\Livewire\UrlInt;
+use App\Support\Livewire\UrlString;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -35,31 +36,31 @@ class BuscadorMayores extends Component
     protected SeaceMayoresService $apiService;
     protected \App\Services\ExportarContratosMayoresService $exportService;
 
-    #[Url(as: 'q')]
+    #[UrlString(as: 'q')]
     public string $palabraClave = '';
 
-    #[Url(as: 'entidad')]
+    #[UrlString(as: 'entidad')]
     public string $entidadTexto = '';
     public string $entidadFiltro = ''; // Solo se setea al hacer click en sugerencia
 
     // Modo regional: oculta filtro de entidad en URLs /buscador-contratos-mayores/{entidad}
     public bool $regionalMode = false;
 
-    #[Url(as: 'tipo')]
+    #[UrlString(as: 'tipo')]
     public string $objetoContratacion = '';
 
-    #[Url(as: 'estado')]
+    #[UrlString(as: 'estado')]
     public string $estado = '';
     public array $estadosDisponibles = [];
 
     // ── Filtros de geografía (IDs de tablas maestras) ──────────────
-    #[Url(as: 'dep')]
+    #[UrlInt(as: 'dep', min: 0)]
     public int $departamentoId = 0;
 
-    #[Url(as: 'prov')]
+    #[UrlInt(as: 'prov', min: 0)]
     public int $provinciaId = 0;
 
-    #[Url(as: 'dist')]
+    #[UrlInt(as: 'dist', min: 0)]
     public int $distritoId = 0;
 
     public array $departamentosDisponibles = [];
@@ -67,16 +68,16 @@ class BuscadorMayores extends Component
     public array $distritosDisponibles = [];
 
     // ── Filtro de rango de fechas ──────────────────────────────────
-    #[Url(as: 'desde')]
+    #[UrlString(as: 'desde')]
     public string $fechaDesde = '';
 
-    #[Url(as: 'hasta')]
+    #[UrlString(as: 'hasta')]
     public string $fechaHasta = '';
 
     // Colapsable de filtros geográficos (mismo patrón que BuscadorPublico)
     public bool $mostrarFiltrosAvanzados = false;
 
-    #[Url]
+    #[UrlInt(min: 1)]
     public int $pagina = 1;
 
     public int $registrosPorPagina = 15;

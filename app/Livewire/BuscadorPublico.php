@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Livewire\Component;
-use Livewire\Attributes\Url;
+use App\Support\Livewire\UrlInt;
+use App\Support\Livewire\UrlString;
 use Livewire\WithPagination;
 
 class BuscadorPublico extends Component
@@ -37,29 +38,29 @@ class BuscadorPublico extends Component
 
     // ─── Parámetros de búsqueda (URL SEO-friendly con slugs) ────────
 
-    #[Url(as: 'palabraClave')]
+    #[UrlString(as: 'palabraClave')]
     public string $palabraClave = '';
 
-    #[Url(as: 'entidad')]
+    #[UrlString(as: 'entidad')]
     public string $entidadTexto = '';
 
     // Código CONSUCODE (interno, NO en URL)
     public string $codigoEntidad = '';
 
     // Slugs SEO-friendly (sincronizados con URL)
-    #[Url(as: 'objeto')]
+    #[UrlString(as: 'objeto')]
     public string $objetoSlug = '';
 
-    #[Url(as: 'estado')]
+    #[UrlString(as: 'estado')]
     public string $estadoSlug = '';
 
-    #[Url(as: 'dep')]
+    #[UrlString(as: 'dep')]
     public string $depSlug = '';
 
-    #[Url(as: 'prov')]
+    #[UrlString(as: 'prov')]
     public string $provSlug = '';
 
-    #[Url(as: 'dist')]
+    #[UrlString(as: 'dist')]
     public string $distSlug = '';
 
     // Modo regional: oculta filtros geográficos en URLs /buscador-publico/{dep}
@@ -72,19 +73,19 @@ class BuscadorPublico extends Component
     public int $provincia = 0;
     public int $distrito = 0;
 
-    #[Url]
+    #[UrlInt(min: 1)]
     public int $pagina = 1;
 
-    #[Url(as: 'porPagina')]
+    #[UrlInt(as: 'porPagina', min: 5, max: 100)]
     public int $registrosPorPagina = 10;
 
     // El año se envía automáticamente como el año actual (no es filtro)
 
     // Ordenamiento
-    #[Url(as: 'ordenarPor')]
+    #[UrlString(as: 'ordenarPor')]
     public string $ordenarPor = 'fecha_publicacion'; // fecha_publicacion, codigo, entidad, estado
 
-    #[Url(as: 'direccion')]
+    #[UrlString(as: 'direccion')]
     public string $direccionOrden = 'desc'; // asc, desc
 
     // Estados de carga
