@@ -103,6 +103,14 @@ class AdminTelegramNotificationService
     }
 
     /**
+     * Envía un mensaje al chat del admin (para monitores/comandos internos).
+     */
+    public function enviarMensaje(string $mensaje): bool
+    {
+        return $this->send($mensaje);
+    }
+
+    /**
      * Envía un mensaje al chat del admin.
      */
     protected function send(string $message): bool

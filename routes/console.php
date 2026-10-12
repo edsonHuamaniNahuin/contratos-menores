@@ -304,3 +304,23 @@ if (!app()->environment('production')) {
         ->withoutOverlapping()
         ->appendOutputTo(storage_path('logs/db-backup.log'));
 }
+
+/*
+|--------------------------------------------------------------------------
+| Monitor de Campañas Meta Ads (embudos E1/E2/E3)
+|--------------------------------------------------------------------------
+| Revisa entrega, costos, issues y leads del día. Durante el horario de
+| campaña avisa por Telegram SOLO si detecta problemas (10/13/16/19 h);
+| a las 21:30 envía el resumen completo. Historial: storage/app/meta-monitor.
+*/
+Schedule::command('meta:monitor --solo-alertas')
+    ->daily()->at(['10:00', '13:00', '16:00', '19:00'])
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/meta-monitor.log'));
+
+Schedule::command('meta:monitor --notificar')
+    ->dailyAt('21:30')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/meta-monitor.log'));
