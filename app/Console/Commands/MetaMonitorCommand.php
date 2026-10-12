@@ -82,7 +82,7 @@ class MetaMonitorCommand extends Command
         if ($roi['yape_pendientes_2h'] > 0) {
             $alertas[] = "Yape: {$roi['yape_pendientes_2h']} pago(s) PENDIENTE(S) hace +2h — aprobar en /admin/pagos-yape para no perder la venta.";
         }
-        if ($roi['roas_mes'] !== null && $roi['roas_mes'] < 10 && now()->day >= 7) {
+        if ($roi['roas_mes'] !== null && $roi['roas_mes'] < 10 && $roi['gasto_mes'] >= 50) {
             $alertas[] = "ROAS del mes {$roi['roas_mes']}x por debajo del mínimo 10x (objetivo 40x).";
         }
 
@@ -243,8 +243,8 @@ class MetaMonitorCommand extends Command
             $alertas[] = "CTR bajo: {$ctr}% con {$impressions} impresiones.";
         }
 
-        if ($frequency > 2.8) {
-            $alertas[] = "Frecuencia alta: {$frequency} (público saturándose).";
+        if ($frequency > 3.0 && $impressions >= 2000) {
+            $alertas[] = "Frecuencia alta: {$frequency} con {$impressions} impresiones (público saturándose — evaluar ampliar a broad).";
         }
 
         if ($cpc > 3.0 && $impressions > 300) {
