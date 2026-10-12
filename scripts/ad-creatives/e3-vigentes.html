@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#f5f7fa; --navy:#1d3f8f; --navy-deep:#0f2350; --amber:#f0a028; --amber-soft:#fdf1dd; --emerald:#0e9f6e; --line:rgba(255,255,255,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px}
+  body{
+    min-height:100vh; color:#fff;
+    background:radial-gradient(120% 90% at 85% 8%, #24479b 0%, #12275c 46%, #0b1c44 100%);
+    font-family:'Inter',system-ui,sans-serif;
+    padding:52px 60px; display:flex; flex-direction:column; justify-content:space-between;
+    position:relative; overflow:hidden;
+  }
+  .dots{position:absolute;inset:0;pointer-events:none;opacity:.25;background-image:radial-gradient(rgba(255,255,255,.35) 1px, transparent 1px);background-size:34px 34px;mask-image:linear-gradient(200deg, rgba(0,0,0,.9), transparent 60%)}
+  .frame{position:absolute; inset:20px; border:1px solid rgba(255,255,255,.12); border-radius:24px; pointer-events:none}
+  .brand{display:flex; align-items:center; gap:16px; position:relative; z-index:2}
+  .shield{width:58px;height:58px;border-radius:17px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center}
+  .brand-name{font-weight:800;font-size:27px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:14.5px;color:rgba(255,255,255,.65);font-weight:500;margin-top:4px}
+
+  .hero{display:flex; flex-direction:column; gap:20px; position:relative; z-index:2; margin-top:12px}
+  .kicker{display:inline-flex; align-items:center; gap:10px; font-size:15px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
+  .kicker::before{content:"";width:34px;height:2px;background:var(--amber)}
+  h1{font-family:'Sora',sans-serif;font-weight:800;font-size:70px;line-height:1.04;letter-spacing:-.03em;color:#fff;max-width:930px}
+  h1 .hl{color:var(--amber)}
+  .sub{font-size:22px;line-height:1.45;color:rgba(255,255,255,.78);max-width:760px;font-weight:500}
+
+  .feed{display:flex;flex-direction:column;gap:14px;position:relative;z-index:2}
+  .item{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:22px;padding:20px 24px;display:flex;align-items:center;gap:20px;backdrop-filter:blur(4px)}
+  .code{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber);letter-spacing:-.01em}
+  .ent{font-size:15.5px;color:rgba(255,255,255,.75);font-weight:500;margin-top:5px}
+  .monto{font-family:'Sora',sans-serif;font-weight:700;font-size:26px;letter-spacing:-.02em;text-align:right;line-height:1}
+  .chip{display:inline-block;font-size:12.5px;font-weight:700;border-radius:999px;padding:6px 12px;margin-top:7px}
+  .chip-obra{background:rgba(240,160,40,.16);color:#ffd58a}
+  .chip-serv{background:rgba(14,159,110,.2);color:#7fe0bd}
+
+  .cta{background:#fff;color:var(--navy-deep);border-radius:999px;padding:24px 38px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;box-shadow:0 26px 60px -30px rgba(0,0,0,.6)}
+  .cta-l{display:flex;align-items:center;gap:16px}
+  .cta-ic{width:44px;height:44px;border-radius:50%;background:var(--navy-deep);display:flex;align-items:center;justify-content:center}
+  .cta-title{font-family:'Sora',sans-serif;font-size:21px;font-weight:700;letter-spacing:-.01em}
+  .cta-sub{font-size:14.5px;color:#5b6b7f;font-weight:500;margin-top:3px}
+  .cta-url{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;background:#f0a028;color:#231303;border-radius:999px;padding:13px 22px}
+  @media (min-height:1200px){
+    body{padding:64px 60px}
+    h1{font-size:78px}
+    .item{padding:25px 28px}
+    .monto{font-size:29px}
+    .cta{padding:28px 42px}
+  }
+</style>
+</head>
+<body>
+  <div class="dots"></div>
+  <div class="frame"></div>
+
+  <div class="brand">
+    <div class="shield">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#f0a028" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Vigilante SEACE</div>
+      <div class="brand-sub">Licitaciones del Estado, en tu pantalla hoy</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <span class="kicker">Hoy en el SEACE</span>
+    <h1><span class="hl">10,322</span> procesos vigentes. ¿Cuántos calzan con tu empresa?</h1>
+  </div>
+
+  <div class="feed">
+    <div class="item">
+      <div style="flex:1;min-width:0">
+        <div class="code">LP-SM-3-2026-MDE/C-1</div>
+        <div class="ent">Municipalidad Distrital de La Esperanza · La Libertad</div>
+      </div>
+      <div style="text-align:right">
+        <div class="monto">S/ 9,726,222</div>
+        <span class="chip chip-obra">Obra</span>
+      </div>
+    </div>
+    <div class="item">
+      <div style="flex:1;min-width:0">
+        <div class="code">RES-PROC-3-2026-CD/SAPLI-1</div>
+        <div class="ent">Autoridad de Transporte Urbano para Lima y Callao</div>
+      </div>
+      <div style="text-align:right">
+        <div class="monto">S/ 3,829,504</div>
+        <span class="chip chip-obra">Obra</span>
+      </div>
+    </div>
+    <div class="item">
+      <div style="flex:1;min-width:0">
+        <div class="code">CP CON-SM-1-2026-MDC-1</div>
+        <div class="ent">Municipalidad Distrital de Cochabamba · Áncash</div>
+      </div>
+      <div style="text-align:right">
+        <div class="monto">S/ 687,221</div>
+        <span class="chip chip-serv">Servicio</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <div class="cta-l">
+      <div class="cta-ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0a028" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+      <div>
+        <div class="cta-title">Míralos gratis, hoy mismo</div>
+        <div class="cta-sub">Filtra por rubro, región y monto</div>
+      </div>
+    </div>
+    <div class="cta-url">licitacionesmype.pe</div>
+  </div>
+</body>
+</html>

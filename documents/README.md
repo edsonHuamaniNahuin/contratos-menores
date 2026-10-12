@@ -19,6 +19,7 @@
 
 | Documento | Objetivo |
 |---|---|
+| `DOCUMENTACION_CAMPANA_META_2026-10.md` | **Campaña Meta Ads completa**: objetivos, KPIs/TCPL, ICP, estructura, creativos, medición, presupuesto y reglas de decisión |
 | `ANALISIS_COMPLETO_SEO_SEM.md` | Plan SEO/SEM completo (fases, metas CTR/clics/registros) |
 | `ANALISIS_CLUSTERS_DATOS_REALES.md` | CTR por cluster de keywords (GSC real) + acciones de ganancia |
 | `BITACORA_SEO_SEM.md` | Bitácora de cambios SEO y sus efectos |

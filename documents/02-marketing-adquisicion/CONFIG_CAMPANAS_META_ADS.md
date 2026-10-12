@@ -20,7 +20,7 @@
 | **MA-Software** | **Tráfico** → landing (o Leads) | `/software-licitaciones` | REUNIÓN (E2) | Empresas que buscan herramientas para licitar |
 | **MA-Vigentes** | **Tráfico** → landing | `/licitaciones-vigentes` | LEAD (E3) | Audiencia amplia: "quiero saber qué licita el Estado" |
 
-**Nota:** para E1 el formato **Click a WhatsApp (objetivo Mensajes)** suele convertir mejor en Perú; las otras dos usan tráfico a la landing con el formulario de correo como conversión `Lead`.
+**Nota:** para E1 el formato **Click a WhatsApp (objetivo Mensajes)** suele convertir mejor en Perú, pero mientras el canal de WhatsApp está **temporalmente deshabilitado** (ver `/aviso-whatsapp`) las 3 campañas se lanzan como **Tráfico → landing** con el pixel midiendo `Lead`; MA-Alertas puede pasar a Mensajes cuando el canal se reactive. El WhatsApp de contacto de las landings sigue operativo para venta/asistencia.
 
 ---
 
@@ -45,16 +45,16 @@ Si ya hay seguidores en la página de Facebook o clientes: crear **audiencia sim
 
 ## 4. Creativos (copy español peruano + formato)
 
-### MA-Alertas → /alertas-licitaciones (objetivo: que escriban por WhatsApp)
-**Imagen:** foto real de obra/maquinaria (banco, formato 1:1 o 4:5) o captura de la alerta WhatsApp real del sistema.
+### MA-Alertas → /alertas-licitaciones (objetivo: que dejen su contacto)
+**Imagen:** foto real de obra/maquinaria (banco, formato 1:1 o 4:5) o captura de la alerta del bot.
 
 - **Texto principal (primary text):**
 "¿Cuántas licitaciones de tu rubro se te escapan cada mes?
 Cada día el Estado publica cientos de convocatorias en el SEACE. Las de tu empresa son pocas, aparecen de golpe y las ventanas para cotizar duran días.
-Vigilante SEACE te avisa por WhatsApp el mismo día, filtrado por tu rubro y región. Sin revisar el portal a mano.
+Vigilante SEACE te avisa por Telegram o correo el mismo día, filtrado por tu rubro y región. Sin revisar el portal a mano.
 Escríbenos y te mostramos el sistema con procesos reales de tu sector."
 
-- **Título (headline):** "Alertas de licitaciones por WhatsApp" · botón: **Enviar mensaje**
+- **Título (headline):** "Alertas de licitaciones por Telegram y correo" · botón: **Más información**
 
 ### MA-Software → /software-licitaciones (objetivo: demo/reunión)
 **Imagen:** mockup del panel/proforma real del sistema.

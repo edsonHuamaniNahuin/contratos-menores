@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f8f6; --ink:#0f1b19; --muted:#5b6f6a; --teal:#0b6e63; --teal-deep:#0a3a34;
+    --mint:#17b885; --mint-soft:#e0f6ec; --line:#dce7e2; --violet:#7c5cf0; --violet-soft:#efeafd; --amber:#df9117; --amber-soft:#fcf0da; --word:#2b579a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px}
+  body{
+    min-height:100vh; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    padding:52px 60px; display:flex; flex-direction:column; justify-content:space-between;
+    position:relative; overflow:hidden;
+  }
+  .glow{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+  .g1{width:560px;height:560px;background:rgba(23,184,133,.14);top:-220px;right:-160px}
+  .g2{width:460px;height:460px;background:rgba(124,92,240,.10);bottom:-200px;left:-160px}
+  .frame{position:absolute; inset:20px; border:1px solid rgba(15,27,25,.08); border-radius:24px; pointer-events:none}
+  .brand{display:flex; align-items:center; gap:16px; position:relative; z-index:2}
+  .shield{width:58px;height:58px;border-radius:17px;background:linear-gradient(145deg,#0e5a54,#07352f);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px -12px rgba(7,53,47,.6)}
+  .brand-name{font-weight:800;font-size:27px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:14.5px;color:var(--muted);font-weight:500;margin-top:4px}
+
+  .hero{display:flex; flex-direction:column; gap:20px; position:relative; z-index:2; margin-top:12px}
+  .kicker{display:inline-flex; align-items:center; gap:10px; font-size:15px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)}
+  .kicker::before{content:"";width:34px;height:2px;background:var(--teal)}
+  h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:64px;line-height:1.05;letter-spacing:-.025em;max-width:950px}
+  h1 .hl{color:var(--teal)}
+  .sub{font-size:22px;line-height:1.45;color:var(--muted);max-width:800px;font-weight:500}
+
+  .panel{background:#fff;border-radius:30px;border:1px solid #e2ece7;box-shadow:0 30px 70px -40px rgba(10,58,52,.45);padding:14px;position:relative;z-index:2}
+  .panel-inner{border-radius:22px;border:1px solid #ecf3ef;overflow:hidden}
+  .row{display:flex;align-items:center;gap:20px;padding:22px 26px;border-bottom:1px solid #f0f5f2}
+  .row:last-child{border-bottom:0}
+  .row-ic{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .ic-mint{background:var(--mint-soft);color:var(--mint)}
+  .ic-violet{background:var(--violet-soft);color:var(--violet)}
+  .ic-amber{background:var(--amber-soft);color:var(--amber)}
+  .row-t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:23px;letter-spacing:-.01em}
+  .row-d{font-size:16px;color:var(--muted);margin-top:4px;font-weight:500}
+  .row-r{margin-left:auto;text-align:right;flex-shrink:0}
+  .score{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:29px;color:var(--violet)}
+  .bar{width:150px;height:8px;background:#eee9fb;border-radius:999px;margin-top:8px;overflow:hidden}
+  .bar i{display:block;height:100%;width:84%;background:linear-gradient(90deg,#7c5cf0,#9d85f5);border-radius:999px}
+  .tag{display:inline-block;font-size:13px;font-weight:700;border-radius:999px;padding:7px 13px}
+  .tag-word{background:#e9eff9;color:var(--word)}
+  .tag-ok{background:var(--mint-soft);color:#0b7a54}
+
+  .cta{background:linear-gradient(100deg,#0a3a34,#0b6e63);color:#fff;border-radius:999px;padding:25px 38px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;box-shadow:0 24px 50px -30px rgba(10,58,52,.85)}
+  .cta-l{display:flex;align-items:center;gap:16px}
+  .cta-ic{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center}
+  .cta-title{font-size:21px;font-weight:800;letter-spacing:-.01em}
+  .cta-sub{font-size:14.5px;color:rgba(255,255,255,.78);font-weight:500;margin-top:3px}
+  .cta-url{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:13px 22px}
+  @media (min-height:1200px){
+    body{padding:64px 60px}
+    h1{font-size:71px}
+    .sub{font-size:24px}
+    .row{padding:27px 30px}
+    .row-t{font-size:25px}
+    .cta{padding:29px 42px}
+  }
+</style>
+</head>
+<body>
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="frame"></div>
+
+  <div class="brand">
+    <div class="shield">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9fdfc9" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Vigilante SEACE</div>
+      <div class="brand-sub">Del aviso a la proforma, sin leer todo a mano</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <span class="kicker">Software de licitaciones con IA</span>
+    <h1>La IA lee el TDR y te dice <span class="hl">si de verdad calzas</span> antes de postular.</h1>
+    <div class="sub">Requisitos, penalidades y plazos de un documento de 40 páginas, en segundos. Con score de compatibilidad y proforma en Word.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-inner">
+      <div class="row">
+        <div class="row-ic ic-mint">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.75 17L9 20l-.75-3m6.75 0L15 20l-.75-3M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+        </div>
+        <div>
+          <div class="row-t">Análisis del TDR con IA</div>
+          <div class="row-d">Resumen, requisitos, reglas y penalidades del documento completo</div>
+        </div>
+        <div class="row-r"><span class="tag tag-ok">✓ listo</span></div>
+      </div>
+      <div class="row">
+        <div class="row-ic ic-violet">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5a7.5 7.5 0 0115 0"/><path d="M12 16.5V9"/><circle cx="12" cy="16.5" r="1.3" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div>
+          <div class="row-t">Score de compatibilidad</div>
+          <div class="row-d">Qué tan bien calza el proceso con el perfil de tu empresa</div>
+        </div>
+        <div class="row-r">
+          <div class="score">8.4 / 10</div>
+          <div class="bar"><i></i></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-ic ic-amber">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h8l4 4v15H6z"/><path d="M14 2.5v4h4"/><path d="M9 12.5h6M9 16h6"/></svg>
+        </div>
+        <div>
+          <div class="row-t">Proforma técnica</div>
+          <div class="row-d">Cotización con tus costos, lista para presentar</div>
+        </div>
+        <div class="row-r"><span class="tag tag-word">Word · Excel</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <div class="cta-l">
+      <div class="cta-ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <div>
+        <div class="cta-title">Agenda una demo de 20 minutos</div>
+        <div class="cta-sub">Con procesos reales de tu sector</div>
+      </div>
+    </div>
+    <div class="cta-url">licitacionesmype.pe</div>
+  </div>
+</body>
+</html>
