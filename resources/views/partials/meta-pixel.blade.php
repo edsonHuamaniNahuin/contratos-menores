@@ -36,9 +36,7 @@ src="https://www.facebook.com/tr?id={{ config('services.meta.pixel_id') }}&ev=Pa
         });
     });
     @if (session('ok'))
-    document.addEventListener('DOMContentLoaded', function () {
-        metaTrack('Lead');
-    });
+    metaTrack('Lead');
     @endif
 })();
 </script>
