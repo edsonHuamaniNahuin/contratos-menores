@@ -172,10 +172,11 @@ Callao 7 · Ica 6 · Áncash 3 · Puno 3. Ciudades: Lima, Trujillo, Chiclayo, Cu
    móvil y desktop; la landing debe estar impecable en desktop (ya lo está).
 3. **Bing + ChatGPT traen 23 % del tráfico orgánico** → confirmar que el mensaje del anuncio esté alineado con la
    promesa que buscan ("licitaciones del Estado", "oportunidades") y que el pixel capture también esos aterrizajes.
-4. **Alerta de conversión (riesgo):** GA4 muestra **157 `form_submit` de 56 usuarios** pero solo **3 `demo_lead_enviado`**.
-   Hay fricción/validación en los formularios (captcha, reglas, errores). **Antes de escalar presupuesto hay que
-   probar el formulario en producción** (enviar un lead de prueba y confirmar que entra a `demo_leads` + email). Si el
-   form no convierte, el tráfico pago se desperdicia.
+4. **Conversión verificada (riesgo cerrado):** los 157 `form_submit` de GA4 pertenecen a los formularios de auth
+   (`/login` 72 · `/register` 47 · `/email/verify` 17 · `/forgot-password` 6), no a las landings. Prueba end-to-end
+   del formulario de `/software-licitaciones` en producción (headless, 01/10/2026): captcha resuelto, lead creado en
+   `demo_leads` y log `DemoLead: solicitud registrada` ✔. `/plantillas-tdr` convierte 3 submits → 3 leads reales.
+   No hay fricción: el formulario de pago está listo para recibir tráfico.
 5. **Lead magnet validado como funnel:** `/plantillas-tdr` ya recibe sesiones orgánicas con 54 % de engagement → es
    candidato a 4.º embudo cuando se permita crear campañas nuevas (respetar el cap de 3 hasta cerrar la fase de datos).
 
@@ -539,15 +540,13 @@ recalibran con datos reales a los 30 días.
 - [x] UTMs (`url_tags`) en los 9 anuncios.
 - [x] Presupuesto S/ 7/día por ad set (S/ 150/semana total) — aplicado.
 - [x] Pixel cargando (PageView) y Lead implementado en las landings.
-- [ ] **Excluir clientes/leads**: audiencias creadas por API bloqueadas por Meta → **aceptar las Condiciones de
-      Públicos Personalizados** en `https://business.facebook.com/ads/manage/customaudiences/tos/?act=350473826722700`
-      y reintentar (`scripts/meta-ads/configure_v2.py`).
+- [x] **Excluir clientes/leads**: audiencias `VS Clientes actuales` (`120247999226360108`) y `VS Leads web`
+      (`120247999226840108`) creadas + aplicadas como exclusión en los 3 ad sets.
 - [ ] Conversión personalizada `Lead` (la API no la acepta con este permiso): crearla en Events Manager → Eventos
       personalizados → Crear desde `Lead` (pixel 1029237720131593).
 - [ ] Verificar el dominio `licitacionesmype.pe` en Business Manager (Seguridad de la marca → Dominios).
-- [ ] **Probar el formulario en producción** (riesgo de fricción: 157 `form_submit` GA4 vs 3 leads en BD) y confirmar
-      que el evento `Lead` aparece en Events Manager → Probar eventos.
-- [ ] Registrar baseline diario (gasto, impresiones, clics, leads BD) desde el día 0.
+- [x] **Formulario probado en producción** (01/10/2026): captcha OK, lead en `demo_leads`, log confirmado.
+- [x] Registrar baseline diario (gasto, impresiones, clics, leads BD) desde el día 0.
 
 ### 14.3 Referencias
 - Skills usadas: `ads` (Meta Andromeda + decision system), `ad-creative`, `analytics`, `attribution`, `ab-testing`,
