@@ -13,6 +13,9 @@ Route::delete('/auth/token', [TokenController::class, 'destroy'])->middleware('a
 // Beacon público: clic en WhatsApp desde las landings (medición/atribución)
 Route::post('/wa-click', \App\Http\Controllers\WaClickController::class);
 
+// Beacon público: heatmap first-party de landings (clics con coordenadas + scroll)
+Route::post('/page-event', \App\Http\Controllers\PageEventController::class);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
