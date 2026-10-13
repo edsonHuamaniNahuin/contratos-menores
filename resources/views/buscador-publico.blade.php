@@ -67,6 +67,7 @@
 @section('title', $seoTitle)
 
 @section('seo')
+    @include('partials.clarity')
     <meta name="description" content="{{ $seoDescription }}">
     <meta name="keywords" content="licitaciones{{ $dep ? ', licitaciones ' . e($dep) : '' }}{{ $objeto ? ', ' . e($objeto) : '' }}, SEACE, contrataciones del estado, Perú, OSCE, buscador licitaciones, compras públicas">
     <link rel="canonical" href="{{ $canonicalUrl }}">
