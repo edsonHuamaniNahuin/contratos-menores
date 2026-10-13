@@ -179,6 +179,11 @@ return [
         'access_token' => env('META_ACCESS_TOKEN'),
     ],
 
+    // ─── Microsoft Clarity (grabaciones de sesión) ─────────
+    'clarity' => [
+        'project_id' => env('CLARITY_PROJECT_ID'),
+    ],
+
     // ─── Pasarela de pago activa ────────────────────────
     'payment_gateway' => env('PAYMENT_GATEWAY', 'mercadopago'),
 

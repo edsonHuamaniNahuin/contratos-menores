@@ -101,6 +101,7 @@ function cookieConsent() {
                     analytics_storage: 'granted'
                 });
             }
+            window.dispatchEvent(new Event('cookie-consent-granted'));
         }
     };
 }

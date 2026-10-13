@@ -70,6 +70,7 @@
     </style>
 
 @include('partials.meta-pixel', ['embudo' => 'LM-TDR'])
+@include('partials.clarity')
 </head>
 <body>
 

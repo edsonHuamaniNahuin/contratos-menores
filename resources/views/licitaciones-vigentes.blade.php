@@ -116,6 +116,7 @@
     </style>
 
 @include('partials.meta-pixel', ['embudo' => 'E3'])
+@include('partials.clarity')
 </head>
 <body>
 

@@ -72,6 +72,7 @@
     @stack('head')
 
 @include('partials.meta-pixel')
+@include('partials.clarity')
 </head>
 <body class="font-sans antialiased min-h-screen bg-white">
 
