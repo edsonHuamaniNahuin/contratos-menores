@@ -557,6 +557,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.respuesta-leads')
         ->middleware('can:view-monitoreo-sistema');
 
+    Route::get('/admin/heatmaps', [\App\Http\Controllers\AdminHeatmapController::class, 'index'])
+        ->name('admin.heatmaps')
+        ->middleware('can:view-monitoreo-sistema');
+
+    Route::get('/admin/heatmaps/data', [\App\Http\Controllers\AdminHeatmapController::class, 'data'])
+        ->name('admin.heatmaps.data')
+        ->middleware('can:view-monitoreo-sistema');
+
     Route::get('/vigilancia-adjudicaciones', function () {
         return view('vigilancia-adjudicaciones');
     })
