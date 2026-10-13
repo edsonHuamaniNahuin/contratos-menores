@@ -2,7 +2,14 @@
 
 > Página FB: https://www.facebook.com/profile.php?id=1340988862437864
 > Objetivo: que la página NO esté vacía cuando un lead revise quién está detrás del anuncio (confianza).
-> Cadencia sugerida: 2 publicaciones/semana (mar y jue 9:00) + responder comentarios el mismo día.
+
+## ESTADO (12/10/2026) — PUBLICADO VÍA API ✅
+- ✅ Info de página completa: descripción, web, WhatsApp +51 918 874 873, correo.
+- ✅ Foto de perfil (escudo de marca) + portada ("Tu empresa vigilando el SEACE").
+- ✅ Posts 1 y 2 publicados.
+- ✅ Posts 3, 4 y 5 programados (9:00 los días siguientes).
+- ✅ Token de sistema con `pages_manage_posts`/`pages_manage_metadata` guardado en el servidor (`/root/.meta-token-pages` + page token) → **publicación por API habilitada a futuro**.
+- **Cadencia a mantener:** 2 posts/semana (mar y jue 9:00) + responder comentarios el mismo día.
 
 ---
 
