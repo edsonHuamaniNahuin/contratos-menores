@@ -25,6 +25,25 @@
 
 ---
 
+## 2026-10-13 · Login 419 "Page Expired" · `58a8a522`
+
+### Al expirar la sesión, el login mostraba la pantalla fea "419 Page Expired"
+
+**Síntoma (reportado por el usuario):** tras ser expulsado por sesión expirada e intentar login de nuevo, aparecía `https://licitacionesmype.pe/login 419 | Page Expired`.
+
+**Causa:** la pestaña/página de login quedaba con el token CSRF de una sesión ya muerta (navegador con la página abierta o cacheada). Al enviar, `VerifyCsrfToken` lanzaba `TokenMismatchException` → Laravel muestra la pantalla 419 por defecto. Contribuía que las páginas de auth no enviaban cabeceras anti-caché (BFCache podía servir el formulario viejo).
+
+**Solución (2 capas):**
+1. **Manejo amigable del 419**: callback en `bootstrap/app.php` que redirige a `/login` con el mensaje "Tu sesión expiró por seguridad. Inicia sesión de nuevo." (JSON/Livewire → 419 con mensaje).
+   - **Sutileza Laravel 12:** los callbacks de `withExceptions` reciben la excepción ya convertida a `HttpException(419)` — tipar `TokenMismatchException` NO intercepta nada (aprendido a la mala en este fix).
+2. **`NoCacheAuthPages` middleware**: cabeceras `no-store` en login/register/reset (evita el formulario con token viejo).
+
+**Verificación:** POST a `/login` con token inválido → **302 → /login con el mensaje visible** (antes: 419); `GET /login` sigue 200; header `no-store` confirmado.
+
+**Archivos:** `bootstrap/app.php`, `app/Http/Middleware/NoCacheAuthPages.php`
+
+---
+
 ## 2026-10-12 · Landings E1 + Deploy (build stale) · (commit de esta sesión)
 
 ### Los inputs del formulario de /alertas-licitaciones salían SIN ESTILOS (doble atributo class) — detectado por el usuario
