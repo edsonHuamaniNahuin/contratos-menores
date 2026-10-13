@@ -112,6 +112,18 @@ class PlantillaTdrController extends Controller
                 Log::warning('PlantillaTdr: no se pudo notificar a services', ['error' => $e->getMessage()]);
             }
 
+            // 3) Alerta inmediata al admin por Telegram (lead esperando respuesta)
+            try {
+                app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
+                    "🎯 *NUEVO LEAD (plantilla TDR)*\n\n"
+                    . "📝 {$lead->nombre}\n"
+                    . "📧 {$lead->email}\n\n"
+                    . '⏱️ Responder en ≤2h — panel → Respuesta a Leads'
+                );
+            } catch (\Throwable $e) {
+                Log::warning('PlantillaTdr: alerta Telegram falló', ['error' => $e->getMessage()]);
+            }
+
             Log::info('PlantillaTdr: lead registrado', ['id' => $lead->id, 'email' => $lead->email]);
         } catch (\Throwable $e) {
             Log::error('PlantillaTdr: error', ['error' => $e->getMessage()]);

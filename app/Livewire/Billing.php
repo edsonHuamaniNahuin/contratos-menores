@@ -252,6 +252,19 @@ class Billing extends Component
             'telefono' => $this->telefonoRenovacion,
         ]);
 
+        // Alerta inmediata al admin: renovación por Yape esperando aprobación
+        try {
+            app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
+                "💰 *YAPE (RENOVACIÓN) REPORTADO*\n\n"
+                . "📧 {$user->email}\n"
+                . "🎯 Plan: {$plan}\n"
+                . "💵 Monto: S/ " . number_format((float) $monto, 2) . "\n\n"
+                . '✅ Aprobar AHORA en /admin/pagos-yape'
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Yape renovación: alerta Telegram falló', ['error' => $e->getMessage()]);
+        }
+
         $this->showYapeForm = false;
         $this->comprobante = null;
         $this->referenciaAdicional = '';

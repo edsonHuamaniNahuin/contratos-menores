@@ -102,6 +102,21 @@ class DemoLeadController extends Controller
                 origen:   $lead->origen,
             ));
 
+            // Alerta inmediata al admin: hay un lead esperando respuesta (SLA ≤2h)
+            try {
+                app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
+                    "🎯 *NUEVO LEAD*\n\n"
+                    . "📝 {$lead->nombre}\n"
+                    . "📧 {$lead->email}\n"
+                    . ($lead->telefono ? "📱 {$lead->telefono}\n" : '')
+                    . '🏷️ ' . ($landing !== '' ? $landing : 'landing')
+                    . ($lead->utm_content ? " · {$lead->utm_content}" : '') . "\n\n"
+                    . '⏱️ Responder en ≤2h — panel → Respuesta a Leads'
+                );
+            } catch (\Throwable $e) {
+                Log::warning('DemoLead: alerta Telegram falló', ['error' => $e->getMessage()]);
+            }
+
             Log::info('DemoLead: solicitud registrada', ['id' => $lead->id, 'email' => $lead->email]);
         } catch (\Throwable $e) {
             Log::error('DemoLead: error al registrar/enviar', ['error' => $e->getMessage()]);

@@ -135,7 +135,7 @@ class YapePaymentController extends Controller
             }
         }
 
-        PagoYape::create([
+        $pago = PagoYape::create([
             'user_id' => $user->id,
             'plan' => $plan,
             'tipo' => PagoYape::TIPO_NUEVO,
@@ -147,6 +147,20 @@ class YapePaymentController extends Controller
             'referencia_adicional' => $request->referencia_adicional,
             'telefono' => $request->telefono,
         ]);
+
+        // Alerta inmediata al admin: hay un Yape esperando aprobación
+        try {
+            app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
+                "💰 *YAPE REPORTADO*\n\n"
+                . "📧 {$user->email}\n"
+                . "🎯 Plan: {$plan}\n"
+                . "💵 Monto: S/ " . number_format((float) $monto, 2) . "\n"
+                . '📱 Tel: ' . ($request->telefono ?: '—') . "\n\n"
+                . '✅ Aprobar AHORA en /admin/pagos-yape'
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Yape: alerta Telegram falló', ['error' => $e->getMessage()]);
+        }
 
         return redirect()->route('mi.suscripcion')
             ->with('success', 'Comprobante enviado correctamente. Tu pago será validado en breve (máximo 24 horas). Recibirás una notificación cuando se active tu plan.');
