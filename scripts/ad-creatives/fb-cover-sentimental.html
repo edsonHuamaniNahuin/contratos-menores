@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Sora:wght@600;700;800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1640px;height:624px}
+  body{
+    font-family:'Inter',system-ui,sans-serif; color:#fff; position:relative; overflow:hidden;
+    background:url('file:///C:/Users/PC-01/AppData/Local/Temp/opencode/cover-bg.png') center/cover no-repeat;
+  }
+  .scrim{position:absolute;inset:0;
+    background:
+      linear-gradient(90deg, rgba(3,16,19,.95) 0%, rgba(3,16,19,.85) 36%, rgba(3,16,19,.32) 60%, rgba(3,16,19,0) 80%),
+      linear-gradient(180deg, rgba(3,16,19,.35) 0%, rgba(3,16,19,0) 30%, rgba(3,16,19,.45) 100%);}
+  .content{position:absolute;inset:0;padding:54px 72px;display:flex;flex-direction:column;justify-content:space-between;z-index:2}
+  .brand{display:flex;align-items:center;gap:16px}
+  .shield{width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.10);border:1px solid rgba(127,227,196,.4);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .brand-name{font-family:'Sora';font-weight:800;font-size:25px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:13px;color:rgba(255,255,255,.72);font-weight:600;margin-top:4px}
+  .mid{max-width:920px}
+  .kicker{display:inline-flex;align-items:center;gap:11px;font-size:14px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#7fe3c4;margin-bottom:16px}
+  .kicker::before{content:"";width:30px;height:2px;background:#7fe3c4}
+  h1{font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:56px;line-height:1.06;letter-spacing:-.015em;text-shadow:0 4px 28px rgba(0,0,0,.6)}
+  h1 em{font-style:normal;color:#7fe3c4}
+  .sub{font-size:17px;font-weight:600;color:rgba(255,255,255,.88);margin-top:18px;line-height:1.5;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+  .sub strong{color:#7fe3c4}
+  .foot-row{display:flex;align-items:center;gap:26px}
+  .cta{display:inline-flex;align-items:center;gap:12px;background:#0a9f76;color:#04181b;font-weight:800;font-size:17px;padding:13px 26px;border-radius:999px;width:fit-content}
+  .wa{font-size:15px;font-weight:700;color:rgba(255,255,255,.85);text-shadow:0 2px 10px rgba(0,0,0,.5)}
+</style>
+</head>
+<body>
+  <div class="scrim"></div>
+  <div class="content">
+    <div class="brand">
+      <div class="shield">
+        <svg width="29" height="29" viewBox="0 0 24 24" fill="none" stroke="#7fe3c4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Vigilante SEACE</div>
+        <div class="brand-sub">Licitaciones del Estado peruano</div>
+      </div>
+    </div>
+
+    <div class="mid">
+      <span class="kicker">Alertas el mismo día</span>
+      <h1>Tú estás en obra.<br><em>Nosotros vigilamos el SEACE por ti.</em></h1>
+      <div class="sub">Te avisamos por <strong>WhatsApp, Telegram o correo</strong> apenas el Estado publica una licitación de tu rubro — y la IA revisa el TDR para decirte si calificas.</div>
+    </div>
+
+    <div class="foot-row">
+      <div class="cta">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        licitacionesmype.pe
+      </div>
+      <div class="wa">WhatsApp +51 918 874 873</div>
+    </div>
+  </div>
+</body>
+</html>
