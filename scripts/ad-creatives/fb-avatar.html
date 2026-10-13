@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1080px}
+  body{
+    font-family:'Sora',system-ui,sans-serif; color:#fff;
+    background:
+      radial-gradient(720px 720px at 50% 30%, rgba(23,184,133,.20), transparent 65%),
+      linear-gradient(160deg, #052528 0%, #04181b 55%, #041417 100%);
+    display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
+  }
+  .grid{position:absolute;inset:0;opacity:.05;
+    background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);
+    background-size:90px 90px;}
+  .tile{
+    width:560px;height:560px;border-radius:170px;
+    background:rgba(255,255,255,.06); border:2px solid rgba(127,227,196,.35);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 120px rgba(23,184,133,.25);
+  }
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="tile">
+    <svg width="330" height="330" viewBox="0 0 24 24" fill="none" stroke="#7fe3c4" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+  </div>
+</body>
+</html>
