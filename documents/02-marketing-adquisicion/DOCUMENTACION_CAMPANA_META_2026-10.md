@@ -513,7 +513,38 @@ frecuencia. Se registra desde el día 1 en `documents/04-metricas-reportes/`.
 
 ---
 
-## 12. Reglas de decisión (adaptadas con números reales)
+## 12. Aprendizajes del Día 1 (12/10/2026) — números reales
+
+**Inversión del día: S/ 12.61** (60% del presupuesto diario) · 10,003 impresiones · 7,510 personas · frecuencia 1.33
+· 276 clics (214 al enlace) · CTR 2.76% · CPL: — (sin leads aún) · Llegadas a landing: 79 (37% de los clics).
+
+**Los 7 aprendizajes (todos convertidos en cambios permanentes):**
+
+1. **Placements cerrados (FB+IG) por defecto.** Advantage+ abierto + objetivo clics compra Audience Network:
+   18/18 clics eran de ahí (Facebook feed: 0 clics con 128 impresiones). Corregido + `verify_campaign.py` lo exige.
+   *Regla: CPC < S/ 0.10 en B2B = señal de tráfico basura, no de eficiencia.*
+2. **CTR ≠ conversión.** Los V1 "Dato" tienen mejor CTR (4.2% / 3.3%); Meta prioriza entrega a V2/V3 emocionales.
+   Veredicto por leads, no por clics — se decide el día 7 con el almacén (`meta_insights_diarios`).
+3. **La fuga existe entre clic y landing (37% de llegada).** KPI nuevo de seguimiento: `landing_page_view / link_click`.
+   A investigar con GA4 + velocidad móvil.
+4. **Los tests funcionales no ven lo visual.** El formulario E1 "funcionaba" pero se veía roto (doble `class` HTML).
+   → Auditoría visual ejecutable (`scripts/qa/funnel-audit.mjs`, 10 checks).
+5. **El tracking puede mentir en silencio.** Los beacons (WA clics, heatmap) eran rechazados con 419 por CSRF de
+   Sanctum: cero clics registrados en todo el día sin ningún error visible. → Beacons excluidos de CSRF + verificación
+   en navegador real obligatoria (curl no basta).
+6. **El deploy "exitoso" no garantiza assets frescos.** `--skip-deps` ocultaba el `npm run build` (CSS de 12 días).
+   → El build del frontend ahora corre SIEMPRE en deploy.
+7. **Timing B2B.** Arrancar domingo 23:00 fue error; ahora el arranque es lunes 08:00 programado y con vigilancia.
+
+**Aprendizajes pendientes (se leen con el día 2 limpio):** tasa real de llegada post-fixes · conversión del
+formulario con tráfico limpio · **CPL real** · qué embudo/creativo trae los primeros leads · mejores horarios.
+
+**Herramientas de observación activas desde el día 1:** heatmaps propios (`/admin/heatmaps`), Clarity (grabaciones),
+clics WhatsApp en BD, monitor ROI 4x/día + resumen 21:30, almacén de métricas hora a hora.
+
+---
+
+## 13. Reglas de decisión (adaptadas con números reales)
 
 Basado en `meta-decision-system.md`, con TCPL = S/ 12:
 
@@ -529,7 +560,7 @@ Basado en `meta-decision-system.md`, con TCPL = S/ 12:
 
 ---
 
-## 13. Riesgos y supuestos
+## 14. Riesgos y supuestos
 
 | Riesgo | Prob. | Impacto | Mitigación |
 |---|---|---|---|
@@ -546,7 +577,7 @@ recalibran con datos reales a los 30 días.
 
 ---
 
-## 14. Anexos
+## 15. Anexos
 
 ### 14.1 Activos e IDs
 - Ad account: `act_350473826722700` · Página: `1340988862437864` · Pixel: `1029237720131593`.
