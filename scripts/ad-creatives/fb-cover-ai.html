@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1640px;height:624px}
+  body{
+    font-family:'Inter',system-ui,sans-serif; color:#fff; position:relative; overflow:hidden;
+    background:url('file:///C:/Users/PC-01/AppData/Local/Temp/opencode/cover-bg.png') center/cover no-repeat;
+  }
+  .scrim{position:absolute;inset:0;
+    background:
+      linear-gradient(90deg, rgba(3,16,19,.94) 0%, rgba(3,16,19,.82) 34%, rgba(3,16,19,.30) 58%, rgba(3,16,19,0) 78%),
+      linear-gradient(180deg, rgba(3,16,19,.35) 0%, rgba(3,16,19,0) 30%, rgba(3,16,19,.42) 100%);}
+  .content{position:absolute;inset:0;padding:56px 72px;display:flex;flex-direction:column;justify-content:space-between;z-index:2}
+  .brand{display:flex;align-items:center;gap:16px}
+  .shield{width:56px;height:56px;border-radius:17px;background:rgba(255,255,255,.10);border:1px solid rgba(127,227,196,.4);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .brand-name{font-family:'Sora';font-weight:800;font-size:26px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:13.5px;color:rgba(255,255,255,.72);font-weight:600;margin-top:4px}
+  .mid{max-width:900px}
+  h1{font-family:'Sora';font-weight:800;font-size:55px;line-height:1.07;letter-spacing:-.025em;text-shadow:0 4px 28px rgba(0,0,0,.55)}
+  h1 em{font-style:normal;color:#7fe3c4}
+  .bullets{display:flex;gap:30px;font-size:16.5px;font-weight:600;color:rgba(255,255,255,.88);margin-top:22px;flex-wrap:wrap}
+  .bullets span::before{content:"✔ ";color:#7fe3c4}
+  .cta{display:inline-flex;align-items:center;gap:12px;background:#0a9f76;color:#04181b;font-weight:800;font-size:17px;padding:13px 26px;border-radius:999px;margin-top:26px;width:fit-content}
+  .foot{position:absolute;right:72px;bottom:52px;font-size:15px;font-weight:700;color:rgba(255,255,255,.85);text-shadow:0 2px 10px rgba(0,0,0,.5);z-index:2}
+</style>
+</head>
+<body>
+  <div class="scrim"></div>
+  <div class="content">
+    <div class="brand">
+      <div class="shield">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#7fe3c4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Vigilante SEACE</div>
+        <div class="brand-sub">Licitaciones del Estado peruano</div>
+      </div>
+    </div>
+
+    <div class="mid">
+      <h1>Tu empresa <em>vigilando el SEACE</em>,<br>mientras tú haces lo tuyo.</h1>
+      <div class="bullets">
+        <span>Alertas el mismo día</span>
+        <span>Análisis de TDR con IA</span>
+        <span>Contratos menores y mayores</span>
+      </div>
+      <div class="cta">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        licitacionesmype.pe
+      </div>
+    </div>
+  </div>
+  <div class="foot">+51 918 874 873</div>
+</body>
+</html>
