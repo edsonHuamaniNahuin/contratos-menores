@@ -15,6 +15,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->throttleApi();
         $middleware->append(\App\Http\Middleware\NoCacheAuthPages::class);
+
+        // Beacons públicos de telemetría (sendBeacon desde las landings, con
+        // cookies de sesión y sin poder mandar header CSRF). Sin esta exclusión
+        // Sanctum los trata como "stateful" y los rechaza con 419 — así se
+        // perdieron todos los clics de WhatsApp del día 1 de campaña.
+        $middleware->validateCsrfTokens(except: [
+            'api/page-event',
+            'api/wa-click',
+        ]);
+
         $middleware->alias([
             'demo.captcha' => \App\Http\Middleware\DemoCaptcha::class,
         ]);
