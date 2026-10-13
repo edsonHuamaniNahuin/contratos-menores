@@ -54,7 +54,7 @@ Verificar que el HTML referencia el hash actual (`/build/assets/app-XXXX.css`).
 
 - **Heatmaps first-party**: `/admin/heatmaps` (clics con coordenadas + scroll por landing).
 - **Clics WhatsApp**: tabla `wa_clicks` (ahora sí funcionando) + métrica en el monitor.
-- **Microsoft Clarity** (grabaciones de sesión, gratis): pendiente crear proyecto → pegar script con el ID.
+- **Microsoft Clarity** (grabaciones de sesión, gratis): **ACTIVO** (project ID `ywwnwgfd`) en las 3 landings, plantillas-tdr, buscadores públicos y páginas del layout público. Gateado por consentimiento de cookies (solo graba si el visitante acepta analíticas). NO instalado en el panel autenticado (privacidad).
 - **GA4**: tráfico, rebote, dispositivos del tráfico pagado (utm_source=meta).
 
 ## Frecuencia
