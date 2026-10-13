@@ -426,15 +426,15 @@
                     </div>
 
                     <div class="space-y-3.5">
-                        <input class="campo-correo" type="text" name="nombre" required value="{{ old('nombre') }}" placeholder="Nombre completo" class="w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60">
+                        <input class="campo-correo w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="text" name="nombre" required value="{{ old('nombre') }}" placeholder="Nombre completo">
                         @error('nombre')<p class="text-[12px] text-red-200">{{ $message }}</p>@enderror
 
-                        <input class="campo-correo" type="email" name="email" required value="{{ old('email') }}" placeholder="Correo corporativo" class="w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60">
+                        <input class="campo-correo w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="email" name="email" required value="{{ old('email') }}" placeholder="Correo corporativo">
                         @error('email')<p class="text-[12px] text-red-200">{{ $message }}</p>@enderror
 
-                        <input class="campo-correo" type="text" name="empresa" value="{{ old('empresa') }}" placeholder="Empresa" class="w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60">
+                        <input class="campo-correo w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="text" name="empresa" value="{{ old('empresa') }}" placeholder="Empresa">
 
-                        <input class="campo-correo" type="text" name="rubro" value="{{ old('rubro') }}" placeholder="Rubro (ej. obras viales, energía)" class="w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60">
+                        <input class="campo-correo w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="text" name="rubro" value="{{ old('rubro') }}" placeholder="Rubro (ej. obras viales, energía)">
 
                         <div>
                             <label class="block text-white/85 text-[13px] mb-1.5">¿Cuánto es {{ $demoCaptchaA ?? 7 }} + {{ $demoCaptchaB ?? 3 }}?</label>

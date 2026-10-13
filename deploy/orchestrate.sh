@@ -443,13 +443,15 @@ do_deploy() {
         rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
         $PHP_BIN $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction 2>&1 | tail -3
         log_ok "Composer install completado"
-
-        log_step "FRONTEND BUILD"
-        npm run build 2>&1 | tail -3
-        log_ok "Vite build completado"
     else
         log_info "Saltando dependencias PHP (--skip-deps)"
     fi
+
+    # ── 2b. Frontend build (SIEMPRE — antes vivía dentro de --skip-deps y el CSS
+    # quedaba viejo en cada deploy que omitía dependencias) ──
+    log_step "FRONTEND BUILD"
+    npm run build 2>&1 | tail -3
+    log_ok "Vite build completado"
 
     # ── 3. Migraciones ──
     if [ "$SKIP_MIGRATE" = false ]; then

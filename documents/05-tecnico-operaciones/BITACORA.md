@@ -25,6 +25,30 @@
 
 ---
 
+## 2026-10-12 · Landings E1 + Deploy (build stale) · (commit de esta sesión)
+
+### Los inputs del formulario de /alertas-licitaciones salían SIN ESTILOS (doble atributo class) — detectado por el usuario
+
+**Síntoma:** en producción los campos Nombre/Correo/Empresa/Rubro del formulario E1 se veían como cajas blancas sin padding ni bordes (computado: `padding 0px`, `border-radius 0px`), aunque el CSS cargaba (200).
+
+**Causa:** los 4 inputs tenían **DOS atributos `class`** (`class="campo-correo" ... class="w-full px-4 py-3 ..."`). HTML ignora el segundo atributo duplicado → solo aplicaba `campo-correo`, que es un hook de JS para el timer anti-bot, NO un estilo. Presente desde el diseño original; los tests funcionales/e2e no lo detectaron porque el mecanismo funcionaba — solo se ve en el render visual.
+
+**Solución:** fusionar en un solo atributo `class="campo-correo w-full px-4 py-3 …"` (4 inputs corregidos). Lección: revisar SIEMPRE el render visual (screenshot móvil) de los formularios, no solo el funcionamiento.
+
+### El CSS servido llevaba 12 días viejo: `--skip-deps` también saltaba el `npm run build`
+
+**Síntoma:** `app-Bm3LQYe_.css` del 30/09 en producción; las clases nuevas (CRO de hoy) no existían en el CSS servido. Los deploys decían "completado".
+
+**Causa:** en `deploy/orchestrate.sh` el `npm run build` estaba DENTRO del bloque `if SKIP_DEPS=false` → todo deploy con `--skip-deps` (usado todo el día) omitía el build del frontend. El build en sí funciona (probado manual: 7s OK).
+
+**Solución:** mover el FRONTEND BUILD fuera del condicional — ahora corre SIEMPRE en `deploy` (7 s, sin downtime). Build ejecutado y verificado (`app-W8SD_U8Q.css`).
+
+**Lección:** `--skip-deps` NO significa "solo saltar composer": también saltaba el build. Y el mensaje "deploy completado" no garantiza que los assets se regeneraran.
+
+**Archivos:** `deploy/orchestrate.sh`, `resources/views/alertas-licitaciones.blade.php`
+
+---
+
 ## 2026-10-12 · Meta Ads (tráfico basura) · (commit de esta sesión)
 
 ### 18/18 clics venían de Audience Network (placements Advantage+ abiertos) — CPC de S/ 0.03 era basura, no éxito
