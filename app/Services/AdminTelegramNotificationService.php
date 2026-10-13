@@ -111,6 +111,19 @@ class AdminTelegramNotificationService
     }
 
     /**
+     * Escapa caracteres reservados de Markdown en valores dinámicos
+     * (emails, nombres, UTMs con "_" rompen el parseo de Telegram).
+     */
+    public static function escaparMarkdown(?string $texto): string
+    {
+        return str_replace(
+            ['\\', '_', '*', '`', '[', ']'],
+            ['\\\\', '\\_', '\\*', '\\`', '\\[', '\\]'],
+            (string) $texto
+        );
+    }
+
+    /**
      * Envía un mensaje al chat del admin.
      */
     protected function send(string $message): bool
@@ -118,11 +131,20 @@ class AdminTelegramNotificationService
         try {
             $url = sprintf('%s/bot%s/sendMessage', $this->apiBase, $this->botToken);
 
-            $response = Http::timeout(30)->post($url, [
+            $payload = [
                 'chat_id'    => $this->chatId,
                 'text'       => $message,
                 'parse_mode' => 'Markdown',
-            ]);
+            ];
+
+            $response = Http::timeout(30)->post($url, $payload);
+
+            // Fallback: si Telegram no puede parsear el Markdown (típicamente por un
+            // "_" en un valor dinámico), reenviar como texto plano — la alerta llega igual.
+            if (! $response->successful() && str_contains($response->body(), 'parse entities')) {
+                unset($payload['parse_mode']);
+                $response = Http::timeout(30)->post($url, $payload);
+            }
 
             if (!$response->successful()) {
                 Log::warning('AdminTelegram: Error al enviar mensaje', [

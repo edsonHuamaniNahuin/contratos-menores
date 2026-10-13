@@ -114,10 +114,11 @@ class PlantillaTdrController extends Controller
 
             // 3) Alerta inmediata al admin por Telegram (lead esperando respuesta)
             try {
+                $esc = \App\Services\AdminTelegramNotificationService::escaparMarkdown(...);
                 app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
                     "🎯 *NUEVO LEAD (plantilla TDR)*\n\n"
-                    . "📝 {$lead->nombre}\n"
-                    . "📧 {$lead->email}\n\n"
+                    . '📝 ' . $esc($lead->nombre) . "\n"
+                    . '📧 ' . $esc($lead->email) . "\n\n"
                     . '⏱️ Responder en ≤2h — panel → Respuesta a Leads'
                 );
             } catch (\Throwable $e) {

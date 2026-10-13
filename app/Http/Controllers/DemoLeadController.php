@@ -104,13 +104,14 @@ class DemoLeadController extends Controller
 
             // Alerta inmediata al admin: hay un lead esperando respuesta (SLA ≤2h)
             try {
+                $esc = \App\Services\AdminTelegramNotificationService::escaparMarkdown(...);
                 app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
                     "🎯 *NUEVO LEAD*\n\n"
-                    . "📝 {$lead->nombre}\n"
-                    . "📧 {$lead->email}\n"
-                    . ($lead->telefono ? "📱 {$lead->telefono}\n" : '')
-                    . '🏷️ ' . ($landing !== '' ? $landing : 'landing')
-                    . ($lead->utm_content ? " · {$lead->utm_content}" : '') . "\n\n"
+                    . '📝 ' . $esc($lead->nombre) . "\n"
+                    . '📧 ' . $esc($lead->email) . "\n"
+                    . ($lead->telefono ? '📱 ' . $esc($lead->telefono) . "\n" : '')
+                    . '🏷️ ' . $esc($landing !== '' ? $landing : 'landing')
+                    . ($lead->utm_content ? ' · ' . $esc($lead->utm_content) : '') . "\n\n"
                     . '⏱️ Responder en ≤2h — panel → Respuesta a Leads'
                 );
             } catch (\Throwable $e) {

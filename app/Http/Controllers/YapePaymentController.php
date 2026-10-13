@@ -150,12 +150,13 @@ class YapePaymentController extends Controller
 
         // Alerta inmediata al admin: hay un Yape esperando aprobación
         try {
+            $esc = \App\Services\AdminTelegramNotificationService::escaparMarkdown(...);
             app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
                 "💰 *YAPE REPORTADO*\n\n"
-                . "📧 {$user->email}\n"
-                . "🎯 Plan: {$plan}\n"
-                . "💵 Monto: S/ " . number_format((float) $monto, 2) . "\n"
-                . '📱 Tel: ' . ($request->telefono ?: '—') . "\n\n"
+                . '📧 ' . $esc($user->email) . "\n"
+                . '🎯 Plan: ' . $esc($plan) . "\n"
+                . '💵 Monto: S/ ' . number_format((float) $monto, 2) . "\n"
+                . '📱 Tel: ' . $esc($request->telefono ?: '—') . "\n\n"
                 . '✅ Aprobar AHORA en /admin/pagos-yape'
             );
         } catch (\Throwable $e) {

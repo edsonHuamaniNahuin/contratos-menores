@@ -254,11 +254,12 @@ class Billing extends Component
 
         // Alerta inmediata al admin: renovación por Yape esperando aprobación
         try {
+            $esc = \App\Services\AdminTelegramNotificationService::escaparMarkdown(...);
             app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
                 "💰 *YAPE (RENOVACIÓN) REPORTADO*\n\n"
-                . "📧 {$user->email}\n"
-                . "🎯 Plan: {$plan}\n"
-                . "💵 Monto: S/ " . number_format((float) $monto, 2) . "\n\n"
+                . '📧 ' . $esc($user->email) . "\n"
+                . '🎯 Plan: ' . $esc($plan) . "\n"
+                . '💵 Monto: S/ ' . number_format((float) $monto, 2) . "\n\n"
                 . '✅ Aprobar AHORA en /admin/pagos-yape'
             );
         } catch (\Throwable $e) {
