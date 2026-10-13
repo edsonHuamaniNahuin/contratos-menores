@@ -25,6 +25,30 @@
 
 ---
 
+## 2026-10-13 · Beacons de landings + Auditoría pre-lanzamiento · `46dc5e5e`
+
+### Los beacons POST de las landings eran rechazados con 419 por Sanctum: los clics de WhatsApp nunca se registraron en navegadores reales
+
+**Contexto:** al construir el heatmap first-party (`/api/page-event`) y probarlo desde un navegador real, el POST devolvía la página de login (200 HTML) en vez de 204.
+
+**Causa:** `statefulApi()` (Sanctum) aplica `ValidateCsrfToken` a las peticiones same-origin CON cookies de sesión; `navigator.sendBeacon` no puede enviar header CSRF → 419 → redirect al login. Afectaba también a `/api/wa-click` **desde su creación**: el "0 clics WhatsApp" del día 1 no era falta de clics — el tracking estaba roto en silencio (los curl de prueba no lo detectaban porque sin cookies la request no es "stateful").
+
+**Solución:** excluir `/api/page-event` y `/api/wa-click` de CSRF (`$middleware->validateCsrfTokens(except: [...])`). Telemetría write-only, inputs saneados, con `throttleApi()`.
+
+**Verificación:** navegador real → scroll en la landing → 4 eventos (25/50/75/100%) llegaron a `page_events` con su UTM (antes: 0).
+
+### Protocolo nuevo: auditoría pre-lanzamiento ejecutable (`scripts/qa/funnel-audit.mjs`)
+
+10 checks con evidencia por landing: render, **estilos computados de inputs y botón** (habría cazado el bug del form E1), **beacons 204 desde navegador real** (habría cazado este bug), pixel/GA4/WhatsApp/captcha, peso de recursos, screenshot móvil del formulario. Corrido al cierre del día: **10/10 en las 3 landings**.
+
+**Regla institucional (CHECKLIST_PRE_LANZAMIENTO.md):** sin auditoría verde + validador de campaña verde + e2e de lead real, NO se activa gasto.
+
+**Lección:** probar con curl NO valida el flujo real del navegador (sin cookies la request no es stateful). Render visual + tracking real + build fresco son parte del lanzamiento, no "extras".
+
+**Archivos:** `bootstrap/app.php`, `scripts/qa/funnel-audit.mjs`, `documents/05-tecnico-operaciones/CHECKLIST_PRE_LANZAMIENTO.md`, `app/Http/Controllers/PageEventController.php`, `admin/heatmaps`
+
+---
+
 ## 2026-10-13 · Login 419 "Page Expired" · `58a8a522`
 
 ### Al expirar la sesión, el login mostraba la pantalla fea "419 Page Expired"
