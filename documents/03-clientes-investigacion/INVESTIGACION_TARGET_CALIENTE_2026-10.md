@@ -5,7 +5,9 @@
 
 ---
 
-## 1. QUIÉN PAGA HOY (evidencia dura de BD)
+## 1. QUIÉN PAGA HOY (evidencia de BD)
+
+> ⚠️ **Criterio corregido por el dueño (14/10):** nuestra base de suscriptores (10-11 pagos) **NO es criterio de importancia** (muestra diminuta). Sirve solo como *validación direccional*. El criterio principal ahora es **evidencia externa significativa** (§1c): tamaño del mercado, mercado laboral y fuentes independientes.
 
 **11 pagos aprobados en total:** 7 en Premium Mayores (S/68/mes) + 4 en Mensual (S/49/mes).
 **Patrón de compra:** registran → **10–12 días de "lurking"** → pagan. La compra NO es impulsiva: la dispara un **evento de urgencia** (una convocatoria que calza, o el dolor de perder una).
@@ -29,6 +31,23 @@
 - **PAGAN = especialistas de micro-rubro con necesidad recurrente de postular** (el pipeline ES su negocio; cada convocatoria perdida = plata).
 - **NO pagan = genéricos ("Obras civiles" a secas, "Infraestructura", "Licitaciones") u off-cluster** (software/hosting, BIM, limpieza, laboratorio, HSE). Tres perfiles de construcción genérica NO pagaron → la especificidad del nicho separa al comprador del curioso.
 - **Implicación de mensaje:** hablar en SUS palabras (movimiento de tierras, pistas y veredas, media tensión, saneamiento), no en "licitaciones" genérico.
+
+### 1c. Evidencia EXTERNA significativa (fuentes independientes — el criterio real)
+
+**Mercado laboral (Computrabajo Perú, consultado 14/10/2026 — ofertas ACTIVAS ahora mismo):**
+- **321 ofertas de trabajo de "licitaciones"** activas (109 urgentes · 194 en el último mes). LinkedIn: 724 puestos de "Analista de Licitaciones" + 2,000+ de "licitaciones".
+- **El dato manda:** existen cientos de empresas peruanas contratando personal DEDICADO a licitaciones *este mes* → ese es el universo de compradores serios (empresas que ya compiten, con urgencia de ganar).
+- Distribución por área de la empresa: **Ventas 91 · Administración 53 · Ingeniería 31 · Compras/Logística 41 · Construcción y obra 15 · Mantenimiento 12 · Salud 9 · Legal 6**.
+- Geografía: **Lima 251 · Arequipa 23 · Callao 10 · La Libertad 8 · Cusco 6 · Ica 6 · Lambayeque 5 · Junín 4** (coincide con el corredor de demanda §2b).
+- Salarios de mercado: **S/1,800 – S/3,000/mes** por un analista de licitaciones → **argumento de venta directo: el sistema cuesta ~1/40 de lo que cuesta un analista**.
+- Empresas publicando hoy: metalmecánica, **Yaku SG (agua/saneamiento)**, Global Fiber, sector salud (clínicas), APPLUS (infraestructura), **EQUANS (energía)**, **Tracto Camiones USA (maquinaria)**, Energía Integral Andina, SIBA Medical, GEOSATELITAL, Lenmex ("OSCE/SEACE" explícito) → los verticales de las ofertas CONFIRMAN la matriz TIER A/B (obras, saneamiento, energía, salud, mantenimiento).
+
+**Fuentes oficiales del mercado estatal (identificadas para cifras maestras):**
+- **OECE Analytics** (Tableau "Adjudicaciones"): monto adjudicado, nº de procesos, **nº de proveedores**, promedio de postores, desiertos — actualizado semanalmente. Fuente oficial SEACE+RNP.
+- **Buscador de Proveedores Adjudicados** (gob.pe/14273) con descargas históricas completas; **MEF – Consulta de Proveedores** (todos los que contrataron con el Estado); Portal de Datos Abiertos OECE (datasets CSV).
+- Contexto externo: 86.8% de mypes peruanas sin registro SUNAT (Revista Economía, 2026) → el mercado direccionable serio es la fracción formal que provee al Estado.
+
+**Lectura:** con datos externos, el ICP caliente se confirma y amplifica — no dependemos de nuestra muestra: **hay cientos de empresas contratando hoy para venderle al Estado en los rubros TIER A/B, y pagan S/1.8-3k/mes por ese talento.**
 
 ## 2. QUÉ DEMANDA EL ESTADO AHORA (lo que el sistema ve = el mercado real)
 
@@ -117,6 +136,8 @@
 
 - [ ] **Entrevistas (5-10)** con compradores y trials fríos — guion listo (`candidatos-entrevistas.md`); requiere al equipo del dueño (llamadas 20 min). Es la única fuente que supera a la BD para "por qué compra".
 - [x] **Análisis de competidores (skill Paso 3)** — ✅ HECHO 14/10 → `COMPETIDORES_2026-10.md` (10 jugadores, 4 teardowns: LicitaHub = amenaza directa; brecha común = canal email y sin TDR IA).
+- [x] **Evidencia externa: mercado laboral** — ✅ HECHO §1c (321 ofertas Computrabajo + 724 LinkedIn).
+- [ ] **Cifras maestras OECE**: extraer del dashboard Tableau / datos abiertos (nº de proveedores RNP, monto adjudicado anual, % MYPE) — fuente oficial, pendiente de scraping/manual para citar con precisión.
 - [ ] **Captura de octubre (notified_processes 53)** — P-001 en `PENDIENTES.md` (scraper).
 - [ ] Herramientas de demanda externa: falta `SERPAPI_KEY` (gratis) y verificar cuenta DataForSEO para volumen de búsquedas; Keywords Everywhere sin saldo.
 - [ ] Verificar si el registro captura RNP/rubro estructurado (hoy es texto libre `company_copy`) — un campo "rubro" + "ya vende al Estado" en el registro mejoraría el scoring de leads.
