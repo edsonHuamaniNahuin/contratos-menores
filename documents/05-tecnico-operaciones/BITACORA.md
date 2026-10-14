@@ -1411,3 +1411,9 @@ Los 10 anuncios (E1×3, E2×3, E3×3, U1×1) actualizados a copys v2: iconos que
 
 ### 🔗 Copys v3 — 3 URLs en los 10 anuncios (14/10 ~16:00)
 Corrección del dueño: faltaba el buscador de contratos mayores. Los 10 anuncios actualizados con: 🔎 buscador-publico (menores) + 🏗️ buscador-contratos-mayores (mayores) + 🌐 licitacionesmype.pe. Las 3 URLs verificadas vivas (HTTP 200) antes de publicar. Registro: scripts/ad-creatives/copys_v3_2026-10-14.json. Nota: el servidor no puede hacer curl a su propio dominio (Cloudflare bloquea su IP de salida) — desde fuera responde 200; no afecta usuarios.
+
+### 🎯 Demografía real y ajuste de edad 40-60 (14/10 ~17:00)
+- **GA4 demografía: APAGADA** (Google Signals off; Admin API no habilitada en GCP → no encendible por API). **Acción del dueño (30 seg):** GA4 → Admin → Recopilación de datos → activar Google Signals (datos en 24-48h).
+- **Demografía Meta (12-14 oct) APLICADA a la decisión:** 45-54 (S/16.33, CTR 2.62%, CPC S/0.048, 116 LPV) y 55-64 (S/13.90, CTR 2.59%, CPC S/0.048, 102 LPV) = **sweet spot**; 25-34 y 35-44 rinden menos (CPC S/0.058-0.059, menos LPV; U1 35-44: CTR 0.35%).
+- **Cambio aplicado:** edad 25-60 → **40-60** en E1, E3 y U1 (verificado por API; mantiene brazos comparables). Si 40-44 sigue flojo al día 7 → 45-60.
+- Razón de fondo: dueños de MYPE proveedora con trayectoria (los pagadores tienen 8-19 años de empresa) — la data paga confirma al comprador investigado.
