@@ -26,7 +26,7 @@ ADSETS_ESPERADOS = {
         "nombre": "META_Traffic_E1_Alertas_2026Q4",
         "landing": "https://licitacionesmype.pe/alertas-licitaciones",
         "intereses": {"construction engineering", "prácticas gubernamentales"},
-        "estado": "ACTIVE",
+        "estado": "PAUSED",
     },
     "120247999032700108": {
         "nombre": "META_Traffic_E2_Software_2026Q4",

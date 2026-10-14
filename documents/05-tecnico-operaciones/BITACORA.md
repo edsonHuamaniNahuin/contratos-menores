@@ -1417,3 +1417,6 @@ Corrección del dueño: faltaba el buscador de contratos mayores. Los 10 anuncio
 - **Demografía Meta (12-14 oct) APLICADA a la decisión:** 45-54 (S/16.33, CTR 2.62%, CPC S/0.048, 116 LPV) y 55-64 (S/13.90, CTR 2.59%, CPC S/0.048, 102 LPV) = **sweet spot**; 25-34 y 35-44 rinden menos (CPC S/0.058-0.059, menos LPV; U1 35-44: CTR 0.35%).
 - **Cambio aplicado:** edad 25-60 → **40-60** en E1, E3 y U1 (verificado por API; mantiene brazos comparables). Si 40-44 sigue flojo al día 7 → 45-60.
 - Razón de fondo: dueños de MYPE proveedora con trayectoria (los pagadores tienen 8-19 años de empresa) — la data paga confirma al comprador investigado.
+
+### 🎯 J0 desbloqueado (14/10 ~19:00) — ToS aceptado + certificacion pendiente
+El dueño acepto las Condiciones de anuncios para clientes potenciales (via asistente de creacion) — el adset J0 se pudo crear (120248057988010108). Montado: campana J0 ACTIVA, adset ACTIVO (S/7, LEAD_GENERATION, form 1427421766170299 con pregunta de rubro), creativo 988513510190450 (copy con 3 URLs). E1 pausado para financiar (estructura: T4 + U1 + J0 = S/21/dia). NUEVO BLOQUEO al crear el anuncio: certificacion de no discriminacion requerida por Meta (error 2859002) — tramite del dueño en facebook.com/certification/nondiscrimination; luego se crea el ad en 30 seg.
