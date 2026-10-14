@@ -21,10 +21,11 @@ class MetaIngerirCommand extends Command
 
     protected $description = 'Guarda en BD las métricas de la campaña Meta (intradía de hoy + cierres diarios).';
 
-    /** Campañas a ingerir (traffic E1E2E3 + lead ads J0) — cada centavo se guarda. */
+    /** Campañas a ingerir (traffic E1E2E3 + lead ads J0 + urgencia TIER A) — cada centavo se guarda. */
     private const CAMPAIGNS = [
         '120247999030430108',
         '120248044120960108',
+        '120248045023470108',
     ];
     private const API = 'https://graph.facebook.com/v26.0';
     private const FIELDS = 'ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,reach,clicks,ctr,cpc,cpm,frequency,actions';

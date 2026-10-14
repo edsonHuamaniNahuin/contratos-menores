@@ -34,6 +34,17 @@ cambio fuerte son por BLOQUES (día 7 / día 14) para no ensuciar los tests con 
 ¹ El beacon de WA clicks estuvo roto hasta el fix del 13/10 (CSRF). GA4 sí registró (5 usuarios en 2 días).
 ² Compensa el subgasto del día 1 → promedio real: S/ 20.57/día ≤ S/ 21 ✓ (Meta balancea la flexibilidad diaria).
 
+**⚡ Estructura comparativa desde 14/10 07:00 (3 brazos, presupuesto intacto S/21/día):**
+
+| Brazo | Campaña | Presupuesto | Ángulo | Estado |
+|---|---|---|---|---|
+| **E1** | Traffic E1 (Alertas) | S/7/día | V1/V2/V3 (alertas genérico) | corre |
+| **E3** | Traffic E3 (Vigentes) | S/7/día | V1/V2/V3 (vigentes) | corre |
+| **NEW U1** | **META_Urgencia_TIER_A_2026Q4** | S/7/día | **Urgencia (perdiste la obra + canal WhatsApp/Telegram)** | arranca 07:00 (dayparting) |
+| ~~E2~~ | ~~Traffic E2 (Software)~~ | — | cluster que no paga | **PAUSADA** (financia U1) |
+
+**Criterio de comparación (día 7):** landings reales por S/ gastado · clics WA por 100 landings · leads reales · CPL. El brazo ganador define la dirección de la semana 2.
+
 ## Creativos (CTR acumulado 2 días — muestra chica, se decide día 7)
 
 | Embudo | V1 Dato | V2 Dolor | V3 Alivio | Líder provisional |

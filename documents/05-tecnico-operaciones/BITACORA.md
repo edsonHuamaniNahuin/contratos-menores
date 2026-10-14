@@ -1369,3 +1369,21 @@ Cada página ahora tiene exactamente 1 `<h1>` semántico.
 **Lección:** para lead-gen con landing, NUNCA optimizar por LINK_CLICKS; auditar `optimization_goal` antes de lanzar (ahora es check obligatorio); CPC demasiado barato (S/0.05) es señal de tráfico basura, no de éxito; el API de Meta para LPV requiere `custom_event_type:"OTHER"` en el promoted_object.
 
 **Archivos:** `scripts/meta-ads/verify_campaign.py`, `scripts/meta-ads/campaigns_config.json`, `scripts/meta-ads/create_campaigns.py`, ad sets 120247999030690108/120247999032700108/120247999034400108 (config actualizada vía API).
+
+---
+
+### 🚀 Campaña Urgencia TIER A creada (14/10 02:30) — refactor desde investigación
+
+**Síntoma/Contexto:** El dueño pidió una campaña adicional con la nueva estrategia (emociones de urgencia) derivada de la investigación de mercado, lista para la jornada siguiente, para comparar rendimiento contra E1/E3.
+
+**Solución aplicada:**
+- Campaña `META_Urgencia_TIER_A_2026Q4` (120248045023470108) — OUTCOME_TRAFFIC, PAUSED → se activa sola a las 07:00 vía `dayparting.py` (agregada al dict de CAMPAIGNS).
+- Ad set `META_Urgencia_U1_LPV` (120248045023660108) — S/7/día, LPV+pixel+CET OTHER, placements FB+IG, advantage_audience=0, mismo targeting/exclusiones que E1.
+- Anuncio `MA-Urgencia - V1 Dolor` (120248045024360108) — creativo v2 premium (diseño con skill high-end: Clash Display, glass double-bezel, chip "Cierra en 6 días", mensaje canal WhatsApp/Telegram), landings → /alertas-licitaciones con UTMs campaña Urgencia.
+- **E2 (Software) pausada** para financiar la nueva campaña DENTRO del sobre congelado: desde mañana corren E1 (S/7) + E3 (S/7) + Urgencia (S/7) = S/21/día ✓. Comparativa limpia de 3 brazos.
+- Ingesta multi-campaña actualizada (sus centavos se guardan desde el día 1).
+- Creativo original rechazado (versión plana) → reconstruido con skill `high-end-visual-design` (aprobado por lupa visual).
+
+**Lección:** para piezas de diseño, usar SIEMPRE los skills de diseño premium (no mockups planos); el API actual de Meta para audiences ya no acepta `subtype`; curl necesita `-g` para llaves en fields.
+
+**Archivos:** `scripts/ad-creatives/urgencia-dolor.html`, `public/images/ads/urgencia-dolor-1350.png`, `app/Console/Commands/MetaIngerirCommand.php`, `/root/dayparting.py`, `PLAN_ESTRATEGIA_URGENCIA_2026-10.md`.
