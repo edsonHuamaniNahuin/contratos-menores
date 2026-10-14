@@ -114,12 +114,8 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         }
 
         if (!$this->whatsapp->alertasActivas()) {
-            $this->error('🔕 Alertas MASIVAS por WhatsApp pausadas (switch maestro). La ATENCIÓN de leads que escriben SIGUE ACTIVA.');
+            $this->error('🔕 Alertas por WhatsApp PAUSADAS (switch maestro). El bot no enviará mensajes hasta reactivar con: php artisan whatsapp:alertas on');
         }
-
-        // Las respuestas conversacionales (leads que escriben) no se pausan
-        // con las alertas masivas: un mensaje entrante es una venta potencial.
-        $this->whatsapp->forzarEnvio(true);
 
         $this->info('📱 WhatsApp Bot Listener iniciado — PID ' . getmypid());
         $this->info('📡 Esperando mensajes entrantes...');
@@ -255,15 +251,6 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
         $from = $message['from'] ?? '';
         $type = $message['type'] ?? '';
 
-        // Mensajes de TEXTO PLANO: antes se ignoraban por completo — así se
-        // perdían los leads que escriben desde los botones wa.me de las
-        // landings (el prellenado es texto, no un botón interactivo).
-        if ($type === 'text') {
-            $this->handleTextMessage($from, trim((string) ($message['text']['body'] ?? '')), $message['id'] ?? '');
-
-            return;
-        }
-
         // Procesar clicks en botones interactivos (button_reply) y listas (list_reply)
         if ($type === 'interactive') {
             $interactive = $message['interactive'] ?? [];
@@ -280,65 +267,6 @@ class WhatsAppBotListener extends Command implements SignalableCommandInterface,
                 $this->handleButtonClick($from, $callbackData, $messageId);
             }
         }
-    }
-
-    /**
-     * Atención de mensajes de TEXTO PLANO (leads).
-     *
-     * Registra el mensaje en wa_inbound_leads, alerta al admin por Telegram
-     * en el primer contacto, y responde con un saludo-guía (la ventana de
-     * 24h está abierta porque el usuario acaba de escribir).
-     */
-    protected function handleTextMessage(string $phoneNumber, string $texto, string $messageId = ''): void
-    {
-        if ($texto === '' || $phoneNumber === '') {
-            return;
-        }
-
-        // Dedup por messageId (reintentos de webhook)
-        $dedupSeed = $messageId !== '' ? $messageId : ($phoneNumber . '|text|' . sha1($texto));
-        $dedupKey = $this->envCachePrefix . 'txt:' . md5($dedupSeed);
-        if (!Cache::add($dedupKey, true, 600)) {
-            return;
-        }
-
-        $primerContacto = !DB::table('wa_inbound_leads')->where('from_number', $phoneNumber)->exists();
-
-        try {
-            DB::table('wa_inbound_leads')->insert([
-                'from_number' => $phoneNumber,
-                'texto' => mb_substr($texto, 0, 2000),
-                'primer_contacto' => $primerContacto,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('WhatsApp: no se pudo registrar lead entrante', ['error' => $e->getMessage()]);
-        }
-
-        if ($primerContacto) {
-            try {
-                $esc = \App\Services\AdminTelegramNotificationService::escaparMarkdown(...);
-                app(\App\Services\AdminTelegramNotificationService::class)->enviarMensaje(
-                    "🟢 *LEAD POR WHATSAPP*\n\n"
-                    . '📱 ' . $esc('+' . $phoneNumber) . "\n"
-                    . '💬 "' . $esc(mb_substr($texto, 0, 180)) . "\"\n\n"
-                    . '⏱️ Responder en ≤2h desde WhatsApp Business'
-                );
-            } catch (\Throwable $e) {
-                Log::warning('WhatsApp: alerta Telegram de lead falló', ['error' => $e->getMessage()]);
-            }
-
-            $respuesta = "¡Hola! 👋 Gracias por escribir a *Vigilante SEACE*.\n\n"
-                . "Te avisamos el mismo día cuando el Estado publica licitaciones de tu rubro (WhatsApp, correo o Telegram), "
-                . "y la IA analiza el TDR para decirte si calificas antes de postular.\n\n"
-                . "Cuéntame tu *rubro* (ej: obras viales, limpieza, alimentos) y te muestro licitaciones reales de ejemplo. 🎯\n\n"
-                . "También puedes probar el sistema aquí: https://licitacionesmype.pe/register";
-
-            $this->whatsapp->enviarMensaje($phoneNumber, $respuesta);
-        }
-
-        $this->debug('Mensaje de texto procesado', ['from' => $phoneNumber, 'primer_contacto' => $primerContacto]);
     }
 
     /**
