@@ -28,7 +28,7 @@
 - **29 módulos funcionales** con capacidades únicas (análisis IA, direccionamiento, proformas)
 - **5 planes de precio** (Gratuito → S/ 68/mes)
 - **16 posts de blog** con contenido SEO de alta calidad
-- **3 canales de notificación** (Telegram, WhatsApp, Email)
+- **Canales de notificación** (Telegram y correo)
 - **2 buscadores públicos** (Menores + Mayores)
 - **Tecnología de punta** (Gemini 2.5 Flash, Livewire 4, FastAPI)
 

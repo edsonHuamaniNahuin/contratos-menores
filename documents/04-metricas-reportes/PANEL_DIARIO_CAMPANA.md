@@ -40,7 +40,7 @@ cambio fuerte son por BLOQUES (día 7 / día 14) para no ensuciar los tests con 
 |---|---|---|---|---|
 | **E1** | Traffic E1 (Alertas) | S/7/día | V1/V2/V3 (alertas genérico) | corre |
 | **E3** | Traffic E3 (Vigentes) | S/7/día | V1/V2/V3 (vigentes) | corre |
-| **NEW U1** | **META_Urgencia_TIER_A_2026Q4** | S/7/día | **Urgencia (perdiste la obra + canal WhatsApp/Telegram)** | arranca 07:00 (dayparting) |
+| **NEW U1** | **META_Urgencia_TIER_A_2026Q4** | S/7/día | **Urgencia (perdiste la obra + canal Telegram/correo)** | arranca 07:00 (dayparting) |
 | ~~E2~~ | ~~Traffic E2 (Software)~~ | — | cluster que no paga | **PAUSADA** (financia U1) |
 
 **Criterio de comparación (día 7):** landings reales por S/ gastado · clics WA por 100 landings · leads reales · CPL. El brazo ganador define la dirección de la semana 2.

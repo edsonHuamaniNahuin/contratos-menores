@@ -31,7 +31,7 @@ Lee el archivo `BROCHURE_CONTENIDO.md` (adjunto). Es la única fuente de verdad 
 3. **La solución** (1 página): monitoreo automático + alertas multicanal + IA que analiza cada proceso. Incluir el mapa de las 4 pilares: Monitoreo, Alertas, IA, Seguimiento.
 4. **Funcionalidades con screenshots** (3-4 páginas):
    - Buscador de licitaciones (menores y mayores) — filtros por palabra clave, ubicación, objeto y estado.
-   - Alertas por WhatsApp / Telegram / correo.
+   - Alertas por Telegram y correo.
    - Análisis de TDR con IA + score de compatibilidad.
    - Detección de direccionamiento.
    - Proforma de cotización en Word/Excel.
@@ -57,7 +57,7 @@ Antes de producir el brochure, pídeme EXACTAMENTE estos screenshots (escríbeme
 9. **Proforma en Word/Excel** — captura del documento de proforma de cotización generado (una captura basta).
 10. **Calendario de seguimiento** — captura del calendario con los procesos y colores de urgencia.
 11. **Vigilancia de adjudicaciones** — captura de la bandeja de vigilancia (estados: pendiente, buena pro, cerrado).
-12. **Configuración de alertas** — captura de la pantalla donde se configuran palabras clave y los canales (Telegram/WhatsApp/Correo).
+12. **Configuración de alertas** — captura de la pantalla donde se configuran palabras clave y los canales (Telegram/Correo).
 13. **Página de planes** — captura de `https://licitacionesmype.pe/planes`.
 14. **Mis procesos notificados** — captura del historial de notificaciones con KPIs.
 

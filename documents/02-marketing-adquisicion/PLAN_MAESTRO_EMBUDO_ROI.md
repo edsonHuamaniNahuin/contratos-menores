@@ -77,7 +77,7 @@ Mostrarles un **anuncio distinto** (el lead magnet de J1, no la misma landing) a
 
 ### J3 — El buscador público como embudo orgánico (BI: 9 minutos de sesión!)
 324 views/2d con engagement excepcional en el buscador público (SEO, gratis). Insertar captura de
-alertas EN los resultados ("recibe esto por WhatsApp/correo") → convierte demanda orgánica en leads
+alertas EN los resultados ("recibe esto por Telegram/correo") → convierte demanda orgánica en leads
 a costo S/0. *Aplica a: buscador público, páginas regionales, blog.*
 
 ### J4 — La matemática del 10x: TICKET + LTV (la verdad económica)

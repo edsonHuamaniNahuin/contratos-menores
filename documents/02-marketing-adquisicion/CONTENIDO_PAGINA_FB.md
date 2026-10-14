@@ -35,7 +35,7 @@
 ```
 Tu empresa vigilando el SEACE, mientras tú haces lo tuyo 👷‍♂️
 
-🔔 Alertas el mismo día de convocatorias de tu rubro (WhatsApp, Telegram o correo)
+🔔 Alertas el mismo día de convocatorias de tu rubro (Telegram o correo)
 🤖 Análisis de TDR con IA: sabe si calificas antes de postular
 🔍 Buscador de contratos menores y mayores
 📌 Seguimiento de tus procesos
@@ -52,7 +52,7 @@ Actívalo con 5 días de garantía 👉 licitacionesmype.pe
 ```
 El lunes se publicó una licitación de tu rubro. Te enteraste el viernes. 😅
 
-Con Vigilante SEACE la recibes el mismo día en que el Estado la publica — por WhatsApp, Telegram o correo.
+Con Vigilante SEACE la recibes el mismo día en que el Estado la publica — por Telegram o correo.
 
 Empieza a ver primero 👉 licitacionesmype.pe
 
@@ -102,7 +102,7 @@ Demo de 15 minutos y lo ves con tus datos: WhatsApp +51 918 874 873 👉 licitac
 
 ## Info de la página (completar)
 - **Categoría:** Sitio web de economía y negocios (actual) → idealmente "Software" o "Empresa de servicios".
-- **Descripción:** Alertas de licitaciones del Estado peruano para proveedores: convocatorias de tu rubro por WhatsApp, Telegram o correo; análisis de TDR con IA; buscador de contratos menores y mayores. Servicio privado e independiente, no afiliado al OSCE ni al Estado.
+- **Descripción:** Alertas de licitaciones del Estado peruano para proveedores: convocatorias de tu rubro por Telegram o correo; análisis de TDR con IA; buscador de contratos menores y mayores. Servicio privado e independiente, no afiliado al OSCE ni al Estado.
 - **Web:** https://licitacionesmype.pe · **WhatsApp:** +51 918 874 873 · **Correo:** services@sunqupacha.com
 - **Foto de perfil:** escudo de Vigilante SEACE sobre fondo teal (generar).
 - **Portada:** flyer horizontal (generar).

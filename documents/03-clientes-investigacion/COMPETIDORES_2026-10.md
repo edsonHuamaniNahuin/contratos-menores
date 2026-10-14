@@ -26,22 +26,22 @@
 | Procu.com.pe | Conectar empresas con proveedores y gestionar licitaciones | Web | n/d | — | B2B marketplace, no alertas |
 | ProveePeru.com / ProveedoresCrecepymes | Directorios/medios para proveedores | Web | Publicidad | — | No compiten en alertas |
 
-**⚠️ Lectura estratégica nueva — LA AMENAZA DEL GRATIS:** hoy existen **boletines diarios gratuitos** (PeruContrata) y búsqueda gratuita con datos completos (LicitacionesPerú, TodoLicitaciones free). El "solo avisos por correo" ya es commodity. **Lo que NADIE regala ni vende junto:** alertas push al **WhatsApp/Telegram**, **IA que analiza el TDR y dice si calificas**, **proforma Word/Excel** y **garantía**. Ahí vive el precio (S/49-68) — el negocio no es "avisarte" (gratis abunda), es **decidir y postular más rápido**.
+**⚠️ Lectura estratégica nueva — LA AMENAZA DEL GRATIS:** hoy existen **boletines diarios gratuitos** (PeruContrata) y búsqueda gratuita con datos completos (LicitacionesPerú, TodoLicitaciones free). El "solo avisos por correo" ya es commodity. **Lo que NADIE regala ni vende junto:** alertas push a **Telegram y correo**, **IA que analiza el TDR y dice si calificas**, **proforma Word/Excel** y **garantía**. Ahí vive el precio (S/49-68) — el negocio no es "avisarte" (gratis abunda), es **decidir y postular más rápido**.
 
 **Mapa de precios actualizado:** gratis (PeruContrata, tiers free) → S/13-50 (LicitaHub) → S/29 (LicitacionesPerú mes) → **USD 20 ≈ S/75 (TodoLicitaciones)** → S/75-300 (GoPues) → **nosotros S/49-68 (zona media — coherente si el combo TDR+proforma+WA se comunica)**.
 
 ## Lecturas estratégicas
 
-1. **Nadie comunica lo que Vigilante SEACE tiene de verdad:** alertas **WhatsApp/Telegram + correo el mismo día** + **análisis del TDR con IA** + **proforma Word/Excel** + **5 días de garantía** = combo único. LicitaHub no tiene WA/TG ni IA de TDR; GoPues no tiene WA aún ni proforma.
+1. **Nadie comunica lo que Vigilante SEACE tiene de verdad:** alertas **Telegram + correo el mismo día** + **análisis del TDR con IA** + **proforma Word/Excel** + **5 días de garantía** = combo único. LicitaHub no tiene WA/TG ni IA de TDR; GoPues no tiene WA aún ni proforma.
 2. **Anclas de precio del mercado:** barato S/13–40 (LicitaHub) · medio S/29–75 · premium S/150–300 (GoPues). **Nuestro S/49–68 está en zona media-alta** → la justificación debe ser explícita (IA TDR + proforma + canal WhatsApp). *(Cualquier cambio de precio requiere OK del dueño.)*
 3. **La amenaza concreta es LicitaHub:** mismo ICP construcción, 4× más barato, pipeline bonito, equipo consultor (Nuvia). Contrarrestar con: canal (ellos correo, nosotros WhatsApp/Telegram), profundidad (TDR IA + proforma + direccionamiento), y velocidad ("el mismo día").
 4. **GoPues apunta a tecnología/CAS** — vertical donde NOSOTROS probamos que no compran (cluster B). No copiarlos.
 5. **LicitacionesPerú domina SEO/datos** (629k páginas) — no competir de frente en volumen; competir en micro-rubros (vial, movimiento de tierras, saneamiento, eléctrico) y con contenido comparativo.
-6. **La brecha de todos = el email solitario.** "El correo se pierde entre 50 correos; WhatsApp/Telegram llega al toque" es un ángulo de dolor real y diferenciable.
+6. **La brecha de todos = el email solitario.** "El correo se pierde entre 50 correos; Telegram llega al toque" es un ángulo de dolor real y diferenciable.
 
 ## Implicaciones para Vigilante (acciones)
 
-- [ ] Creativos TIER A deben nombrar el **canal**: "alertas al WhatsApp/Telegram el mismo día que publican".
+- [ ] Creativos TIER A deben nombrar el **canal**: "alertas por Telegram el mismo día que publican".
 - [ ] Landing: comparativa honesta vs "buscarlo tú mismo/a mano" (y vs correo) — no golpear competidores por nombre aún (primero medir).
 - [ ] Contenido SEO de micro-rubro: "licitaciones de saneamiento", "convocatorias de pistas y veredas", "obras vial urbana" (bajo volumen pero altísima intención).
 - [ ] Precio: mantener por ahora; evaluar tier "solo contratos menores" (requiere OK del dueño) para competir con LicitaHub en su puerta de entrada.

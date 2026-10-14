@@ -5,7 +5,7 @@
 
 ## 1. EL POSICIONAMIENTO (una frase, con SUS palabras)
 
-> **"El radar que te avisa al WhatsApp/Telegram el mismo día que el Estado publica — y la IA te dice si calificas antes de que cierre."**
+> **"El radar que te avisa por Telegram y correo el mismo día que el Estado publica — y la IA te dice si calificas antes de que cierre."**
 
 - Para: **especialistas de micro-rubro** (pistas y veredas · movimiento de tierras · saneamiento · eléctrico).
 - En su momento: **temporada Q4** (las entidades publican a full antes del cierre de año — dato real 2026).
@@ -37,16 +37,16 @@
 ### 3.2 Copy (arquitectura de mensaje + muestras listas)
 **Fórmula:** [Pérdida concreta] + [Canal que te salva] + [Prueba] + [CTA sin fricción].
 
-- **V1 Pérdida:** *"Te enteraste tarde. La obra ya tenía postor. — Vigilante SEACE te avisa al WhatsApp el mismo día que publican: pistas, veredas, saneamiento, obras."*
+- **V1 Pérdida:** *"Te enteraste tarde. La obra ya tenía postor. — Vigilante SEACE te avisa por Telegram el mismo día que publican: pistas, veredas, saneamiento, obras."*
 - **V2 Ventana Q4:** *"Q4: las entidades publican a full antes del cierre de año. Que no se te escape la de tu rubro."*
 - **V3 Prueba:** *"S/ 6.3M en saneamiento se adjudicó en Áncash mientras los correos dormían. Nuestros usuarios lo vieron el día 1."*
-- Headlines (RSA/feed): "Te avisa al WhatsApp, no al correo que nunca lees" · "¿Pistas y veredas? El radar de tu rubro" · "Antes del cierre de año se define tu 2027".
+- Headlines (RSA/feed): "El aviso llega a tu Telegram, no a un correo enterrado" · "¿Pistas y veredas? El radar de tu rubro" · "Antes del cierre de año se define tu 2027".
 
 ### 3.3 Flyer WhatsApp (v3 — urgencia)
-Del actual (features) a: **"3 datos te dicen si es tuya: 1) cierra en X días 2) S/ monto 3) ¿califica tu empresa? — llegan solos a tu WhatsApp"** + captura real de alerta + garantía 5 días + QR registro. *(Producir tras aprobar copy.)*
+Del actual (features) a: **"3 datos te dicen si es tuya: 1) cierra en X días 2) S/ monto 3) ¿califica tu empresa? — llegan solos a tu Telegram"** + captura real de alerta + garantía 5 días + QR registro. *(Producir tras aprobar copy.)*
 
 ### 3.4 Embudo y landings
-- **Hero TIER A:** titular con su micro-rubro + canal ("…directo a tu WhatsApp/Telegram").
+- **Hero TIER A:** titular con su micro-rubro + canal ("…directo a tu Telegram y correo").
 - **Nueva sección "Radar de esta semana"** (social proof dinámica con capturas de alertas reales, sin prometer cifras estáticas).
 - **Form corto calificado:** + rubro + ¿ya vende al Estado? (alimenta scoring de leads).
 - **J0 Instant Form:** preguntas calificadoras (arriba) — leads llegan pre-clasificados al equipo.

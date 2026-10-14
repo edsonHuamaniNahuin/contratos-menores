@@ -8,6 +8,8 @@
    - Prohibido reactivar/integrar el bot, webhooks de atención o envíos por la API.
    - Tracking de intención WhatsApp = **solo el click del botón** (`wa_clicks` en BD + `lead_whatsapp_click` en GA4).
    - Los leads de WhatsApp los atiende el **equipo manualmente** desde su app.
+   - **Las alertas del producto se comunican SOLO por Telegram y correo** — PROHIBIDO prometer
+     "alertas por WhatsApp" en anuncios, landings, flyers o respuestas (WhatsApp = solo canal de contacto/venta manual).
    - Ver `documents/05-tecnico-operaciones/WHATSAPP_SWITCH.md` §1b.
 
 2. **Presupuesto de campañas: CONGELADO hasta ROI demostrado** (meta: 10x mínimo, 40x óptimo).

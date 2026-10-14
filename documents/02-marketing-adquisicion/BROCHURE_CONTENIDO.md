@@ -68,7 +68,7 @@ Centraliza en un solo lugar la información oficial del SEACE (el sistema electr
 *Todo lo del plan gratuito, más:*
 | Función | |
 |---|---|
-| Alertas automáticas por **WhatsApp** (con botones interactivos) | ✅ |
+| Alertas automáticas por **Telegram y correo** | ✅ |
 | Alertas por **Telegram** (hasta 2 suscriptores) | ✅ |
 | Alertas por **correo electrónico** | ✅ |
 | Análisis de TDR con **inteligencia artificial** | ✅ |
@@ -88,7 +88,7 @@ Centraliza en un solo lugar la información oficial del SEACE (el sistema electr
 | **Detección de direccionamiento** en procesos mayores | ✅ |
 | **Proforma técnica** para procesos competitivos | ✅ |
 | **Partes involucradas:** entidad, postores y adjudicatarios | ✅ |
-| **Alertas de nuevos contratos mayores** por WhatsApp y Telegram | ✅ |
+| **Alertas de nuevos contratos mayores** por Telegram y correo | ✅ |
 | **Vigilancia de adjudicaciones** con alertas de buena pro | ✅ |
 | **Exportación a Excel** de resultados | ✅ |
 | Hasta **8 palabras clave** por perfil | ✅ |
@@ -109,7 +109,7 @@ Sí. Puedes registrar varias cuentas con el mismo RUC, cada una con sus propias 
 No. Está diseñada para equipos de compras, administración y finanzas: la configuración es sencilla (palabras clave y canales de notificación).
 
 **¿En qué dispositivos funciona?**
-En cualquier navegador (computadora, tablet o celular), y las alertas llegan a WhatsApp y Telegram del celular.
+En cualquier navegador (computadora, tablet o celular), y las alertas llegan a Telegram y correo.
 
 **¿Cómo se paga?**
 Con tarjeta (pasarela de pago segura) o Yape, con suscripción mensual o anual y renovación automática configurable.

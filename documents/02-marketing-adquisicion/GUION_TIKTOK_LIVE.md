@@ -97,7 +97,7 @@
 **Gráfico mental:**
 | Sin Vigilante SEACE | Con Vigilante SEACE |
 |---|---|
-| Revisar el SEACE manualmente (2h/día) | Alertas automáticas en Telegram/WhatsApp |
+| Revisar el SEACE manualmente (2h/día) | Alertas automáticas en Telegram/correo |
 | Leer TDRs de 50 páginas a mano | IA lo resume en 15 segundos |
 | Sin saber si está direccionado | Score de direccionamiento automático |
 

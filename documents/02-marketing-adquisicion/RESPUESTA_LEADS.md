@@ -37,7 +37,7 @@ Hola {nombre} 👋
 
 Gracias por tu interés en Vigilante SEACE. Te resumo cómo ayudamos a proveedores del Estado:
 
-🔔 Alertas el mismo día: convocatorias de tu rubro directo a WhatsApp, Telegram o correo, apenas el Estado las publica.
+🔔 Alertas el mismo día: convocatorias de tu rubro directo a Telegram o correo, apenas el Estado las publica.
 🤖 Análisis de TDR con IA: la IA lee las bases y te dice si calificas, antes de invertir en postular.
 🔍 Contratos menores y mayores: buscador completo con entidades, montos y estados.
 📊 Seguimiento de tus procesos: plazos y documentos siempre a la vista.
@@ -65,7 +65,7 @@ Servicio privado e independiente, no afiliado al OSCE ni al Estado peruano.
 Hola {nombre} 👋 Gracias por escribir a Vigilante SEACE.
 
 Te comparto cómo funciona:
-• Te avisamos el mismo día cuando el Estado publica una licitación de tu rubro (WhatsApp, Telegram o correo).
+• Te avisamos el mismo día cuando el Estado publica una licitación de tu rubro (Telegram o correo).
 • La IA analiza el TDR y te dice si calificas antes de postular.
 • Incluye buscador de contratos menores y mayores + seguimiento de procesos.
 
@@ -79,7 +79,7 @@ Actívalo hoy y tienes 5 días de garantía: si no te convence, te devolvemos tu
 | El lead pregunta… | Ajuste del mensaje |
 |---|---|
 | "¿Cuánto cuesta?" | Añadir: "Los planes van desde S/ 49 al mes, y al activar tienes 5 días de garantía: si no te convence, te devolvemos tu dinero." |
-| "¿Cómo me llegan las alertas?" | Añadir: "Eliges canal (WhatsApp, Telegram o correo) y las palabras clave de tu rubro en Configuración de Alertas." |
+| "¿Cómo me llegan las alertas?" | Añadir: "Eliges canal (Telegram o correo) y las palabras clave de tu rubro en Configuración de Alertas." |
 | "¿Sirve para mi rubro/región?" | Añadir: "Sí — filtra por rubro y por departamento/provincia/distrito. Dime tu rubro y te muestro licitaciones de muestra." |
 
 ---
