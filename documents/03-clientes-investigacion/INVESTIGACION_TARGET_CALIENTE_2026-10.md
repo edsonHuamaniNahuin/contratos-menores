@@ -92,10 +92,31 @@
 | **CPL por segmento de campana** | CPM | ≤S/8 (10x) · ≤S/12 (alerta) |
 | **Registros que pagan ≤15 días** | tiempo en página | ≥10% (hoy ~5%) |
 
-## 7. PENDIENTES DE VERIFICACIÓN (honestidad)
+## 7. MATRIZ DE MERCADO URGENTE (cruce: demanda × audiencia × pago)
+
+**Pedido del dueño:** no toda la demanda del portal tiene público con urgencia real (¿existen proveedores en volumen + dispuestos a pagar?).
+
+**Universo de proveedores adjudicados** (`contratos_mayores`): **Obra 1,659** (constructoras + consorcios MYPE: "CONSORCIO VIAL YURACC", "EMP. COGAFE CONTRATISTAS…") · Servicio 3,467 · Bien 3,470. **2,324 entidades estatales** distintas compran → la fuente de convocatorias es inagotable.
+
+| Categoría (demanda del portal) | Volumen demanda | Universo proveedor | Evidencia de pago (BD) | Urgencia | TIER |
+|---|---|---|---|---|---|
+| **Vial urbana / pistas y veredas** | Alta (obras 3,721 mayores; prom. S/6.9M) | Alto (constructoras viales + consorcios) | **SÍ** (pagador 150) | Máxima (temporada Q4 + deadlines de días) | **A — foco total** |
+| **Movimiento de tierras / obras civiles** | Alta (643 notif. obras) | Alto | **SÍ** (pagadores 145 y 149) | Máxima | **A — foco total** |
+| **Saneamiento / agua** | Alta (333 notif.; EPS/SEDA publican) | Alto (ingenieros sanitarios, contratistas EPS) | **SÍ** (193: ORM, 19 años de trayectoria) | Alta (sedes provinciales) | **A — foco total** |
+| Eléctrico (media/alta tensión) | Media (119) | Medio | **SÍ** (pagador 108) | Media-alta (electrificación rural) | B — test |
+| Maquinaria / alquiler | Media (196) | Medio | Sí, como complemento (145) | Media | B |
+| Consultoría / supervisión | Media (229) | Medio (incluye estudio legal que paga) | 1 pago | Media | B |
+| Salud / insumos médicos | Alta (523) | Alto | **NO paga** (cluster C) | Baja-media | C — por ahora no |
+| **Tecnología / software** | Alta (734) | Bajo (procesos chicos) | **NO paga** (cluster B) | Baja | **C — descartar (E2 se reasigna)** |
+| Limpieza / facilities | Baja (82) | Medio | No paga (perfiles 2, 18) | Baja | C |
+| Alimentos | Baja (65) | Alto (distribuidoras) | Sin evidencia | Baja | C |
+
+**Conclusión — la intersección manda:** foco 100% en **3 micro-rubros TIER A** (vial urbana · movimiento de tierras/obras civiles · saneamiento) y segundo anillo eléctrico. El resto del portal tiene demanda pero **sin audiencia urgente que pague** (tecnología, salud, limpieza) — exactamente lo que el dueño intuyó. Con S/21/día: **concentrar, no cubrir**.
+
+## 8. PENDIENTES DE VERIFICACIÓN (honestidad)
 
 - [ ] **Entrevistas (5-10)** con compradores y trials fríos — guion listo (`candidatos-entrevistas.md`); requiere al equipo del dueño (llamadas 20 min). Es la única fuente que supera a la BD para "por qué compra".
-- [ ] **Captura de octubre (notified_processes 53)** — verificar scraper (afecta alertas reales de usuarios).
+- [ ] **Captura de octubre (notified_processes 53)** — P-001 en `PENDIENTES.md` (scraper).
 - [ ] Herramientas de demanda externa: falta `SERPAPI_KEY` (gratis) y verificar cuenta DataForSEO para volumen de búsquedas; Keywords Everywhere sin saldo.
 - [ ] Verificar si el registro captura RNP/rubro estructurado (hoy es texto libre `company_copy`) — un campo "rubro" + "ya vende al Estado" en el registro mejoraría el scoring de leads.
 
