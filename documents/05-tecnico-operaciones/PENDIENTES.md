@@ -30,3 +30,17 @@
 **Estado:** ⏳ PENDIENTE (dueño pidió dejarlo documentado y continuar con investigación de target).
 
 **Referencias:** `documents/03-clientes-investigacion/INVESTIGACION_TARGET_CALIENTE_2026-10.md` §2 (anomalía) · tablas `notified_processes`, `contratos`.
+
+---
+
+## 🟡 P-002 · Pixel: eventos Contact/Lead no aparecen en insights de Meta (MEDIA)
+
+**Detectado:** 14/10 (reporte 12-14 oct). El pixel dispara PageView (el LPV optimiza bien ✓) pero en las `actions` de insights NO aparece `Contact` (clic WhatsApp) ni `Lead` (envío form), aunque nuestra BD registra los clics reales.
+
+**Hipótesis:** (1) los eventos `fbq('track','Contact')`/`Lead` no se están disparando en producción (condición `session('ok')` / listener wa.me); (2) nombre de evento incorrecto; (3) deduplicación/naming en insights.
+
+**Verificación:** abrir Events Manager → Test Events con un clic real de WhatsApp y un envío de form; comparar con el código de `partials/meta-pixel.blade.php`.
+
+**Impacto:** sin `Contact`/`Lead` en Meta no se puede optimizar hacia esas señales (campañas futuras) ni medir intención del lado de Meta.
+
+**Estado:** ⏳ PENDIENTE.
