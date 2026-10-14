@@ -43,6 +43,19 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
     protected bool $alertasActivasConfig;
 
     /**
+     * Cuando es true, los envíos ignoran la pausa de "alertas masivas".
+     * Lo usa el WhatsAppBotListener: las RESPUESTAS conversacionales
+     * (atención de leads que escriben) deben funcionar aunque las
+     * alertas masivas a suscriptores estén pausadas.
+     */
+    protected bool $forzarEnvio = false;
+
+    public function forzarEnvio(bool $activar = true): void
+    {
+        $this->forzarEnvio = $activar;
+    }
+
+    /**
      * Intervalo mínimo entre envíos al MISMO destinatario (microsegundos).
      * Meta limita ~1 msg/seg por par, pero con margen de seguridad frente
      * al error #131056: 3 segundos.
@@ -229,7 +242,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarProcesoASuscriptor(object $suscripcion, array $contratoData, array $matchedKeywords = []): array
     {
-        if (!$this->alertasActivas()) {
+        if (!$this->alertasActivas() && !$this->forzarEnvio) {
             return [
                 'success' => false,
                 'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)',
@@ -499,7 +512,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarMensaje(string $recipientId, string $mensaje): array
     {
-        if (!$this->alertasActivas()) {
+        if (!$this->alertasActivas() && !$this->forzarEnvio) {
             return [
                 'success' => false,
                 'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)',
@@ -567,7 +580,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarMensajeConBotones(string $recipientId, string $mensaje, array $keyboard): array
     {
-        if (!$this->alertasActivas()) {
+        if (!$this->alertasActivas() && !$this->forzarEnvio) {
             return [
                 'success' => false,
                 'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)',
@@ -749,7 +762,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarDocumento(string $recipientId, string $documentBinary, string $filename, string $caption = ''): array
     {
-        if (!$this->alertasActivas()) {
+        if (!$this->alertasActivas() && !$this->forzarEnvio) {
             return ['success' => false, 'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)'];
         }
 
@@ -946,7 +959,7 @@ class WhatsAppNotificationService implements NotificationChannelContract, Intera
      */
     public function enviarTemplate(string $recipientId, string $templateName = 'hello_world', string $languageCode = 'en_US', array $components = []): array
     {
-        if (!$this->alertasActivas()) {
+        if (!$this->alertasActivas() && !$this->forzarEnvio) {
             return [
                 'success' => false,
                 'message' => 'Alertas por WhatsApp pausadas (switch maestro o comando whatsapp:alertas off)',
