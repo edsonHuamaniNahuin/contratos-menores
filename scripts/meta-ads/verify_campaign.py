@@ -26,16 +26,25 @@ ADSETS_ESPERADOS = {
         "nombre": "META_Traffic_E1_Alertas_2026Q4",
         "landing": "https://licitacionesmype.pe/alertas-licitaciones",
         "intereses": {"construction engineering", "prácticas gubernamentales"},
+        "estado": "ACTIVE",
     },
     "120247999032700108": {
         "nombre": "META_Traffic_E2_Software_2026Q4",
         "landing": "https://licitacionesmype.pe/software-licitaciones",
         "intereses": {"software", "prácticas gubernamentales"},
+        "estado": "PAUSED",
     },
     "120247999034400108": {
         "nombre": "META_Traffic_E3_Vigentes_2026Q4",
         "landing": "https://licitacionesmype.pe/licitaciones-vigentes",
         "intereses": {"pequeñas y medianas empresas", "prácticas gubernamentales"},
+        "estado": "PAUSED",
+    },
+    "120248057690490108": {
+        "nombre": "META_T4_Plantillas_LPV",
+        "landing": "https://licitacionesmype.pe/plantillas-tdr",
+        "intereses": {"pequeñas y medianas empresas", "prácticas gubernamentales"},
+        "estado": "ACTIVE",
     },
 }
 
@@ -49,6 +58,7 @@ ADS_ESPERADOS = {
     "120247999160020108": ("120247999034400108", "MA-Vigentes - V1 Dato"),
     "120247999161460108": ("120247999034400108", "MA-Vigentes - V2 Dolor"),
     "120247999162570108": ("120247999034400108", "MA-Vigentes - V3 Alivio"),
+    "120248057693040108": ("120248057690490108", "MA-T4 - V1 Plantillas"),
 }
 
 
@@ -102,7 +112,8 @@ class Validador:
             a = self.api(adset_id, "name,status,daily_budget,optimization_goal,billing_event,targeting,promoted_object")
             t = a.get("targeting", {})
             self.check(a.get("name") == esperado["nombre"], f"{esperado['nombre']} nombre", a.get("name"))
-            self.check(a.get("status") == "ACTIVE", f"{esperado['nombre']} ACTIVE", a.get("status"))
+            self.check(a.get("status") == esperado.get("estado", "ACTIVE"),
+                       f"{esperado['nombre']} {esperado.get('estado', 'ACTIVE')}", a.get("status"))
             self.check(a.get("daily_budget") == "700", f"{esperado['nombre']} S/7/día",
                        f"{a.get('daily_budget')} cents")
             self.check(a.get("optimization_goal") == "LANDING_PAGE_VIEWS",
@@ -114,8 +125,8 @@ class Validador:
                        f"{po.get('pixel_id')}/{po.get('custom_event_type')}")
             self.check(t.get("geo_locations", {}).get("countries") == ["PE"],
                        f"{esperado['nombre']} geo PE", str(t.get("geo_locations")))
-            self.check(t.get("age_min") == 25 and t.get("age_max") == 60,
-                       f"{esperado['nombre']} edad 25-60", f"{t.get('age_min')}-{t.get('age_max')}")
+            self.check(t.get("age_min") == 40 and t.get("age_max") == 60,
+                       f"{esperado['nombre']} edad 40-60", f"{t.get('age_min')}-{t.get('age_max')}")
             self.check((t.get("targeting_automation") or {}).get("advantage_audience") == 0,
                        f"{esperado['nombre']} advantage_audience=0",
                        str(t.get("targeting_automation")))
@@ -147,8 +158,13 @@ class Validador:
 
             self.check(ad.get("name") == nombre_esperado, f"{nombre_esperado} nombre", ad.get("name"))
             self.check(ad.get("adset_id") == adset_id, f"{nombre_esperado} ad set correcto", ad.get("adset_id"))
-            self.check(ad.get("status") == "ACTIVE" and ad.get("effective_status") == "ACTIVE",
-                       f"{nombre_esperado} ACTIVE/ACTIVE", ad.get("effective_status"))
+            estado_adset = ADSETS_ESPERADOS[adset_id].get("estado", "ACTIVE")
+            if estado_adset == "ACTIVE":
+                self.check(ad.get("status") == "ACTIVE" and ad.get("effective_status") == "ACTIVE",
+                           f"{nombre_esperado} ACTIVE/ACTIVE", ad.get("effective_status"))
+            else:
+                self.check(ad.get("effective_status") in ("ADSET_PAUSED", "PAUSED"),
+                           f"{nombre_esperado} pausado con su adset", ad.get("effective_status"))
             self.check(link == landing, f"{nombre_esperado} landing", link)
             self.check(cr.get("url_tags") == UTM_ESPERADO, f"{nombre_esperado} UTMs", cr.get("url_tags"))
 
