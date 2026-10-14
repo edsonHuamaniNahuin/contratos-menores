@@ -175,7 +175,11 @@ class Validador:
 
         for adset_id, hashes in imagenes_por_embudo.items():
             nombre = ADSETS_ESPERADOS[adset_id]["nombre"]
-            self.check(len(hashes) == 3, f"{nombre} 3 imágenes distintas (V1/V2/V3)", f"{len(hashes)}")
+            esperados_en_adset = sum(1 for (a_id, _) in ADS_ESPERADOS.values() if a_id == adset_id)
+            if esperados_en_adset >= 3:
+                self.check(len(hashes) == 3, f"{nombre} 3 imágenes distintas (V1/V2/V3)", f"{len(hashes)}")
+            else:
+                self.check(len(hashes) == esperados_en_adset, f"{nombre} {esperados_en_adset} imagen(es)", f"{len(hashes)}")
 
 
 def main():
