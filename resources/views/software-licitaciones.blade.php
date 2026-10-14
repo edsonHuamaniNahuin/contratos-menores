@@ -782,5 +782,7 @@
 })();
 </script>
 
+@include('partials.cta-sticky', ['wa' => $waLink, 'variante' => 'claro', 'btnClass' => 'btn-teal'])
+
 </body>
 </html>

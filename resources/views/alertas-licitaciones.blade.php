@@ -627,5 +627,7 @@
 })();
 </script>
 
+@include('partials.cta-sticky', ['wa' => $waLink, 'variante' => 'oscuro'])
+
 </body>
 </html>

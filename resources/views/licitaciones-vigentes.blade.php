@@ -555,5 +555,7 @@
 })();
 </script>
 
+@include('partials.cta-sticky', ['wa' => $waLead, 'variante' => 'claro', 'btnClass' => 'btn-navy'])
+
 </body>
 </html>
