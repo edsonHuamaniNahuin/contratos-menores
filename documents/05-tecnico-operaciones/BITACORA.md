@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-10-14 · WhatsApp API (error de concepto y reversión) · `629d0bd7`
+
+### Intenté "revivir" el bot de WhatsApp API asumiendo que atendía leads — pero la API está abandonada por costos: los leads van al WhatsApp MANUAL del equipo
+
+**Contexto:** durante el análisis del embudo (5 clics WA vs 0 forms) hipotetizé que el bot estaba muerto y no atendía leads. Implementé: (a) desbloquear respuestas conversacionales del gate de alertas masivas + (b) handler de texto plano con registro de lead + alerta Telegram + auto-respuesta. Probado e2e vía webhook simulado.
+
+**Corrección del dueño (inmediata):** *"nosotros ya no usamos el WhatsApp API — es costoso; el tracking de intención = el CLICK del botón"*. Los CTAs `wa.me` apuntan al **WhatsApp MANUAL (app) del equipo**; el número del sistema API no recibe leads reales. Mi implementación no generaba gasto (masivos seguían OFF; respuestas dentro de ventana de servicio son gratuitas en la API), pero era complejidad innecesaria sobre un canal que no se usa.
+
+**Acción:** reversión completa (`629d0bd7`, `561a238d`) + tabla `wa_inbound_leads` eliminada + deploy. Estado idéntico al previo: bot corriendo pero mudo, alertas masivas OFF, S/ 0 de costo API.
+
+**REGLAS QUE QUEDAN (no negociables sin aprobación explícita):**
+1. **WhatsApp API = CONGELADA por decisión de costos.** No integrar, reactivar ni asumir su uso.
+2. **Tracking de intención WhatsApp = SOLO el click del botón** (`wa_clicks` en BD + `lead_whatsapp_click` en GA4). Ya funciona.
+3. Los leads de WhatsApp los atiende **el equipo manualmente desde su app**; el prefill del botón da contexto al humano.
+
+**Lección:** antes de "revivir" un canal, confirmar con el dueño si sigue en uso y quién lo atiende. Un hallazgo técnico no reemplaza preguntar.
+
+**Archivos:** revert de `app/Console/Commands/WhatsAppBotListener.php`, `app/Services/WhatsAppNotificationService.php`, migración `wa_inbound_leads`
+
+---
+
 ## 2026-10-12 · Meta Ads (flujos de conversión) · `23abc227`
 
 ### Auditoría del clic→conversión: pixel verificado con la API de stats + endurecido el evento `Lead`
