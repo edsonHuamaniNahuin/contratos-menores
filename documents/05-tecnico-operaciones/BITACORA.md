@@ -1355,3 +1355,17 @@ Cada página ahora tiene exactamente 1 `<h1>` semántico.
 | OG image (`vigilante-seace-og.webp`) | Baja | Placeholder, no existe el archivo aún |
 | Internal linking desde páginas principales al blog | Media | Fase 2 del plan SEO |
 | 421 SMTP MailerSend esporádico (2 el 10/10 11:17-18) | Media | El job reintenta; si la frecuencia sube, revisar plan/uso de MailerSend (free ≈3,000/mes) |
+
+---
+
+### 🔴 Incidente 14/10 — Ads comprando clics basura (optimización LINK_CLICKS)
+
+**Síntoma:** 3 días de campaña, S/41.14 gastados, ~850 clics, CTR 2.3-2.8%, CPC S/0.05 (anómalo de barato) → solo ~300 landings, 5 clics WhatsApp y **0 formularios**. El dueño lo detectó: "gastaré S/20 y no obtendré ni 3 clics en wsp? grave problema de configuración".
+
+**Causa:** los 3 ad sets se crearon con `optimization_goal=LINK_CLICKS` (default heredado del creador). Meta optimizaba literalmente para "gente que hace clic en todo" → tráfico sin intención. Agravante técnico: no se podía cambiar a `LANDING_PAGE_VIEWS` — la API devolvía `1885014 (objeto promocionado no válido)`; tras 6 pruebas de matriz se descubrió que **LPV exige `promoted_object={pixel_id, custom_event_type:"OTHER"}`** (sin CET o con CET incorrecto la API rechaza, incluso en creación).
+
+**Solución:** update en caliente de los 3 ad sets a `LANDING_PAGE_VIEWS` + pixel `1029237720131593` + `CET:OTHER` (verificado vía GET: los 3 quedaron LPV/ACTIVE/S/7). Aprendizaje institucionalizado: validador `verify_campaign.py` ahora exige LPV+CET (3 checks nuevos, antes exigía LINK_CLICKS); `campaigns_config.json` y `create_campaigns.py` corregidos para que ninguna campaña futura nazca con LINK_CLICKS.
+
+**Lección:** para lead-gen con landing, NUNCA optimizar por LINK_CLICKS; auditar `optimization_goal` antes de lanzar (ahora es check obligatorio); CPC demasiado barato (S/0.05) es señal de tráfico basura, no de éxito; el API de Meta para LPV requiere `custom_event_type:"OTHER"` en el promoted_object.
+
+**Archivos:** `scripts/meta-ads/verify_campaign.py`, `scripts/meta-ads/campaigns_config.json`, `scripts/meta-ads/create_campaigns.py`, ad sets 120247999030690108/120247999032700108/120247999034400108 (config actualizada vía API).

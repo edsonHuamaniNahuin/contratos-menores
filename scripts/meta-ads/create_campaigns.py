@@ -197,11 +197,17 @@ def create_campaign(token, ad_account, cfg, activate: bool):
         "campaign_id": campaign_id,
         "daily_budget": str(cfg.get("daily_budget_cents", 1650)),  # en centavos
         "billing_event": cfg.get("billing_event", "IMPRESSIONS"),
-        "optimization_goal": cfg.get("optimization_goal", "LINK_CLICKS"),
+        "optimization_goal": cfg.get("optimization_goal", "LANDING_PAGE_VIEWS"),
         "bid_strategy": cfg.get("bid_strategy", "LOWEST_COST_WITHOUT_CAP"),
         "targeting": json.dumps(targeting),
         "status": status,
     }
+    # LPV vía API exige promoted_object con pixel + CET OTHER (incidente 14/10: sin esto → error 1885014)
+    if adset_params["optimization_goal"] == "LANDING_PAGE_VIEWS":
+        adset_params["promoted_object"] = json.dumps(cfg.get("promoted_object") or {
+            "pixel_id": cfg.get("pixel_id", "1029237720131593"),
+            "custom_event_type": "OTHER",
+        })
     start = cfg.get("start_time")
     if start:
         adset_params["start_time"] = start

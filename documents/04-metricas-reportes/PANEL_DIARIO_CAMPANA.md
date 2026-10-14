@@ -29,7 +29,7 @@ cambio fuerte son por BLOQUES (día 7 / día 14) para no ensuciar los tests con 
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 | lun 12/10 | S/ 13.46 | 10,654 | 290 (214) | 2.76% | 1.26 | 7,510 | 1.33 | 79 | — | n/d¹ | **0** | AN basura eliminado mediodía · form E1 roto (fix) · build stale (fix) |
 | 2 | mar 13/10 | S/ 27.68² | 23,995 | 554 (434) | 2.31% | 1.15 | 15,550 | 1.54 | 192 | 23 | 2 (BD) / 5 (GA4) | **0** | 100% in-app (FB_IAB) confirmado · mejor CTR: Alertas V1 3.23% · CTA fijo desplegado 00:38 del día 3 |
-| 3 | mié 14/10 | en curso | — | — | — | — | — | — | — | — | — | — | CTA fijo LIVE · dayparting activo (pausa 23:00→07:00) · Clarity opt-out · primer corte 13:00 |
+| 3 | mié 14/10 | en curso | — | — | — | — | — | — | — | — | — | — | CTA fijo LIVE · dayparting activo (pausa 23:00→07:00) · Clarity opt-out · **🔴 INCIDENTE resuelto: ads optimizaban LINK_CLICKS (clics basura) → migrados a LANDING_PAGE_VIEWS+pixel (§ bitácora 14/10)** · reloj de aprendizaje reiniciado |
 
 ¹ El beacon de WA clicks estuvo roto hasta el fix del 13/10 (CSRF). GA4 sí registró (5 usuarios en 2 días).
 ² Compensa el subgasto del día 1 → promedio real: S/ 20.57/día ≤ S/ 21 ✓ (Meta balancea la flexibilidad diaria).

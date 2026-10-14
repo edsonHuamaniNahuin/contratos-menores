@@ -99,14 +99,19 @@ class Validador:
 
     def validar_adsets(self):
         for adset_id, esperado in ADSETS_ESPERADOS.items():
-            a = self.api(adset_id, "name,status,daily_budget,optimization_goal,billing_event,targeting")
+            a = self.api(adset_id, "name,status,daily_budget,optimization_goal,billing_event,targeting,promoted_object")
             t = a.get("targeting", {})
             self.check(a.get("name") == esperado["nombre"], f"{esperado['nombre']} nombre", a.get("name"))
             self.check(a.get("status") == "ACTIVE", f"{esperado['nombre']} ACTIVE", a.get("status"))
             self.check(a.get("daily_budget") == "700", f"{esperado['nombre']} S/7/día",
                        f"{a.get('daily_budget')} cents")
-            self.check(a.get("optimization_goal") == "LINK_CLICKS",
-                       f"{esperado['nombre']} optimización LINK_CLICKS", a.get("optimization_goal"))
+            self.check(a.get("optimization_goal") == "LANDING_PAGE_VIEWS",
+                       f"{esperado['nombre']} optimización LANDING_PAGE_VIEWS (nunca LINK_CLICKS)",
+                       a.get("optimization_goal"))
+            po = a.get("promoted_object") or {}
+            self.check(po.get("pixel_id") == "1029237720131593" and po.get("custom_event_type") == "OTHER",
+                       f"{esperado['nombre']} promoted_object pixel+CET OTHER",
+                       f"{po.get('pixel_id')}/{po.get('custom_event_type')}")
             self.check(t.get("geo_locations", {}).get("countries") == ["PE"],
                        f"{esperado['nombre']} geo PE", str(t.get("geo_locations")))
             self.check(t.get("age_min") == 25 and t.get("age_max") == 60,
