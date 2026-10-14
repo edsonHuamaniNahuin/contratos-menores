@@ -31,3 +31,10 @@
 
 8. **Nunca asumir que un canal sigue en uso:** confirmar con el dueño antes de "revivir" integraciones
    (lección del incidente WhatsApp API del 14/10).
+
+9. **Operación autónoma con protocolo (NO preguntar qué evaluar):** el agente es el operador responsable
+   del ROI. Protocolo obligatorio: `documents/02-marketing-adquisicion/PROTOCOLO_OPERATIVO.md` — checklist
+   diario, umbrales por estrategia, checkpoints de decisión (día 3/7/8/14/21), matriz de autonomía y
+   guardrails. **Decidir dentro de la matriz** (pausar/rotar/reasignar es autónomo; presupuesto total,
+   precios y campañas nuevas requieren OK). Usar los skills (`ab-testing`, `ads`, `analytics`…) como marco
+   de decisión. El dueño no debe repetir qué evaluar: si algo falta, se agrega al protocolo.
