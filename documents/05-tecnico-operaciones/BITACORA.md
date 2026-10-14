@@ -1405,3 +1405,6 @@ Cada página ahora tiene exactamente 1 `<h1>` semántico.
 **Evidencia de salud:** scraper 13/10 OK (260 procesos, success); jobs agendados corriendo; laravel.log sin errores; alertas de correo 08:00 OK.
 **Lección:** cuando el volumen cae tras apagar un canal, SEGMENTAR POR CANAL Y DESTINATARIO antes de asumir degradación.
 **Archivos:** PENDIENTES.md (P-001).
+
+### ✍️ Upgrade de copys todas las campañas (14/10 ~15:30)
+Los 10 anuncios (E1×3, E2×3, E3×3, U1×1) actualizados a copys v2: iconos que refuerzan (🚨⏳📲✅🔎🌐 etc.), titulares con emoji, y URLs visibles en el texto (buscador gratis: licitacionesmype.pe/buscador-publico + licitacionesmype.pe). Encoding verificado sin daño; mismo ángulo por adset (enriquecimiento, no nuevo test). Registro: scripts/ad-creatives/copys_v2_2026-10-14.json.
