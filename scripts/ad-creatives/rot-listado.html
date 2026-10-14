@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px}
+  body{font-family:'Inter',system-ui,sans-serif; background:#F3F4F6; color:#111827; padding:56px 56px 48px; display:flex; flex-direction:column; gap:22px}
+  .app{background:#fff;border-radius:26px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.12);flex:1;display:flex;flex-direction:column}
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:26px 30px;border-bottom:1px solid #E5E7EB}
+  .ab-left{display:flex;align-items:center;gap:14px}
+  .dot{width:44px;height:44px;border-radius:14px;background:#04181b;display:flex;align-items:center;justify-content:center}
+  .app-name{font-family:'Sora';font-weight:800;font-size:23px;letter-spacing:-.02em}
+  .app-sub{font-size:13.5px;color:#6B7280;font-weight:600}
+  .live{display:inline-flex;align-items:center;gap:8px;background:#E7F6EF;color:#0a9f76;font-size:13.5px;font-weight:800;padding:9px 16px;border-radius:999px}
+  .live::before{content:"";width:8px;height:8px;border-radius:99px;background:#0a9f76}
+  .rows{padding:10px 22px 18px;display:flex;flex-direction:column}
+  .row{display:flex;align-items:center;gap:18px;padding:22px 10px;border-bottom:1px solid #F1F2F4}
+  .row:last-child{border-bottom:none}
+  .row .info{flex:1}
+  .row .ent{font-size:14px;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .row .obj{font-size:20.5px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+  .row .mont{font-family:'Sora';font-size:19px;font-weight:800;text-align:right;white-space:nowrap}
+  .chip{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:800;padding:5px 12px;border-radius:8px}
+  .chip.nuevo{background:#E7F6EF;color:#0a9f76}
+  .chip.conv{background:#EEF2FF;color:#4F46E5}
+  .foot{background:#04181b;color:#fff;border-radius:22px;padding:26px 32px;display:flex;align-items:center;justify-content:space-between}
+  .foot .t{font-family:'Sora';font-weight:800;font-size:23px;letter-spacing:-.01em}
+  .foot .t em{font-style:normal;color:#7fe3c4}
+  .foot .w{font-size:17px;font-weight:700;color:#7fe3c4}
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <div class="ab-left">
+        <div class="dot"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7fe3c4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+        <div>
+          <div class="app-name">Vigilante SEACE</div>
+          <div class="app-sub">Licitaciones de tu rubro</div>
+        </div>
+      </div>
+      <span class="live">EN VIVO</span>
+    </div>
+
+    <div class="rows">
+      <div class="row">
+        <div class="info">
+          <div class="ent">Municipalidad de Arequipa</div>
+          <div class="obj">Mejoramiento de vía vecinal — Av. Los Álamos</div>
+          <span class="chip nuevo">NUEVO HOY</span>
+        </div>
+        <div class="mont">S/ 1.24M</div>
+      </div>
+      <div class="row">
+        <div class="info">
+          <div class="ent">Gobierno Regional La Libertad</div>
+          <div class="obj">Adquisición de mobiliario escolar</div>
+          <span class="chip conv">CONVOCADO</span>
+        </div>
+        <div class="mont">S/ 480K</div>
+      </div>
+      <div class="row">
+        <div class="info">
+          <div class="ent">EsSalud</div>
+          <div class="obj">Servicio de limpieza hospitalaria — Red Rebagliati</div>
+          <span class="chip nuevo">NUEVO HOY</span>
+        </div>
+        <div class="mont">S/ 920K</div>
+      </div>
+      <div class="row">
+        <div class="info">
+          <div class="ent">Municipalidad de Lima</div>
+          <div class="obj">Mantenimiento de parques y jardines</div>
+          <span class="chip conv">CONVOCADO</span>
+        </div>
+        <div class="mont">S/ 310K</div>
+      </div>
+      <div class="row">
+        <div class="info">
+          <div class="ent">Ministerio de Salud (MINSA)</div>
+          <div class="obj">Adquisición de equipos médicos — Hospital Regional</div>
+          <span class="chip conv">CONVOCADO</span>
+        </div>
+        <div class="mont">S/ 2.10M</div>
+      </div>
+      <div class="row">
+        <div class="info">
+          <div class="ent">Municipalidad de Trujillo</div>
+          <div class="obj">Rehabilitación de pistas y veredas — Centro Histórico</div>
+          <span class="chip nuevo">NUEVO HOY</span>
+        </div>
+        <div class="mont">S/ 780K</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="t">Pide las de <em>tu rubro</em> — te avisamos el mismo día</div>
+    <div class="w">licitacionesmype.pe</div>
+  </div>
+</body>
+</html>

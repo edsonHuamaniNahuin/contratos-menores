@@ -9,7 +9,7 @@
 
 | Sub-palanca | Evidencia | Acción | Ganancia | Prioridad |
 |---|---|---|---|---|
-| **Horarios (dayparting)** | Desglose por hora (13/10): 00–06h reciben ~950 impr (~4% del gasto) con CTR de madrugada bajo; pico 17–20h | **Cron de pausa 23:00 → activación 07:00** (los ad sets ya corren 24/7; Meta rechaza `adset_schedule` con presupuesto diario) con alerta Telegram si falla la reactivación | ~S/26-32/mes dejan de quemarse en horas muertas (o se reinvierten en pico) | **ALTA** |
+| **Horarios (dayparting)** | Desglose por hora (13/10): 00–06h reciben ~950 impr (~4% del gasto) con CTR de madrugada bajo; pico 17–20h | ✅ **IMPLEMENTADO 14/10**: cron `23:00 pause / 07:00 activate` (`/root/dayparting.py`) con **alerta Telegram si falla** (una reactivación jamás queda en silencio). Probado: pausa manual OK | ~S/26-32/mes dejan de quemarse en horas muertas (o se reinvierten en pico) | **HECHO** |
 | Edad/género | Día 1: 25–34M (CTR 10.2%) y 35–44F (6.8%) destacan; muestra chica | Esperar día 7 y cortar con datos de leads (no de clics) | Evita sobreajuste | Media |
 | Geo | Pendiente desglose regional día 2 (solo 1 sorpresa conocida: AN basura, ya eliminada) | Query regional al día 7; excluir regiones sin proveedores si concentran gasto sin conversión | Protege presupuesto de zonas sin oferta | Media |
 | Intereses | Config A validada (PyMEs + prácticas gubernamentales; bugs de fuzzy corregidos) | Config B (broad sin intereses) en semana 2 según plan A/B — la era Andromeda premia broad + creativo específico | Potencial de escala de entrega | Planificada |
@@ -26,10 +26,9 @@
 entrega a V2/V3 (reacciones/peso). Con 0 leads aún, el veredicto de CALIDAD es del día 7.
 
 **Gaps identificados (3 creativos nuevos a construir):**
-1. **Mockup de producto** ⭐ — mostrar LA ALERTA LLEGANDO (chat tipo WhatsApp/correo con una licitación real de su rubro).
-   Hace concreto el valor; estándar probado en B2B. Se construye con HTML render (sin "look IA").
-2. **Prueba social** — los 11 compradores → 2-3 testimonios con nombre/empresa (pedido listo en `/admin/respuesta-leads`).
-3. **Estilo nativo** — creativo "screenshot" (publicación del SEACE + aviso), menos "flyer pulido" (regla Andromeda).
+1. **Mockup de producto** ✅ **CONSTRUIDO 14/10** — `public/images/ads/rot-alerta-1350.png` (la alerta llegando + análisis IA del TDR).
+2. **Estilo nativo** ✅ **CONSTRUIDO 14/10** — `public/images/ads/rot-listado-1350.png` (feed de licitaciones tipo app).
+3. **Prueba social** — pendiente de los testimonios (pedido listo en `/admin/respuesta-leads`; al recibir 2-3 → construir con nombre/empresa).
 
 ## 4. COPY — reescritura propuesta (V1 mejorado / value-first)
 

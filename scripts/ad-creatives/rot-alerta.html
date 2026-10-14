@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px}
+  body{
+    font-family:'Inter',system-ui,sans-serif; color:#fff;
+    background:
+      radial-gradient(800px 500px at 110% -5%, rgba(23,184,133,.22), transparent 60%),
+      linear-gradient(158deg, #062a2e 0%, #04181b 55%, #031214 100%);
+    padding:64px 64px 56px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;
+  }
+  .grid{position:absolute;inset:0;opacity:.04;
+    background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);
+    background-size:90px 90px;}
+  .brand{display:flex;align-items:center;gap:15px;position:relative;z-index:2}
+  .shield{width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.1);border:1px solid rgba(127,227,196,.4);display:flex;align-items:center;justify-content:center}
+  .brand-name{font-family:'Sora';font-weight:800;font-size:25px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:13px;color:rgba(255,255,255,.66);font-weight:600;margin-top:4px}
+  .kicker{display:inline-flex;align-items:center;gap:11px;font-size:14px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#7fe3c4;margin-bottom:16px}
+  .kicker::before{content:"";width:30px;height:2px;background:#7fe3c4}
+  h1{font-family:'Sora';font-weight:800;font-size:52px;line-height:1.06;letter-spacing:-.025em;max-width:920px;position:relative;z-index:2}
+  h1 em{font-style:normal;color:#7fe3c4}
+  .chat{display:flex;flex-direction:column;gap:16px;position:relative;z-index:2;margin-top:34px}
+  .bubble{background:#ffffff;color:#111827;border-radius:20px;border-top-left-radius:6px;padding:20px 24px;max-width:860px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .bubble .head{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:#0a9f76;margin-bottom:6px}
+  .bubble .body{font-size:19px;line-height:1.45;font-weight:600}
+  .bubble .meta{font-size:14px;color:#6B7280;margin-top:8px;font-weight:600}
+  .bubble.dark{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.14);border-top-left-radius:20px}
+  .bubble.dark .body{font-weight:600}
+  .bubble.dark .meta{color:rgba(255,255,255,.6)}
+  .cta{display:flex;align-items:center;justify-content:space-between;background:#0a9f76;border-radius:22px;padding:24px 30px;position:relative;z-index:2}
+  .cta .t{font-family:'Sora';font-weight:800;font-size:24px;color:#04181b}
+  .cta .w{font-size:17px;font-weight:700;color:rgba(4,24,27,.8)}
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="brand">
+    <div class="shield">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7fe3c4" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Vigilante SEACE</div>
+      <div class="brand-sub">Licitaciones del Estado peruano</div>
+    </div>
+  </div>
+
+  <div>
+    <span class="kicker">Así te llegan</span>
+    <h1>Las licitaciones de <em>tu rubro</em>, apenas el Estado las publica.</h1>
+
+    <div class="chat">
+      <div class="bubble">
+        <div class="head">🔔 Vigilante SEACE · hoy 09:12</div>
+        <div class="body">Nueva convocatoria para tu rubro:<br><strong>«Mejoramiento de vía vecinal»</strong> — Municipalidad de Arequipa</div>
+        <div class="meta">S/ 1,240,000 · Ventana para cotizar: 6 días</div>
+      </div>
+      <div class="bubble dark">
+        <div class="head" style="color:#7fe3c4">🤖 Análisis IA del TDR</div>
+        <div class="body">Calificas ✓ — RNP vigente, 2 contratos similares acreditados. Penalidad 1‰/día. Pago en 2 armadas.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <div class="t">Recibe las de TU rubro</div>
+    <div class="w">licitacionesmype.pe</div>
+  </div>
+</body>
+</html>
