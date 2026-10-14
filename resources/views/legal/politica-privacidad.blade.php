@@ -127,8 +127,10 @@
                 <h2 class="text-xl font-bold text-neutral-900 mb-3">9. Cookies</h2>
                 <p>
                     Utilizamos cookies estrictamente necesarias para el funcionamiento de la plataforma y cookies analíticas
-                    (Google Analytics) solo con tu consentimiento previo. Puedes gestionar tus preferencias de cookies
-                    en cualquier momento desde el banner de consentimiento.
+                    (Google Analytics y Microsoft Clarity) para medir el uso del sitio. Microsoft Clarity puede grabar
+                    <strong>sesiones de navegación anónimas</strong> (el contenido sensible, como formularios, se enmascara
+                    automáticamente y no se graban contraseñas ni datos de pago). Puedes desactivar estas cookies en cualquier
+                    momento rechazándolas en el banner de consentimiento o gestionando tus preferencias.
                 </p>
             </div>
 

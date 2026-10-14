@@ -1,5 +1,7 @@
-{{-- Microsoft Clarity (grabaciones de sesión + mapas) — solo carga si el usuario
-     aceptó cookies analíticas (mismo criterio que GA4). --}}
+{{-- Microsoft Clarity (grabaciones de sesión + mapas) — modelo OPT-OUT:
+     se carga por defecto y SOLO se omite si el visitante rechazó las cookies
+     analíticas. Si acepta después, se carga al vuelo. Declarado en la política
+     de privacidad (§9 Cookies). --}}
 @if(app()->environment('production') && config('services.clarity.project_id'))
 <script>
 (function () {
@@ -14,8 +16,9 @@
         })(window, document, "clarity", "script", PROYECTO);
     }
     window.cargarClarity = cargarClarity;
-    if (localStorage.getItem('cookie_consent') === 'granted') { cargarClarity(); }
+    if (localStorage.getItem('cookie_consent') !== 'denied') { cargarClarity(); }
     window.addEventListener('cookie-consent-granted', cargarClarity);
 })();
 </script>
 @endif
+

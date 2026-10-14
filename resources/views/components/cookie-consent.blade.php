@@ -23,7 +23,7 @@
             <div>
                 <h3 class="text-sm font-semibold text-neutral-900">Tu privacidad importa</h3>
                 <p class="text-xs text-neutral-400 mt-1 leading-relaxed">
-                    Usamos cookies de analítica para entender cómo se usa el sitio y mejorar tu experiencia. No recopilamos datos personales con fines publicitarios.
+                    Usamos cookies de analítica (Google Analytics y Microsoft Clarity) para entender cómo se usa el sitio y mejorar tu experiencia — incluye grabaciones de sesión anónimas. No recopilamos datos personales con fines publicitarios.
                 </p>
             </div>
         </div>
@@ -41,7 +41,7 @@
                     <span class="font-medium text-neutral-900">Cookies de analítica</span>
                     <span class="text-[10px] px-2 py-0.5 rounded-full bg-neutral-200 text-neutral-600 font-medium">Opcionales</span>
                 </div>
-                <p>Google Analytics recopila datos anónimos de navegación para mejorar el servicio.</p>
+                <p>Google Analytics y Microsoft Clarity recopilan datos de navegación y grabaciones de sesión anónimas (el contenido sensible se enmascara automáticamente), para mejorar el servicio.</p>
             </div>
         </div>
 
@@ -87,11 +87,13 @@ function cookieConsent() {
         accept() {
             localStorage.setItem('cookie_consent', 'granted');
             this.grantAnalytics();
+            if (typeof window.clarity === 'function') { window.clarity('consent', true); }
             this.showBanner = false;
         },
 
         reject() {
             localStorage.setItem('cookie_consent', 'denied');
+            if (typeof window.clarity === 'function') { window.clarity('consent', false); }
             this.showBanner = false;
         },
 
