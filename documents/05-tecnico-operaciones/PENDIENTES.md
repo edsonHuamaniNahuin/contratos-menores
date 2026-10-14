@@ -5,31 +5,25 @@
 
 ---
 
-## 🔴 P-001 · Notificador de convocatorias degradado (ALTA — afecta producto y usuarios)
+## ✅ P-001 · Notificador "degradado" — RESUELTO: NO ERA BUG (explicado con evidencia)
 
-**Detectado:** 14/10/2026 (investigación de target caliente).
+**Detectado:** 14/10/2026 (investigación de target caliente). **Resuelto:** 14/10 09:00.
 
-**Evidencia (BD producción):**
-- `notified_processes` por mes de publicación: Ago **1,225** · Sep **1,653** → Oct **53** (al 13/10).
-- Inserciones por `created_at` (últimos 10 días): 13/10=7 · 12/10=19 · 10/10=2 · 09/10=1 · 08/10=2 · 07/10=3 · 06/10=2 · 05/10=4 → **1-19/día vs ~55/día en septiembre**.
-- 239 filas con formato de `fecha_publicacion` anómalo (con segundos: `13/10/2026 11:43:24` vs estándar `12/10/2026 18:27`).
+**Veredicto:** el sistema está SANO. La caída de volumen (oct: 53 registros vs sep: 1,653) se explica por **dos causas conocidas y deliberadas:**
 
-**Hipótesis (en orden de probabilidad):**
-1. Scraper/notificador caído o degradado (limitación de fuente SEACE, captcha, timeout, scheduler detenido).
-2. Caída en cascada de suscriptores activos (3 active) → menos keywords → menos matches (no explica del todo: -87%).
-3. Cambio de formato/fuente en SEACE rompió el parser parcialmente (las 239 filas anómalas sugieren 2 rutas de ingesta).
+1. **WhatsApp apagado el 01/10** (regla de costos): era el **97% del volumen de envíos** — evidencia: septiembre `notification_sends` = WhatsApp 1,695 + WhatsApp-adjuntos 107 + Telegram 53; octubre = **solo Telegram 70** (≈5/día ✓ consistente con la caída observada).
+2. **Suscripciones activas: 8-10 (ago/sep) → 3 (oct)**: menos destinatarios = menos filas en `notified_processes` (que cuenta proceso×destinatario).
 
-**Verificación (pasos):**
-1. Revisar logs del job de scraping/notificación (cron/schedule en servidor) — últimas ejecuciones y errores.
-2. Ejecutar el capturador manualmente y ver cuántos procesos trae de SEACE hoy.
-3. Comparar: procesos publicados hoy en SEACE vs capturados por el sistema.
-4. Revisar las 239 filas anómalas (¿qué ruta las insertó?).
+**Evidencia de salud del pipeline (verificado hoy):**
+- Scraper corrió 13/10 21:05: `success=true`, **260 procesos** capturados (+15 docs TDR).
+- Todos los jobs en `schedule:list` corriendo (TDR 2h, contratos 2h/3h, emails 2h, scraper 12/21h).
+- `laravel.log`: SIN errores de estos jobs.
+- Alertas de suscripción (correo) hoy 08:00: "✅ 1 alerta enviada" — funcionando.
+- Las "239 filas con formato anómalo": son de rutas de ingesta distintas (IDs numéricos = pipeline contratos menores; `ocds:`/`tdr:` = mayores/TDR) — diferencia de formato, no corrupción.
 
-**Impacto si se confirma:** los usuarios reciben menos alertas que la promesa del producto (retención + churn: 15 expired) y las cifras internas (buscador, informes) subestiman el mercado.
+**Lección (a la bitácora):** cuando el volumen de un sistema cae justo después de apagar un canal/fuente, **segmentar por canal y destinatario ANTES de asumir degradación** — 97% del "bug" era el canal apagado + churn.
 
-**Estado:** ⏳ PENDIENTE (dueño pidió dejarlo documentado y continuar con investigación de target).
-
-**Referencias:** `documents/03-clientes-investigacion/INVESTIGACION_TARGET_CALIENTE_2026-10.md` §2 (anomalía) · tablas `notified_processes`, `contratos`.
+**Palanca real para recuperar volumen:** adquisición (más suscriptores activos recibiendo Telegram/correo) — exactamente lo que las campañas están persiguiendo.
 
 ---
 

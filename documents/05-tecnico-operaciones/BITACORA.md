@@ -1395,3 +1395,13 @@ Cada página ahora tiene exactamente 1 `<h1>` semántico.
 **Ajuste 04:00 (preferencia del dueño):** la tarjeta de alerta del creativo U1 se cambió de "Telegram" a **correo** (notificación de email limpia: remitente alertas@licitacionesmype.pe, asunto, monto, chip de cierre) — Telegram "se ve feo" en pieza visual. Creativo **v6** (`1811291553425124`) cargado y anuncio actualizado; copy del anuncio correo-first ("te avisa por correo el mismo día"). El correo y Telegram siguen siendo ambos canales reales de alerta del producto.
 
 **Archivos:** `scripts/ad-creatives/flyer-v2.html` (variante `u1`), `public/images/ads/urgencia-dolor-1350.png` (v3 foto), `app/Console/Commands/MetaIngerirCommand.php`, `/root/dayparting.py`, `PLAN_ESTRATEGIA_URGENCIA_2026-10.md`.
+
+---
+
+### ✅ P-001 resuelto (14/10 09:00) — El "notificador degradado" NO era bug
+
+**Síntoma:** notified_processes oct (53) vs sep (1,653) = parecía scraper caído.
+**Causa real (2 factores deliberados):** (1) WhatsApp apagado 01/10 = era el 97% del volumen de envíos (sep: WA 1,695 + adj 107 vs telegram 53; oct: solo telegram 70); (2) suscriptores activos 8-10 → 3.
+**Evidencia de salud:** scraper 13/10 OK (260 procesos, success); jobs agendados corriendo; laravel.log sin errores; alertas de correo 08:00 OK.
+**Lección:** cuando el volumen cae tras apagar un canal, SEGMENTAR POR CANAL Y DESTINATARIO antes de asumir degradación.
+**Archivos:** PENDIENTES.md (P-001).
