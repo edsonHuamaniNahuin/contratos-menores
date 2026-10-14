@@ -13,6 +13,24 @@
   banner y toggle deshabilitado en `/configuracion-alertas`, y notas declarativas ("temporalmente
   deshabilitado") en landing, planes, manual, legales y landings de campaña.
 
+## 1b. DECISIÓN PERMANENTE (14/10/2026): API DE WHATSAPP **CONGELADA** — costo
+
+El dueño confirmó: **la WhatsApp API NO se usa** (costo). Los CTAs `wa.me` de las landings apuntan al
+**WhatsApp MANUAL del equipo** (app), que atiende los leads a mano. El bot/número del sistema **no recibe leads reales**.
+
+**Prohibido sin aprobación explícita del dueño:**
+- Reactivar, integrar o "revivir" el bot de WhatsApp API (listener, webhooks de atención, auto-respuestas).
+- Proponer flujos que dependan de la API (bots, CTWA con API, notificaciones masivas).
+- Enviar mensajes de cualquier tipo vía la API.
+
+**Cómo SÍ se mide la intención de WhatsApp:** solo el **click del botón** —
+`wa_clicks` (BD, beacon `/api/wa-click`) y `lead_whatsapp_click` (GA4). Ya implementado.
+
+**Incidente que originó esta regla:** 2026-10-14 intenté "revivir" el bot asumiendo que atendía leads;
+se revirtió completo (`629d0bd7`, `209ba49e`). Ver BITACORA.
+
+---
+
 ## 2. Cómo funciona el switch
 
 - **Doble condición** (`App\Services\WhatsAppNotificationService::alertasActivas()`):
