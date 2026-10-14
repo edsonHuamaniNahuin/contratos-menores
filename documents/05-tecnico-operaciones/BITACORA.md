@@ -1386,4 +1386,6 @@ Cada página ahora tiene exactamente 1 `<h1>` semántico.
 
 **Lección:** para piezas de diseño, usar SIEMPRE los skills de diseño premium (no mockups planos); el API actual de Meta para audiences ya no acepta `subtype`; curl necesita `-g` para llaves en fields.
 
-**Archivos:** `scripts/ad-creatives/urgencia-dolor.html`, `public/images/ads/urgencia-dolor-1350.png`, `app/Console/Commands/MetaIngerirCommand.php`, `/root/dayparting.py`, `PLAN_ESTRATEGIA_URGENCIA_2026-10.md`.
+**Corrección 02:50 (feedback del dueño):** el creativo v2 (composición abstracta glass, "parece dashboard") fue RECHAZADO — el estándar de la casa son los flyers fotográficos con personas (familia `flyer-v2.html`: foto AI + Fraunces/Sora + kicker + CTA píldora). Se agregó la variante `u1` (urgencia) al motor existente usando `hero-e1-frustracion.png` ("Si te enteras tarde, ya perdiste la obra.") → creativo v3 (2313119802820231) cargado y anuncio actualizado. **Regla nueva: los creativos SIEMPRE salen del sistema `flyer-v2.html` con fotos AI (nunca composiciones abstractas).**
+
+**Archivos:** `scripts/ad-creatives/flyer-v2.html` (variante `u1`), `public/images/ads/urgencia-dolor-1350.png` (v3 foto), `app/Console/Commands/MetaIngerirCommand.php`, `/root/dayparting.py`, `PLAN_ESTRATEGIA_URGENCIA_2026-10.md`.
