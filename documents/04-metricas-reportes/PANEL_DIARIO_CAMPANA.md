@@ -5,6 +5,24 @@
 
 ---
 
+## Evaluación diaria de estrategias (protocolo)
+
+**Principio del dueño:** cada estrategia se evalúa después de cada día. La lectura es DIARIA; las decisiones de
+cambio fuerte son por BLOQUES (día 7 / día 14) para no ensuciar los tests con apagados/encendidos.
+
+| Estrategia | KPI diario | Dónde se lee | Decisión |
+|---|---|---|---|
+| Cirugía de placements (FB+IG) | % de gasto en FB/IG vs otro | Breakdown Meta | Diaria (auto) |
+| CTA fijo móvil | clics en el CTA + scroll + leads | Heatmap + Meta + BD | Lectura diaria; ajuste si no hay uso en 3 días |
+| Dayparting (23:00–07:00) | gasto nocturno = S/0 · volumen del día | Meta (hora) + cron log | Semanal (¿roba volumen?) |
+| Ángulos creativos (V1/V2/V3) | CTR/CPC/leads por anuncio | Almacén + UTM | Bloque día 7 |
+| Destino (J0 Instant Form vs landing) | CPL por destino | Meta + BD | Bloque a los 5-7 días de activar |
+| Clarity (grabaciones opt-out) | # sesiones grabadas / rage clicks | Dashboard dueño + Data Export API | Semanal |
+| Nurture 24h (T7) | envíos + respuestas/registros post-email | `logs/leads-seguimiento.log` + `demo_leads.seguimiento_enviado_at` | Semanal |
+| Recuperación manual (leads/WA) | contactos hechos → respuestas | WhatsApp del equipo | Diaria (humano) |
+
+---
+
 ## Registro diario
 
 | Día | Fecha | Gasto | Impr | Clics (link) | CTR | CPM | Alc. | Freq | Landings | Scroll≥25% | WA clicks | Leads | Notas |
@@ -35,6 +53,7 @@
 | T4 | **Copy + creativos nuevos** (mockup, nativo) | READY | entran lun 19/10 | Día 14: reasignación por embudo (S/13/S/5/S/3 al mejor) |
 | T5 | Segmentación: Config A (intereses) | LIVE | día 1 → | Semana 2: config B (broad) |
 | T6 | Segmentación: Config C (Advantage+) | PLAN | Semana 3 | según señal T5 |
+| T7 | **Nurture automático 24-72h** (email a leads sin registro) | LIVE | diario 10:30 | Semanal: % de respuestas/registros post-email |
 
 ## Reglas del panel
 1. Se actualiza **a diario** (yo o el monitor): fila nueva + notas.

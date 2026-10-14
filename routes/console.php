@@ -368,3 +368,16 @@ Schedule::command('roi:semanal')
     ->timezone('America/Lima')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/roi-semanal.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Nurture de leads (24-72h sin registro)
+|--------------------------------------------------------------------------
+| Protege la última milla humana: recordatorio de valor + garantía +
+| WhatsApp al lead que nadie convirtió. Diario 10:30 (Lima).
+*/
+Schedule::command('leads:seguimiento')
+    ->dailyAt('10:30')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/leads-seguimiento.log'));
