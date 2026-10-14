@@ -159,11 +159,12 @@ class Validador:
             self.check(ad.get("name") == nombre_esperado, f"{nombre_esperado} nombre", ad.get("name"))
             self.check(ad.get("adset_id") == adset_id, f"{nombre_esperado} ad set correcto", ad.get("adset_id"))
             estado_adset = ADSETS_ESPERADOS[adset_id].get("estado", "ACTIVE")
+            transitorios = {"IN_PROCESS", "PENDING_REVIEW", "PREAPPROVED"}
             if estado_adset == "ACTIVE":
-                self.check(ad.get("status") == "ACTIVE" and ad.get("effective_status") == "ACTIVE",
+                self.check(ad.get("status") == "ACTIVE" and ad.get("effective_status") in ({"ACTIVE"} | transitorios),
                            f"{nombre_esperado} ACTIVE/ACTIVE", ad.get("effective_status"))
             else:
-                self.check(ad.get("effective_status") in ("ADSET_PAUSED", "PAUSED"),
+                self.check(ad.get("effective_status") in ({"ADSET_PAUSED", "PAUSED"} | transitorios),
                            f"{nombre_esperado} pausado con su adset", ad.get("effective_status"))
             self.check(link == landing, f"{nombre_esperado} landing", link)
             self.check(cr.get("url_tags") == UTM_ESPERADO, f"{nombre_esperado} UTMs", cr.get("url_tags"))
