@@ -116,6 +116,7 @@
 ## 8. PENDIENTES DE VERIFICACIÓN (honestidad)
 
 - [ ] **Entrevistas (5-10)** con compradores y trials fríos — guion listo (`candidatos-entrevistas.md`); requiere al equipo del dueño (llamadas 20 min). Es la única fuente que supera a la BD para "por qué compra".
+- [x] **Análisis de competidores (skill Paso 3)** — ✅ HECHO 14/10 → `COMPETIDORES_2026-10.md` (10 jugadores, 4 teardowns: LicitaHub = amenaza directa; brecha común = canal email y sin TDR IA).
 - [ ] **Captura de octubre (notified_processes 53)** — P-001 en `PENDIENTES.md` (scraper).
 - [ ] Herramientas de demanda externa: falta `SERPAPI_KEY` (gratis) y verificar cuenta DataForSEO para volumen de búsquedas; Keywords Everywhere sin saldo.
 - [ ] Verificar si el registro captura RNP/rubro estructurado (hoy es texto libre `company_copy`) — un campo "rubro" + "ya vende al Estado" en el registro mejoraría el scoring de leads.
