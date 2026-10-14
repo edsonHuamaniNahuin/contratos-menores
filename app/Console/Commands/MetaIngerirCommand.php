@@ -21,7 +21,11 @@ class MetaIngerirCommand extends Command
 
     protected $description = 'Guarda en BD las métricas de la campaña Meta (intradía de hoy + cierres diarios).';
 
-    private const CAMPAIGN_ID = '120247999030430108';
+    /** Campañas a ingerir (traffic E1E2E3 + lead ads J0) — cada centavo se guarda. */
+    private const CAMPAIGNS = [
+        '120247999030430108',
+        '120248044120960108',
+    ];
     private const API = 'https://graph.facebook.com/v26.0';
     private const FIELDS = 'ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,reach,clicks,ctr,cpc,cpm,frequency,actions';
 
@@ -46,32 +50,34 @@ class MetaIngerirCommand extends Command
 
     private function ingerirIntradia(string $token): int
     {
-        $rows = $this->graph(self::CAMPAIGN_ID . '/insights', [
-            'level' => 'ad',
-            'date_preset' => 'today',
-            'fields' => self::FIELDS,
-            'limit' => '200',
-        ], $token);
-
-        if (! empty($rows['error'])) {
-            $this->error('API (intradía): ' . ($rows['error']['message'] ?? 'error'));
-            return 0;
-        }
-
         $capturado = now()->startOfHour();
         $total = 0;
 
-        foreach ($rows['data'] ?? [] as $row) {
-            MetaInsightIntradia::updateOrCreate(
-                ['capturado_at' => $capturado, 'ad_id' => $row['ad_id']],
-                $this->metricas($row) + [
-                    'fecha' => now()->toDateString(),
-                    'ad_name' => $row['ad_name'] ?? null,
-                    'adset_id' => $row['adset_id'] ?? null,
-                    'adset_name' => $row['adset_name'] ?? null,
-                ]
-            );
-            $total++;
+        foreach (self::CAMPAIGNS as $campaignId) {
+            $rows = $this->graph($campaignId . '/insights', [
+                'level' => 'ad',
+                'date_preset' => 'today',
+                'fields' => self::FIELDS,
+                'limit' => '200',
+            ], $token);
+
+            if (! empty($rows['error'])) {
+                $this->error("API (intradía, {$campaignId}): " . ($rows['error']['message'] ?? 'error'));
+                continue;
+            }
+
+            foreach ($rows['data'] ?? [] as $row) {
+                MetaInsightIntradia::updateOrCreate(
+                    ['capturado_at' => $capturado, 'ad_id' => $row['ad_id']],
+                    $this->metricas($row) + [
+                        'fecha' => now()->toDateString(),
+                        'ad_name' => $row['ad_name'] ?? null,
+                        'adset_id' => $row['adset_id'] ?? null,
+                        'adset_name' => $row['adset_name'] ?? null,
+                    ]
+                );
+                $total++;
+            }
         }
 
         return $total;
@@ -81,34 +87,35 @@ class MetaIngerirCommand extends Command
     {
         $desde = now()->subDays($dias)->toDateString();
         $hasta = now()->subDay()->toDateString();
-
-        $rows = $this->graph(self::CAMPAIGN_ID . '/insights', [
-            'level' => 'ad',
-            'time_range' => json_encode(['since' => $desde, 'until' => $hasta]),
-            'time_increment' => '1',
-            'fields' => self::FIELDS,
-            'limit' => '500',
-        ], $token);
-
-        if (! empty($rows['error'])) {
-            $this->error('API (cierres): ' . ($rows['error']['message'] ?? 'error'));
-            return 0;
-        }
-
         $total = 0;
 
-        foreach ($rows['data'] ?? [] as $row) {
-            MetaInsightDiario::updateOrCreate(
-                ['fecha' => $row['date_start'], 'ad_id' => $row['ad_id']],
-                $this->metricas($row) + [
-                    'ad_name' => $row['ad_name'] ?? null,
-                    'adset_id' => $row['adset_id'] ?? null,
-                    'adset_name' => $row['adset_name'] ?? null,
-                    'campaign_id' => $row['campaign_id'] ?? null,
-                    'campaign_name' => $row['campaign_name'] ?? null,
-                ]
-            );
-            $total++;
+        foreach (self::CAMPAIGNS as $campaignId) {
+            $rows = $this->graph($campaignId . '/insights', [
+                'level' => 'ad',
+                'time_range' => json_encode(['since' => $desde, 'until' => $hasta]),
+                'time_increment' => '1',
+                'fields' => self::FIELDS,
+                'limit' => '500',
+            ], $token);
+
+            if (! empty($rows['error'])) {
+                $this->error("API (cierres, {$campaignId}): " . ($rows['error']['message'] ?? 'error'));
+                continue;
+            }
+
+            foreach ($rows['data'] ?? [] as $row) {
+                MetaInsightDiario::updateOrCreate(
+                    ['fecha' => $row['date_start'], 'ad_id' => $row['ad_id']],
+                    $this->metricas($row) + [
+                        'ad_name' => $row['ad_name'] ?? null,
+                        'adset_id' => $row['adset_id'] ?? null,
+                        'adset_name' => $row['adset_name'] ?? null,
+                        'campaign_id' => $row['campaign_id'] ?? null,
+                        'campaign_name' => $row['campaign_name'] ?? null,
+                    ]
+                );
+                $total++;
+            }
         }
 
         return $total;
