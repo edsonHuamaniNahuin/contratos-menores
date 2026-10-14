@@ -47,7 +47,31 @@
 - **Buscador de Proveedores Adjudicados** (gob.pe/14273) con descargas históricas completas; **MEF – Consulta de Proveedores** (todos los que contrataron con el Estado); Portal de Datos Abiertos OECE (datasets CSV).
 - Contexto externo: 86.8% de mypes peruanas sin registro SUNAT (Revista Economía, 2026) → el mercado direccionable serio es la fracción formal que provee al Estado.
 
-**Lectura:** con datos externos, el ICP caliente se confirma y amplifica — no dependemos de nuestra muestra: **hay cientos de empresas contratando hoy para venderle al Estado en los rubros TIER A/B, y pagan S/1.8-3k/mes por ese talento.**
+### 1d. Cifras maestras del mercado (extraídas 14/10 de fuentes públicas)
+
+| Cifra | Valor | Fuente |
+|---|---|---|
+| Convocatorias **abiertas hoy** | **21,134** | licitacionesperu.pe (datos SEACE, 14/10) |
+| Convocatorias activas **Ley 32069** (hoy, detalle) | **2,276** → 774 bienes · 737 servicios · **442 obras · 323 consultoría de obra** | PeruContrata, 14/10 |
+| Procesos históricos | **629,490** (Servicios 271,675 · Bienes 280,051 · **Obras 77,764**) | licitacionesperu.pe |
+| Contrataciones menores | **89,428** | licitacionesperu.pe |
+| **Proveedores** en BD comercial | **297,078** | TodoLicitaciones.pe |
+| Organismos compradores | **3,026** | TodoLicitaciones.pe |
+| Entidades estatales en nuestra BD | 2,324 (notif.) · 565 (notified_processes) | BD propia |
+
+**Evidencia LIVE de urgencia TIER A (hoy 14/10, del boletín diario):**
+- Supervisión agua/desagüe Loreto (Pastaza) — cierra en días.
+- **Agua riego canal Pache, Áncash: obra S/ 6,342,418 + supervisión S/ 687,221** (Municipalidad de Cochabamba-Huaraz).
+- **Movilidad urbana Av. Gran Chimú, Trujillo: S/ 9,726,222** (La Esperanza).
+- Pistas y veredas Satipo (Junín) — consultoría de supervisión.
+- Mantenimiento de vehículos pesados, maquinaria para PTAR (Lambayeque)…
+→ **Los rubros TIER A tienen convocatorias ABIERTAS HOY con montos de S/ 6-10 millones y plazos de días.** La urgencia es real, actual y medible.
+
+**Rubros más BUSCADOS por usuarios (PeruContrata):** mantenimiento · supervisión de obras · obras · construcción · ferretería · estructuras metálicas · consultoría · carretera/pistas/veredas → la demanda de búsqueda del mercado coincide con TIER A (validación adicional).
+
+**Pendiente acotado:** cifras oficiales OECE MYPE/RNP (dashboard Tableau con JS — requiere extracción manual/browser); usar las cifras de esta tabla mientras tanto (todas citadas con fuente).
+
+**Lectura:** con datos externos, el ICP caliente se confirma y amplifica — no dependemos de nuestra muestra: **hay cientos de empresas contratando hoy personal de licitaciones, ~297 mil proveedores registrados y los rubros TIER A con convocatorias abiertas HOY de S/ 6-10 millones.**
 
 ## 2. QUÉ DEMANDA EL ESTADO AHORA (lo que el sistema ve = el mercado real)
 

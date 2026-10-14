@@ -17,6 +17,19 @@
 | PuraLicitación (puralicitacion.com) | "Plataforma #1 para ganar licitaciones con IA" | ? | n/d | ¿Chile/multi-país? | Por verificar |
 | ialicitaciones.com | Directorio comparador | — | — | SEO | — |
 
+## Segunda pasada (14/10 noche) — 4 jugadores nuevos + amenaza del "free tier"
+
+| Jugador | Promesa | Canal | Precio | Datos que publican | Brecha |
+|---|---|---|---|---|---|
+| **TodoLicitaciones.pe** | Buscar + seguir + precios históricos + perfiles de proveedor/organismo | Email | Free (búsqueda) · **USD 20/mes** Premium · 15 días prueba | **69,531 licitaciones · 71,867 productos · 3,026 organismos · 297,078 proveedores** (su BD) | Sin WhatsApp/Telegram · sin IA de TDR · sin proforma |
+| **PeruContrata** (perucontrata.com.pe) | **Boletín Diario gratuito** de convocatorias vigentes + "ficha inteligente" (plazos, rubro, ubicación) + filtros por rubro/departamento | Web/email gratis; bases con login | Free fuerte (**2,276 activas hoy**: 774 bienes · 737 servicios · **442 obras · 323 consultoría de obra**) | SEO masivo por rubro/departamento ("rubros más buscados": mantenimiento, supervisión de obras, obras, construcción, ferretería, estructuras metálicas) | No es alerta push personalizada; sin IA; sin proforma |
+| Procu.com.pe | Conectar empresas con proveedores y gestionar licitaciones | Web | n/d | — | B2B marketplace, no alertas |
+| ProveePeru.com / ProveedoresCrecepymes | Directorios/medios para proveedores | Web | Publicidad | — | No compiten en alertas |
+
+**⚠️ Lectura estratégica nueva — LA AMENAZA DEL GRATIS:** hoy existen **boletines diarios gratuitos** (PeruContrata) y búsqueda gratuita con datos completos (LicitacionesPerú, TodoLicitaciones free). El "solo avisos por correo" ya es commodity. **Lo que NADIE regala ni vende junto:** alertas push al **WhatsApp/Telegram**, **IA que analiza el TDR y dice si calificas**, **proforma Word/Excel** y **garantía**. Ahí vive el precio (S/49-68) — el negocio no es "avisarte" (gratis abunda), es **decidir y postular más rápido**.
+
+**Mapa de precios actualizado:** gratis (PeruContrata, tiers free) → S/13-50 (LicitaHub) → S/29 (LicitacionesPerú mes) → **USD 20 ≈ S/75 (TodoLicitaciones)** → S/75-300 (GoPues) → **nosotros S/49-68 (zona media — coherente si el combo TDR+proforma+WA se comunica)**.
+
 ## Lecturas estratégicas
 
 1. **Nadie comunica lo que Vigilante SEACE tiene de verdad:** alertas **WhatsApp/Telegram + correo el mismo día** + **análisis del TDR con IA** + **proforma Word/Excel** + **5 días de garantía** = combo único. LicitaHub no tiene WA/TG ni IA de TDR; GoPues no tiene WA aún ni proforma.
