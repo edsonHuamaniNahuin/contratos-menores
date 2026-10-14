@@ -5,6 +5,26 @@
 
 ---
 
+## 2026-10-14 · Corrección de lectura BI (clics WA ≠ mensajes) · (sin commit)
+
+### Afirmé que había "5 conversaciones de WhatsApp esperando" — el dueño verificó: NADIE escribió
+
+**Qué pasó:** en el análisis del embudo interpreté los 5 registros de `lead_whatsapp_click`/`wa_clicks` como
+"usuarios que querían hablar y quedaron sin respuesta". El dueño verificó el WhatsApp del equipo (918874873):
+**0 mensajes recibidos**. Los registros son **clics al botón**, no conversaciones.
+
+**Nuevo dato BI:** **5 clics → 0 mensajes enviados**. Hipótesis principal: el deep-link `wa.me` puede estar
+fallando dentro del navegador in-app de Facebook/Instagram (Android) — comportamiento conocido de Meta.
+Hipótesis secundaria: curiosidad sin envío (normal en wa.me: 30-60% nunca envía).
+
+**Acciones derivadas:** (1) verificar con grabaciones de Clarity sesiones con clic WA; (2) agregar fallback
+visible del número junto a los botones; (3) evaluar botón nativo CTWA (requiere aprobación).
+
+**Lección:** un "clic" en un CTA de terceros (WhatsApp/teléfono) NO es una conversación — no cruzar la
+frontera de sistemas con supuestos. Verificar con la fuente humana antes de afirmar recuperaciones.
+
+---
+
 ## 2026-10-14 · WhatsApp API (error de concepto y reversión) · `629d0bd7`
 
 ### Intenté "revivir" el bot de WhatsApp API asumiendo que atendía leads — pero la API está abandonada por costos: los leads van al WhatsApp MANUAL del equipo

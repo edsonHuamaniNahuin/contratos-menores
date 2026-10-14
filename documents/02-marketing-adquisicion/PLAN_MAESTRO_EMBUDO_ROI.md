@@ -52,12 +52,12 @@
 | Activo atrapado | Dónde está | Acción de recuperación (hoy, costo S/0) |
 |---|---|---|
 | **3 leads de plantillas-TDR** (05/10–10/10, nunca convertidos) | `demo_leads` ids 1-3 | Contactar con plantilla `/admin/respuesta-leads` + oferta de activación con Yape |
-| **5 usuarios que clickearon WhatsApp** (12–13/10) | Conversaciones en el **WhatsApp manual del equipo** | Revisar la app AHORA: si escribieron y no hubo respuesta, responder hoy |
+| **5 clics al botón WhatsApp** (12–13/10) | ⚠️ **Verificado 14/10 con el dueño: NO generaron ningún mensaje** al número del equipo — clic ≠ conversación | Investigar si el deep-link `wa.me` falla en el navegador in-app de Meta (ver grabaciones Clarity con clic WA) + evaluar botón nativo CTWA (requiere aprobación) |
 | **~190 visitantes de landing/día** (pixel + GA4) | Audiencias de retargeting | Reutilizar como audiencia de retargeting (§3-J2) |
 | **534 clics con intención** | Aprendizaje de creativos/embudos | Decisiones de swap del día 7 (§3-J6) |
 
-**Potencial directo:** 1 conversión de esos activos = S/ 49–470 → **paga los S/ 41 completos**.
-La inversión no se perdió: **se quedó atascada en la última milla humana**. Desatorarla es la acción #1.
+**Potencial directo:** los 3 leads de plantillas (emails en BD, sin contactar) → 1 conversión = S/ 49–470 →
+**paga los S/ 41 completos**. Los clics de WhatsApp NO son conversaciones hasta que haya mensaje real enviado.
 
 ---
 
@@ -86,11 +86,13 @@ Mismo cliente a 12 meses: 9 × S/816 LTV = **S/7,344 → 11x**. 🎯 **El 10x se
 Ejecución: (a) vender **anual S/470** ("2 meses gratis") como opción principal; (b) el onboarding
 automático (d1/d3/d7/d12/d15 + winback, ya operativo) es la mitad del motor de ROI; (c) medir cohortes.
 
-### J5 — WhatsApp manual como canal primario de cierre (sin API, sin costo)
-La API está congelada (regla). Pero el 80% de la intención va a WhatsApp — al teléfono del equipo.
-Jugadas sin API: (a) **prefill con contexto** en los botones ("Hola, vi su anuncio de licitaciones
-para mi empresa de ___"); (b) **SLA medido**: responder ≤2h (métrica manual, auditable con wa_clicks);
-(c) jerarquía de CTA por embudo: WhatsApp-primero vs formulario-primero (A/B).
+### J5 — WhatsApp manual como canal de cierre (sin API, sin costo)
+La API está congelada (regla). Dato verificado 14/10: **5 clics al botón → 0 mensajes enviados**
+(clic ≠ conversación; hipótesis principal: el deep-link falla en el navegador in-app de Meta — a verificar
+con Clarity). Jugadas sin API: (a) **fallback visible del número** junto a los botones ("si el botón no
+abre, escríbenos al +51 918 874 873"); (b) **prefill con contexto** para el equipo; (c) **SLA ≤2h**;
+(d) evaluar **botón nativo CTWA** en los anuncios (abre WhatsApp nativo dentro de la app de Meta,
+compatible con WhatsApp manual — requiere aprobación del dueño).
 
 ### J6 — Creativos con PRUEBA (día 7)
 Los 11 compradores = 11 testimonios potenciales (pedido listo en `/admin/respuesta-leads`).
