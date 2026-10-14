@@ -26,8 +26,12 @@
   .notif{position:absolute;top:176px;right:52px;z-index:4;width:600px;
     background:rgba(8,22,20,.78);border:1px solid rgba(255,255,255,.16);border-radius:24px;
     padding:20px 24px 18px 26px;box-shadow:0 34px 80px -30px rgba(0,0,0,.85)}
-  .notif::before{content:"";position:absolute;left:0;top:22px;bottom:22px;width:4px;border-radius:4px;background:#2AABEE}
-  .notif .who{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#6fc6f5}
+  .notif::before{content:"";position:absolute;left:0;top:22px;bottom:22px;width:4px;border-radius:4px;background:#9fdfc9}
+  .mailhead{display:flex;align-items:center;gap:10px}
+  .mailhead .dot{width:8px;height:8px;border-radius:999px;background:#9fdfc9;box-shadow:0 0 10px rgba(159,223,201,.9);flex:none}
+  .mailhead .from{font-size:14px;font-weight:800;color:#fff;letter-spacing:-.01em}
+  .mailhead .addr{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.5)}
+  .mailhead .time{margin-left:auto;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.45)}
   .notif .msg{font-size:19.5px;font-weight:700;line-height:1.35;margin-top:10px;letter-spacing:-.01em}
   .notif .msg span{color:rgba(255,255,255,.62);font-weight:600}
   .notif .row{display:flex;align-items:center;gap:12px;margin-top:14px}
@@ -66,9 +70,12 @@
   </div>
 
   <div class="notif">
-    <div class="who">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6fc6f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2.5L2 10.5l7 2.5m12.5-10.5L14 21l-2.5-7m10-11.5L11 13"/></svg>
-      Alerta Telegram · hoy 08:41
+    <div class="mailhead">
+      <span class="dot"></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9fdfc9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 7l10 7L22 7"/></svg>
+      <span class="from">Vigilante SEACE</span>
+      <span class="addr">alertas@licitacionesmype.pe</span>
+      <span class="time">08:41</span>
     </div>
     <div class="msg">Nueva convocatoria: <span>agua y saneamiento — Gobierno Regional</span></div>
     <div class="row">
@@ -80,7 +87,7 @@
   <div class="hero">
     <span class="kicker">Temporada de cierre de año</span>
     <h1>Si te enteras tarde, <span class="mint">ya perdiste la obra.</span></h1>
-    <div class="sub">Las convocatorias de tu rubro <strong>cierran en días</strong>. Te avisamos por <strong>Telegram o correo</strong> el mismo día — con el TDR analizado por IA.</div>
+    <div class="sub">Las convocatorias de tu rubro <strong>cierran en días</strong>. Te avisamos por <strong>correo</strong> el mismo día — con el TDR analizado por IA.</div>
     <div class="cta">
       <div class="chev">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#241503" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
