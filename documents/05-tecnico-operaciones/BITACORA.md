@@ -1408,3 +1408,6 @@ Cada página ahora tiene exactamente 1 `<h1>` semántico.
 
 ### ✍️ Upgrade de copys todas las campañas (14/10 ~15:30)
 Los 10 anuncios (E1×3, E2×3, E3×3, U1×1) actualizados a copys v2: iconos que refuerzan (🚨⏳📲✅🔎🌐 etc.), titulares con emoji, y URLs visibles en el texto (buscador gratis: licitacionesmype.pe/buscador-publico + licitacionesmype.pe). Encoding verificado sin daño; mismo ángulo por adset (enriquecimiento, no nuevo test). Registro: scripts/ad-creatives/copys_v2_2026-10-14.json.
+
+### 🔗 Copys v3 — 3 URLs en los 10 anuncios (14/10 ~16:00)
+Corrección del dueño: faltaba el buscador de contratos mayores. Los 10 anuncios actualizados con: 🔎 buscador-publico (menores) + 🏗️ buscador-contratos-mayores (mayores) + 🌐 licitacionesmype.pe. Las 3 URLs verificadas vivas (HTTP 200) antes de publicar. Registro: scripts/ad-creatives/copys_v3_2026-10-14.json. Nota: el servidor no puede hacer curl a su propio dominio (Cloudflare bloquea su IP de salida) — desde fuera responde 200; no afecta usuarios.
