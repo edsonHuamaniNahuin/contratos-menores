@@ -69,3 +69,23 @@ CPL  = gasto ÷ leads
 Costo por venta = gasto ÷ ventas Yape
 Ingreso por lead = ventas Yape ÷ leads   → si ≥ S/75 = camino a 10x
 ```
+
+## 7. Tablero de unit economics (14/10 — la matemática del dueño, vinculante)
+
+**Objetivo:** S/642/mes de gasto → **S/6,420 (10x) · S/25,680 (40x)**.
+
+Precio S/68 (premium) · LTV 12 meses = **S/816**.
+
+| Métrica | Break-even mes 1 | 10x (LTV 12m) | 40x (óptimo) |
+|---|---|---|---|
+| CAC máximo por cliente | S/68 | **S/82** | S/20 |
+| CPL máximo (con cierre 10%) | **S/6.8** | **S/8.2** | S/2 |
+| CPL máximo (si cierre sube a 20%) | S/13.6 | S/16.4 | S/4 |
+| Costo por contacto WA (10% cierre) | ≤S/6.8 | ≤S/8.2 | ≤S/2 |
+
+**Metas operativas del embudo:**
+- Leads/mes para 10x: **~78 (≈2.6/día)** → 8 ventas/mes · con cierre 20%: la mitad.
+- **Umbral rojo:** CPL > S/12 sostenido 7 días → la vía está rota, reasignar (decisión autónoma).
+- **Umbral verde:** CPL ≤ S/8 con ≥2 leads/semana → mantener/escalar según reglas §5.
+
+**Referencia histórica del problema:** el funnel viejo costaba ~S/10 por clic WA → costo por venta (10% cierre) ≈ S/100 > S/68 = **pérdida en mes 1** (por eso el fix LPV del 14/10 + J0). El fix debe llevar el costo por contacto WA a **S/3–6** y J0 a **CPL S/4–10**; si no, la vía se corta en el checkpoint del día 7.
