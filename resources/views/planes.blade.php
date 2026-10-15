@@ -29,6 +29,8 @@
         gtag('js', new Date());
         gtag('config', 'G-4PRW1QCW48');
     </script>
+    @include('partials.meta-pixel')
+    @include('partials.clarity')
 </head>
 <body class="font-sans antialiased min-h-screen bg-neutral-50">
 

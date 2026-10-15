@@ -28,6 +28,8 @@
         gtag('js', new Date());
         gtag('config', 'G-4PRW1QCW48');
     </script>
+    @include('partials.meta-pixel')
+    @include('partials.clarity')
 </head>
 <body class="bg-neutral-50 min-h-screen font-sans">
     <div class="min-h-screen flex flex-col lg:flex-row">
