@@ -1420,3 +1420,9 @@ Corrección del dueño: faltaba el buscador de contratos mayores. Los 10 anuncio
 
 ### 🎯 J0 desbloqueado (14/10 ~19:00) — ToS aceptado + certificacion pendiente
 El dueño acepto las Condiciones de anuncios para clientes potenciales (via asistente de creacion) — el adset J0 se pudo crear (120248057988010108). Montado: campana J0 ACTIVA, adset ACTIVO (S/7, LEAD_GENERATION, form 1427421766170299 con pregunta de rubro), creativo 988513510190450 (copy con 3 URLs). E1 pausado para financiar (estructura: T4 + U1 + J0 = S/21/dia). NUEVO BLOQUEO al crear el anuncio: certificacion de no discriminacion requerida por Meta (error 2859002) — tramite del dueño en facebook.com/certification/nondiscrimination; luego se crea el ad en 30 seg.
+
+### 🎯 Clarity RESUELTO (14/10 ~21:00) — era un TYPO en el ID del proyecto
+**Sintoma:** 0 sesiones en Clarity por 2 dias pese a miles de visitas; el proyecto del dueño mostraba "CASI TERMINAMOS".
+**Causa raiz:** la config tenia `ywwnwgfd` (ID inexistente) — el ID real del proyecto es **`ywwnwt8g1d`** (transcripcion erronea). El tag se inyectaba pero enviaba a un proyecto que no existe → cero grabaciones en el proyecto REAL.
+**Solucion:** corregido en `.env` del servidor (CLARITY_PROJECT_ID=ywwnwt8g1d) + config:clear/cache; verificado en vivo: la web emite `clarity.ms/tag/ywwnwt8g1d`. El token Data Export del dueño siempre estuvo bien.
+**Leccion:** al transcribir IDs de herramientas externas, verificar contra la URL del panel del proveedor (no copiar de memoria); agregar verificacion "el ID configurado == ID del dashboard" al checklist.
