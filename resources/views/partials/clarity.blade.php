@@ -14,6 +14,8 @@
             t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
             y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
         })(window, document, "clarity", "script", PROYECTO);
+        // Señal de consentimiento (cubre el modo consentimiento del proyecto; inocua si está apagado)
+        if (typeof window.clarity === "function") { window.clarity("consent", true); }
     }
     window.cargarClarity = cargarClarity;
     if (localStorage.getItem('cookie_consent') !== 'denied') { cargarClarity(); }
