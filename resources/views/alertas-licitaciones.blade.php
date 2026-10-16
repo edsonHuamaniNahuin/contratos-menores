@@ -433,19 +433,16 @@
                         <input class="campo-correo w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="email" name="email" required value="{{ old('email') }}" placeholder="Correo corporativo">
                         @error('email')<p class="text-[12px] text-red-200">{{ $message }}</p>@enderror
 
-                        <input class="campo-correo w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="text" name="empresa" value="{{ old('empresa') }}" placeholder="Empresa">
-
-                        <input class="campo-correo w-full px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="text" name="rubro" value="{{ old('rubro') }}" placeholder="Rubro (ej. obras viales, energía)">
-
                         <div>
                             <label class="block text-white/85 text-[13px] mb-1.5">¿Cuánto es {{ $demoCaptchaA ?? 7 }} + {{ $demoCaptchaB ?? 3 }}?</label>
                             <div class="flex flex-col sm:flex-row gap-3">
                                 <input class="campo-correo w-full sm:flex-1 px-4 py-3 rounded-xl bg-white text-neutral-900 text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/60" type="text" name="captcha" required inputmode="numeric" autocomplete="off" placeholder="Respuesta">
                                 <button type="submit" class="w-full sm:w-auto shrink-0 rounded-xl bg-[var(--mint-soft)] text-[var(--teal-deep)] font-bold text-[15px] px-6 py-3 transition-opacity hover:opacity-90 whitespace-nowrap">
-                                    Agendar mi reunión
+                                    Agendar mi demo gratis
                                 </button>
                             </div>
                             <p class="text-white/45 text-[11px] mt-1.5">Verificación anti-robot.</p>
+                            <p class="text-white/55 text-[12px] mt-2.5">¿Prefieres WhatsApp? <a href="{{ $waLink ?? 'https://wa.me/51918874873' }}" target="_blank" rel="noopener" class="underline text-white/85">Escríbenos aquí</a> — te respondemos al toque.</p>
                             @error('captcha')<p class="text-[12px] text-red-200">{{ $message }}</p>@enderror
                             @error('form')<p class="text-[12px] text-red-200">{{ $message }}</p>@enderror
                         </div>

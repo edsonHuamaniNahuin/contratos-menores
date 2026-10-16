@@ -372,20 +372,16 @@
                     <input class="campo-correo w-full px-4 py-3 rounded-xl border text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 transition-colors" style="border-color:var(--line); color:var(--ink)" type="email" name="email" required value="{{ old('email') }}" placeholder="Correo corporativo">
                     @error('email')<p class="text-[12px] text-red-500">{{ $message }}</p>@enderror
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <input class="campo-correo w-full px-4 py-3 rounded-xl border text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 transition-colors" style="border-color:var(--line); color:var(--ink)" type="text" name="empresa" value="{{ old('empresa') }}" placeholder="Empresa">
-                        <input class="campo-correo w-full px-4 py-3 rounded-xl border text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 transition-colors" style="border-color:var(--line); color:var(--ink)" type="text" name="rubro" value="{{ old('rubro') }}" placeholder="Rubro (ej. obras viales)">
-                    </div>
-
                     <div>
                         <label class="block text-[13px] font-semibold mb-1.5" style="color:var(--muted)">¿Cuánto es {{ $demoCaptchaA ?? 7 }} + {{ $demoCaptchaB ?? 3 }}?</label>
                         <div class="flex flex-col sm:flex-row gap-3">
                             <input class="campo-correo w-full sm:flex-1 px-4 py-3 rounded-xl border text-[14px] placeholder-neutral-400 focus:outline-none focus:ring-2 transition-colors" style="border-color:var(--line); color:var(--ink)" type="text" name="captcha" required inputmode="numeric" autocomplete="off" placeholder="Respuesta">
                             <button type="submit" class="btn-navy w-full sm:w-auto !px-6 !py-3 whitespace-nowrap">
-                                Agendar una demo
+                                Agendar mi demo gratis
                             </button>
                         </div>
                         <p class="text-[11px] text-neutral-400 mt-1.5">Verificación anti-robot.</p>
+                        <p class="text-[12px] text-neutral-500 mt-2.5">¿Prefieres WhatsApp? <a href="{{ $waLink ?? 'https://wa.me/51918874873' }}" target="_blank" rel="noopener" class="underline" style="color:var(--navy)">Escríbenos aquí</a> — te respondemos al toque.</p>
                         @error('captcha')<p class="text-[12px] text-red-500">{{ $message }}</p>@enderror
                         @error('form')<p class="text-[12px] text-red-500">{{ $message }}</p>@enderror
                     </div>
