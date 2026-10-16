@@ -381,3 +381,16 @@ Schedule::command('leads:seguimiento')
     ->timezone('America/Lima')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/leads-seguimiento.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Dossier diario del agente autónomo (3 capas: server → opencode → Telegram)
+|--------------------------------------------------------------------------
+| Compila storage/agent/DAILY_BRIEF.md que la sesión diaria del agente
+| (opencode run, ver .agents/DIARIO_AGENTE.md) consume cada mañana.
+*/
+Schedule::command('agente:brief --notificar')
+    ->dailyAt('08:35')
+    ->timezone('America/Lima')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/agente-brief.log'));
