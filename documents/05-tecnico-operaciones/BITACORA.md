@@ -1428,3 +1428,11 @@ El dueño acepto las Condiciones de anuncios para clientes potenciales (via asis
 **Leccion:** al transcribir IDs de herramientas externas, verificar contra la URL del panel del proveedor (no copiar de memoria); agregar verificacion "el ID configurado == ID del dashboard" al checklist.
 
 **CORRECCION FINAL (14/10 ~22:30):** el ID correcto es **`ywwntw8g1d`** — tomado del SNIPPET OFICIAL que el dueno copio de su panel (fuente autoritativa). El intento intermedio (ywwnwt8g1d) fue una mala transcripcion mia de la URL en captura (confundi nwt/ntw). Config corregida + verificado en produccion: `var PROYECTO = "ywwntw8g1d"`, cero IDs viejos residuales. **Leccion definitiva: cuando exista un snippet oficial del proveedor, usar el SNIPPET como fuente — nunca transcribir IDs de capturas.**
+
+### 🏗️ REFACTOR NOCTURNO 15/10 (~1am) — veredicto 4 dias + experimento heredado + UX Clarity
+**VEREDICTO 4 DIAS:** E1/E2/E3 (S/52 juntos, 0 intencion) RETIRADAS. Ganadores: U1 (mensaje urgencia: unicos clics WA) + T4 (destino plantillas: unica pagina que convierte).
+**EXPERIMENTO NUEVO T5 (hereda lo mejor):** "META_Urgencia_U2_Plantillas_LPV" — mensaje de urgencia ("convocatoria nueva = otra vez de cero? / arma tu oferta en horas, no en noches") + destino plantillas-tdr + creativo con persona (hero-e2-v3). Adset 120248082495750108 + creativo 1086657967411067 creados; anuncio pendiente de certificacion Meta.
+**ROBOT pendientes_ad.py:** crea J0 Y T5 cuando Meta propague la certificacion + al crear J0 PAUSA U1 automaticamente (tope S/21: T4+T5+J0).
+**PRESUPUESTO:** ahora T4 7 + U1 7 + T5 7 = 21. Al desbloquear J0: pausa automatica de U1.
+**CLARITY UX (208 sesiones reales):** DeadClicks 7.7% (elementos que parecen clickeables y no responden), Quickbacks 2.4% (10 pv: clics que vuelven al instante), ScriptErrors en 5 pv (7 errores — no reproducibles en harness: revisar seccion del dashboard), ScrollDepth 43.6% (el formulario al fondo no se alcanza; el sticky ayuda), tiempo activo 35s.
+**FIXES UX DERIVADOS (manana, con click-maps del dashboard):** (1) hacer clickeable/eliminar affordance de elementos muertos, (2) revisar destinos de links con quickback, (3) diagnosticar los 7 errores JS, (4) evaluar formulario a mitad de pagina.
