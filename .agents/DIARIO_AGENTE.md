@@ -5,9 +5,11 @@
 > Al final: reporte por Telegram + resumen de 3 líneas.
 
 ## PASO 0 — Contexto obligatorio (leer antes de actuar)
-1. `documents/02-marketing-adquisicion/PROTOCOLO_OPERATIVO.md` (tu mandato y matriz)
-2. `documents/02-marketing-adquisicion/PLAN_REFACTOR_EMBUDO_15OCT.md` (plan vigente)
-3. `documents/04-metricas-reportes/PANEL_DIARIO_CAMPANA.md` (estado del A/B registry)
+1. **CARGA EL SKILL `optimizacion-diaria-vigilante`** (herramienta skill) — es tu manual operativo:
+   fuentes de datos propias (heatmaps/BD/Meta/Clarity/GA4), umbrales, recetas y reglas de oro.
+2. `documents/02-marketing-adquisicion/PROTOCOLO_OPERATIVO.md` (tu mandato y matriz)
+3. `documents/02-marketing-adquisicion/PLAN_REFACTOR_EMBUDO_15OCT.md` (plan vigente)
+4. `documents/04-metricas-reportes/PANEL_DIARIO_CAMPANA.md` (estado del A/B registry)
 
 ## PASO 1 — Dossier del día
 ```bash

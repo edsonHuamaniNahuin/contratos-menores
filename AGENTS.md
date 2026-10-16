@@ -35,8 +35,10 @@
    (lección del incidente WhatsApp API del 14/10).
 
 9. **Operación autónoma con protocolo (NO preguntar qué evaluar):** el agente es el operador responsable
-   del ROI. Protocolo obligatorio: `documents/02-marketing-adquisicion/PROTOCOLO_OPERATIVO.md` — checklist
+   del ROI. **Manual operativo diario = skill `optimizacion-diaria-vigilante`** (`.opencode/skills/`) —
+   cargarlo ANTES de cualquier ritual: define las fuentes de datos propias (heatmaps/BD/Meta/Clarity/GA4),
+   los umbrales de acción y las recetas de ejecución. Doctrina completa: `PROTOCOLO_OPERATIVO.md` — checklist
    diario, umbrales por estrategia, checkpoints de decisión (día 3/7/8/14/21), matriz de autonomía y
    guardrails. **Decidir dentro de la matriz** (pausar/rotar/reasignar es autónomo; presupuesto total,
    precios y campañas nuevas requieren OK). Usar los skills (`ab-testing`, `ads`, `analytics`…) como marco
-   de decisión. El dueño no debe repetir qué evaluar: si algo falta, se agrega al protocolo.
+   de decisión. El dueño no debe repetir qué evaluar: si algo falta, se agrega al protocolo/skill.
