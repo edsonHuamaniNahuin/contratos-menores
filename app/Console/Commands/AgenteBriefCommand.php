@@ -24,7 +24,7 @@ class AgenteBriefCommand extends Command
     public function handle(): int
     {
         $hoy = now()->toDateString();
-        $diaN = Carbon::parse(self::INICIO_CAMPANA)->diffInDays(now()) + 1;
+        $diaN = (int) Carbon::parse(self::INICIO_CAMPANA)->diffInDays(now()) + 1;
 
         $brief = [];
         $brief[] = '# 📋 DAILY BRIEF — ' . now()->format('d/m/Y H:i') . ' (Día ' . $diaN . ' de campaña)';
