@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px}
+  body{position:relative;overflow:hidden;background:#06292d;font-family:'Inter',system-ui,sans-serif;color:#fff}
+
+  /* FOTO — mitad superior (arquitectura nueva: split photo/panel) */
+  .photo{position:absolute;top:0;left:0;right:0;height:60%;overflow:hidden}
+  .photo img{width:100%;height:100%;object-fit:cover;object-position:center 62%;transform:scale(1.18);transform-origin:52% 62%}
+  .photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(6,20,18,.55) 0%, rgba(6,20,18,.08) 30%, rgba(6,32,30,.35) 78%, #06292d 100%)}
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E")}
+
+  .brand{position:absolute;top:52px;left:56px;z-index:4;display:flex;align-items:center;gap:15px}
+  .shield{width:54px;height:54px;border-radius:16px;background:rgba(6,24,20,.55);border:1px solid rgba(255,255,255,.24);display:flex;align-items:center;justify-content:center}
+  .brand-name{font-weight:800;font-size:25px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:13.5px;color:rgba(255,255,255,.78);font-weight:500;margin-top:4px}
+
+  /* Chip de urgencia flotante (puente entre foto y panel) */
+  .chip{position:absolute;top:calc(60% - 32px);right:56px;z-index:5;
+    display:inline-flex;align-items:center;gap:9px;background:#241605;border:1px solid rgba(240,160,40,.55);
+    color:#f3b25c;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    border-radius:999px;padding:13px 20px;box-shadow:0 18px 40px -18px rgba(0,0,0,.8)}
+  .chip i{width:8px;height:8px;border-radius:999px;background:#f0a028;box-shadow:0 0 10px rgba(240,160,40,.95)}
+
+  /* PANEL — mitad inferior sólida (sin foto) */
+  .panel{position:absolute;left:0;right:0;bottom:0;height:40%;padding:56px 60px 48px;display:flex;flex-direction:column;justify-content:center;gap:20px}
+  .kicker{display:inline-flex;align-items:center;gap:11px;font-size:14.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#f3b25c}
+  .kicker::before{content:"";width:34px;height:2px;background:#f3b25c}
+  h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:58px;line-height:1.04;letter-spacing:-.022em}
+  h1 em{font-style:normal;color:#9fdfc9}
+  .sub{font-size:20px;line-height:1.5;color:rgba(255,255,255,.82);font-weight:500;max-width:900px}
+  .cta{display:inline-flex;align-items:center;gap:13px;align-self:flex-start;background:linear-gradient(100deg,#ffc061,#f0a028);border-radius:999px;padding:20px 32px;box-shadow:0 22px 50px -24px rgba(240,160,40,.6)}
+  .cta .t{font-weight:800;font-size:20px;color:#241503;letter-spacing:-.01em}
+  .cta svg{flex:none}
+</style>
+</head>
+<body>
+  <div class="photo"><img src="../../public/images/landings/equipo-obra-casco.jpg" alt=""></div>
+  <div class="grain"></div>
+
+  <div class="brand">
+    <div class="shield">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Vigilante SEACE</div>
+      <div class="brand-sub">Licitaciones del Estado peruano</div>
+    </div>
+  </div>
+
+  <div class="chip"><i></i>Nueva convocatoria publicada</div>
+
+  <div class="panel">
+    <span class="kicker">¿Otra vez armando todo de cero?</span>
+    <h1>En horas. <em>No en noches.</em></h1>
+    <div class="sub">Descarga <strong>GRATIS</strong> las plantillas del TDR con el formato que pide el Estado — y deja de rehacer cada propuesta desde cero.</div>
+    <div class="cta">
+      <span class="t">Descargar gratis en licitacionesmype.pe</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#241503" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+</body>
+</html>

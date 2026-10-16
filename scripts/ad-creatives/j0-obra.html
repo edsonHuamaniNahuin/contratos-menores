@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px}
+  body{position:relative;overflow:hidden;background:#03100e;font-family:'Inter',system-ui,sans-serif;color:#fff}
+
+  .photo{position:absolute;inset:0;overflow:hidden}
+  .photo img{width:100%;height:100%;object-fit:cover;object-position:center 40%}
+  .tint{position:absolute;inset:0;background:linear-gradient(165deg, rgba(6,40,36,.35), rgba(4,18,16,.25) 55%, rgba(3,12,10,.4))}
+  .scrim{position:absolute;inset:0;background:linear-gradient(180deg, rgba(4,14,12,.55) 0%, rgba(4,14,12,.12) 26%, rgba(4,14,12,.18) 44%, rgba(4,14,12,.78) 64%, rgba(3,11,9,.96) 82%, #020807 100%)}
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E")}
+
+  .brand{position:absolute;top:52px;left:56px;z-index:4;display:flex;align-items:center;gap:15px}
+  .shield{width:54px;height:54px;border-radius:16px;background:rgba(6,24,20,.5);border:1px solid rgba(255,255,255,.24);display:flex;align-items:center;justify-content:center}
+  .brand-name{font-weight:800;font-size:25px;letter-spacing:-.02em;line-height:1}
+  .brand-sub{font-size:13.5px;color:rgba(255,255,255,.75);font-weight:500;margin-top:4px}
+
+  /* La tarjeta de alerta: EL DISPOSITIVO que coincidió con los clics reales */
+  .notif{position:absolute;top:170px;right:52px;z-index:4;width:620px;
+    background:rgba(8,22,20,.82);border:1px solid rgba(255,255,255,.16);border-radius:24px;
+    padding:22px 26px 20px 28px;box-shadow:0 34px 80px -30px rgba(0,0,0,.85)}
+  .notif::before{content:"";position:absolute;left:0;top:24px;bottom:24px;width:4px;border-radius:4px;background:#9fdfc9}
+  .mailhead{display:flex;align-items:center;gap:10px}
+  .mailhead .dot{width:8px;height:8px;border-radius:999px;background:#9fdfc9;box-shadow:0 0 10px rgba(159,223,201,.9);flex:none}
+  .mailhead .from{font-size:14px;font-weight:800;color:#fff}
+  .mailhead .addr{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.5)}
+  .mailhead .time{margin-left:auto;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.45)}
+  .msg{font-size:20px;font-weight:700;line-height:1.35;margin-top:10px;letter-spacing:-.01em}
+  .msg span{color:rgba(255,255,255,.62);font-weight:600}
+  .row{display:flex;align-items:center;gap:12px;margin-top:14px}
+  .monto{font-family:'Fraunces',serif;font-size:21px;font-weight:600;color:#9fdfc9}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:rgba(240,160,40,.14);border:1px solid rgba(240,160,40,.45);
+    color:#f3b25c;font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:7px 13px}
+  .chip i{width:7px;height:7px;border-radius:999px;background:#f0a028;box-shadow:0 0 10px rgba(240,160,40,.9)}
+
+  .hero{position:absolute;left:56px;right:56px;bottom:48px;z-index:4;display:flex;flex-direction:column;gap:18px}
+  .kicker{display:inline-flex;align-items:center;gap:11px;font-size:15px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#9fdfc9}
+  .kicker::before{content:"";width:34px;height:2px;background:#9fdfc9}
+  h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:62px;line-height:1.05;letter-spacing:-.022em;text-shadow:0 3px 26px rgba(0,0,0,.45)}
+  h1 em{font-style:normal;color:#9fdfc9}
+  .sub{font-size:20.5px;line-height:1.5;color:rgba(255,255,255,.9);font-weight:500;max-width:880px;text-shadow:0 2px 16px rgba(0,0,0,.45)}
+  .cta{display:inline-flex;align-items:center;gap:13px;align-self:flex-start;background:linear-gradient(100deg,#c9f0de,#9fdfc9);border-radius:999px;padding:21px 33px;box-shadow:0 24px 55px -25px rgba(0,0,0,.75)}
+  .cta .t{font-weight:800;font-size:20px;color:#06231d;letter-spacing:-.01em}
+</style>
+</head>
+<body>
+  <div class="photo"><img src="../../public/images/landings/obra-grua.jpg" alt=""></div>
+  <div class="tint"></div>
+  <div class="scrim"></div>
+  <div class="grain"></div>
+
+  <div class="brand">
+    <div class="shield">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Vigilante SEACE</div>
+      <div class="brand-sub">Licitaciones del Estado peruano</div>
+    </div>
+  </div>
+
+  <div class="notif">
+    <div class="mailhead">
+      <span class="dot"></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9fdfc9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 7l10 7L22 7"/></svg>
+      <span class="from">Vigilante SEACE</span>
+      <span class="addr">alertas@licitacionesmype.pe</span>
+      <span class="time">08:41</span>
+    </div>
+    <div class="msg">Nueva convocatoria: <span>agua y saneamiento — Gobierno Regional</span></div>
+    <div class="row">
+      <div class="monto">S/ 6,342,418</div>
+      <div class="chip"><i></i>Cierra en 6 días</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <span class="kicker">Alertas de tu rubro · gratis</span>
+    <h1>Dinos tu rubro. <em>Te avisamos el mismo día.</em></h1>
+    <div class="sub">Las convocatorias de tu empresa, por correo — el mismo día que el Estado las publica. Sin revisar el SEACE a mano.</div>
+    <div class="cta">
+      <span class="t">Empezar gratis en licitacionesmype.pe</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06231d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+</body>
+</html>
