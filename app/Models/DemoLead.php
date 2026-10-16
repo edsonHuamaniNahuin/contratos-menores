@@ -24,6 +24,7 @@ class DemoLead extends Model
         'landing',
         'ip',
         'user_agent',
+        'seguimiento_enviado_at',
     ];
 
     protected $casts = [
