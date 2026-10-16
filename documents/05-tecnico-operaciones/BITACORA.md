@@ -1436,3 +1436,20 @@ El dueño acepto las Condiciones de anuncios para clientes potenciales (via asis
 **PRESUPUESTO:** ahora T4 7 + U1 7 + T5 7 = 21. Al desbloquear J0: pausa automatica de U1.
 **CLARITY UX (208 sesiones reales):** DeadClicks 7.7% (elementos que parecen clickeables y no responden), Quickbacks 2.4% (10 pv: clics que vuelven al instante), ScriptErrors en 5 pv (7 errores — no reproducibles en harness: revisar seccion del dashboard), ScrollDepth 43.6% (el formulario al fondo no se alcanza; el sticky ayuda), tiempo activo 35s.
 **FIXES UX DERIVADOS (manana, con click-maps del dashboard):** (1) hacer clickeable/eliminar affordance de elementos muertos, (2) revisar destinos de links con quickback, (3) diagnosticar los 7 errores JS, (4) evaluar formulario a mitad de pagina.
+
+---
+
+### 🐛 Fix nurture T7 (16/10 ~09:15) — `seguimiento_enviado_at` no persistia (mass-assignment silencioso)
+**Sintoma:** `storage/logs/leads-seguimiento.log` decia "enviado: jhordyn... / mmaricarmen..." (2 enviados el 15/10 10:30) pero `demo_leads.seguimiento_enviado_at` seguia en NULL para esos leads (y para todos).
+**Causa raiz:** `DemoLead::$fillable` NO incluia `seguimiento_enviado_at`; `$lead->update(['seguimiento_enviado_at' => now()])` es mass-assignment → Laravel descarta el atributo no fillable EN SILENCIO (no lanza excepcion). Resultado: el correo SI se envia, la marca NO se guarda. Doble efecto: (1) la metrica T7 del panel (lee esa columna) queda rota; (2) el nurture REENVIA el mismo correo cada dia mientras el lead siga en la ventana 24-72h.
+**Solucion:** agregar `'seguimiento_enviado_at'` a `$fillable`. Mitigacion inmediata: backfill de leads 14/15 (ya correidos el 15/10 segun log) → `leads:seguimiento --dry-run` = 0 reenvios. Verificado en BD.
+**Leccion:** todo "campo de resultado" escrito por un comando DEBE validarse en BD tras el primer envio (log OK ≠ BD OK). Revisar `$fillable` al agregar columnas de estado por migracion; el mass-assignment silencioso no avisa.
+**Archivos:** `app/Models/DemoLead.php`, `demo_leads`, `app/Console/Commands/LeadsSeguimientoCommand.php`.
+
+### 🔴 BLOQUEO DE DEPLOY (16/10) — token git invalido (requiere al dueño)
+**Sintoma:** `git push origin main` → "Invalid username or token"; `gh auth status` → "The token in keyring is invalid"; el servidor tampoco puede pushear ("could not read Username for github.com").
+**Causa:** el PAT embebido en `credential.helper` (`ghp_...`) esta revocado/expirado (de ahi el "ahead 132" local: los push llevan tiempo fallando).
+**Consecuencia:** `deploy/orchestrate.sh deploy` ejecuta `git reset --hard origin/main` → CUALQUIER cambio no pusheado se REVIERTE. El agente no puede publicar codigo por git.
+**Workaround aplicado hoy:** fix aplicado server-side (scp de `DemoLead.php` + `artisan optimize:clear` + restart php-fpm). Commit local `3ef51303` ya en `main`, listo para pushear.
+**Accion requerida (dueño):** renovar el PAT de GitHub (repo `edsonHuamaniNahuin/contratos-menores`) y actualizar `credential.helper`; luego `git push origin main`. MIENTRAS TANTO: NO correr `deploy` normal (revertiria el fix del nurture).
+**Archivos:** config git local + servidor; `deploy/orchestrate.sh` (linea 432-433).
