@@ -23,9 +23,13 @@ ssh -i C:\Users\PC-01\.ssh\deploy_vigilante root@161.132.4.111 "cat /var/www/vig
 
 ## PASO 3 — Análisis (patrones, no corazonadas)
 Con el brief + Clarity (API con `/root/.clarity-token`) + grabaciones (dashboard del dueño):
-1. ¿Qué brazo rinde? Métrica primaria: **costo por clic WA (no) y leads**. Secundarias: costo por landing.
+1. ¿Qué brazo rinde? Métrica primaria: **costo por clic WA y leads**. Secundarias: costo por landing.
 2. ¿Qué patrón repite? (ángulo, destino, hora, edad, texto)
 3. ¿Qué guardrail se activó? (gasto >S/21, sin entrega, frecuencia >2.5, CPL >S/12)
+4. **Auditar CADA componente tocado contra `REGLAS_MEJORA_CAMPANAS.md`** (copy/imagen/segmentación/
+   edad/destino/form/UX/horario) — cada pieza mejora con el aprendizaje de lo exitoso.
+5. **Registro obligatorio del refactor:**
+   `componente → dato que lo justifica → skill citado → herramientas usadas (mín. 4) → regla aplicada → resultado esperado`
 
 ## PASO 4 — Decisiones DENTRO de la matriz (ejecuta sin preguntar)
 | Si pasa esto… | Haz esto (autónomo) |

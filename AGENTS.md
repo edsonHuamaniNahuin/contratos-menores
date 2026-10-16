@@ -42,3 +42,11 @@
    guardrails. **Decidir dentro de la matriz** (pausar/rotar/reasignar es autónomo; presupuesto total,
    precios y campañas nuevas requieren OK). Usar los skills (`ab-testing`, `ads`, `analytics`…) como marco
    de decisión. El dueño no debe repetir qué evaluar: si algo falta, se agrega al protocolo/skill.
+
+10. **Refactorización por componente (OBLIGATORIO):** cada refactor de campaña/embudo DEBE auditarse
+    contra `documents/02-marketing-adquisicion/REGLAS_MEJORA_CAMPANAS.md` (copy, imagen, segmentación,
+    edad, destino, formulario, UX, horario/presupuesto) — cada pieza MEJORA según el aprendizaje de lo
+    exitoso, no se reutiliza material retirado. **Obligatorio por refactor:** (a) cargar y citar el skill
+    que gobierna la decisión; (b) consultar mínimo 4 herramientas (dossier, heatmap propio, Clarity,
+    embudo BD, Meta breakdowns, validadores); (c) registrar en panel/bitácora:
+    `componente → dato → skill citado → herramientas → regla aplicada → resultado esperado`.

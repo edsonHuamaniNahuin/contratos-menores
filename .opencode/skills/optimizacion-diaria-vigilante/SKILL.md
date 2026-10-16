@@ -68,7 +68,7 @@ Métricas accionables: `DeadClickCount` (>5% sesiones → affordance roto), `Rag
 - `documents/02-marketing-adquisicion/OBJETIVO_ROI_CAMPANAS.md` (§7: CAC≤82, CPL≤8, 2.6 leads/día)
 - `documents/02-marketing-adquisicion/PANEL_DIARIO_CAMPANA.md` (registry A/B T1-T7)
 
-## 2. SKILLS DE DECISIÓN (citar el principio en cada llamada)
+## 2. SKILLS DE DECISIÓN (OBLIGATORIO cargar y citar el principio en cada llamada)
 | Decisión | Skill que la gobierna |
 |---|---|
 | Pausar/rotar anuncios, fatiga, placements | `ads` |
@@ -78,6 +78,12 @@ Métricas accionables: `DeadClickCount` (>5% sesiones → affordance roto), `Rag
 | Ángulos/mensajes psicológicos | `marketing-psychology` / `copywriting` |
 | Perfil del target, rubros, VoC | `mercado-vigilante` |
 | Estructura del embudo pagado | `funnel-paid-vigilante` / `landing-vigilante` |
+
+**Y OBLIGATORIO:** cada refactor audita los componentes contra
+`documents/02-marketing-adquisicion/REGLAS_MEJORA_CAMPANAS.md` (copy/imagen/segmentación/edad/
+destino/formulario/UX/horario) — cada pieza MEJORA con el aprendizaje de lo exitoso; prohibido
+reutilizar material de campañas retiradas. Consultar mínimo **4 herramientas** de §1 por ritual y
+registrar: `componente → dato → skill citado → herramientas → regla aplicada → resultado esperado`.
 
 ## 3. RITUAL DIARIO (orden exacto)
 1. Leer dossier (1a) — ¿gasto, entrega, conteos cuadran?
