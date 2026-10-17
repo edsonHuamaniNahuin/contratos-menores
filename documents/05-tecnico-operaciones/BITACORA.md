@@ -1464,3 +1464,25 @@ Aplicando skills `lead-magnets` + `offers` (skills.sh): cada lead nuevo (form de
 
 ### 🎁 Anatomía de oferta ejecutada (16/10) — bonos + renombrado + setup asistido
 Aplicando skill `offers` (skills.sh): (1) planes renombrados por resultado: "Vigilante Proveedor" (S/49) y "Vigilante Proveedor + Contratos Mayores" (S/68) en /planes + meta description; (2) BANDA DE BONOS visible (pack plantillas, alerta buena pro, TDR IA, proforma) + garantía 5 días + urgencia Q4; (3) setup asistido GRATIS (se promete en /planes y en el email de pago aprobado: "responde con tu rubro y configuramos tus alertas"); (4) beacon de heatmap agregado a plantillas-tdr y planes. Incidente: round-trip PowerShell corrompio 2 blades (BOM+mojibake) — restaurado y rehecho con editor UTF-8; leccion: NUNCA usar Set-Content para editar vistas. Deploy 18f40940 verificado en vivo.
+## 2026-10-17 - PRIMEROS LEADS DE PAGO (J0) + 2 gaps de automatizacion
+
+**Sintoma:** el J0 all-in (S/21/dia, Instant Form) lleva ~24h y el panel seguia en "0 leads de ads".
+**Dato (Meta insights):** action type `onsite_conversion.lead_grouped` = **1 lead el 16/10 + 1 lead el 17/10**;
+gasto J0 acumulado S/12.35 -> **CPL S/6.18** (bajo el target S/8.2 y MUY bajo el umbral de corte S/12).
+CPM S/8.34-9.16 (5x el trafico normal) pero el KPI del J0 es CPL: OK. Extra: 1er WA click atribuido a J0
+(16/10 18:05, MA-J0 - InstantForm Rubro -> vigentes -> WhatsApp).
+
+**Causa del "no se ven los leads":** los leads de Instant Form viven en Meta Leads Center; la API exige
+`leads_retrieval` (NO esta en ninguno de nuestros 2 tokens) y NO tenemos alerta Telegram de esos leads.
+
+**Gap 1 - visibilidad/celeridad:** lead nuevo de J0 puede quedar sin respuesta >2h (regla del negocio).
+Accion: el dueño revisa Meta Leads Center HOY; si el CPL se sostiene, evaluar form web propio (leads en BD
++ reporte automatico + Telegram) como siguiente refactor.
+**Gap 2 - agente diario incompleto:** el task Windows corrio (resultado 0) pero el ritual se corto tras los
+validadores: los bloques SQL inline via ssh fallan bajo PowerShell (comillas). Solucion: `/root/db-read.sh`
+(UN comando Windows-safe con todo el first-party) + runbook PASO 1 actualizado.
+
+**Leccion:** en insights de Meta, `lead_grouped` cuenta leads de Instant Form SIN el permiso leads_retrieval
+(ese permiso solo hace falta para LEER los datos del lead). Y en Windows: un paso = un script server-side.
+
+**Archivos:** /root/db-read.sh, .agents/DIARIO_AGENTE.md, documents/04-metricas-reportes/PANEL_DIARIO_CAMPANA.md

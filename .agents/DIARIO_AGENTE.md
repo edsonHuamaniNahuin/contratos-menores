@@ -17,6 +17,14 @@ ssh -i C:\Users\PC-01\.ssh\deploy_vigilante root@161.132.4.111 "cat /var/www/vig
 ```
 (lo compila `agente:brief` a las 08:35; si no existe, correrlo tú vía ssh + artisan)
 
+**Datos first-party (Windows-safe — UN comando, PROHIBIDO SQL inline en PowerShell):**
+```bash
+ssh -i C:\Users\PC-01\.ssh\deploy_vigilante root@161.132.4.111 "bash /root/db-read.sh"
+```
+(instalado en el server: gasto almacén, WA clicks, leads, page_events, users, Yapes)
+**Lección 17/10:** los bloques SQL inline con comillas fallan bajo PowerShell y el ritual se cortaba
+tras los validadores. Un paso = un script server-side.
+
 ## PASO 2 — Auditorías (obligatorio si tocarás algo)
 - `python scripts/meta-ads/verify_campaign.py --token-file /root/.meta-token` (vía ssh)
 - `funnel-audit` de las landings que vayas a tocar (harness: `node browser.mjs <url> --script scripts/qa/funnel-audit.mjs`)

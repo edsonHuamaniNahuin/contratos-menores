@@ -68,6 +68,25 @@ cambio fuerte son por BLOQUES (día 7 / día 14) para no ensuciar los tests con 
 | T6 | Segmentación: Config C (Advantage+) | PLAN | Semana 3 | según señal T5 |
 | T7 | **Nurture automático 24-72h** (email a leads sin registro) | LIVE | diario 10:30 | Semanal: % de respuestas/registros post-email |
 
+## ⚡ ACTUALIZACIÓN 17/10 — ALL-IN J0: PRIMEROS LEADS DE PAGO
+
+**Cierre 16/10 (último día multibrazo):** S/19.72 · 8,115 impr · 177 clics · 104 LPV ·
+T4 ad S/6.61 (CTR 2.2%) · T5 ad S/4.29 (CTR 2.58%) · U1 ad S/3.03 (CTR 1.7%) · **J0 S/5.79**
+→ **0 leads de los brazos de tráfico; 1er lead de J0** (`lead_grouped`) + 1er **WA click atribuido a J0** (18:05).
+
+**J0 all-in (S/21/día, ACTIVE, LEAD_GENERATION):**
+
+| Día | Gasto J0 | Impr | CTR | CPM | Leads (lead_grouped) | CPL | Nota |
+|---|---|---|---|---|---|---|---|
+| vie 16/10 | S/ 5.79 | 694 | 2.02% | 8.34 | **1** | S/ 5.79 | primer lead de pago de la campaña |
+| sáb 17/10 (parcial 18:00) | S/ 6.56 | 716 | 1.68% | 9.16 | **1** | S/ 6.56 | Café Alertas v2 casi sin entrega (S/0.21) |
+
+**Acumulado J0: S/12.35 → 2 leads → CPL S/6.18** ✅ bajo target (S/8.2) y bajo el umbral de escala (S/12).
+**Caveat:** los leads viven en Meta Leads Center (API sin `leads_retrieval`) → revisión manual obligatoria ≤2h.
+**Lectura:** CPM 5x mayor que tráfico (esperable en LEAD_GENERATION), pero la métrica del J0 es CPL — y gana.
+**Siguiente:** si sostiene CPL ≤S/8 hasta el 18/10 → mantener y preparar (sin ejecutar) propuesta de escala;
+plantear form web propio para tener leads en BD + reporte automático + Telegram.
+
 ## Reglas del panel
 1. Se actualiza **a diario** (yo o el monitor): fila nueva + notas.
 2. Las decisiones A/B **solo** en los hitos de bloque (día 7, día 14) — nunca por un día suelto.
