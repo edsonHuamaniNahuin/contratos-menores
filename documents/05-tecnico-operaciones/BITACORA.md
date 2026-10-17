@@ -1453,3 +1453,8 @@ El dueño acepto las Condiciones de anuncios para clientes potenciales (via asis
 **Workaround aplicado hoy:** fix aplicado server-side (scp de `DemoLead.php` + `artisan optimize:clear` + restart php-fpm). Commit local `3ef51303` ya en `main`, listo para pushear.
 **Accion requerida (dueño):** renovar el PAT de GitHub (repo `edsonHuamaniNahuin/contratos-menores`) y actualizar `credential.helper`; luego `git push origin main`. MIENTRAS TANTO: NO correr `deploy` normal (revertiria el fix del nurture).
 **Archivos:** config git local + servidor; `deploy/orchestrate.sh` (linea 432-433).
+
+### ⚖️ DECISIONES ESTRUCTURALES 15/10 (~12h) — consolidación + volumen a J0
+1) **Consolidado el test de plantillas:** el creativo "Split Planos" se movió como 2do anuncio DENTRO del adset T4 (ad 120248106257430108) y se pauso el adset T5 — T4 y T5 pujaban contra el mismo publico por el mismo destino en campanas distintas (canibalizacion). Ahora Meta reparte entre creativos y gana el mejor; atribucion separada por utm_content (nombre del anuncio).
+2) **J0 sube a S/14/dia** (necesita ~50 eventos/semana para salir de learning; con S/7 iba a morir de hambre).
+3) **Estructura final del sobre S/21:** T4-adset (S/7, 2 creativos: Documento + Split) + J0 (S/14). U1 y T5-adsets retirados como conformaciones (ADN preservado).
