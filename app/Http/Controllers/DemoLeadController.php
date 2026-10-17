@@ -118,6 +118,13 @@ class DemoLeadController extends Controller
                 Log::warning('DemoLead: alerta Telegram falló', ['error' => $e->getMessage()]);
             }
 
+            // Lead magnet instantáneo: reporte de convocatorias (no debe romper el flujo si falla)
+            try {
+                \App\Jobs\EnviarReporteConvocatoriasJob::dispatch($lead->id);
+            } catch (\Throwable $e) {
+                Log::warning('DemoLead: reporte de convocatorias no encolado', ['error' => $e->getMessage()]);
+            }
+
             Log::info('DemoLead: solicitud registrada', ['id' => $lead->id, 'email' => $lead->email]);
         } catch (\Throwable $e) {
             Log::error('DemoLead: error al registrar/enviar', ['error' => $e->getMessage()]);

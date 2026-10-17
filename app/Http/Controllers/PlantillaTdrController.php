@@ -125,6 +125,13 @@ class PlantillaTdrController extends Controller
                 Log::warning('PlantillaTdr: alerta Telegram falló', ['error' => $e->getMessage()]);
             }
 
+            // Lead magnet instantáneo: reporte de convocatorias (después de la plantilla)
+            try {
+                \App\Jobs\EnviarReporteConvocatoriasJob::dispatch($lead->id);
+            } catch (\Throwable $e) {
+                Log::warning('PlantillaTdr: reporte de convocatorias no encolado', ['error' => $e->getMessage()]);
+            }
+
             Log::info('PlantillaTdr: lead registrado', ['id' => $lead->id, 'email' => $lead->email]);
         } catch (\Throwable $e) {
             Log::error('PlantillaTdr: error', ['error' => $e->getMessage()]);
