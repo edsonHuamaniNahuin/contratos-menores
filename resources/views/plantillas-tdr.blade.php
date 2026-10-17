@@ -348,5 +348,31 @@
 })();
 </script>
 
+<script>
+(function () {
+    try {
+        var hmEnviados = {};
+        function hmEnviar(payload) {
+            try { navigator.sendBeacon('/api/page-event', new Blob([JSON.stringify(payload)], { type: 'application/json' })); } catch (e) {}
+        }
+        document.addEventListener('click', function (ev) {
+            var docW = document.documentElement.scrollWidth || 1;
+            var docH = document.documentElement.scrollHeight || 1;
+            var t = ev.target;
+            var cls = (t.className && typeof t.className === 'string') ? ('.' + t.className.split(' ').slice(0, 2).join('.')) : '';
+            hmEnviar({ landing: 'plantillas-tdr', tipo: 'click', x_pct: (ev.pageX / docW * 100).toFixed(2), y_pct: (ev.pageY / docH * 100).toFixed(2), target: ((t.tagName || '') + (t.id ? '#' + t.id : '') + cls).slice(0, 120), vw: window.innerWidth, vh: window.innerHeight, url: location.href });
+        }, true);
+        function hmScroll() {
+            var recorrible = document.documentElement.scrollHeight - window.innerHeight;
+            var pct = recorrible > 0 ? (window.scrollY / recorrible) * 100 : 100;
+            [25, 50, 75, 100].forEach(function (h) {
+                if (pct >= h && !hmEnviados[h]) { hmEnviados[h] = true; hmEnviar({ landing: 'plantillas-tdr', tipo: 'scroll', scroll_pct: h, url: location.href }); }
+            });
+        }
+        window.addEventListener('scroll', hmScroll, { passive: true });
+        hmScroll();
+    } catch (e) {}
+})();
+</script>
 </body>
 </html>

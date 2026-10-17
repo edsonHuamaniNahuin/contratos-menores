@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>💎 Planes y Precios — Vigilante SEACE | Desde S/ 0/mes · Análisis IA + Alertas</title>
-    <meta name="description" content="Elige tu plan: Gratuito (S/0), Premium (S/49/mes) con IA y alertas ilimitadas, o Premium + Contratos Mayores (S/68/mes). Buscador SEACE, análisis de TDR y más. Empieza gratis.">
+    <meta name="description" content="Elige tu plan: Gratuito (S/0), Vigilante Proveedor (S/49/mes) con IA y alertas ilimitadas, o Vigilante Proveedor + Contratos Mayores (S/68/mes). Buscador SEACE, análisis de TDR y más. Empieza gratis.">
     <meta property="og:title" content="Planes y Precios — Vigilante SEACE">
     <meta property="og:description" content="Planes desde S/ 0/mes. Análisis de TDR con IA, alertas en tiempo real, buscador de licitaciones del Estado peruano.">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
@@ -206,7 +206,7 @@
                 <!-- Encabezado -->
                 <div class="mb-6">
                     <span class="inline-block px-4 py-1 text-xs font-semibold rounded-full bg-primary-500/10 text-primary-500">
-                        PREMIUM
+                        VIGILANTE PROVEEDOR
                     </span>
                     <div class="mt-4 flex items-baseline gap-1">
                         <span class="text-4xl font-bold text-neutral-900">S/ 49</span>
@@ -390,14 +390,14 @@
 
                 <div class="mb-6">
                     <span class="inline-block px-4 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-600">
-                        PREMIUM + CONTRATOS MAYORES
+                        VIGILANTE PROVEEDOR + CONTRATOS MAYORES
                     </span>
                     <div class="mt-4 flex items-baseline gap-1">
                         <span class="text-4xl font-bold text-neutral-900">S/ 68</span>
                         <span class="text-sm text-neutral-400">/mes</span>
                     </div>
                     <p class="mt-2 text-sm text-neutral-400">
-                        Todo Premium más acceso completo a Contratos Mayores (&gt;8 UIT).
+                        Todo lo del plan Vigilante Proveedor, más acceso completo a Contratos Mayores (&gt;8 UIT).
                     </p>
                 </div>
 
@@ -409,7 +409,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                         </svg>
                     </div>
-                    <span class="text-sm font-semibold text-neutral-900">Todo lo del plan Premium, más:</span>
+                    <span class="text-sm font-semibold text-neutral-900">Todo lo del plan Vigilante Proveedor, más:</span>
                 </div>
 
                 <ul class="space-y-4 flex-1">
@@ -501,6 +501,29 @@
 
         </div>
 
+        <!-- ═══ BONOS + SETUP + GARANTÍA + URGENCIA (offer anatomy) ═══ -->
+        <div class="mt-10 max-w-5xl mx-auto bg-white rounded-3xl shadow-soft border border-neutral-100 p-8 sm:p-10">
+            <p class="text-xs font-bold tracking-widest uppercase text-primary-500 mb-2">Todo plan de pago incluye, sin costo adicional</p>
+            <h3 class="text-2xl font-bold text-neutral-900 mb-6">Bonos incluidos 🎁</h3>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                <div class="rounded-2xl bg-neutral-50 p-4"><strong>📄 Pack de plantillas TDR completo</strong><p class="text-neutral-500 mt-1">Modelos con el formato que pide el Estado.</p></div>
+                <div class="rounded-2xl bg-neutral-50 p-4"><strong>🏆 Alerta de buena pro</strong><p class="text-neutral-500 mt-1">Aviso cuando un proceso que sigues se adjudica.</p></div>
+                <div class="rounded-2xl bg-neutral-50 p-4"><strong>🤖 Análisis TDR con IA</strong><p class="text-neutral-500 mt-1">Requisitos, penalidades y plazos en minutos.</p></div>
+                <div class="rounded-2xl bg-neutral-50 p-4"><strong>🧾 Proforma en Word/Excel</strong><p class="text-neutral-500 mt-1">Lista para presentar, con tus datos.</p></div>
+            </div>
+            <div class="mt-6 grid sm:grid-cols-2 gap-4 text-sm">
+                <div class="rounded-2xl border border-primary-500/20 bg-primary-500/5 p-4">
+                    <strong class="text-neutral-900">🤝 Setup asistido GRATIS</strong>
+                    <p class="text-neutral-600 mt-1">Al activar, configuramos tus alertas contigo: nos dices tu rubro y regiones, y lo dejamos listo.</p>
+                </div>
+                <div class="rounded-2xl border border-emerald-500/20 bg-emerald-50 p-4">
+                    <strong class="text-neutral-900">🛡️ 5 días de garantía</strong>
+                    <p class="text-neutral-600 mt-1">Si no te convence, te devolvemos tu dinero. Sin preguntas.</p>
+                </div>
+            </div>
+            <p class="mt-6 text-sm text-neutral-500">⏳ Temporada Q4: las entidades publican a full antes del cierre de año — el mejor momento para tener tu radar activo.</p>
+        </div>
+
         <div class="mt-10 max-w-3xl mx-auto">
             @include('partials.nota-whatsapp')
         </div>
@@ -519,7 +542,7 @@
                 <p class="text-sm text-neutral-600 leading-relaxed">
                     Si no estás seguro de cuál plan te conviene, empieza con el gratuito.
                     Puedes explorar el buscador y descargar TDR sin compromiso.
-                    Cuando necesites alertas automáticas, análisis IA o seguimiento, pasa a Premium.
+                    Cuando necesites alertas automáticas, análisis IA o seguimiento, pasa al plan Vigilante Proveedor.
                 </p>
                 <div class="mt-6">
                     <a href="{{ route('buscador.publico') }}" class="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-primary-500 border border-primary-500 rounded-full hover:bg-primary-500 hover:text-white transition-colors">
@@ -636,5 +659,31 @@
 
     @livewireScripts
     @include('components.cookie-consent')
+<script>
+(function () {
+    try {
+        var hmEnviados = {};
+        function hmEnviar(payload) {
+            try { navigator.sendBeacon('/api/page-event', new Blob([JSON.stringify(payload)], { type: 'application/json' })); } catch (e) {}
+        }
+        document.addEventListener('click', function (ev) {
+            var docW = document.documentElement.scrollWidth || 1;
+            var docH = document.documentElement.scrollHeight || 1;
+            var t = ev.target;
+            var cls = (t.className && typeof t.className === 'string') ? ('.' + t.className.split(' ').slice(0, 2).join('.')) : '';
+            hmEnviar({ landing: 'planes', tipo: 'click', x_pct: (ev.pageX / docW * 100).toFixed(2), y_pct: (ev.pageY / docH * 100).toFixed(2), target: ((t.tagName || '') + (t.id ? '#' + t.id : '') + cls).slice(0, 120), vw: window.innerWidth, vh: window.innerHeight, url: location.href });
+        }, true);
+        function hmScroll() {
+            var recorrible = document.documentElement.scrollHeight - window.innerHeight;
+            var pct = recorrible > 0 ? (window.scrollY / recorrible) * 100 : 100;
+            [25, 50, 75, 100].forEach(function (h) {
+                if (pct >= h && !hmEnviados[h]) { hmEnviados[h] = true; hmEnviar({ landing: 'planes', tipo: 'scroll', scroll_pct: h, url: location.href }); }
+            });
+        }
+        window.addEventListener('scroll', hmScroll, { passive: true });
+        hmScroll();
+    } catch (e) {}
+})();
+</script>
 </body>
 </html>
