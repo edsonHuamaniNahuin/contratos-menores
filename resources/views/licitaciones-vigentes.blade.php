@@ -553,5 +553,20 @@
 
 @include('partials.cta-sticky', ['wa' => $waLead, 'variante' => 'claro', 'btnClass' => 'btn-navy'])
 
+<script>
+// Fix dead clicks: el 68% de los clics de esta página caen en el hero/titular sin acción.
+// Taps en zona hero no-interactiva → llevan al formulario (tap = progreso, no callejón).
+(function () {
+    document.addEventListener('click', function (ev) {
+        var t = ev.target;
+        if (t.closest('a,button,input,select,textarea,label,form')) return;
+        var hero = document.querySelector('main section, body > section, section');
+        if (hero && hero.contains(t)) {
+            var form = document.getElementById('form-correo');
+            if (form) { form.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        }
+    }, true);
+})();
+</script>
 </body>
 </html>

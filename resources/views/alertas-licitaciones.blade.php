@@ -626,5 +626,19 @@
 
 @include('partials.cta-sticky', ['wa' => $waLink, 'variante' => 'oscuro'])
 
+<script>
+// Fix dead clicks: clics en el hero (incl. mockup de chat) sin acción → llevan al formulario.
+(function () {
+    document.addEventListener('click', function (ev) {
+        var t = ev.target;
+        if (t.closest('a,button,input,select,textarea,label,form')) return;
+        var hero = document.querySelector('main section, body > section, section');
+        if (hero && hero.contains(t)) {
+            var form = document.getElementById('form-correo');
+            if (form) { form.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        }
+    }, true);
+})();
+</script>
 </body>
 </html>

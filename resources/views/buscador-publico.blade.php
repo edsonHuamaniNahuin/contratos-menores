@@ -123,6 +123,9 @@
             @livewire('buscador-publico')
         </section>
     </article>
+
+    {{-- Conversión: el buscador es la superficie más usada (991 vistas/7d) y no tenía captura --}}
+    @include('partials.cta-sticky', ['wa' => 'https://wa.me/51918874873?text=' . rawurlencode('Hola, quiero recibir alertas de licitaciones de mi rubro'), 'variante' => 'claro', 'btnClass' => 'btn-navy'])
 @endsection
 
 @push('scripts')
