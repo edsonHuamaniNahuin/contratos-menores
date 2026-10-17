@@ -30,6 +30,8 @@
 
 **Build (siguiente sesión de agente):** job `leads:reporte-rubro` — al submit del form: query convocatorias del rubro → mailable HTML/PDF → enviar. (No toca los anuncios en learning.)
 
+**✅ CONSTRUIDO Y EN VIVO (16/10):** `EnviarReporteConvocatoriasJob` + `ReporteConvocatoriasMail` (top-10 de contratos de los últimos 7 días, rubro auto-detectado, CTA "responde con tu rubro") + dispatch automático en los DOS flujos de lead (demo + plantillas) + comando `leads:reporte`. Enviado a los 6 leads de los últimos 14 días (incluye el nuevo del 16/10). Commit `f3921511`.
+
 ## 3. DECISIÓN #2 — Anatomía de la OFERTA de venta (skill `offers`)
 | Componente | Estado actual | Acción |
 |---|---|---|
