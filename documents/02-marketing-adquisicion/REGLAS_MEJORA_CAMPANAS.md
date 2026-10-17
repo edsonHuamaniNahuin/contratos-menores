@@ -51,6 +51,7 @@
 |---|---|
 | Scroll promedio 43.6% (form al fondo no se alcanza) | Si scroll <50%: **CTA/form duplicado a mitad de página** |
 | Dead clicks 7.7% de sesiones | Dead clicks >5% → **fix affordance** (hacer clickeable o quitar aspecto de botón) |
+| 113 clics muertos en el H1 de vigentes / 52 en el hero de alertas (16/10) | **Taps en zonas no-interactivas del hero → scroll al formulario** (el tap debe ser progreso, no callejón) |
 | Quickbacks 2.4% | >2% → auditar links con retorno inmediato |
 | Script errors detectados (baja tasa, vigilar) | Cualquier error JS → fix prioritario (rompe todo el tracking) |
 

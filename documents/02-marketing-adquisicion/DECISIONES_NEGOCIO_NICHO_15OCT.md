@@ -50,6 +50,8 @@ El agua fría entra por puerta cara: S/49-68. Opciones para decidir:
 
 *Mi recomendación (skill `pricing`):* empezar con **A durante la ventana de 72h** y decidir B/C con los primeros datos de J0 (si CPL bajo pero cierre bajo → el problema es precio → B).
 
+**✅ DECIDIDO POR EL DUEÑO (16/10): OPCIÓN A** — se mantienen S/49 (Vigilante Proveedor) y S/68 (Vigilante Proveedor + Contratos Mayores) + bonos + setup asistido. Revisión de precio solo con datos del día 18/10+.
+
 ## 5. DECISIÓN #4 — Churn (skill `churn-prevention`)
 10 suscripciones vencidas sin winback efectivo → **secuencia de win-back con el NUEVO magnet**: "Perdiste convocatorias este mes. Aquí está el reporte de tu rubro que te perdiste — reactiva con garantía". Usar el email-sequence existente.
 

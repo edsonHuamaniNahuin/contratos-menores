@@ -62,7 +62,22 @@ ssh … "curl -s 'https://www.clarity.ms/export-data/api/v1/project-live-insight
 ```
 Métricas accionables: `DeadClickCount` (>5% sesiones → affordance roto), `RageClickCount` (>1% → frustración), `QuickbackClick` (>2% → link engañoso/lento), `ScriptErrorCount` (>0 → bug JS), `ScrollDepth` (<50% → contenido/CTA mal ubicado). Dashboard para el humano: `clarity.microsoft.com/projects/view/ywwntw8g1d`.
 
-### 1f. Investigación de mercado (el QUÉ decir)
+### 1f. GA4 (tráfico, eventos y páginas — complemento imprescindible)
+Recipe (servidor, venv con libs de Google):
+```bash
+ssh … "cd /var/www/vigilante-seace && analizador-tdr/venv/bin/python - <<'EOF'
+# service account desde GA4_CREDENTIALS_JSON (.env) → analyticsdata v1beta
+# property: properties/404642926
+# reportes: pagePath (sessions/users/views) · eventName (eventCount)
+EOF"
+```
+**Lecturas clave:** buscador-publico = superficie más usada (6-7 vistas/sesión) → debe tener captura;
+`demo_lead_enviado` = lead real (usar ESTE, no `form_submit` que es genérico); vigilar duplicados de
+`lead_whatsapp_click` (GA4 cuenta eventos, BD cuenta únicos — nunca confundirlos).
+**Regla:** el afinado es de CANTO A CANTO: campaña → landing → web → post-click (Clarity/heatmap).
+Ninguna decisión de campaña se toma sin cruzar al menos una fuente de web/UX.
+
+### 1g. Investigación de mercado (el QUÉ decir)
 - `documents/03-clientes-investigacion/INVESTIGACION_TARGET_CALIENTE_2026-10.md` (ICP TIER A, triggers de urgencia)
 - `documents/03-clientes-investigacion/COMPETIDORES_2026-10.md` (brechas: canal correo, combo TDR+proforma)
 - `documents/02-marketing-adquisicion/OBJETIVO_ROI_CAMPANAS.md` (§7: CAC≤82, CPL≤8, 2.6 leads/día)
