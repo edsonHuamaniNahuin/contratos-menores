@@ -89,3 +89,7 @@ Precio S/68 (premium) · LTV 12 meses = **S/816**.
 - **Umbral verde:** CPL ≤ S/8 con ≥2 leads/semana → mantener/escalar según reglas §5.
 
 **Referencia histórica del problema:** el funnel viejo costaba ~S/10 por clic WA → costo por venta (10% cierre) ≈ S/100 > S/68 = **pérdida en mes 1** (por eso el fix LPV del 14/10 + J0). El fix debe llevar el costo por contacto WA a **S/3–6** y J0 a **CPL S/4–10**; si no, la vía se corta en el checkpoint del día 7.
+
+**REGLA DE ATRIBUCIÓN DE INGRESOS (vinculante — 18/10):** para el ROI de campañas solo cuentan pagos Yape de usuarios **creados dentro de la ventana de campaña** (`users.created_at` ≥ 2026-10-12). Renovaciones de clientes preexistentes **NO cuentan** (son caja del negocio, no retorno de marketing). Clasificación automática implementada en `/root/db-read.sh` (YAPES: `CLIENTE_NUEVO(ROI)` vs `PREEXISTENTE(NO ROI)`).
+
+**Scoreboard real al 18/10:** gasto Meta S/110.04 · leads de pago 3 (CPL S/5.85) · **ingresos atribuibles S/0 → ROAS 0x**. Los 3 yapes del periodo (Elsa S/68, Douglas S/49, Oscar S/68) son clientes preexistentes (altas jul–sep). Caja real del negocio: S/185 — pero **no es retorno de campañas**.

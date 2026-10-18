@@ -1486,3 +1486,16 @@ validadores: los bloques SQL inline via ssh fallan bajo PowerShell (comillas). S
 (ese permiso solo hace falta para LEER los datos del lead). Y en Windows: un paso = un script server-side.
 
 **Archivos:** /root/db-read.sh, .agents/DIARIO_AGENTE.md, documents/04-metricas-reportes/PANEL_DIARIO_CAMPANA.md
+
+## 2026-10-18 - CORRECCION DE ATRIBUCION DE ROI (yapes preexistentes)
+
+**Sintoma:** se reporto "2 ventas S/117 organicas / 33% cierre" como validacion del embudo.
+**Causa:** la consulta contaba pagos por fecha de PAGO (30d) sin mirar la fecha de alta del cliente:
+Elsa (alta 17/08), Douglas (alta 27/09) y Oscar (alta 15/09) son clientes preexistentes; el yape de Oscar
+del 18/10 00:37 (S/68) es renovacion de cliente antiguo, NO retorno de campanas.
+**Solucion:** regla vinculante en OBJETIVO_ROI_CAMPANAS §7 (solo cuentan pagos de usuarios creados dentro
+de la ventana de campana) + clasificacion automatica en /root/db-read.sh.
+**Leccion:** jamas atribuir ingresos por fecha de pago; atribuir por alta del cliente + ventana. Una
+renovacion es caja, no ROI. Con esto el scoreboard real es: S/110.04 gastados, 3 leads de pago, 0 ingresos
+atribuibles, ROAS 0x.
+**Archivos:** OBJETIVO_ROI_CAMPANAS.md, /root/db-read.sh, PANEL_DIARIO_CAMPANA.md

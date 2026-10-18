@@ -82,6 +82,8 @@ T4 ad S/6.61 (CTR 2.2%) · T5 ad S/4.29 (CTR 2.58%) · U1 ad S/3.03 (CTR 1.7%) �
 | sáb 17/10 (parcial 18:00) | S/ 6.56 | 716 | 1.68% | 9.16 | **1** | S/ 6.56 | Café Alertas v2 casi sin entrega (S/0.21) |
 
 **Acumulado J0: S/12.35 → 2 leads → CPL S/6.18** ✅ bajo target (S/8.2) y bajo el umbral de escala (S/12).
+**ROI corregido (18/10):** ingresos atribuibles a campañas = **S/0** — los yapes del periodo son clientes
+preexistentes (Elsa, Douglas, Oscar; altas jul–sep). Regla vinculante en `OBJETIVO_ROI_CAMPANAS.md §7`.
 **Caveat:** los leads viven en Meta Leads Center (API sin `leads_retrieval`) → revisión manual obligatoria ≤2h.
 **Lectura:** CPM 5x mayor que tráfico (esperable en LEAD_GENERATION), pero la métrica del J0 es CPL — y gana.
 **Siguiente:** si sostiene CPL ≤S/8 hasta el 18/10 → mantener y preparar (sin ejecutar) propuesta de escala;
